@@ -1,0 +1,272 @@
+/* Responsive Styles */
+
+/* ==========================================================================
+   Tablet Breakpoints (<= 1024px)
+   ========================================================================== */
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-width: 72px;
+    --container-margin: 20px;
+  }
+
+  .sidebar-logo-text,
+  .sidebar-user-info,
+  .sidebar-new-btn span,
+  .nav-link span {
+    display: none;
+  }
+
+  .sidebar-header {
+    padding: 0;
+    justify-content: center;
+  }
+
+  .sidebar-action-wrap {
+    padding: var(--spacing-sm);
+  }
+
+  .sidebar-new-btn {
+    padding: 10px;
+    border-radius: var(--radius-full);
+  }
+
+  .sidebar-nav {
+    padding: var(--spacing-sm) var(--spacing-xs);
+    align-items: center;
+  }
+
+  .nav-link {
+    padding: 12px;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+  }
+
+  .sidebar-footer {
+    padding: var(--spacing-sm);
+    align-items: center;
+  }
+
+  .sidebar-user {
+    padding: 0;
+    background: transparent;
+    justify-content: center;
+  }
+
+  /* Reflow grid columns */
+  .grid-cols-12 > .col-span-8,
+  .grid-cols-12 > .col-span-4,
+  .grid-cols-12 > .col-span-6,
+  .grid-cols-12 > .col-span-3 {
+    grid-column: span 12;
+  }
+
+  .dashboard-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .form-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .form-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ==========================================================================
+   Mobile Breakpoints (<= 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  :root {
+    --container-margin: var(--container-margin-mobile);
+  }
+
+  .hide-mobile {
+    display: none !important;
+  }
+
+  .show-mobile {
+    display: block !important;
+  }
+
+  /* Hide Desktop Sidebar */
+  .app-sidebar {
+    display: none;
+  }
+
+  /* Reset main wrap margin */
+  .app-main-wrap {
+    margin-left: 0 !important;
+    padding-bottom: calc(var(--bottombar-height) + var(--spacing-md));
+  }
+
+  /* Show Bottom Navigation */
+  .app-bottom-nav {
+    display: flex;
+  }
+
+  /* Header adjustments */
+  .app-topbar {
+    padding: 0 var(--spacing-md);
+  }
+
+  .topbar-left {
+    max-width: none;
+  }
+
+  .topbar-user-meta {
+    display: none;
+  }
+
+  /* Stat cards on mobile */
+  .stat-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+  }
+
+  .stat-card {
+    padding: var(--spacing-md);
+  }
+
+  .stat-card-value {
+    font-size: 22px;
+  }
+
+  .stat-card-label {
+    font-size: 11px;
+  }
+
+  /* Form Grids -> Single column */
+  .form-grid-2,
+  .form-grid-3,
+  .form-grid-4 {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+
+  /* Page Header */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .page-actions {
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .page-actions .btn {
+    flex: 1;
+    min-height: 44px;
+  }
+
+  /* Ensure touch targets >= 44px */
+  .btn,
+  .form-control,
+  .tab-btn,
+  .bottom-nav-item,
+  .drawer-nav-item {
+    min-height: 44px;
+  }
+
+  .pagination-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  /* Responsive table conversion to mobile cards */
+  .desktop-table-view {
+    display: none;
+  }
+
+  .mobile-card-view {
+    display: flex !important;
+  }
+
+  /* Modal turns into Bottom Sheet */
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-container {
+    max-width: 100%;
+    max-height: 88vh;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top-left-radius: var(--radius-2xl);
+    border-top-right-radius: var(--radius-2xl);
+    transform: translateY(100%);
+  }
+
+  .modal-backdrop.open .modal-container {
+    transform: translateY(0);
+  }
+
+  /* Grab handle indicator for mobile sheet */
+  .modal-container::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background-color: #cbd5e1;
+    border-radius: var(--radius-full);
+    margin: 8px auto 0 auto;
+  }
+
+  /* Financial Banner */
+  .financial-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Login page mobile */
+  .login-wrapper {
+    flex-direction: column;
+  }
+
+  .login-brand-panel {
+    padding: var(--spacing-xl) var(--spacing-md);
+    min-height: auto;
+  }
+
+  .login-brand-heading {
+    font-size: 26px;
+  }
+
+  .login-brand-subtext {
+    font-size: 14px;
+  }
+
+  .login-form-panel {
+    padding: var(--spacing-xl) var(--spacing-md);
+    max-width: 100%;
+  }
+
+  .toast-container {
+    left: 16px;
+    right: 16px;
+    bottom: calc(var(--bottombar-height) + 16px);
+  }
+}
+
+/* ==========================================================================
+   Small Mobile Breakpoints (<= 390px)
+   ========================================================================== */
+@media (max-width: 390px) {
+  .stat-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .financial-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar-search-form {
+    display: none;
+  }
+}

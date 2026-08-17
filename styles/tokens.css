@@ -1,0 +1,154 @@
+﻿/* AfriciaTravel Design System Tokens */
+:root {
+  /* Colors - Core Structural */
+  --color-primary: #0f172a;
+  --color-primary-container: #131b2e;
+  --color-sidebar: #131b2e;
+  --color-sidebar-hover: #1e293b;
+  --color-sidebar-active: #2563eb;
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-text-active: #ffffff;
+
+  /* Colors - Interactive & Accents */
+  --color-accent: #2563eb;
+  --color-accent-strong: #0051d5;
+  --color-accent-hover: #1d4ed8;
+  --color-accent-soft: #eff6ff;
+  --color-accent-border: #bfdbfe;
+
+  /* Colors - Semantic States */
+  --color-success: #059669;
+  --color-success-dark: #065f46;
+  --color-success-bg: #d1fae5;
+  --color-success-border: #a7f3d0;
+
+  --color-warning: #d97706;
+  --color-warning-dark: #92400e;
+  --color-warning-bg: #fef3c7;
+  --color-warning-border: #fde68a;
+
+  --color-danger: #ba1a1a;
+  --color-danger-dark: #93000a;
+  --color-danger-bg: #ffdad6;
+  --color-danger-border: #fecaca;
+
+  --color-info: #0284c7;
+  --color-info-bg: #e0f2fe;
+  --color-info-border: #bae6fd;
+
+  --color-neutral: #475569;
+  --color-neutral-bg: #f1f5f9;
+  --color-neutral-border: #cbd5e1;
+
+  /* Colors - Surfaces */
+  --color-background: #f7f9fb;
+  --color-surface: #f7f9fb;
+  --color-surface-card: #ffffff;
+  --color-surface-soft: #f2f4f6;
+  --color-surface-container: #eceef0;
+  --color-surface-container-high: #e6e8ea;
+  --color-surface-hover: #f8fafc;
+  --color-surface-selected: #f1f5f9;
+
+  /* Colors - Text */
+  --color-text: #191c1e;
+  --color-text-secondary: #45464d;
+  --color-text-muted: #64748b;
+  --color-text-inverse: #ffffff;
+
+  /* Colors - Borders */
+  --color-border: #c6c6cd;
+  --color-border-soft: #e2e8f0;
+  --color-border-dark: #94a3b8;
+
+  /* Typography */
+  --font-family-heading: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-family-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-family-mono: 'Geist Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+  /* Font Sizes & Line Heights */
+  --font-size-display: 36px;
+  --line-height-display: 44px;
+
+  --font-size-headline-lg: 28px;
+  --line-height-headline-lg: 36px;
+
+  --font-size-headline-md: 24px;
+  --line-height-headline-md: 32px;
+
+  --font-size-headline-sm: 18px;
+  --line-height-headline-sm: 28px;
+
+  --font-size-body-lg: 16px;
+  --line-height-body-lg: 24px;
+
+  --font-size-body-md: 14px;
+  --line-height-body-md: 20px;
+
+  --font-size-label-md: 13px;
+  --line-height-label-md: 18px;
+
+  --font-size-label-sm: 12px;
+  --line-height-label-sm: 16px;
+
+  --font-size-status: 11px;
+  --line-height-status: 1;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Spacing Scale (8px system) */
+  --spacing-xxs: 2px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 40px;
+  --spacing-3xl: 48px;
+
+  /* Layout Dimensions */
+  --sidebar-width: 260px;
+  --sidebar-width-collapsed: 72px;
+  --topbar-height: 64px;
+  --bottombar-height: 64px;
+  --content-max-width: 1440px;
+  --gutter: 16px;
+  --container-margin: 24px;
+  --container-margin-mobile: 16px;
+
+  /* Radius */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-full: 9999px;
+
+  /* Elevation & Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow-floating: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-sheet: 0 -8px 24px -4px rgb(0 0 0 / 0.12);
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Z-Index */
+  --z-base: 1;
+  --z-sticky: 10;
+  --z-header: 20;
+  --z-sidebar: 30;
+  --z-bottom-nav: 40;
+  --z-drawer: 50;
+  --z-modal-backdrop: 90;
+  --z-modal: 100;
+  --z-toast: 110;
+  --z-tooltip: 120;
+}
