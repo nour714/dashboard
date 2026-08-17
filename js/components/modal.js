@@ -1,8 +1,9 @@
-﻿/**
- * AfriciaTravel — Modal & Bottom Sheet Manager
+/**
+ * AfriciaTravel / VoyageDesk — Modal & Bottom Sheet Manager
  */
 
 import { icons } from './icons.js';
+import { escapeHtml } from '../utils/security.js';
 
 let activeBackdrop = null;
 
@@ -25,8 +26,8 @@ export function openModal(options) {
     <div class="modal-container" style="max-width: ${maxWidth};">
       <div class="modal-header">
         <div>
-          <div class="modal-title">${title}</div>
-          ${subtitle ? `<div class="modal-subtitle">${subtitle}</div>` : ''}
+          <div class="modal-title">${escapeHtml(title)}</div>
+          ${subtitle ? `<div class="modal-subtitle">${escapeHtml(subtitle)}</div>` : ''}
         </div>
         <button class="modal-close-btn" id="modal-close-trigger" aria-label="Close modal">
           ${icons.close('w-4 h-4')}

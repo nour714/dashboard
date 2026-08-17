@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfriciaTravel — Ticket Action Modals (Payment, Modification, Refund, Edit)
  */
 
@@ -18,7 +18,7 @@ export function openAddPaymentModal(ticket, onSuccess) {
       <form id="record-payment-form" class="d-flex flex-column gap-md">
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label" for="pay-amount">Payment Amount (${ticket.currency}) *</label>
+            <label class="form-label" for="pay-amount">Payment Amount (${escapeHtml(ticket.currency)}) *</label>
             <input
               type="number"
               id="pay-amount"
@@ -113,11 +113,11 @@ export function openModifyFlightModal(ticket, onSuccess) {
         <div class="form-grid-2">
           <div class="form-group">
             <label class="form-label" for="mod-flight-num">New Flight Number</label>
-            <input type="text" id="mod-flight-num" class="form-control" value="${ticket.flightNumber || 'MS 905'}" required />
+            <input type="text" id="mod-flight-num" class="form-control" value="${escapeHtml(ticket.flightNumber || 'MS 905')}" required />
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="mod-change-fee">Change / Reissue Fee (${ticket.currency})</label>
+            <label class="form-label" for="mod-change-fee">Change / Reissue Fee (${escapeHtml(ticket.currency)})</label>
             <input type="number" id="mod-change-fee" class="form-control" value="1200" min="0" step="1" required />
           </div>
         </div>
@@ -198,7 +198,7 @@ export function openAddRefundModal(ticket, onSuccess) {
       <form id="add-refund-form" class="d-flex flex-column gap-md">
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label" for="refund-amount">Refund Amount (${ticket.currency}) *</label>
+            <label class="form-label" for="refund-amount">Refund Amount (${escapeHtml(ticket.currency)}) *</label>
             <input
               type="number"
               id="refund-amount"

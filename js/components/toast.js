@@ -1,8 +1,9 @@
-﻿/**
- * AfriciaTravel — Toast Notification System
+/**
+ * AfriciaTravel / VoyageDesk — Toast Notification System
  */
 
 import { icons } from './icons.js';
+import { escapeHtml } from '../utils/security.js';
 
 let toastContainer = null;
 
@@ -32,7 +33,7 @@ export function showToast(message, type = 'success', duration = 3500) {
 
   toast.innerHTML = `
     ${iconSvg}
-    <span>${message}</span>
+    <span>${escapeHtml(message)}</span>
   `;
 
   toastContainer.appendChild(toast);

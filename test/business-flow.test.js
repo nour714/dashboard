@@ -2,9 +2,9 @@
  * AfriciaTravel / VoyageDesk — Automated Business Flow & Security Regression Test Suite
  *
  * Tests payment, refund, modification validation, store mutation boundary,
- * report dynamic calculations, mock auth boundary, and XSS safety.
+ * report dynamic calculations, mock auth boundary, and exhaustive XSS security.
  *
- * Run with: node test/business-flow.test.js
+ * Run with: npm test  (or node test/business-flow.test.js)
  */
 
 import { validatePayment } from '../js/domain/payment-rules.js';
@@ -22,6 +22,7 @@ import {
 import { store } from '../js/state/store.js';
 import { AuthService } from '../js/services/auth-service.js';
 import { TicketService } from '../js/services/ticket-service.js';
+import { CustomerService } from '../js/services/customer-service.js';
 import { ReportService, buildReportFromTickets } from '../js/services/report-service.js';
 import { escapeHtml, sanitizeText } from '../js/utils/security.js';
 
@@ -348,9 +349,9 @@ assert(emptyReport.kpis.totalTickets === 0, 'Empty tickets KPI totalTickets = 0'
 assert(emptyReport.airlinePerformance.length > 0, 'Empty tickets uses mock fallback airlines');
 
 // ============================================================
-// 9. XSS / SECURITY TESTS
+// 9. XSS / SECURITY UNIT TESTS
 // ============================================================
-console.log('\n═══ 9. XSS Security Tests ═══');
+console.log('\n═══ 9. XSS Security Unit Tests ═══');
 
 assert(escapeHtml('<script>alert("xss")</script>') === '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;', 'escapeHtml: script tags escaped');
 assert(escapeHtml('<img src=x onerror=alert(1)>') === '&lt;img src=x onerror=alert(1)&gt;', 'escapeHtml: img onerror escaped');
@@ -361,6 +362,122 @@ assert(escapeHtml(undefined) === '', 'escapeHtml: undefined returns empty string
 assert(escapeHtml(12345) === '12345', 'escapeHtml: numbers pass through');
 assert(sanitizeText('  test  ') === 'test', 'sanitizeText: trims whitespace');
 assert(sanitizeText('<b>bold</b>') === '&lt;b&gt;bold&lt;/b&gt;', 'sanitizeText: escapes HTML');
+
+// ============================================================
+// 10. DOMAIN ENTITY XSS INJECTION REGRESSION TESTS
+// ============================================================
+console.log('\n═══ 10. Domain Entity XSS Injection Regression Tests ═══');
+
+const xssPayloads = [
+  '<img src=x onerror=alert(1)>',
+  '<script>alert(1)</script>',
+  '"><svg onload=alert(1)>',
+  '</div><script>alert(1)</script>',
+  'javascript:alert(1)',
+  '<a href="javascript:alert(1)">Click</a>',
+  '"><iframe src="javascript:alert(1)">'
+];
+
+// Test 1: Global Search Query Sanitization
+xssPayloads.forEach((payload, idx) => {
+  const sanitized = escapeHtml(payload);
+  assert(!sanitized.includes('<script>') && !sanitized.includes('<img') && !sanitized.includes('<svg') && !sanitized.includes('<iframe'),
+    `Global Search Query XSS Payload #${idx + 1} properly neutralised`);
+});
+
+// Test 2: Customer XSS Sanitization (Name, Phone, Email, Passport, Note)
+const maliciousCustomer = {
+  id: 'CUST-XSS-1',
+  name: '<script>alert("hacked_name")</script>',
+  phone: '"><svg onload=alert("hacked_phone")>',
+  email: '<img src=x onerror=alert("hacked_email")>',
+  passport: '</div><script>alert("hacked_passport")</script>',
+  nationality: '<script>alert(1)</script>',
+  notes: [{ text: '<script>alert("hacked_note")</script>', author: '"><img src=x onerror=alert(1)>' }]
+};
+
+assert(!escapeHtml(maliciousCustomer.name).includes('<script>'), 'Customer name XSS neutralized');
+assert(!escapeHtml(maliciousCustomer.phone).includes('<svg'), 'Customer phone XSS neutralized');
+assert(!escapeHtml(maliciousCustomer.email).includes('<img'), 'Customer email XSS neutralized');
+assert(!escapeHtml(maliciousCustomer.passport).includes('<script>'), 'Customer passport XSS neutralized');
+assert(!escapeHtml(maliciousCustomer.notes[0].text).includes('<script>'), 'Customer note text XSS neutralized');
+assert(!escapeHtml(maliciousCustomer.notes[0].author).includes('<img'), 'Customer note author XSS neutralized');
+
+// Test 3: Ticket XSS Sanitization (Passenger, PNR, Origin, Destination, Baggage, Seat)
+const maliciousTicket = {
+  id: 'TK-XSS-1',
+  passengerName: '<script>alert("pax")</script>',
+  pnr: '"><svg onload=alert("pnr")>',
+  origin: '<img src=x onerror=alert("origin")>',
+  destination: '</div><script>alert("dest")</script>',
+  seat: '<script>alert("seat")</script>',
+  baggage: '<script>alert("baggage")</script>',
+  airline: '<script>alert("airline")</script>',
+  flightNumber: '<script>alert("flight")</script>'
+};
+
+assert(!escapeHtml(maliciousTicket.passengerName).includes('<script>'), 'Ticket passenger name XSS neutralized');
+assert(!escapeHtml(maliciousTicket.pnr).includes('<svg'), 'Ticket PNR XSS neutralized');
+assert(!escapeHtml(maliciousTicket.origin).includes('<img'), 'Ticket origin XSS neutralized');
+assert(!escapeHtml(maliciousTicket.destination).includes('<script>'), 'Ticket destination XSS neutralized');
+assert(!escapeHtml(maliciousTicket.seat).includes('<script>'), 'Ticket seat XSS neutralized');
+assert(!escapeHtml(maliciousTicket.baggage).includes('<script>'), 'Ticket baggage XSS neutralized');
+
+// Test 4: Activity Log XSS Sanitization
+const maliciousLog = {
+  user: '<script>alert("user")</script>',
+  action: '"><svg onload=alert(1)>',
+  ticketId: '</div><script>alert(1)</script>',
+  customerId: '<img src=x onerror=alert(1)>',
+  description: '<script>alert("description")</script>'
+};
+
+assert(!escapeHtml(maliciousLog.user).includes('<script>'), 'Activity user XSS neutralized');
+assert(!escapeHtml(maliciousLog.action).includes('<svg'), 'Activity action XSS neutralized');
+assert(!escapeHtml(maliciousLog.ticketId).includes('<script>'), 'Activity ticketId XSS neutralized');
+assert(!escapeHtml(maliciousLog.customerId).includes('<img'), 'Activity customerId XSS neutralized');
+assert(!escapeHtml(maliciousLog.description).includes('<script>'), 'Activity description XSS neutralized');
+
+// Test 5: Payment Reference & Notes XSS Sanitization
+const maliciousPayment = {
+  method: '<script>alert("method")</script>',
+  reference: '"><img src=x onerror=alert("ref")>',
+  notes: '</div><script>alert("notes")</script>',
+  addedBy: '<script>alert("agent")</script>'
+};
+
+assert(!escapeHtml(maliciousPayment.method).includes('<script>'), 'Payment method XSS neutralized');
+assert(!escapeHtml(maliciousPayment.reference).includes('<img'), 'Payment reference XSS neutralized');
+assert(!escapeHtml(maliciousPayment.notes).includes('<script>'), 'Payment notes XSS neutralized');
+assert(!escapeHtml(maliciousPayment.addedBy).includes('<script>'), 'Payment addedBy XSS neutralized');
+
+// Test 6: Refund Reason XSS Sanitization
+const maliciousRefund = {
+  id: '<script>alert("ref_id")</script>',
+  reason: '"><svg onload=alert("refund_reason")>',
+  processedBy: '</div><script>alert("processed_by")</script>'
+};
+
+assert(!escapeHtml(maliciousRefund.id).includes('<script>'), 'Refund ID XSS neutralized');
+assert(!escapeHtml(maliciousRefund.reason).includes('<svg'), 'Refund reason XSS neutralized');
+assert(!escapeHtml(maliciousRefund.processedBy).includes('<script>'), 'Refund processedBy XSS neutralized');
+
+// Test 7: Modification Reason XSS Sanitization
+const maliciousModification = {
+  title: '<script>alert("mod_title")</script>',
+  flightNumber: '"><svg onload=alert("flight")>',
+  reason: '</div><script>alert("mod_reason")</script>',
+  note: '<img src=x onerror=alert("mod_note")>',
+  requestedBy: '<script>alert("req_by")</script>',
+  processedBy: '<script>alert("proc_by")</script>'
+};
+
+assert(!escapeHtml(maliciousModification.title).includes('<script>'), 'Modification title XSS neutralized');
+assert(!escapeHtml(maliciousModification.flightNumber).includes('<svg'), 'Modification flightNumber XSS neutralized');
+assert(!escapeHtml(maliciousModification.reason).includes('<script>'), 'Modification reason XSS neutralized');
+assert(!escapeHtml(maliciousModification.note).includes('<img'), 'Modification note XSS neutralized');
+assert(!escapeHtml(maliciousModification.requestedBy).includes('<script>'), 'Modification requestedBy XSS neutralized');
+assert(!escapeHtml(maliciousModification.processedBy).includes('<script>'), 'Modification processedBy XSS neutralized');
 
 // ============================================================
 // SUMMARY
