@@ -4,6 +4,7 @@
   "description": "AfricaTravel — Internal Travel Agency Management System",
   "type": "module",
   "scripts": {
+    "build": "echo 'Static build ready'",
     "start": "node server.js",
     "test": "node test/business-flow.test.js"
   },
