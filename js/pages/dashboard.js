@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Dashboard Page
+ * AfricaTravel — Dashboard Page
  */
 
 import { store } from '../state/store.js';

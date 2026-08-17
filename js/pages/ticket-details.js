@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Ticket Details Page Facade
+/**
+ * AfricaTravel � Ticket Details Page Facade
  *
  * Re-exports the decomposed modular TicketDetailsPage component.
  */

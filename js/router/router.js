@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Client-Side SPA Router
+ * AfricaTravel — Client-Side SPA Router
  *
  * Handles History API navigation, dynamic parameters, route guards, and 404 state.
  */
@@ -117,7 +117,7 @@ export class Router {
     window.scrollTo(0, 0);
 
     // Notify document/app shell of path change
-    window.dispatchEvent(new CustomEvent('africiatravel:route-changed', {
+    window.dispatchEvent(new CustomEvent('AfricaTravel:route-changed', {
       detail: { path: pathname, route: matched ? matched.route : null }
     }));
   }

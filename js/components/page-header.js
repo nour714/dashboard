@@ -1,5 +1,5 @@
-ï»¿/**
- * AfriciaTravel â€” Page Header Component
+/**
+ * AfricaTravel — Page Header Component
  */
 
 export function renderPageHeader(options) {
@@ -18,7 +18,7 @@ export function renderPageHeader(options) {
       if (isLast || !b.href) {
         return `<span>${b.label}</span>`;
       }
-      return `<a href="${b.href}" data-link>${b.label}</a> <span>â€º</span>`;
+      return `<a href="${b.href}" data-link>${b.label}</a> <span>›</span>`;
     }).join(' ');
 
     breadcrumbsHtml = `<div class="page-breadcrumbs">${items}</div>`;

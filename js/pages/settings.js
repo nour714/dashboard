@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Settings Page
+ * AfricaTravel — Settings Page
  */
 
 import { store } from '../state/store.js';
@@ -74,7 +74,7 @@ export const SettingsPage = {
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="setting-email">Email Address</label>
-                  <input type="email" id="setting-email" class="form-control" value="${escapeHtml(currentUser.email || 'admin@africiatravel.com')}" required />
+                  <input type="email" id="setting-email" class="form-control" value="${escapeHtml(currentUser.email || 'admin@AfricaTravel.com')}" required />
                 </div>
               </div>
 

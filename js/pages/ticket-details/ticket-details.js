@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Ticket Details Orchestrator Component
+/**
+ * AfricaTravel � Ticket Details Orchestrator Component
  */
 
 import { TicketService } from '../../services/ticket-service.js';
@@ -53,7 +53,7 @@ export const TicketDetailsPage = {
         <div class="page-header-left">
           <div class="page-breadcrumbs">
             <a href="/tickets" data-link>Tickets</a>
-            <span>›</span>
+            <span>�</span>
             <span>${escapeHtml(ticket.id)}</span>
           </div>
           <h1 class="page-title">
@@ -105,7 +105,7 @@ export const TicketDetailsPage = {
             </div>
             <div>
               <span class="stat-card-label">ROUTE</span>
-              <div class="font-bold text-lg mt-xs">${escapeHtml(ticket.origin)} → ${escapeHtml(ticket.destination)}</div>
+              <div class="font-bold text-lg mt-xs">${escapeHtml(ticket.origin)} ? ${escapeHtml(ticket.destination)}</div>
             </div>
             <div>
               <span class="stat-card-label">TRAVEL DATES</span>

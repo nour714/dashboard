@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Sidebar Component (Desktop & Tablet)
+ * AfricaTravel — Sidebar Component (Desktop & Tablet)
  */
 
 import { icons } from './icons.js';
@@ -48,7 +48,7 @@ export function renderSidebar(activePath = '/dashboard') {
             ${icons.compass('w-5 h-5')}
           </div>
           <div class="sidebar-logo-text">
-            <span class="sidebar-logo-title">AfriciaTravel</span>
+            <span class="sidebar-logo-title">AfricaTravel</span>
             <span class="sidebar-logo-subtitle">Travel Operations</span>
           </div>
         </a>

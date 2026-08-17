@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Reusable Tabs Component
+/**
+ * AfricaTravel � Reusable Tabs Component
  */
 
 export function renderTabs(tabs = [], activeTabId = '') {

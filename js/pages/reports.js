@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Business Intelligence & Reports Page
+ * AfricaTravel — Business Intelligence & Reports Page
  */
 
 import { ReportService } from '../services/report-service.js';

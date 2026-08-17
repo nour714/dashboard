@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Refunds Management Page
+ * AfricaTravel — Refunds Management Page
  */
 
 import { store } from '../state/store.js';

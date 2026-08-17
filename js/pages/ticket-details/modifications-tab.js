@@ -1,5 +1,5 @@
-ï»¿/**
- * AfriciaTravel â€” Ticket Details: Modifications Tab Component
+/**
+ * AfricaTravel — Ticket Details: Modifications Tab Component
  */
 
 import { icons } from '../../components/icons.js';
@@ -27,8 +27,8 @@ export function renderModificationsTab(ticket) {
         <div class="d-flex items-center justify-between gap-md mb-md p-md" style="background-color: var(--color-surface); border-radius: var(--radius-lg); flex-wrap: wrap;">
           <div>
             <span class="stat-card-label">ORIGINAL</span>
-            <div class="font-bold mt-xs" style="font-size: 18px;">${escapeHtml(m.originalFlight.route || `${ticket.origin} â†’ ${ticket.destination}`)}</div>
-            <div class="text-sm text-muted">${formatDateTime(m.originalFlight.date)} â€¢ ${escapeHtml(m.originalFlight.flightNumber || ticket.flightNumber)}</div>
+            <div class="font-bold mt-xs" style="font-size: 18px;">${escapeHtml(m.originalFlight.route || `${ticket.origin} ? ${ticket.destination}`)}</div>
+            <div class="text-sm text-muted">${formatDateTime(m.originalFlight.date)} • ${escapeHtml(m.originalFlight.flightNumber || ticket.flightNumber)}</div>
           </div>
           <div class="d-flex flex-column items-center">
             ${icons.arrowRight('w-6 h-6 text-accent')}
@@ -36,8 +36,8 @@ export function renderModificationsTab(ticket) {
           </div>
           <div>
             <span class="stat-card-label">NEW SCHEDULE</span>
-            <div class="font-bold mt-xs" style="font-size: 18px;">${escapeHtml(m.newFlight.route || `${ticket.origin} â†’ ${ticket.destination}`)}</div>
-            <div class="text-sm text-muted">${formatDateTime(m.newFlight.date)} â€¢ ${escapeHtml(m.newFlight.flightNumber || ticket.flightNumber)}</div>
+            <div class="font-bold mt-xs" style="font-size: 18px;">${escapeHtml(m.newFlight.route || `${ticket.origin} ? ${ticket.destination}`)}</div>
+            <div class="text-sm text-muted">${formatDateTime(m.newFlight.date)} • ${escapeHtml(m.newFlight.flightNumber || ticket.flightNumber)}</div>
             <div class="text-xs font-semibold text-warning">${escapeHtml(m.newFlight.note || '')}</div>
           </div>
         </div>
@@ -48,7 +48,7 @@ export function renderModificationsTab(ticket) {
             <span class="text-muted ml-md">Reason:</span> ${escapeHtml(m.reason)}
           </div>
           <div class="text-muted">
-            Req. by <strong>${escapeHtml(m.requestedBy || ticket.passengerName)}</strong> â€¢ Proc. by <strong>${escapeHtml(m.processedBy || 'Agent')}</strong>
+            Req. by <strong>${escapeHtml(m.requestedBy || ticket.passengerName)}</strong> • Proc. by <strong>${escapeHtml(m.processedBy || 'Agent')}</strong>
           </div>
         </div>
       </div>

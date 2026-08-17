@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — SVG Icon Dictionary
+/**
+ * AfricaTravel � SVG Icon Dictionary
  *
  * Feather-inspired clean, consistent geometric icons with stroke-width: 2.
  * Includes explicit width, height and inline styling to prevent any layout blowout.

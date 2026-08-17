@@ -1,5 +1,5 @@
-ï»¿/**
- * AfriciaTravel â€” Ticket Details: Payments Tab Component
+/**
+ * AfricaTravel — Ticket Details: Payments Tab Component
  */
 
 import { icons } from '../../components/icons.js';
@@ -37,7 +37,7 @@ export function renderPaymentsTab(ticket) {
         <span class="text-sm font-medium">${escapeHtml(p.addedBy || 'Agent')}</span>
       </td>
       <td>
-        <span class="text-sm text-secondary">${escapeHtml(p.notes || 'â€”')}</span>
+        <span class="text-sm text-secondary">${escapeHtml(p.notes || '—')}</span>
       </td>
     </tr>
   `).join('');

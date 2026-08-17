@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Ticket Domain Business Rules & Calculations
+/**
+ * AfricaTravel � Ticket Domain Business Rules & Calculations
  *
  * Centralized source of truth for ticket accounting, balances, and status transitions.
  */

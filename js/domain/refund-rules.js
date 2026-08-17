@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Refund Domain Business Rules & Validation
+ * AfricaTravel — Refund Domain Business Rules & Validation
  */
 
 import { ValidationError, BusinessRuleError, NotFoundError } from './errors.js';

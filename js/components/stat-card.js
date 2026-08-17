@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Stat / KPI Card Component
+/**
+ * AfricaTravel � Stat / KPI Card Component
  */
 
 import { icons } from './icons.js';

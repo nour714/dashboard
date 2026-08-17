@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Login Page
+ * AfricaTravel — Login Page
  */
 
 import { icons } from '../components/icons.js';
@@ -16,7 +16,7 @@ export const LoginPage = {
               ${icons.compass('w-5 h-5')}
             </div>
             <div class="sidebar-logo-text">
-              <span class="sidebar-logo-title">AfriciaTravel</span>
+              <span class="sidebar-logo-title">AfricaTravel</span>
               <span class="sidebar-logo-subtitle" style="color: #94a3b8;">Travel Operations</span>
             </div>
           </div>
@@ -29,7 +29,7 @@ export const LoginPage = {
           </div>
 
           <div style="font-size: 13px; color: #64748b;">
-            © ${new Date().getFullYear()} AfriciaTravel Enterprise. All rights reserved.
+            © ${new Date().getFullYear()} AfricaTravel Enterprise. All rights reserved.
           </div>
         </div>
 
@@ -47,8 +47,8 @@ export const LoginPage = {
                     type="email"
                     id="login-email"
                     class="form-control"
-                    placeholder="agent@africiatravel.com"
-                    value="admin@africiatravel.com"
+                    placeholder="agent@africatravel.com"
+                    value="admin@africatravel.com"
                     required
                   />
                 </div>

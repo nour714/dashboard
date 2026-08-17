@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Automated Business Flow & Security Regression Test Suite
+ * AfricaTravel — Automated Business Flow & Security Regression Test Suite
  *
  * Tests payment, refund, modification validation, store mutation boundary,
  * report dynamic calculations, mock auth boundary, and exhaustive XSS security.
@@ -327,7 +327,7 @@ AuthService.logout();
 assert(AuthService.isAuthenticated() === false, 'AuthService: logged out successfully');
 
 // Login
-AuthService.login('admin@voyagedesk.com', 'password123');
+AuthService.login('admin@africatravel.com', 'password123');
 assert(AuthService.isAuthenticated() === true, 'AuthService: logged in successfully');
 
 // ============================================================

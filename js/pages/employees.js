@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Employees Administration Page
+ * AfricaTravel — Employees Administration Page
  */
 
 import { store } from '../state/store.js';
@@ -181,7 +181,7 @@ export const EmployeesPage = {
               </div>
               <div class="form-group">
                 <label class="form-label" for="invite-emp-email">Work Email *</label>
-                <input type="email" id="invite-emp-email" class="form-control" placeholder="karim@africiatravel.com" required />
+                <input type="email" id="invite-emp-email" class="form-control" placeholder="karim@AfricaTravel.com" required />
               </div>
               <div class="form-group">
                 <label class="form-label" for="invite-emp-role">Assigned Role</label>

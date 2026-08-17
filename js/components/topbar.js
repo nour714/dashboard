@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Topbar Header Component
+ * AfricaTravel — Topbar Header Component
  */
 
 import { icons } from './icons.js';

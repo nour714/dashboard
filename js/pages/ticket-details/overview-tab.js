@@ -1,5 +1,5 @@
-ï»¿/**
- * AfriciaTravel â€” Ticket Details: Overview Tab Component
+/**
+ * AfricaTravel — Ticket Details: Overview Tab Component
  */
 
 import { icons } from '../../components/icons.js';
@@ -37,7 +37,7 @@ export function renderOverviewTab(ticket) {
                     <div class="text-center d-flex flex-column items-center">
                       <span class="text-xs text-muted">${escapeHtml(ticket.flightDuration || '3h 15m')}</span>
                       ${icons.arrowRight('w-5 h-5 text-muted')}
-                      <span class="text-xs font-semibold">${escapeHtml(ticket.flightNumber || 'MS 901')} â€¢ ${escapeHtml(ticket.cabinClass || 'Economy')}</span>
+                      <span class="text-xs font-semibold">${escapeHtml(ticket.flightNumber || 'MS 901')} • ${escapeHtml(ticket.cabinClass || 'Economy')}</span>
                     </div>
                     <div class="text-right">
                       <div class="font-bold text-lg">${ticket.arrivalDate ? new Date(ticket.arrivalDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}</div>
@@ -62,7 +62,7 @@ export function renderOverviewTab(ticket) {
                       <div class="text-center d-flex flex-column items-center">
                         <span class="text-xs text-muted">${escapeHtml(ticket.flightDuration || '3h 15m')}</span>
                         ${icons.arrowRight('w-5 h-5 text-muted')}
-                        <span class="text-xs font-semibold">${escapeHtml(ticket.returnFlightNumber || 'MS 902')} â€¢ ${escapeHtml(ticket.cabinClass || 'Economy')}</span>
+                        <span class="text-xs font-semibold">${escapeHtml(ticket.returnFlightNumber || 'MS 902')} • ${escapeHtml(ticket.cabinClass || 'Economy')}</span>
                       </div>
                       <div class="text-right">
                         <div class="font-bold text-lg">${ticket.returnArrivalDate ? new Date(ticket.returnArrivalDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}</div>
@@ -102,7 +102,7 @@ export function renderOverviewTab(ticket) {
                 <div class="d-flex flex-column gap-sm text-sm">
                   <div class="d-flex justify-between">
                     <span class="text-muted">Passport</span>
-                    <strong>${escapeHtml(ticket.passport || 'â€”')}</strong>
+                    <strong>${escapeHtml(ticket.passport || '—')}</strong>
                   </div>
                   <div class="d-flex justify-between">
                     <span class="text-muted">Nationality</span>
@@ -110,15 +110,15 @@ export function renderOverviewTab(ticket) {
                   </div>
                   <div class="d-flex justify-between">
                     <span class="text-muted">DOB</span>
-                    <span>${escapeHtml(ticket.dob || 'â€”')}</span>
+                    <span>${escapeHtml(ticket.dob || '—')}</span>
                   </div>
                   <div class="d-flex justify-between">
                     <span class="text-muted">Contact</span>
-                    <span>${escapeHtml(ticket.phone || 'â€”')}</span>
+                    <span>${escapeHtml(ticket.phone || '—')}</span>
                   </div>
                   <div class="d-flex justify-between">
                     <span class="text-muted">Email</span>
-                    <span class="truncate" style="max-width: 180px;">${escapeHtml(ticket.email || 'â€”')}</span>
+                    <span class="truncate" style="max-width: 180px;">${escapeHtml(ticket.email || '—')}</span>
                   </div>
                 </div>
               </div>

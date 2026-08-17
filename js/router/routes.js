@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Route Definitions
+/**
+ * AfricaTravel � Route Definitions
  */
 
 import { LoginPage } from '../pages/login.js';

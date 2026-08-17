@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Empty State Component
+/**
+ * AfricaTravel � Empty State Component
  */
 
 import { icons } from './icons.js';

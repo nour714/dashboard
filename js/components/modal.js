@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Modal & Bottom Sheet Manager
+ * AfricaTravel — Modal & Bottom Sheet Manager
  */
 
 import { icons } from './icons.js';

@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Flight Modification Business Rules & Validation
+ * AfricaTravel — Flight Modification Business Rules & Validation
  */
 
 import { ValidationError, BusinessRuleError, NotFoundError } from './errors.js';

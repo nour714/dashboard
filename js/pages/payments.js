@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Payments Ledger Page
+ * AfricaTravel — Payments Ledger Page
  */
 
 import { store } from '../state/store.js';

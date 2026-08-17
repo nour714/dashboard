@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Reactive State Store & Persistence Layer
+ * AfricaTravel — Reactive State Store & Persistence Layer
  *
  * Implements hardened mutation boundary: all mutations enforce domain validation
  * before state changes can occur.
@@ -24,7 +24,7 @@ import { validateRefund } from '../domain/refund-rules.js';
 import { validateModification } from '../domain/modification-rules.js';
 import { NotFoundError, ValidationError } from '../domain/errors.js';
 
-const STORAGE_KEY = 'AFRICIATRAVEL_STORE_V2';
+const STORAGE_KEY = 'AfricaTravel_STORE_V2';
 
 class Store {
   constructor() {
@@ -104,7 +104,7 @@ class Store {
     const employee = this.state.employees.find(e => e.email.toLowerCase() === (email || '').toLowerCase()) || {
       id: 'EMP-101',
       name: (email || 'admin').split('@')[0],
-      email: email || 'admin@voyagedesk.com',
+      email: email || 'admin@africatravel.com',
       role: 'ADMIN',
       avatar: this.state.settings.profile.avatar
     };

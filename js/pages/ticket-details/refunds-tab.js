@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Ticket Details: Refunds Tab Component
+/**
+ * AfricaTravel � Ticket Details: Refunds Tab Component
  */
 
 import { icons } from '../../components/icons.js';

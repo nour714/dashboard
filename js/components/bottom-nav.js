@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Mobile Bottom Navigation & More Drawer Component
+/**
+ * AfricaTravel � Mobile Bottom Navigation & More Drawer Component
  */
 
 import { icons } from './icons.js';

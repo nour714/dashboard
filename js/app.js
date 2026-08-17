@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Main Application Entry Point
+ * AfricaTravel — Main Application Entry Point
  */
 
 import { store } from './state/store.js';
@@ -23,7 +23,7 @@ class App {
 
   init() {
     // Listen to route changes
-    window.addEventListener('africiatravel:route-changed', (e) => {
+    window.addEventListener('AfricaTravel:route-changed', (e) => {
       const { path } = e.detail;
       this.handleRouteChange(path);
     });
@@ -310,7 +310,7 @@ class App {
     if (helpBtn) {
       helpBtn.addEventListener('click', () => {
         openModal({
-          title: 'VoyageDesk Operational Guide',
+          title: 'AfricaTravel Operational Guide',
           subtitle: 'System shortcuts and operational documentation',
           contentHtml: `
             <div class="d-flex flex-column gap-md text-sm">
@@ -355,5 +355,5 @@ class App {
 
 // Start application on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
-  window.AfriciaTravel = new App();
+  window.AfricaTravel = new App();
 });

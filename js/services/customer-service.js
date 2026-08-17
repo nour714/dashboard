@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Customer Service
+ * AfricaTravel — Customer Service
  *
  * Provides customer CRM directory queries, lifetime stats, and customer management.
  */

@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Reusable Status Badge Component
+/**
+ * AfricaTravel � Reusable Status Badge Component
  */
 
 export function renderStatusBadge(status) {

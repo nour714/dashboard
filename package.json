@@ -1,13 +1,13 @@
 {
-  "name": "africiatravel",
+  "name": "africatravel",
   "version": "1.0.0",
-  "description": "AfriciaTravel — Internal Travel Agency Management System",
+  "description": "AfricaTravel — Internal Travel Agency Management System",
   "type": "module",
   "scripts": {
     "start": "node server.js",
     "test": "node test/business-flow.test.js"
   },
   "keywords": ["travel", "agency", "ticketing", "operations"],
-  "author": "AfriciaTravel Engineering",
+  "author": "AfricaTravel Engineering",
   "license": "ISC"
 }

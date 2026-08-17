@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Security & Safe DOM Utilities
+/**
+ * AfricaTravel � Security & Safe DOM Utilities
  *
  * Prevents Cross-Site Scripting (XSS) when rendering dynamic user data.
  */

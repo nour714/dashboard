@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Tickets Management Page
+ * AfricaTravel — Tickets Management Page
  */
 
 import { TicketService } from '../services/ticket-service.js';

@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Ticket, Payment, and Refund Service
+ * AfricaTravel — Ticket, Payment, and Refund Service
  *
  * Provides a clean, domain-validated API interface for tickets, payments,
  * modifications, and refunds.

@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Create Ticket / New Reservation Page
+ * AfricaTravel — Create Ticket / New Reservation Page
  */
 
 import { store } from '../state/store.js';

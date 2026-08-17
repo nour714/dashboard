@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Calculations & Formatting Utilities
+/**
+ * AfricaTravel � Calculations & Formatting Utilities
  *
  * Re-exports domain formulas and provides standard UI formatting utilities.
  */

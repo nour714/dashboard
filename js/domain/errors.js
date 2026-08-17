@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Domain & Application Error Classes
+/**
+ * AfricaTravel � Domain & Application Error Classes
  *
  * Categorized errors for structured domain validation and user feedback.
  */

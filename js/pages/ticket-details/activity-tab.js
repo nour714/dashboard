@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Ticket Details: Activity Timeline Tab Component
+/**
+ * AfricaTravel � Ticket Details: Activity Timeline Tab Component
  */
 
 import { store } from '../../state/store.js';

@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Mock Authentication Service
+ * AfricaTravel — Mock Authentication Service
  *
  * NOTE: Authentication is currently mocked for frontend development and will be
  * replaced by the backend authentication API during backend integration.

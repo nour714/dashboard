@@ -1,5 +1,5 @@
 /**
- * VoyageDesk / AfriciaTravel — Safe DOM Helper Utilities
+ * AfricaTravel — Safe DOM Helper Utilities
  *
  * Lightweight helpers for safe DOM node creation, attribute setting,
  * and text rendering to prevent XSS.

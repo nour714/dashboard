@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel — Ticket Action Modals (Payment, Modification, Refund, Edit)
+ * AfricaTravel — Ticket Action Modals (Payment, Modification, Refund, Edit)
  */
 
 import { TicketService } from '../../services/ticket-service.js';

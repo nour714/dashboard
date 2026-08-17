@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Customers CRM Page
+ * AfricaTravel — Customers CRM Page
  */
 
 import { CustomerService } from '../services/customer-service.js';

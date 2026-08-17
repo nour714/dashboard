@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Toast Notification System
+ * AfricaTravel — Toast Notification System
  */
 
 import { icons } from './icons.js';

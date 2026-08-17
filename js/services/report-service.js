@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Business Intelligence & Report Service
+ * AfricaTravel — Business Intelligence & Report Service
  *
  * Enforces explicit separation between dynamic calculated report data derived
  * from application state and mock/demo fallback data.

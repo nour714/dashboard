@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Master Realistic Mock Dataset
+/**
+ * AfricaTravel — Master Realistic Mock Dataset
  *
  * Provides seed data for travel agency operations across all entities.
  */
@@ -89,7 +89,7 @@ export const INITIAL_EMPLOYEES = [
   {
     id: 'EMP-101',
     name: 'Ahmed Hassan',
-    email: 'admin@africiatravel.com',
+    email: 'admin@africatravel.com',
     role: 'ADMIN',
     title: 'Senior Operations Director',
     ticketsCount: 1245,
@@ -103,7 +103,7 @@ export const INITIAL_EMPLOYEES = [
   {
     id: 'EMP-102',
     name: 'Sarah Jenkins',
-    email: 'sarah.j@africiatravel.com',
+    email: 'sarah.j@africatravel.com',
     role: 'ADMIN',
     title: 'Senior Operations Manager',
     ticketsCount: 3892,
@@ -117,7 +117,7 @@ export const INITIAL_EMPLOYEES = [
   {
     id: 'EMP-103',
     name: 'Marcus Reed',
-    email: 'marcus.r@africiatravel.com',
+    email: 'marcus.r@africatravel.com',
     role: 'AGENT',
     title: 'Ticketing Officer',
     ticketsCount: 2104,
@@ -131,7 +131,7 @@ export const INITIAL_EMPLOYEES = [
   {
     id: 'EMP-104',
     name: 'Lena Chen',
-    email: 'lena.c@africiatravel.com',
+    email: 'lena.c@africatravel.com',
     role: 'AGENT',
     title: 'Customer Operations Specialist',
     ticketsCount: 1540,
@@ -497,13 +497,13 @@ export const INITIAL_SETTINGS = {
   profile: {
     name: 'Ahmed Hassan',
     fullName: 'Ahmed Hassan',
-    email: 'admin@africiatravel.com',
+    email: 'admin@africatravel.com',
     role: 'Senior Operations Director',
     title: 'Senior Operations Director',
     phone: '+20 100 000 1122'
   },
   company: {
-    name: 'AfriciaTravel Travel Operations Ltd.',
+    name: 'AfricaTravel Travel Operations Ltd.',
     iataNumber: '12-3 4567 8',
     taxId: 'EG-904-881-229',
     baseCurrency: 'EGP',

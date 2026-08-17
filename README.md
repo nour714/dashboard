@@ -1,6 +1,6 @@
-# VoyageDesk — Travel Agency Operations Platform
+# AfricaTravel — Travel Agency Operations Platform
 
-**VoyageDesk** is a modern, high-efficiency internal travel agency management frontend application built from scratch with pure **HTML5**, **CSS3 (Custom Properties & Design Tokens)**, and **Vanilla JavaScript (ES Modules)**.
+**AfricaTravel** is a modern, high-efficiency internal travel agency management frontend application built from scratch with pure **HTML5**, **CSS3 (Custom Properties & Design Tokens)**, and **Vanilla JavaScript (ES Modules)**.
 
 It provides complete lifecycle management for flight ticketing, financial payment ledgers, flight itinerary modifications, refund processing, CRM customer profiles, business intelligence reporting, employee administration, and workspace audit trails.
 
@@ -25,7 +25,7 @@ It provides complete lifecycle management for flight ticketing, financial paymen
 ## 2. Directory Structure
 
 ```
-voyagedesk_app/
+africatravel/
 ├── index.html                  # HTML5 SPA Entry Shell
 ├── package.json                # Project manifest (ESM)
 ├── server.js                   # Lightweight static & SPA HTTP server
@@ -110,11 +110,12 @@ $$\text{UI} \longrightarrow \text{Service Layer} \longrightarrow \text{Domain Va
 
 ### Start Local Server
 ```bash
-node server.js
+npm start
+# or node server.js
 ```
 Open your browser at `http://localhost:3000`.
 
 ### Run Automated Tests
 ```bash
-node test/business-flow.test.js
+npm test
 ```

@@ -1,5 +1,5 @@
 /**
- * AfriciaTravel / VoyageDesk — Audit Trail / Activity Log Page
+ * AfricaTravel — Audit Trail / Activity Log Page
  */
 
 import { store } from '../state/store.js';
