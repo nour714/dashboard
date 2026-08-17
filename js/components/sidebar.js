@@ -45,7 +45,7 @@ export function renderSidebar(activePath = '/dashboard') {
       <div class="sidebar-header">
         <a href="/dashboard" class="sidebar-logo" data-link>
           <div class="sidebar-logo-icon">
-            <img src="/assets/logo.svg" alt="AfricaTravel Logo" class="sidebar-logo-img" />
+            <img src="/assets/logo.png" alt="AfricaTravel Logo" class="sidebar-logo-img" />
           </div>
           <div class="sidebar-logo-text">
             <span class="sidebar-logo-title">AfricaTravel</span>

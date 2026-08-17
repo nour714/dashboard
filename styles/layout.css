@@ -43,8 +43,8 @@
 }
 
 .sidebar-logo-icon {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -52,8 +52,9 @@
 }
 
 .sidebar-logo-img {
-  width: 32px;
-  height: 32px;
+  width: auto;
+  height: 38px;
+  max-width: 34px;
   object-fit: contain;
   display: block;
 }
