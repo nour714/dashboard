@@ -25,6 +25,7 @@ import { TicketService } from '../js/services/ticket-service.js';
 import { CustomerService } from '../js/services/customer-service.js';
 import { ReportService, buildReportFromTickets } from '../js/services/report-service.js';
 import { escapeHtml, sanitizeText } from '../js/utils/security.js';
+import { validatePath } from '../server.js';
 
 let passed = 0;
 let failed = 0;
@@ -478,6 +479,36 @@ assert(!escapeHtml(maliciousModification.reason).includes('<script>'), 'Modifica
 assert(!escapeHtml(maliciousModification.note).includes('<img'), 'Modification note XSS neutralized');
 assert(!escapeHtml(maliciousModification.requestedBy).includes('<script>'), 'Modification requestedBy XSS neutralized');
 assert(!escapeHtml(maliciousModification.processedBy).includes('<script>'), 'Modification processedBy XSS neutralized');
+
+// ============================================================
+// 11. SERVER PATH TRAVERSAL & DOTFILE SECURITY TESTS
+// ============================================================
+console.log('\n═══ 11. Server Path Traversal & Dotfile Security Tests ═══');
+
+// Path traversal attack tests
+assert(!validatePath('/../../../../etc/passwd').isSafe, 'Path traversal /../../../../etc/passwd rejected');
+assert(!validatePath('/../../../windows/win.ini').isSafe, 'Path traversal /../../../windows/win.ini rejected');
+assert(!validatePath('/..\\..\\..\\secret.txt').isSafe, 'Windows path traversal ..\\..\\ rejected');
+assert(!validatePath('/foo/../../../bar').isSafe, 'Nested directory breakout rejected');
+
+// Dotfile & Dotfolder protection tests (.git, .env, .gitignore, etc.)
+assert(!validatePath('/.git').isSafe, 'Dotfolder /.git rejected');
+assert(!validatePath('/.git/config').isSafe, 'Dotfile /.git/config rejected');
+assert(!validatePath('/.git/HEAD').isSafe, 'Dotfile /.git/HEAD rejected');
+assert(!validatePath('/.env').isSafe, 'Dotfile /.env rejected');
+assert(!validatePath('/.gitignore').isSafe, 'Dotfile /.gitignore rejected');
+assert(!validatePath('/.system_generated/logs/transcript.jsonl').isSafe, 'Dotfolder /.system_generated rejected');
+assert(!validatePath('/subfolder/.secret').isSafe, 'Nested dotfile /subfolder/.secret rejected');
+
+// Legitimate static assets and SPA routes tests
+assert(validatePath('/index.html').isSafe, 'Valid file /index.html allowed');
+assert(validatePath('/js/app.js').isSafe, 'Valid file /js/app.js allowed');
+assert(validatePath('/styles/tokens.css').isSafe, 'Valid file /styles/tokens.css allowed');
+assert(validatePath('/assets/logo.png').isSafe, 'Valid asset /assets/logo.png allowed');
+assert(validatePath('/assets/favicon.png').isSafe, 'Valid asset /assets/favicon.png allowed');
+assert(validatePath('/dashboard').isSafe, 'Valid SPA route /dashboard allowed');
+assert(validatePath('/tickets/TK-1001').isSafe, 'Valid SPA route /tickets/TK-1001 allowed');
+assert(validatePath('/payments').isSafe, 'Valid SPA route /payments allowed');
 
 // ============================================================
 // SUMMARY

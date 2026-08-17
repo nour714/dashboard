@@ -1,12 +1,12 @@
 /**
- * AfricaTravel — SVG Icon Dictionary
+ * AfricaTravel ï¿½ SVG Icon Dictionary
  *
  * Feather-inspired clean, consistent geometric icons with stroke-width: 2.
  * Includes explicit width, height and inline styling to prevent any layout blowout.
  */
 
 const svgWrapper = (content, cls = '', size = 18, isFilled = false) => `
-<svg class="${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" ${isFilled ? 'fill="currentColor"' : 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'} style="display:inline-block;vertical-align:middle;flex-shrink:0;width:${size}px;height:${size}px;">
+<svg class="${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true" focusable="false" ${isFilled ? 'fill="currentColor"' : 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'} style="display:inline-block;vertical-align:middle;flex-shrink:0;width:${size}px;height:${size}px;">
   ${content}
 </svg>`;
 

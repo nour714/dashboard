@@ -23,10 +23,10 @@ export function openModal(options) {
   backdrop.className = 'modal-backdrop';
 
   backdrop.innerHTML = `
-    <div class="modal-container" style="max-width: ${maxWidth};">
+    <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="modal-title-text" style="max-width: ${maxWidth};">
       <div class="modal-header">
         <div>
-          <div class="modal-title">${escapeHtml(title)}</div>
+          <div class="modal-title" id="modal-title-text">${escapeHtml(title)}</div>
           ${subtitle ? `<div class="modal-subtitle">${escapeHtml(subtitle)}</div>` : ''}
         </div>
         <button class="modal-close-btn" id="modal-close-trigger" aria-label="Close modal">

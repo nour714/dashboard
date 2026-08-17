@@ -1,5 +1,5 @@
 /**
- * AfricaTravel — Mobile Bottom Navigation & More Drawer Component
+ * AfricaTravel - Mobile Bottom Navigation & More Drawer Component
  */
 
 import { icons } from './icons.js';
@@ -11,7 +11,7 @@ export function renderBottomNav(activePath = '/dashboard') {
   const isMoreActive = !isDashboard && !isTickets && !isCustomers;
 
   return `
-    <nav class="app-bottom-nav">
+    <nav class="app-bottom-nav" aria-label="Mobile Navigation">
       <a href="/dashboard" class="bottom-nav-item ${isDashboard ? 'active' : ''}" data-link>
         ${icons.dashboard()}
         <span>Dashboard</span>
@@ -27,14 +27,14 @@ export function renderBottomNav(activePath = '/dashboard') {
         <span>Customers</span>
       </a>
 
-      <button type="button" class="bottom-nav-item ${isMoreActive ? 'active' : ''}" id="bottom-nav-more-trigger">
+      <button type="button" class="bottom-nav-item ${isMoreActive ? 'active' : ''}" id="bottom-nav-more-trigger" aria-label="More navigation options" aria-haspopup="dialog" aria-expanded="false">
         ${icons.menu()}
         <span>More</span>
       </button>
     </nav>
 
     <div class="mobile-drawer-backdrop" id="mobile-more-backdrop"></div>
-    <div class="mobile-drawer" id="mobile-more-drawer">
+    <div class="mobile-drawer" id="mobile-more-drawer" role="dialog" aria-modal="true" aria-label="Additional Navigation Menu">
       <div class="mobile-drawer-handle"></div>
       <div class="drawer-nav-grid">
         <a href="/payments" class="drawer-nav-item" data-link>
@@ -76,11 +76,13 @@ export function bindBottomNavEvents(container, onNavigate) {
   const openDrawer = () => {
     backdrop.classList.add('open');
     drawer.classList.add('open');
+    moreTrigger.setAttribute('aria-expanded', 'true');
   };
 
   const closeDrawer = () => {
     backdrop.classList.remove('open');
     drawer.classList.remove('open');
+    moreTrigger.setAttribute('aria-expanded', 'false');
   };
 
   moreTrigger.addEventListener('click', (e) => {

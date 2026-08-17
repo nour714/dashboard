@@ -26,49 +26,102 @@ const MIME_TYPES = {
   '.ttf': 'font/ttf'
 };
 
-const server = http.createServer((req, res) => {
-  const parsedUrl = url.parse(req.url);
-  let pathname = decodeURIComponent(parsedUrl.pathname);
+/**
+ * Validates whether a pathname is safe to serve from the root directory.
+ * Prevents path traversal and blocks any dotfile/dotfolder access (.git, .env, etc.).
+ * @param {string} pathname
+ * @param {string} rootDir
+ * @returns {{ isSafe: boolean, resolvedPath: string, reason?: string }}
+ */
+export function validatePath(pathname, rootDir = ROOT_DIR) {
+  const resolvedRoot = path.resolve(rootDir);
 
-  // If root, serve index.html
-  if (pathname === '/') {
-    pathname = '/index.html';
+  // Split and check for dotfile/dotfolder segments (e.g., .git, .env, ..)
+  const segments = pathname.split(/[/\\]/).filter(Boolean);
+  const hasDotSegment = segments.some(seg => seg.startsWith('.'));
+  if (hasDotSegment) {
+    return { isSafe: false, resolvedPath: '', reason: 'dotfile_blocked' };
   }
 
-  let filePath = path.join(ROOT_DIR, pathname);
+  // Resolve target path safely relative to root
+  const resolvedPath = path.resolve(resolvedRoot, '.' + path.sep + pathname);
 
-  fs.stat(filePath, (err, stats) => {
-    if (err || !stats.isFile()) {
-      // If requested file doesn't exist and has no extension, fallback to index.html for SPA
-      if (!path.extname(pathname)) {
-        filePath = path.join(ROOT_DIR, 'index.html');
-      } else {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('404 Not Found');
-        return;
-      }
+  // Check if resolved path stays strictly within resolvedRoot
+  const isInsideRoot = resolvedPath === resolvedRoot || resolvedPath.startsWith(resolvedRoot + path.sep);
+  if (!isInsideRoot) {
+    return { isSafe: false, resolvedPath: '', reason: 'path_traversal' };
+  }
+
+  return { isSafe: true, resolvedPath };
+}
+
+export function createServer(rootDir = ROOT_DIR) {
+  return http.createServer((req, res) => {
+    const parsedUrl = url.parse(req.url);
+    let pathname = decodeURIComponent(parsedUrl.pathname);
+
+    // If root, serve index.html
+    if (pathname === '/') {
+      pathname = '/index.html';
     }
 
-    const ext = path.extname(filePath).toLowerCase();
-    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+    // Security Check: Path Traversal & Dotfile/Dotfolder Prevention
+    const pathValidation = validatePath(pathname, rootDir);
+    if (!pathValidation.isSafe) {
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('403 Forbidden');
+      return;
+    }
 
-    fs.readFile(filePath, (readErr, content) => {
-      if (readErr) {
-        res.writeHead(500, { 'Content-Type': 'text/plain' });
-        res.end('500 Internal Server Error');
-        return;
+    let filePath = pathValidation.resolvedPath;
+
+    fs.stat(filePath, (err, stats) => {
+      if (err || !stats.isFile()) {
+        // If requested file doesn't exist and has no extension, fallback to index.html for SPA
+        if (!path.extname(pathname)) {
+          const indexValidation = validatePath('/index.html', rootDir);
+          if (!indexValidation.isSafe) {
+            res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+            res.end('403 Forbidden');
+            return;
+          }
+          filePath = indexValidation.resolvedPath;
+        } else {
+          res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+          res.end('404 Not Found');
+          return;
+        }
       }
-      res.writeHead(200, {
-        'Content-Type': contentType,
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-        'Expires': '0'
+
+      const ext = path.extname(filePath).toLowerCase();
+      const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+
+      fs.readFile(filePath, (readErr, content) => {
+        if (readErr) {
+          res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+          res.end('500 Internal Server Error');
+          return;
+        }
+        res.writeHead(200, {
+          'Content-Type': contentType,
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'X-Content-Type-Options': 'nosniff'
+        });
+        res.end(content);
       });
-      res.end(content);
     });
   });
-});
+}
 
-server.listen(PORT, '127.0.0.1', () => {
-  console.log(`AfricaTravel server running at http://127.0.0.1:${PORT}`);
-});
+const server = createServer();
+
+// Start standalone server when executed directly
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  server.listen(PORT, '127.0.0.1', () => {
+    console.log(`AfricaTravel server running at http://127.0.0.1:${PORT}`);
+  });
+}
+
+export { server };

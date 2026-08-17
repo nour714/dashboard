@@ -11,6 +11,9 @@ function ensureContainer() {
   if (!toastContainer || !document.body.contains(toastContainer)) {
     toastContainer = document.createElement('div');
     toastContainer.className = 'toast-container';
+    toastContainer.setAttribute('role', 'status');
+    toastContainer.setAttribute('aria-live', 'polite');
+    toastContainer.setAttribute('aria-atomic', 'true');
     document.body.appendChild(toastContainer);
   }
 }

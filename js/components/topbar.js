@@ -24,6 +24,7 @@ export function renderTopbar() {
             class="topbar-search-input"
             id="global-search-input"
             placeholder="Search tickets, PNRs, or customers..."
+            aria-label="Search tickets, PNRs, or customers"
             autocomplete="off"
           />
           <div id="topbar-search-dropdown" class="search-dropdown d-none"></div>
@@ -36,16 +37,16 @@ export function renderTopbar() {
           <span>New Ticket</span>
         </a>
 
-        <button type="button" class="topbar-icon-btn" id="topbar-notif-btn" title="Notifications">
+        <button type="button" class="topbar-icon-btn" id="topbar-notif-btn" title="Notifications" aria-label="Notifications and alerts">
           ${icons.bell('w-5 h-5')}
           <span class="notification-badge"></span>
         </button>
 
-        <button type="button" class="topbar-icon-btn hide-mobile" id="topbar-help-btn" title="Help & Documentation">
+        <button type="button" class="topbar-icon-btn hide-mobile" id="topbar-help-btn" title="Help & Documentation" aria-label="Help and operational documentation">
           ${icons.help('w-5 h-5')}
         </button>
 
-        <a href="/settings" class="topbar-user-badge" data-link>
+        <a href="/settings" class="topbar-user-badge" data-link aria-label="User profile and settings">
           <div class="topbar-user-avatar">
             ${escapeHtml(initials)}
           </div>

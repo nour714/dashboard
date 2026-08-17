@@ -43,7 +43,7 @@ export function renderSidebar(activePath = '/dashboard') {
   return `
     <aside class="app-sidebar" id="app-sidebar">
       <div class="sidebar-header">
-        <a href="/dashboard" class="sidebar-logo" data-link>
+        <a href="/dashboard" class="sidebar-logo" data-link aria-label="AfricaTravel Home Dashboard">
           <div class="sidebar-logo-icon">
             <img src="/assets/logo.png" alt="AfricaTravel Logo" class="sidebar-logo-img" />
           </div>
@@ -61,7 +61,7 @@ export function renderSidebar(activePath = '/dashboard') {
         </a>
       </div>
 
-      <nav class="sidebar-nav">
+      <nav class="sidebar-nav" aria-label="Main Navigation">
         ${renderLinks(mainNav)}
         <div class="sidebar-divider"></div>
         ${renderLinks(adminNav)}
