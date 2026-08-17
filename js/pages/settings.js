@@ -1,17 +1,20 @@
-﻿/**
- * AfriciaTravel — Settings Page
+/**
+ * AfriciaTravel / VoyageDesk — Settings Page
  */
 
 import { store } from '../state/store.js';
+import { AuthService } from '../services/auth-service.js';
 import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { showToast } from '../components/toast.js';
+import { escapeHtml } from '../utils/security.js';
 
 let activeSection = 'profile';
 
 export const SettingsPage = {
   render() {
-    const { settings, currentUser } = store.getState();
+    const { settings } = store.getState();
+    const currentUser = AuthService.getCurrentUser() || {};
 
     const headerHtml = renderPageHeader({
       title: 'Settings',
@@ -42,6 +45,9 @@ export const SettingsPage = {
     let contentHtml = '';
 
     if (activeSection === 'profile') {
+      const userName = currentUser.name || currentUser.fullName || 'Ahmed Hassan';
+      const userInitials = userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase();
+
       contentHtml = `
         <div class="card mb-lg">
           <div class="card-header">
@@ -54,7 +60,7 @@ export const SettingsPage = {
             <form id="profile-form">
               <div class="d-flex items-center gap-md mb-lg">
                 <div class="sidebar-user-avatar" style="width: 64px; height: 64px; font-size: 22px; background: linear-gradient(135deg, #1e3a8a, #2563eb);">
-                  ${(currentUser.name || currentUser.fullName || 'Ahmed Hassan').split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase()}
+                  ${userInitials}
                 </div>
                 <div>
                   <button type="button" class="btn btn-sm btn-secondary" id="change-avatar-btn">Change Photo</button>
@@ -64,17 +70,17 @@ export const SettingsPage = {
               <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="setting-name">Full Name</label>
-                  <input type="text" id="setting-name" class="form-control" value="${currentUser.name || 'Ahmed Hassan'}" required />
+                  <input type="text" id="setting-name" class="form-control" value="${escapeHtml(userName)}" required />
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="setting-email">Email Address</label>
-                  <input type="email" id="setting-email" class="form-control" value="${currentUser.email || 'admin@africiatravel.com'}" required />
+                  <input type="email" id="setting-email" class="form-control" value="${escapeHtml(currentUser.email || 'admin@africiatravel.com')}" required />
                 </div>
               </div>
 
               <div class="form-group">
                 <label class="form-label" for="setting-role">Role Title</label>
-                <input type="text" id="setting-role" class="form-control" value="${currentUser.title || currentUser.role || 'Senior Operations Director'}" readonly disabled />
+                <input type="text" id="setting-role" class="form-control" value="${escapeHtml(currentUser.title || currentUser.role || 'Senior Operations Director')}" readonly disabled />
               </div>
 
               <div class="d-flex justify-end gap-sm mt-md">
@@ -156,21 +162,21 @@ export const SettingsPage = {
             <form id="company-form">
               <div class="form-group">
                 <label class="form-label" for="co-name">Agency Legal Name</label>
-                <input type="text" id="co-name" class="form-control" value="${settings.company.name}" />
+                <input type="text" id="co-name" class="form-control" value="${escapeHtml(settings.company.name)}" />
               </div>
               <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="co-iata">IATA Numeric Code</label>
-                  <input type="text" id="co-iata" class="form-control" value="${settings.company.iataNumber}" />
+                  <input type="text" id="co-iata" class="form-control" value="${escapeHtml(settings.company.iataNumber)}" />
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="co-tax">Tax ID / Commercial Reg.</label>
-                  <input type="text" id="co-tax" class="form-control" value="${settings.company.taxId}" />
+                  <input type="text" id="co-tax" class="form-control" value="${escapeHtml(settings.company.taxId)}" />
                 </div>
               </div>
               <div class="form-group">
                 <label class="form-label" for="co-addr">Registered HQ Address</label>
-                <input type="text" id="co-addr" class="form-control" value="${settings.company.address}" />
+                <input type="text" id="co-addr" class="form-control" value="${escapeHtml(settings.company.address)}" />
               </div>
               <div class="d-flex justify-end mt-md">
                 <button type="submit" class="btn btn-primary">Save Company Details</button>
@@ -199,7 +205,7 @@ export const SettingsPage = {
             <div>
               <label class="form-label mb-xs">Accepted Payment Methods</label>
               <div class="d-flex flex-wrap gap-xs">
-                ${settings.paymentMethods.map(m => `<span class="badge badge-neutral" style="font-size: 13px; padding: 6px 12px;">${m}</span>`).join('')}
+                ${settings.paymentMethods.map(m => `<span class="badge badge-neutral" style="font-size: 13px; padding: 6px 12px;">${escapeHtml(m)}</span>`).join('')}
               </div>
             </div>
           </div>
@@ -209,7 +215,7 @@ export const SettingsPage = {
       contentHtml = `
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title">${activeSection.toUpperCase()} Settings</h3>
+            <h3 class="card-title">${escapeHtml(activeSection.toUpperCase())} Settings</h3>
           </div>
           <div class="card-body">
             <p class="text-muted">Configuration active and synchronized with workspace.</p>
@@ -262,7 +268,7 @@ export const SettingsPage = {
         const name = container.querySelector('#setting-name').value.trim();
         const email = container.querySelector('#setting-email').value.trim();
 
-        store.updateSettings('profile', { fullName: name, email });
+        AuthService.updateProfile({ fullName: name, email });
         showToast('Profile updated successfully!', 'success');
       });
     }
@@ -292,8 +298,8 @@ export const SettingsPage = {
 
     const signOutBtn = container.querySelector('#setting-sign-out-btn');
     if (signOutBtn) {
-      signOutBtn.addEventListener('click', () => {
-        store.logout();
+      signOutBtn.addEventListener('click', async () => {
+        await AuthService.logout();
         showToast('Signed out successfully', 'info');
         window.history.pushState(null, null, '/login');
         window.dispatchEvent(new PopStateEvent('popstate'));

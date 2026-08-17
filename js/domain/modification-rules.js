@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Flight Modification Business Rules & Validation
+/**
+ * AfriciaTravel / VoyageDesk — Flight Modification Business Rules & Validation
  */
 
 import { ValidationError, BusinessRuleError, NotFoundError } from './errors.js';
@@ -32,10 +32,14 @@ export function validateModification(ticket, modData = {}) {
         throw new ValidationError('Invalid new arrival date', 'newArrivalDate');
       }
       if (arrTime < depTime) {
-        throw new BusinessRuleError('Flight arrival date/time cannot be earlier than departure date/time', 'ARRIVAL_BEFORE_DEPARTURE');
+        throw new BusinessRuleError(
+          'Invalid flight schedule: arrival cannot be earlier than departure.',
+          'ARRIVAL_BEFORE_DEPARTURE'
+        );
       }
     }
   }
 
   return true;
 }
+

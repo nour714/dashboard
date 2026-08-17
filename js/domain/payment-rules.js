@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Payment Domain Business Rules & Validation
+/**
+ * AfriciaTravel / VoyageDesk — Payment Domain Business Rules & Validation
  */
 
 import { ValidationError, BusinessRuleError, NotFoundError } from './errors.js';
@@ -26,18 +26,16 @@ export function validatePayment(ticket, paymentData = {}) {
 
   if (amount > remaining) {
     throw new BusinessRuleError(
-      `Payment amount of ${amount.toLocaleString()} ${ticket.currency || 'EGP'} exceeds remaining balance of ${remaining.toLocaleString()} ${ticket.currency || 'EGP'}.`,
+      'Payment exceeds the remaining balance.',
       'PAYMENT_EXCEEDS_BALANCE',
-      { amount, remaining, currency: ticket.currency }
+      { amount, remaining, currency: ticket.currency || 'EGP' }
     );
   }
 
-  if (paymentData.method && !['Credit Card', 'Cash', 'Bank Transfer', 'Corporate Credit', 'POS Terminal'].includes(paymentData.method)) {
-    // Allow custom methods but ensure non-empty
-    if (typeof paymentData.method !== 'string' || !paymentData.method.trim()) {
-      throw new ValidationError('Valid payment method is required', 'method');
-    }
+  if (paymentData.method && typeof paymentData.method === 'string' && !paymentData.method.trim()) {
+    throw new ValidationError('Valid payment method is required', 'method');
   }
 
   return true;
 }
+

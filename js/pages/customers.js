@@ -1,15 +1,14 @@
-﻿/**
- * AfriciaTravel — Customers CRM Page
+/**
+ * AfriciaTravel / VoyageDesk — Customers CRM Page
  */
 
-import { store } from '../state/store.js';
 import { CustomerService } from '../services/customer-service.js';
 import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
-import { renderStatusBadge } from '../components/status-badge.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
 import { formatCurrency } from '../utils/calculations.js';
+import { escapeHtml } from '../utils/security.js';
 
 let searchQuery = '';
 
@@ -20,33 +19,33 @@ function renderCustomerRows(customers) {
 
   return customers.map(c => {
     const stats = CustomerService.getCustomerStats(c.id);
-    const initials = c.name.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'C';
+    const initials = (c.name || 'C').split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'C';
 
     return `
       <tr>
         <td>
           <div class="d-flex items-center gap-sm">
             <div class="sidebar-user-avatar" style="width: 36px; height: 36px; font-size: 13px; background-color: ${c.isVip ? '#854d0e' : '#2563eb'};">
-              ${initials}
+              ${escapeHtml(initials)}
             </div>
             <div>
-              <a href="/customers/${c.id}" class="cell-main" data-link>
-                ${c.name}
+              <a href="/customers/${escapeHtml(c.id)}" class="cell-main" data-link>
+                ${escapeHtml(c.name)}
                 ${c.isVip ? '<span class="badge badge-vip ml-xs">VIP</span>' : ''}
               </a>
-              <div class="cell-sub">${c.id} • Member since ${c.memberSince}</div>
+              <div class="cell-sub">${escapeHtml(c.id)} • Member since ${escapeHtml(c.memberSince || '2023')}</div>
             </div>
           </div>
         </td>
         <td>
-          <div class="cell-main">${c.phone || '—'}</div>
-          <div class="cell-sub">${c.email || '—'}</div>
+          <div class="cell-main">${escapeHtml(c.phone || '—')}</div>
+          <div class="cell-sub">${escapeHtml(c.email || '—')}</div>
         </td>
         <td>
-          <div class="tabular-nums font-medium">${c.passport || '—'}</div>
+          <div class="tabular-nums font-medium">${escapeHtml(c.passport || '—')}</div>
         </td>
         <td>
-          <span class="text-sm">${c.nationality || '—'}</span>
+          <span class="text-sm">${escapeHtml(c.nationality || '—')}</span>
         </td>
         <td>
           <span class="tabular-nums font-bold" style="font-size: 15px;">${stats.ticketCount}</span>
@@ -56,7 +55,7 @@ function renderCustomerRows(customers) {
           <div class="cell-sub text-success">Paid: ${formatCurrency(stats.totalPaid, 'EGP')}</div>
         </td>
         <td>
-          <a href="/customers/${c.id}" class="btn btn-sm btn-ghost text-accent" data-link>
+          <a href="/customers/${escapeHtml(c.id)}" class="btn btn-sm btn-ghost text-accent" data-link>
             View Profile ›
           </a>
         </td>
@@ -74,13 +73,13 @@ function renderCustomerCards(customers) {
     const stats = CustomerService.getCustomerStats(c.id);
 
     return `
-      <a href="/customers/${c.id}" class="mobile-data-card" data-link>
+      <a href="/customers/${escapeHtml(c.id)}" class="mobile-data-card" data-link>
         <div class="mobile-card-top">
-          <span class="mobile-card-id">${c.name}</span>
+          <span class="mobile-card-id">${escapeHtml(c.name)}</span>
           ${c.isVip ? '<span class="badge badge-vip">VIP</span>' : '<span class="badge badge-neutral">Client</span>'}
         </div>
         <div class="text-sm text-muted">
-          ${c.phone} • ${c.email}
+          ${escapeHtml(c.phone || '')} • ${escapeHtml(c.email || '')}
         </div>
         <div class="mobile-card-meta">
           <div>
@@ -125,7 +124,7 @@ export const CustomersPage = {
             class="form-control"
             id="cust-search-input"
             placeholder="Search customers by name, email, phone, or passport..."
-            value="${searchQuery}"
+            value="${escapeHtml(searchQuery)}"
             autocomplete="off"
           />
         </div>
@@ -252,7 +251,7 @@ export const CustomersPage = {
                   return;
                 }
 
-                const newC = store.createCustomer({
+                const result = CustomerService.createCustomer({
                   name,
                   email: modalEl.querySelector('#new-cust-email').value.trim(),
                   phone,
@@ -262,8 +261,13 @@ export const CustomersPage = {
                   initialNote: modalEl.querySelector('#new-cust-initial-note').value.trim()
                 });
 
+                if (!result.success) {
+                  showToast(result.error.message, 'error');
+                  return;
+                }
+
                 closeModal();
-                showToast(`Customer ${newC.name} created!`, 'success');
+                showToast(`Customer ${result.data.name} created!`, 'success');
                 container.innerHTML = CustomersPage.render();
                 CustomersPage.afterRender(container);
               });

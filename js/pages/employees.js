@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Employees Administration Page
+/**
+ * AfriciaTravel / VoyageDesk — Employees Administration Page
  */
 
 import { store } from '../state/store.js';
@@ -9,6 +9,7 @@ import { renderStatusBadge } from '../components/status-badge.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
 import { formatCurrency } from '../utils/calculations.js';
+import { escapeHtml } from '../utils/security.js';
 
 let roleFilter = 'All Roles';
 let statusFilter = 'All Statuses';
@@ -44,16 +45,16 @@ export const EmployeesPage = {
         <td>
           <div class="d-flex items-center gap-sm">
             <div class="sidebar-user-avatar" style="width: 36px; height: 36px; font-size: 13px; background-color: ${e.role === 'ADMIN' ? '#1e3a8a' : '#2563eb'};">
-              ${e.name.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase()}
+              ${escapeHtml(e.name.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase())}
             </div>
             <div>
-              <div class="cell-main">${e.name}</div>
-              <div class="cell-sub">${e.email}</div>
+              <div class="cell-main">${escapeHtml(e.name)}</div>
+              <div class="cell-sub">${escapeHtml(e.email)}</div>
             </div>
           </div>
         </td>
         <td>
-          <span class="badge ${e.role === 'ADMIN' ? 'badge-admin' : 'badge-agent'}">${e.role}</span>
+          <span class="badge ${e.role === 'ADMIN' ? 'badge-admin' : 'badge-agent'}">${escapeHtml(e.role)}</span>
         </td>
         <td class="tabular-nums font-semibold">${e.ticketsCount}</td>
         <td class="tabular-nums font-semibold">${formatCurrency(e.sales, 'EGP')}</td>
@@ -69,17 +70,17 @@ export const EmployeesPage = {
         <div class="mobile-card-top">
           <div class="d-flex items-center gap-sm">
             <div class="sidebar-user-avatar" style="width: 34px; height: 34px; font-size: 12px;">
-              ${e.name.charAt(0)}
+              ${escapeHtml(e.name.charAt(0))}
             </div>
             <div>
-              <strong style="font-size: 15px;">${e.name}</strong>
-              <div class="text-xs text-muted">${e.email}</div>
+              <strong style="font-size: 15px;">${escapeHtml(e.name)}</strong>
+              <div class="text-xs text-muted">${escapeHtml(e.email)}</div>
             </div>
           </div>
           ${renderStatusBadge(e.status)}
         </div>
         <div class="d-flex justify-between items-center text-sm pt-xs" style="border-top: 1px solid var(--color-border-soft);">
-          <span>Role: <strong>${e.role}</strong></span>
+          <span>Role: <strong>${escapeHtml(e.role)}</strong></span>
           <span>Sales: <strong class="tabular-nums">${formatCurrency(e.sales, 'EGP')}</strong></span>
         </div>
       </div>

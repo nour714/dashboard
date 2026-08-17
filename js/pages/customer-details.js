@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Customer Details Page
+/**
+ * AfriciaTravel / VoyageDesk — Customer Details Page
  */
 
 import { CustomerService } from '../services/customer-service.js';
@@ -15,6 +15,7 @@ import {
   formatDate,
   formatDateTime
 } from '../utils/calculations.js';
+import { escapeHtml } from '../utils/security.js';
 
 export const CustomerDetailsPage = {
   render(params) {
@@ -25,7 +26,7 @@ export const CustomerDetailsPage = {
       return `
         <div class="empty-state" style="margin-top: 60px;">
           <div class="empty-state-title">Customer Not Found</div>
-          <p class="empty-state-desc">The customer profile "${customerId}" does not exist.</p>
+          <p class="empty-state-desc">The customer profile "${escapeHtml(customerId)}" does not exist.</p>
           <a href="/customers" class="btn btn-primary" data-link>Back to Customers</a>
         </div>
       `;
@@ -46,10 +47,10 @@ export const CustomerDetailsPage = {
 
       return `
         <tr>
-          <td><strong class="airline-code-badge">${t.pnr}</strong></td>
+          <td><strong class="airline-code-badge">${escapeHtml(t.pnr)}</strong></td>
           <td>
-            <div class="font-semibold">${t.origin} ✈ ${t.destination}</div>
-            <div class="cell-sub">${t.airline} (${t.flightNumber || 'MS 901'})</div>
+            <div class="font-semibold">${escapeHtml(t.origin)} ✈ ${escapeHtml(t.destination)}</div>
+            <div class="cell-sub">${escapeHtml(t.airline)} (${escapeHtml(t.flightNumber || 'MS 901')})</div>
           </td>
           <td>
             <div class="tabular-nums">${formatDate(t.departureDate)}</div>
@@ -60,7 +61,7 @@ export const CustomerDetailsPage = {
           </td>
           <td>${renderStatusBadge(t.status)}</td>
           <td>
-            <a href="/tickets/${t.id}" class="btn btn-sm btn-ghost text-accent" data-link>
+            <a href="/tickets/${escapeHtml(t.id)}" class="btn btn-sm btn-ghost text-accent" data-link>
               View Ticket ›
             </a>
           </td>
@@ -71,10 +72,10 @@ export const CustomerDetailsPage = {
     const notesHtml = (customer.notes || []).map(n => `
       <div class="p-sm mb-xs" style="background-color: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border-soft);">
         <div class="d-flex justify-between text-xs text-muted mb-xs">
-          <strong>${n.author}</strong>
+          <strong>${escapeHtml(n.author || 'Agent')}</strong>
           <span>${formatDate(n.date)}</span>
         </div>
-        <p style="font-size: 13px; color: var(--color-text); margin: 0;">${n.text}</p>
+        <p style="font-size: 13px; color: var(--color-text); margin: 0;">${escapeHtml(n.text)}</p>
       </div>
     `).join('');
 
@@ -85,13 +86,13 @@ export const CustomerDetailsPage = {
           <div class="page-breadcrumbs">
             <a href="/customers" data-link>Customers</a>
             <span>›</span>
-            <span>${customer.name}</span>
+            <span>${escapeHtml(customer.name)}</span>
           </div>
           <h1 class="page-title">
-            <span>${customer.name}</span>
+            <span>${escapeHtml(customer.name)}</span>
             ${customer.isVip ? '<span class="badge badge-vip">VIP</span>' : ''}
           </h1>
-          <p class="page-subtitle">Customer ID: ${customer.id} • Member since ${customer.memberSince}</p>
+          <p class="page-subtitle">Customer ID: ${escapeHtml(customer.id)} • Member since ${escapeHtml(customer.memberSince || '2023')}</p>
         </div>
 
         <div class="page-actions">
@@ -153,7 +154,7 @@ export const CustomerDetailsPage = {
                 ${icons.phone('w-4 h-4 text-muted mt-xs')}
                 <div>
                   <div class="text-muted text-xs">Phone Number</div>
-                  <strong class="text-md">${customer.phone || '—'}</strong>
+                  <strong class="text-md">${escapeHtml(customer.phone || '—')}</strong>
                 </div>
               </div>
 
@@ -161,7 +162,7 @@ export const CustomerDetailsPage = {
                 ${icons.mail('w-4 h-4 text-muted mt-xs')}
                 <div>
                   <div class="text-muted text-xs">Email Address</div>
-                  <div class="font-medium">${customer.email || '—'}</div>
+                  <div class="font-medium">${escapeHtml(customer.email || '—')}</div>
                 </div>
               </div>
 
@@ -169,7 +170,7 @@ export const CustomerDetailsPage = {
                 ${icons.shield('w-4 h-4 text-muted mt-xs')}
                 <div>
                   <div class="text-muted text-xs">Passport Number</div>
-                  <strong class="tabular-nums">${customer.passport || '—'}</strong>
+                  <strong class="tabular-nums">${escapeHtml(customer.passport || '—')}</strong>
                 </div>
               </div>
 
@@ -177,7 +178,7 @@ export const CustomerDetailsPage = {
                 ${icons.compass('w-4 h-4 text-muted mt-xs')}
                 <div>
                   <div class="text-muted text-xs">Nationality</div>
-                  <div>${customer.nationality || 'Egyptian (EGY)'}</div>
+                  <div>${escapeHtml(customer.nationality || 'Egyptian (EGY)')}</div>
                 </div>
               </div>
             </div>
@@ -237,11 +238,11 @@ export const CustomerDetailsPage = {
                       </tr>
                     </thead>
                     <tbody>
-                      ${stats.tickets.flatMap(t => t.payments.map(p => `
+                      ${stats.tickets.flatMap(t => (t.payments || []).map(p => `
                         <tr>
-                          <td><a href="/tickets/${t.id}" class="cell-main text-accent" data-link>${t.id} (${t.pnr})</a></td>
+                          <td><a href="/tickets/${escapeHtml(t.id)}" class="cell-main text-accent" data-link>${escapeHtml(t.id)} (${escapeHtml(t.pnr)})</a></td>
                           <td><span class="tabular-nums font-bold text-success">${formatCurrency(p.amount, p.currency || t.currency)}</span></td>
-                          <td>${p.method}</td>
+                          <td>${escapeHtml(p.method)}</td>
                           <td><span class="text-sm text-muted">${formatDateTime(p.date)}</span></td>
                         </tr>
                       `)).join('') || '<tr><td colspan="4" class="text-center text-muted p-md">No payments recorded.</td></tr>'}
@@ -267,12 +268,12 @@ export const CustomerDetailsPage = {
                       </tr>
                     </thead>
                     <tbody>
-                      ${stats.tickets.flatMap(t => t.refunds.map(r => `
+                      ${stats.tickets.flatMap(t => (t.refunds || []).map(r => `
                         <tr>
-                          <td><a href="/tickets/${t.id}" class="cell-main text-accent" data-link>${t.id}</a></td>
+                          <td><a href="/tickets/${escapeHtml(t.id)}" class="cell-main text-accent" data-link>${escapeHtml(t.id)}</a></td>
                           <td><span class="tabular-nums font-bold text-danger">${formatCurrency(r.amount, r.currency || t.currency)}</span></td>
                           <td>${renderStatusBadge(r.status)}</td>
-                          <td><span class="text-sm">${r.reason}</span></td>
+                          <td><span class="text-sm">${escapeHtml(r.reason)}</span></td>
                         </tr>
                       `)).join('') || '<tr><td colspan="4" class="text-center text-muted p-md">No refunds recorded.</td></tr>'}
                     </tbody>
@@ -333,7 +334,12 @@ export const CustomerDetailsPage = {
                 return;
               }
 
-              CustomerService.addNote(customerId, text);
+              const res = CustomerService.addNote(customerId, text);
+              if (!res.success) {
+                showToast(res.error.message, 'error');
+                return;
+              }
+
               closeModal();
               showToast('Note added to customer profile!', 'success');
               container.innerHTML = CustomerDetailsPage.render(params);
@@ -349,6 +355,9 @@ export const CustomerDetailsPage = {
 
     if (editCustBtn) {
       editCustBtn.addEventListener('click', () => {
+        const customer = CustomerService.getCustomerById(customerId);
+        if (!customer) return;
+
         openModal({
           title: `Edit Customer Profile`,
           subtitle: `${customer.name} (${customer.id})`,
@@ -357,22 +366,22 @@ export const CustomerDetailsPage = {
               <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="edit-cust-name">Full Name *</label>
-                  <input type="text" id="edit-cust-name" class="form-control" value="${customer.name || ''}" required />
+                  <input type="text" id="edit-cust-name" class="form-control" value="${escapeHtml(customer.name || '')}" required />
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="edit-cust-email">Email Address</label>
-                  <input type="email" id="edit-cust-email" class="form-control" value="${customer.email || ''}" />
+                  <input type="email" id="edit-cust-email" class="form-control" value="${escapeHtml(customer.email || '')}" />
                 </div>
               </div>
 
               <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="edit-cust-phone">Phone Number</label>
-                  <input type="tel" id="edit-cust-phone" class="form-control" value="${customer.phone || ''}" />
+                  <input type="tel" id="edit-cust-phone" class="form-control" value="${escapeHtml(customer.phone || '')}" />
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="edit-cust-passport">Passport Number</label>
-                  <input type="text" id="edit-cust-passport" class="form-control" value="${customer.passport || ''}" />
+                  <input type="text" id="edit-cust-passport" class="form-control" value="${escapeHtml(customer.passport || '')}" />
                 </div>
               </div>
 
@@ -401,13 +410,18 @@ export const CustomerDetailsPage = {
                   return;
                 }
 
-                CustomerService.updateCustomer(customerId, {
+                const res = CustomerService.updateCustomer(customerId, {
                   name,
                   email: modalEl.querySelector('#edit-cust-email').value.trim(),
                   phone: modalEl.querySelector('#edit-cust-phone').value.trim(),
                   passport: modalEl.querySelector('#edit-cust-passport').value.trim(),
                   isVip: modalEl.querySelector('#edit-cust-vip').checked
                 });
+
+                if (!res.success) {
+                  showToast(res.error.message, 'error');
+                  return;
+                }
 
                 closeModal();
                 showToast(`Customer profile updated successfully!`, 'success');

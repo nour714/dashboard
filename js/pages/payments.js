@@ -1,8 +1,9 @@
-﻿/**
- * AfriciaTravel — Payments Ledger Page
+/**
+ * AfriciaTravel / VoyageDesk — Payments Ledger Page
  */
 
 import { store } from '../state/store.js';
+import { TicketService } from '../services/ticket-service.js';
 import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { renderStatusBadge } from '../components/status-badge.js';
@@ -14,6 +15,7 @@ import {
   formatCurrency,
   formatDateTime
 } from '../utils/calculations.js';
+import { escapeHtml } from '../utils/security.js';
 
 export const PaymentsPage = {
   render() {
@@ -31,7 +33,7 @@ export const PaymentsPage = {
       grandTotalPaid += tPaid;
       grandTotalRemaining += calculateRemaining(t.ticketPrice, tPaid);
 
-      t.payments.forEach(p => {
+      (t.payments || []).forEach(p => {
         allPayments.push({
           ...p,
           ticketId: t.id,
@@ -60,8 +62,8 @@ export const PaymentsPage = {
       <tr>
         <td>
           <div class="cell-main">${formatDateTime(p.date)}</div>
-          <a href="/tickets/${p.ticketId}" class="cell-sub font-medium text-accent" data-link>
-            ${p.ticketId} • ${p.passengerName}
+          <a href="/tickets/${escapeHtml(p.ticketId)}" class="cell-sub font-medium text-accent" data-link>
+            ${escapeHtml(p.ticketId)} • ${escapeHtml(p.passengerName)}
           </a>
         </td>
         <td>
@@ -72,17 +74,17 @@ export const PaymentsPage = {
         <td>
           <div class="d-flex items-center gap-xs">
             ${icons.payments('w-4 h-4 text-muted')}
-            <span>${p.method}</span>
+            <span>${escapeHtml(p.method)}</span>
           </div>
         </td>
         <td>
-          <span class="airline-code-badge">${p.reference || 'N/A'}</span>
+          <span class="airline-code-badge">${escapeHtml(p.reference || 'N/A')}</span>
         </td>
         <td>
-          <span class="text-sm font-medium">${p.addedBy || 'Agent'}</span>
+          <span class="text-sm font-medium">${escapeHtml(p.addedBy || 'Agent')}</span>
         </td>
         <td>
-          <span class="text-sm text-secondary">${p.notes || '—'}</span>
+          <span class="text-sm text-secondary">${escapeHtml(p.notes || '—')}</span>
         </td>
       </tr>
     `).join('');
@@ -171,7 +173,7 @@ export const PaymentsPage = {
         const optionsHtml = pendingTickets.map(t => {
           const tPaid = calculateTotalPaid(t.payments);
           const rem = calculateRemaining(t.ticketPrice, tPaid);
-          return `<option value="${t.id}" data-price="${t.ticketPrice}" data-paid="${tPaid}" data-currency="${t.currency}">${t.id} — ${t.passengerName} (Rem: ${formatCurrency(rem, t.currency)})</option>`;
+          return `<option value="${escapeHtml(t.id)}" data-price="${t.ticketPrice}" data-paid="${tPaid}" data-currency="${escapeHtml(t.currency || 'EGP')}">${escapeHtml(t.id)} — ${escapeHtml(t.passengerName)} (Rem: ${formatCurrency(rem, t.currency)})</option>`;
         }).join('');
 
         openModal({
@@ -235,12 +237,7 @@ export const PaymentsPage = {
                 const ticketId = modalEl.querySelector('#global-pay-ticket').value;
                 const amount = Number(modalEl.querySelector('#global-pay-amount').value);
 
-                if (!amount || amount <= 0) {
-                  showToast('Please enter a valid amount', 'error');
-                  return;
-                }
-
-                store.addPayment(ticketId, {
+                const result = TicketService.addPayment(ticketId, {
                   amount,
                   method: modalEl.querySelector('#global-pay-method').value,
                   date: modalEl.querySelector('#global-pay-date').value,
@@ -248,8 +245,13 @@ export const PaymentsPage = {
                   notes: modalEl.querySelector('#global-pay-notes').value.trim()
                 });
 
+                if (!result.success) {
+                  showToast(result.error.message, 'error');
+                  return;
+                }
+
                 closeModal();
-                showToast(`Payment of ${amount.toLocaleString()} added to ${ticketId}!`, 'success');
+                showToast(`Payment of ${formatCurrency(amount, 'EGP')} added to ${ticketId}!`, 'success');
                 container.innerHTML = PaymentsPage.render();
                 PaymentsPage.afterRender(container);
               });

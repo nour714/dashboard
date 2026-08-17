@@ -1,9 +1,9 @@
-﻿/**
- * AfriciaTravel — Login Page
+/**
+ * AfriciaTravel / VoyageDesk — Login Page
  */
 
 import { icons } from '../components/icons.js';
-import { store } from '../state/store.js';
+import { AuthService } from '../services/auth-service.js';
 import { showToast } from '../components/toast.js';
 
 export const LoginPage = {
@@ -97,9 +97,9 @@ export const LoginPage = {
     const form = container.querySelector('#login-form');
     if (!form) return;
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = container.querySelector('#login-email').value;
+      const email = container.querySelector('#login-email').value.trim();
       const password = container.querySelector('#login-password').value;
 
       if (!email || !password) {
@@ -107,7 +107,12 @@ export const LoginPage = {
         return;
       }
 
-      store.login(email, password);
+      const res = await AuthService.login(email, password);
+      if (!res.success) {
+        showToast(res.error || 'Authentication failed', 'error');
+        return;
+      }
+
       showToast('Signed in successfully', 'success');
 
       // Navigate to dashboard

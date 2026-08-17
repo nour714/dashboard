@@ -1,8 +1,9 @@
-﻿/**
- * AfriciaTravel — Refunds Management Page
+/**
+ * AfriciaTravel / VoyageDesk — Refunds Management Page
  */
 
 import { store } from '../state/store.js';
+import { TicketService } from '../services/ticket-service.js';
 import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { renderStatusBadge } from '../components/status-badge.js';
@@ -15,6 +16,7 @@ import {
   formatCurrency,
   formatDateTime
 } from '../utils/calculations.js';
+import { escapeHtml } from '../utils/security.js';
 
 export const RefundsPage = {
   render() {
@@ -27,7 +29,7 @@ export const RefundsPage = {
     let totalRefundedAmount = 0;
 
     tickets.forEach(t => {
-      t.refunds.forEach(r => {
+      (t.refunds || []).forEach(r => {
         allRefunds.push({
           ...r,
           ticketId: t.id,
@@ -63,13 +65,13 @@ export const RefundsPage = {
 
     const rowsHtml = allRefunds.map(r => `
       <tr>
-        <td><strong class="cell-main">${r.id}</strong></td>
+        <td><strong class="cell-main">${escapeHtml(r.id)}</strong></td>
         <td>
-          <a href="/tickets/${r.ticketId}" class="cell-main text-accent" data-link>${r.ticketId}</a>
-          <div class="cell-sub font-medium">PNR: ${r.pnr}</div>
+          <a href="/tickets/${escapeHtml(r.ticketId)}" class="cell-main text-accent" data-link>${escapeHtml(r.ticketId)}</a>
+          <div class="cell-sub font-medium">PNR: ${escapeHtml(r.pnr)}</div>
         </td>
         <td>
-          <div class="cell-main">${r.passengerName}</div>
+          <div class="cell-main">${escapeHtml(r.passengerName)}</div>
         </td>
         <td>
           <span class="tabular-nums font-bold text-danger" style="font-size: 15px;">
@@ -77,7 +79,7 @@ export const RefundsPage = {
           </span>
         </td>
         <td>
-          <span class="text-sm">${r.reason}</span>
+          <span class="text-sm">${escapeHtml(r.reason)}</span>
         </td>
         <td>
           ${renderStatusBadge(r.status)}
@@ -86,7 +88,7 @@ export const RefundsPage = {
           <span class="text-sm text-muted">${formatDateTime(r.requestedDate)}</span>
         </td>
         <td>
-          <span class="text-sm font-medium">${r.processedBy || 'Agent'}</span>
+          <span class="text-sm font-medium">${escapeHtml(r.processedBy || 'Agent')}</span>
         </td>
       </tr>
     `).join('');
@@ -179,7 +181,7 @@ export const RefundsPage = {
           const totalPaid = calculateTotalPaid(t.payments);
           const totalRef = calculateTotalRefunded(t.refunds);
           const avail = calculateAvailableRefund(totalPaid, totalRef);
-          return `<option value="${t.id}" data-avail="${avail}" data-currency="${t.currency}">${t.id} — ${t.passengerName} (Avail: ${formatCurrency(avail, t.currency)})</option>`;
+          return `<option value="${escapeHtml(t.id)}" data-avail="${avail}" data-currency="${escapeHtml(t.currency || 'EGP')}">${escapeHtml(t.id)} — ${escapeHtml(t.passengerName)} (Avail: ${formatCurrency(avail, t.currency)})</option>`;
         }).join('');
 
         openModal({
@@ -194,22 +196,24 @@ export const RefundsPage = {
                 </select>
               </div>
 
-              <div class="form-group">
-                <label class="form-label" for="global-ref-amount">Refund Amount *</label>
-                <input type="number" id="global-ref-amount" class="form-control font-bold" placeholder="0.00" min="1" step="any" required />
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="global-ref-amount">Refund Amount *</label>
+                  <input type="number" id="global-ref-amount" class="form-control font-bold" placeholder="0.00" min="1" step="any" required />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Status</label>
+                  <select id="global-ref-status" class="form-control">
+                    <option value="COMPLETED" selected>Process Immediately (Completed)</option>
+                    <option value="REQUESTED">Draft (Pending Approval)</option>
+                  </select>
+                </div>
               </div>
 
               <div class="form-group">
                 <label class="form-label" for="global-ref-reason">Reason Code / Explanation *</label>
                 <textarea id="global-ref-reason" class="form-control" placeholder="Explain reason for refund..." required>Flight cancelled by airline / medical request.</textarea>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Status</label>
-                <select id="global-ref-status" class="form-control">
-                  <option value="COMPLETED" selected>Process Immediately (Completed)</option>
-                  <option value="REQUESTED">Draft (Pending Approval)</option>
-                </select>
               </div>
             </div>
           `,
@@ -238,27 +242,20 @@ export const RefundsPage = {
               submitBtn.addEventListener('click', () => {
                 const ticketId = ticketSelect.value;
                 const amount = Number(amtInput.value);
-                const opt = ticketSelect.options[ticketSelect.selectedIndex];
-                const maxAvail = Number(opt.getAttribute('data-avail')) || 0;
 
-                if (!amount || amount <= 0) {
-                  showToast('Please enter a valid refund amount', 'error');
-                  return;
-                }
-
-                if (amount > maxAvail) {
-                  showToast(`Refund amount cannot exceed available balance (${maxAvail})`, 'error');
-                  return;
-                }
-
-                store.addRefund(ticketId, {
+                const result = TicketService.addRefund(ticketId, {
                   amount,
                   reason: modalEl.querySelector('#global-ref-reason').value.trim(),
                   status: modalEl.querySelector('#global-ref-status').value
                 });
 
+                if (!result.success) {
+                  showToast(result.error.message, 'error');
+                  return;
+                }
+
                 closeModal();
-                showToast(`Refund of ${amount.toLocaleString()} processed!`, 'success');
+                showToast(`Refund of ${formatCurrency(amount, 'EGP')} processed!`, 'success');
                 container.innerHTML = RefundsPage.render();
                 RefundsPage.afterRender(container);
               });

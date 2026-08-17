@@ -1,10 +1,10 @@
-﻿/**
- * AfriciaTravel — Client-Side SPA Router
+/**
+ * AfriciaTravel / VoyageDesk — Client-Side SPA Router
  *
  * Handles History API navigation, dynamic parameters, route guards, and 404 state.
  */
 
-import { store } from '../state/store.js';
+import { AuthService } from '../services/auth-service.js';
 
 export class Router {
   constructor(routes = [], mountElement) {
@@ -33,7 +33,7 @@ export class Router {
       }
     });
 
-    // Resolve the initial route on page load
+    // Resolve initial route on startup
     this.resolveCurrentRoute();
   }
 
@@ -75,17 +75,24 @@ export class Router {
 
   resolveCurrentRoute() {
     let pathname = window.location.pathname;
-    // Normalize root path to /dashboard if logged in or /login if not
+    const isAuthenticated = AuthService.isAuthenticated();
+
+    // Normalize root path '/'
     if (pathname === '/' || pathname === '') {
-      const { isAuthenticated } = store.getState();
       pathname = isAuthenticated ? '/dashboard' : '/login';
       window.history.replaceState(null, null, pathname);
     }
 
-    const { isAuthenticated } = store.getState();
+    // Protected route guard: unauthenticated users redirect to /login
     if (!isAuthenticated && pathname !== '/login') {
       window.history.replaceState(null, null, '/login');
       pathname = '/login';
+    }
+
+    // If authenticated user navigates to /login, redirect to /dashboard
+    if (isAuthenticated && pathname === '/login') {
+      window.history.replaceState(null, null, '/dashboard');
+      pathname = '/dashboard';
     }
 
     const matched = this.matchRoute(pathname);

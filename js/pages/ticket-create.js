@@ -1,16 +1,15 @@
-﻿/**
- * AfriciaTravel — Create Ticket / New Reservation Page
+/**
+ * AfriciaTravel / VoyageDesk — Create Ticket / New Reservation Page
  */
 
 import { store } from '../state/store.js';
+import { TicketService } from '../services/ticket-service.js';
 import { icons } from '../components/icons.js';
 import { showToast } from '../components/toast.js';
 import { formatCurrency } from '../utils/calculations.js';
 
 export const TicketCreatePage = {
   render() {
-    const { customers, settings } = store.getState();
-
     return `
       <!-- Header -->
       <div class="page-header">
@@ -401,7 +400,14 @@ export const TicketCreatePage = {
           paymentReference: container.querySelector('#payment-ref').value.trim()
         };
 
-        const newTicket = store.createTicket(ticketData);
+        const result = TicketService.createTicket(ticketData);
+
+        if (!result.success) {
+          showToast(result.error.message, 'error');
+          return;
+        }
+
+        const newTicket = result.data;
         showToast(`Ticket ${newTicket.id} created successfully!`, 'success');
 
         // Navigate to new ticket details

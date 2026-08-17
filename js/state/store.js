@@ -1,5 +1,8 @@
 /**
- * AfriciaTravel — Reactive State Store & Persistence Layer
+ * AfriciaTravel / VoyageDesk — Reactive State Store & Persistence Layer
+ *
+ * Implements hardened mutation boundary: all mutations enforce domain validation
+ * before state changes can occur.
  */
 
 import {
@@ -13,8 +16,13 @@ import {
 import {
   calculateTotalPaid,
   calculateRemaining,
-  derivePaymentStatus
-} from '../utils/calculations.js';
+  derivePaymentStatus,
+  validateTicketCreation
+} from '../domain/ticket-rules.js';
+import { validatePayment } from '../domain/payment-rules.js';
+import { validateRefund } from '../domain/refund-rules.js';
+import { validateModification } from '../domain/modification-rules.js';
+import { NotFoundError, ValidationError } from '../domain/errors.js';
 
 const STORAGE_KEY = 'AFRICIATRAVEL_STORE_V2';
 
@@ -26,18 +34,20 @@ class Store {
 
   loadInitialState() {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const user = parsed.currentUser || INITIAL_SETTINGS.profile;
-        user.name = user.name || user.fullName || 'Ahmed Hassan';
-        user.title = user.title || user.role || 'Senior Operations Director';
-        delete user.avatar; // Ensure initials are used cleanly
+      if (typeof localStorage !== 'undefined') {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          const user = parsed.currentUser || INITIAL_SETTINGS.profile;
+          user.name = user.name || user.fullName || 'Ahmed Hassan';
+          user.title = user.title || user.role || 'Senior Operations Director';
+          delete user.avatar; // Ensure initials are used cleanly
 
-        return {
-          ...parsed,
-          currentUser: user
-        };
+          return {
+            ...parsed,
+            currentUser: user
+          };
+        }
       }
     } catch (e) {
       console.warn('Could not restore state from localStorage, using seed data', e);
@@ -61,7 +71,9 @@ class Store {
 
   saveState() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      }
     } catch (e) {
       console.error('Failed to save state to localStorage', e);
     }
@@ -89,10 +101,10 @@ class Store {
 
   // --- Auth Actions ---
   login(email, password) {
-    const employee = this.state.employees.find(e => e.email.toLowerCase() === email.toLowerCase()) || {
+    const employee = this.state.employees.find(e => e.email.toLowerCase() === (email || '').toLowerCase()) || {
       id: 'EMP-101',
-      name: email.split('@')[0],
-      email: email,
+      name: (email || 'admin').split('@')[0],
+      email: email || 'admin@voyagedesk.com',
       role: 'ADMIN',
       avatar: this.state.settings.profile.avatar
     };
@@ -110,15 +122,19 @@ class Store {
     this.state.isAuthenticated = false;
     this.state.currentUser = null;
     try {
-      localStorage.removeItem(STORAGE_KEY);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(STORAGE_KEY);
+      }
     } catch (e) {
       console.error('Failed to clear session storage', e);
     }
     this.notify();
   }
 
-  // --- Ticket Actions ---
-  createTicket(ticketData) {
+  // --- Ticket Actions & Hardened Mutation Boundary ---
+  applyTicketCreation(ticketData) {
+    validateTicketCreation(ticketData);
+
     const newId = `TK-${Math.floor(10000 + Math.random() * 90000)}`;
     const ticketNumber = ticketData.ticketNumber || `077-${Math.floor(1000000000 + Math.random() * 9000000000)}`;
     const pnr = ticketData.pnr || `PNR${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
@@ -189,9 +205,13 @@ class Store {
     return newTicket;
   }
 
+  createTicket(ticketData) {
+    return this.applyTicketCreation(ticketData);
+  }
+
   updateTicket(ticketId, updates) {
     const ticketIndex = this.state.tickets.findIndex(t => t.id === ticketId);
-    if (ticketIndex === -1) return null;
+    if (ticketIndex === -1) throw new NotFoundError('Ticket', ticketId);
 
     this.state.tickets[ticketIndex] = {
       ...this.state.tickets[ticketIndex],
@@ -209,10 +229,13 @@ class Store {
     return this.state.tickets[ticketIndex];
   }
 
-  // --- Payment Actions ---
-  addPayment(ticketId, paymentData) {
+  // --- Payment Actions & Mutation Boundary ---
+  applyPayment(ticketId, paymentData) {
     const ticket = this.state.tickets.find(t => t.id === ticketId);
-    if (!ticket) return null;
+    if (!ticket) throw new NotFoundError('Ticket', ticketId);
+
+    // Domain validation enforced at Store boundary
+    validatePayment(ticket, paymentData);
 
     const newPayment = {
       id: `PAY-${Date.now()}`,
@@ -243,10 +266,17 @@ class Store {
     return newPayment;
   }
 
-  // --- Flight Modification Actions ---
-  addModification(ticketId, modData) {
+  addPayment(ticketId, paymentData) {
+    return this.applyPayment(ticketId, paymentData);
+  }
+
+  // --- Flight Modification Actions & Mutation Boundary ---
+  applyModification(ticketId, modData) {
     const ticket = this.state.tickets.find(t => t.id === ticketId);
-    if (!ticket) return null;
+    if (!ticket) throw new NotFoundError('Ticket', ticketId);
+
+    // Domain validation enforced at Store boundary
+    validateModification(ticket, modData);
 
     const modIndex = ticket.modifications.length + 1;
     const newMod = {
@@ -274,7 +304,7 @@ class Store {
       status: 'COMPLETED'
     };
 
-    // Update ticket departure if requested
+    // Update ticket departure/arrival if requested
     if (modData.newDepartureDate) {
       ticket.departureDate = modData.newDepartureDate;
     }
@@ -295,10 +325,17 @@ class Store {
     return newMod;
   }
 
-  // --- Refund Actions ---
-  addRefund(ticketId, refundData) {
+  addModification(ticketId, modData) {
+    return this.applyModification(ticketId, modData);
+  }
+
+  // --- Refund Actions & Mutation Boundary ---
+  applyRefund(ticketId, refundData) {
     const ticket = this.state.tickets.find(t => t.id === ticketId);
-    if (!ticket) return null;
+    if (!ticket) throw new NotFoundError('Ticket', ticketId);
+
+    // Domain validation enforced at Store boundary
+    validateRefund(ticket, refundData);
 
     const totalPaid = calculateTotalPaid(ticket.payments);
     const refundAmount = Number(refundData.amount) || 0;
@@ -336,21 +373,29 @@ class Store {
     return newRefund;
   }
 
-  // --- Customer Actions ---
-  createCustomer(custData) {
+  addRefund(ticketId, refundData) {
+    return this.applyRefund(ticketId, refundData);
+  }
+
+  // --- Customer Actions & Mutation Boundary ---
+  applyCustomerCreation(custData) {
+    if (!custData.name || !custData.name.trim()) {
+      throw new ValidationError('Customer name is required', 'name');
+    }
+
     const newCust = {
       id: `CUST-${Math.floor(8900 + Math.random() * 1000)}`,
-      name: custData.name,
-      email: custData.email || '',
-      phone: custData.phone || '',
-      passport: custData.passport || '',
+      name: custData.name.trim(),
+      email: custData.email ? custData.email.trim() : '',
+      phone: custData.phone ? custData.phone.trim() : '',
+      passport: custData.passport ? custData.passport.trim() : '',
       nationality: custData.nationality || 'Egyptian (EGY)',
       isVip: Boolean(custData.isVip),
       memberSince: String(new Date().getFullYear()),
       notes: custData.initialNote ? [{
         author: this.state.currentUser?.name || 'Agent',
         date: new Date().toISOString(),
-        text: custData.initialNote
+        text: custData.initialNote.trim()
       }] : []
     };
 
@@ -367,9 +412,13 @@ class Store {
     return newCust;
   }
 
+  createCustomer(custData) {
+    return this.applyCustomerCreation(custData);
+  }
+
   updateCustomer(customerId, updates) {
     const index = this.state.customers.findIndex(c => c.id === customerId);
-    if (index === -1) return null;
+    if (index === -1) throw new NotFoundError('Customer', customerId);
 
     this.state.customers[index] = {
       ...this.state.customers[index],
@@ -389,7 +438,7 @@ class Store {
 
   addCustomerNote(customerId, noteText) {
     const customer = this.state.customers.find(c => c.id === customerId);
-    if (!customer) return null;
+    if (!customer) throw new NotFoundError('Customer', customerId);
 
     if (!Array.isArray(customer.notes)) {
       customer.notes = [];
@@ -398,7 +447,7 @@ class Store {
     const note = {
       author: this.state.currentUser?.name || 'Agent',
       date: new Date().toISOString(),
-      text: noteText
+      text: (noteText || '').trim()
     };
 
     customer.notes.unshift(note);
@@ -408,12 +457,16 @@ class Store {
 
   // --- Employee Actions ---
   addEmployee(empData) {
+    if (!empData.name || !empData.email) {
+      throw new ValidationError('Name and email are required for new employee', 'name');
+    }
+
     const newEmp = {
       id: `EMP-${Math.floor(100 + Math.random() * 900)}`,
-      name: empData.name,
-      email: empData.email,
+      name: empData.name.trim(),
+      email: empData.email.trim(),
       role: empData.role || 'AGENT',
-      title: empData.title || 'Ticketing Officer',
+      title: empData.title || (empData.role === 'ADMIN' ? 'Operations Director' : 'Ticketing Officer'),
       ticketsCount: 0,
       sales: 0,
       collected: 0,

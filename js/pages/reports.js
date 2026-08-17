@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Business Intelligence & Reports Page
+/**
+ * AfriciaTravel / VoyageDesk — Business Intelligence & Reports Page
  */
 
 import { ReportService } from '../services/report-service.js';
@@ -7,6 +7,7 @@ import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { showToast } from '../components/toast.js';
 import { formatCurrency, formatCompactNumber } from '../utils/calculations.js';
+import { escapeHtml } from '../utils/security.js';
 
 export const ReportsPage = {
   render() {
@@ -36,11 +37,11 @@ export const ReportsPage = {
         <td>
           <div class="d-flex items-center gap-sm">
             <div class="sidebar-user-avatar" style="width: 32px; height: 32px; font-size: 12px;">
-              ${e.name.split(' ').map(n => n[0]).join('')}
+              ${escapeHtml(e.name.split(' ').map(n => n[0]).join(''))}
             </div>
             <div>
-              <strong class="cell-main">${e.name}</strong>
-              <div class="cell-sub">${e.title || e.role}</div>
+              <strong class="cell-main">${escapeHtml(e.name)}</strong>
+              <div class="cell-sub">${escapeHtml(e.title || e.role)}</div>
             </div>
           </div>
         </td>
@@ -54,14 +55,14 @@ export const ReportsPage = {
       <tr>
         <td>
           <div class="airline-tag">
-            <span class="airline-code-badge">${a.airlineCode}</span>
-            <strong class="cell-main">${a.airline}</strong>
+            <span class="airline-code-badge">${escapeHtml(a.airlineCode)}</span>
+            <strong class="cell-main">${escapeHtml(a.airline)}</strong>
           </div>
         </td>
         <td class="tabular-nums font-semibold">${a.ticketsSold}</td>
         <td class="tabular-nums font-bold">${formatCurrency(a.totalRevenue, 'EGP')}</td>
         <td>
-          <span class="badge badge-neutral">${a.refundRate}</span>
+          <span class="badge badge-neutral">${escapeHtml(a.refundRate)}</span>
         </td>
       </tr>
     `).join('');

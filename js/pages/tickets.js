@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Tickets Management Page
+/**
+ * AfriciaTravel / VoyageDesk — Tickets Management Page
  */
 
 import { TicketService } from '../services/ticket-service.js';
@@ -12,9 +12,9 @@ import {
   calculateTotalPaid,
   calculateRemaining,
   formatCurrency,
-  formatDate,
-  formatDateTime
+  formatDate
 } from '../utils/calculations.js';
+import { escapeHtml } from '../utils/security.js';
 
 let currentFilters = {
   search: '',
@@ -33,19 +33,19 @@ function renderTicketRows(tickets) {
     return `
       <tr>
         <td>
-          <a href="/tickets/${t.id}" class="cell-main" data-link>${t.ticketNumber}</a>
-          <div class="cell-sub font-medium">PNR: <strong style="color: var(--color-primary);">${t.pnr}</strong></div>
+          <a href="/tickets/${escapeHtml(t.id)}" class="cell-main" data-link>${escapeHtml(t.ticketNumber)}</a>
+          <div class="cell-sub font-medium">PNR: <strong style="color: var(--color-primary);">${escapeHtml(t.pnr)}</strong></div>
         </td>
         <td>
-          <div class="cell-main">${t.passengerName}</div>
-          <div class="cell-sub">${t.phone || t.email || '—'}</div>
+          <div class="cell-main">${escapeHtml(t.passengerName)}</div>
+          <div class="cell-sub">${escapeHtml(t.phone || t.email || '—')}</div>
         </td>
         <td>
           <div class="airline-tag">
-            <span class="airline-code-badge">${t.airlineCode || 'MS'}</span>
-            <span>${t.airline}</span>
+            <span class="airline-code-badge">${escapeHtml(t.airlineCode || 'MS')}</span>
+            <span>${escapeHtml(t.airline)}</span>
           </div>
-          <div class="cell-sub">${t.origin} ✈ ${t.destination}</div>
+          <div class="cell-sub">${escapeHtml(t.origin)} ✈ ${escapeHtml(t.destination)}</div>
         </td>
         <td>
           <div class="tabular-nums font-medium">${formatDate(t.departureDate)}</div>
@@ -75,18 +75,18 @@ function renderMobileCards(tickets) {
     const remaining = calculateRemaining(t.ticketPrice, totalPaid);
 
     return `
-      <a href="/tickets/${t.id}" class="mobile-data-card" data-link>
+      <a href="/tickets/${escapeHtml(t.id)}" class="mobile-data-card" data-link>
         <div class="mobile-card-top">
-          <span class="mobile-card-id">#${t.id}</span>
+          <span class="mobile-card-id">#${escapeHtml(t.id)}</span>
           ${renderStatusBadge(t.status)}
         </div>
-        <div class="font-bold" style="font-size: 16px;">${t.passengerName}</div>
+        <div class="font-bold" style="font-size: 16px;">${escapeHtml(t.passengerName)}</div>
         <div class="mobile-card-route">
-          <span>${t.airlineCode || 'MS'}</span>
-          <span>${t.origin} → ${t.destination}</span>
+          <span>${escapeHtml(t.airlineCode || 'MS')}</span>
+          <span>${escapeHtml(t.origin)} → ${escapeHtml(t.destination)}</span>
         </div>
         <div class="text-sm text-muted">
-          PNR: <strong>${t.pnr}</strong> • ${formatDate(t.departureDate)}
+          PNR: <strong>${escapeHtml(t.pnr)}</strong> • ${formatDate(t.departureDate)}
         </div>
         <div class="mobile-card-meta">
           <div>
@@ -135,7 +135,7 @@ export const TicketsPage = {
             class="form-control"
             id="ticket-search-input"
             placeholder="Search by PNR, Ticket #, or Customer..."
-            value="${currentFilters.search}"
+            value="${escapeHtml(currentFilters.search)}"
             autocomplete="off"
           />
         </div>
@@ -169,7 +169,7 @@ export const TicketsPage = {
             type="date"
             class="form-control"
             id="ticket-date-filter"
-            value="${currentFilters.travelDate}"
+            value="${escapeHtml(currentFilters.travelDate)}"
             style="width: 160px;"
           />
         </div>
@@ -248,14 +248,12 @@ export const TicketsPage = {
       const tickets = TicketService.getAllTickets(currentFilters);
       if (cardContainer) {
         cardContainer.innerHTML = TicketsPage.renderCardContent(tickets);
-        // Bind reset button if in empty state
         const resetEmpty = cardContainer.querySelector('#reset-empty-filters-btn');
         if (resetEmpty) {
           resetEmpty.addEventListener('click', resetFilters);
         }
       }
 
-      // Update clear button visibility
       const hasFilters = currentFilters.search || currentFilters.status !== 'All Statuses' || currentFilters.airline !== 'All Airlines' || currentFilters.travelDate;
       if (clearBtn) {
         clearBtn.style.display = hasFilters ? 'inline-flex' : 'none';

@@ -1,11 +1,12 @@
-﻿/**
- * AfriciaTravel — Audit Trail / Activity Log Page
+/**
+ * AfriciaTravel / VoyageDesk — Audit Trail / Activity Log Page
  */
 
 import { store } from '../state/store.js';
 import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { formatDateTime, formatRelativeTime } from '../utils/calculations.js';
+import { escapeHtml } from '../utils/security.js';
 
 let actFilters = {
   employee: 'All Employees',
@@ -59,21 +60,21 @@ export const ActivityPage = {
         <td>
           <div class="d-flex items-center gap-xs">
             <div class="sidebar-user-avatar" style="width: 26px; height: 26px; font-size: 11px;">
-              ${l.user.charAt(0)}
+              ${escapeHtml(l.user ? l.user.charAt(0) : 'U')}
             </div>
-            <span class="font-medium text-sm">${l.user}</span>
+            <span class="font-medium text-sm">${escapeHtml(l.user)}</span>
           </div>
         </td>
         <td>
-          <span class="badge ${getActionBadgeClass(l.action)}">${l.action}</span>
+          <span class="badge ${getActionBadgeClass(l.action)}">${escapeHtml(l.action)}</span>
         </td>
         <td>
-          ${l.ticketId ? `<a href="/tickets/${l.ticketId}" class="cell-main text-accent" data-link>${l.ticketId}</a>` : ''}
-          ${l.customerId ? `<a href="/customers/${l.customerId}" class="cell-sub text-muted" data-link>${l.customerId}</a>` : ''}
+          ${l.ticketId ? `<a href="/tickets/${escapeHtml(l.ticketId)}" class="cell-main text-accent" data-link>${escapeHtml(l.ticketId)}</a>` : ''}
+          ${l.customerId ? `<a href="/customers/${escapeHtml(l.customerId)}" class="cell-sub text-muted" data-link>${escapeHtml(l.customerId)}</a>` : ''}
           ${!l.ticketId && !l.customerId ? '—' : ''}
         </td>
         <td>
-          <span class="text-sm">${l.description}</span>
+          <span class="text-sm">${escapeHtml(l.description)}</span>
         </td>
       </tr>
     `).join('');
@@ -85,13 +86,13 @@ export const ActivityPage = {
         </div>
         <div class="timeline-content">
           <div class="timeline-header">
-            <span class="timeline-title">${l.user}</span>
+            <span class="timeline-title">${escapeHtml(l.user)}</span>
             <span class="timeline-time">${formatRelativeTime(l.timestamp)}</span>
           </div>
           <div class="mb-xs">
-            <span class="badge ${getActionBadgeClass(l.action)}">${l.action}</span>
+            <span class="badge ${getActionBadgeClass(l.action)}">${escapeHtml(l.action)}</span>
           </div>
-          <p class="timeline-desc">${l.description}</p>
+          <p class="timeline-desc">${escapeHtml(l.description)}</p>
         </div>
       </div>
     `).join('');
@@ -112,7 +113,7 @@ export const ActivityPage = {
           <label class="text-sm text-muted" for="act-emp-filter">EMPLOYEE</label>
           <select id="act-emp-filter" class="form-control" style="width: 160px;">
             <option value="All Employees">All Employees</option>
-            ${employees.map(e => `<option value="${e.name}" ${actFilters.employee === e.name ? 'selected' : ''}>${e.name}</option>`).join('')}
+            ${employees.map(e => `<option value="${escapeHtml(e.name)}" ${actFilters.employee === e.name ? 'selected' : ''}>${escapeHtml(e.name)}</option>`).join('')}
           </select>
         </div>
 
@@ -135,7 +136,7 @@ export const ActivityPage = {
             class="form-control"
             id="act-ticket-search"
             placeholder="Search by ticket #, customer, or keyword..."
-            value="${actFilters.ticketQuery}"
+            value="${escapeHtml(actFilters.ticketQuery)}"
           />
         </div>
       </div>

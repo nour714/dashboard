@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Customer Service
+/**
+ * AfriciaTravel / VoyageDesk — Customer Service
  *
  * Provides customer CRM directory queries, lifetime stats, and customer management.
  */
@@ -22,10 +22,18 @@ export const CustomerService = {
     );
   },
 
+  getCustomers(query) {
+    return this.getAllCustomers(query);
+  },
+
   getCustomerById(customerId) {
     if (!customerId) return null;
     const { customers } = store.getState();
     return customers.find(c => c.id === customerId) || null;
+  },
+
+  getCustomer(customerId) {
+    return this.getCustomerById(customerId);
   },
 
   getCustomerStats(customerId) {
@@ -60,10 +68,7 @@ export const CustomerService = {
       if (!data.name || !data.name.trim()) {
         throw new ValidationError('Customer name is required', 'name');
       }
-      if (!data.phone || !data.phone.trim()) {
-        throw new ValidationError('Customer phone number is required', 'phone');
-      }
-      const customer = store.createCustomer(data);
+      const customer = store.applyCustomerCreation(data);
       return { success: true, data: customer };
     } catch (err) {
       return {

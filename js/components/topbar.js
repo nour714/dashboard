@@ -1,12 +1,13 @@
-﻿/**
- * AfriciaTravel — Topbar Header Component
+/**
+ * AfriciaTravel / VoyageDesk — Topbar Header Component
  */
 
 import { icons } from './icons.js';
-import { store } from '../state/store.js';
+import { AuthService } from '../services/auth-service.js';
+import { escapeHtml } from '../utils/security.js';
 
 export function renderTopbar() {
-  const { currentUser = {} } = store.getState();
+  const currentUser = AuthService.getCurrentUser() || {};
   const userName = currentUser.name || currentUser.fullName || 'Ahmed Hassan';
   const userRole = currentUser.title || currentUser.role || 'Senior Operations Director';
   const initials = userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'AH';
@@ -46,11 +47,11 @@ export function renderTopbar() {
 
         <a href="/settings" class="topbar-user-badge" data-link>
           <div class="topbar-user-avatar">
-            ${initials}
+            ${escapeHtml(initials)}
           </div>
           <div class="topbar-user-meta hide-mobile">
-            <span class="topbar-user-name">${userName}</span>
-            <span class="topbar-user-role">${userRole}</span>
+            <span class="topbar-user-name">${escapeHtml(userName)}</span>
+            <span class="topbar-user-role">${escapeHtml(userRole)}</span>
           </div>
         </a>
       </div>

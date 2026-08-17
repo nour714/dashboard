@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Refund Domain Business Rules & Validation
+/**
+ * AfriciaTravel / VoyageDesk — Refund Domain Business Rules & Validation
  */
 
 import { ValidationError, BusinessRuleError, NotFoundError } from './errors.js';
@@ -27,9 +27,9 @@ export function validateRefund(ticket, refundData = {}) {
 
   if (amount > availableRefund) {
     throw new BusinessRuleError(
-      `Refund amount of ${amount.toLocaleString()} ${ticket.currency || 'EGP'} exceeds available refundable balance of ${availableRefund.toLocaleString()} ${ticket.currency || 'EGP'}.`,
+      'Refund exceeds the available refundable amount.',
       'REFUND_EXCEEDS_AVAILABLE',
-      { amount, availableRefund, totalPaid, totalRefunded, currency: ticket.currency }
+      { amount, availableRefund, totalPaid, totalRefunded, currency: ticket.currency || 'EGP' }
     );
   }
 
@@ -39,3 +39,4 @@ export function validateRefund(ticket, refundData = {}) {
 
   return true;
 }
+

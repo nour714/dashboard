@@ -1,5 +1,5 @@
-﻿/**
- * AfriciaTravel — Dashboard Page
+/**
+ * AfriciaTravel / VoyageDesk — Dashboard Page
  */
 
 import { store } from '../state/store.js';
@@ -14,6 +14,7 @@ import {
   formatDateTime,
   formatRelativeTime
 } from '../utils/calculations.js';
+import { escapeHtml } from '../utils/security.js';
 
 export const DashboardPage = {
   render() {
@@ -54,17 +55,17 @@ export const DashboardPage = {
       return `
         <tr>
           <td>
-            <a href="/tickets/${t.id}" class="cell-main" data-link>${t.id}</a>
+            <a href="/tickets/${escapeHtml(t.id)}" class="cell-main" data-link>${escapeHtml(t.id)}</a>
             <div class="cell-sub">${formatDateTime(t.createdAt)}</div>
           </td>
           <td>
-            <div class="cell-main">${t.passengerName}</div>
-            <div class="cell-sub">${t.phone || t.email || 'Direct Client'}</div>
+            <div class="cell-main">${escapeHtml(t.passengerName)}</div>
+            <div class="cell-sub">${escapeHtml(t.phone || t.email || 'Direct Client')}</div>
           </td>
           <td>
             <div class="airline-tag">
-              <span class="airline-code-badge">${t.airlineCode || 'MS'}</span>
-              <span>${t.origin} ✈ ${t.destination}</span>
+              <span class="airline-code-badge">${escapeHtml(t.airlineCode || 'MS')}</span>
+              <span>${escapeHtml(t.origin)} ✈ ${escapeHtml(t.destination)}</span>
             </div>
           </td>
           <td>
@@ -88,15 +89,15 @@ export const DashboardPage = {
           </div>
           <div>
             <div class="font-semibold" style="font-size: 14px;">
-              ${t.origin} → ${t.destination}
+              ${escapeHtml(t.origin)} → ${escapeHtml(t.destination)}
             </div>
             <div class="text-sm text-muted">
-              ${t.flightNumber} • ${t.passengerName}
+              ${escapeHtml(t.flightNumber || 'MS 901')} • ${escapeHtml(t.passengerName)}
             </div>
           </div>
         </div>
         <div class="text-right">
-          <span class="airline-code-badge">${t.pnr}</span>
+          <span class="airline-code-badge">${escapeHtml(t.pnr)}</span>
           <div class="mt-xs">${renderStatusBadge(t.status)}</div>
         </div>
       </div>
@@ -107,7 +108,7 @@ export const DashboardPage = {
         <div style="width: 10px; height: 10px; border-radius: var(--radius-full); background-color: var(--color-accent); margin-top: 5px; flex-shrink: 0;"></div>
         <div style="flex: 1;">
           <div style="font-size: 13px; color: var(--color-text);">
-            <strong style="font-family: var(--font-family-heading);">${a.user}</strong> ${a.description}
+            <strong style="font-family: var(--font-family-heading);">${escapeHtml(a.user)}</strong> ${escapeHtml(a.description)}
           </div>
           <div class="text-sm text-muted mt-xs">
             ${formatRelativeTime(a.timestamp)}

@@ -1,15 +1,17 @@
 /**
- * AfriciaTravel — Main Application Entry Point
+ * AfriciaTravel / VoyageDesk — Main Application Entry Point
  */
 
 import { store } from './state/store.js';
+import { AuthService } from './services/auth-service.js';
 import { routes } from './router/routes.js';
 import { Router } from './router/router.js';
 import { renderSidebar } from './components/sidebar.js';
 import { renderTopbar } from './components/topbar.js';
 import { renderBottomNav, bindBottomNavEvents } from './components/bottom-nav.js';
 import { openModal, closeModal } from './components/modal.js';
-import { showToast } from './components/toast.js';
+import { createElement, clearElement, appendChildren } from './utils/dom.js';
+import { escapeHtml } from './utils/security.js';
 
 class App {
   constructor() {
@@ -20,7 +22,7 @@ class App {
   }
 
   init() {
-    // Listen to route changes — must be before router construction
+    // Listen to route changes
     window.addEventListener('africiatravel:route-changed', (e) => {
       const { path } = e.detail;
       this.handleRouteChange(path);
@@ -41,7 +43,7 @@ class App {
 
   setupShellForCurrentPath() {
     const pathname = window.location.pathname;
-    const { isAuthenticated } = store.getState();
+    const isAuthenticated = AuthService.isAuthenticated();
 
     if (pathname === '/login' || (!isAuthenticated && pathname !== '/login')) {
       this.shellRendered = false;
@@ -117,7 +119,7 @@ class App {
   }
 
   bindGlobalEvents() {
-    // Global Search Form with Live Suggestions
+    // Global Search Form with Safe DOM Live Suggestions
     const searchForm = document.getElementById('topbar-global-search');
     const searchInput = document.getElementById('global-search-input');
     const searchDropdown = document.getElementById('topbar-search-dropdown');
@@ -125,70 +127,110 @@ class App {
     if (searchForm && searchInput) {
       const renderSuggestions = (query) => {
         if (!searchDropdown) return;
-        const q = query.toLowerCase().trim();
+        const q = (query || '').toLowerCase().trim();
         if (!q) {
           searchDropdown.classList.add('d-none');
-          searchDropdown.innerHTML = '';
+          clearElement(searchDropdown);
           return;
         }
 
-        const { tickets, customers } = store.getState();
+        const { tickets = [], customers = [] } = store.getState();
         const matchedTickets = tickets.filter(t =>
-          t.id.toLowerCase().includes(q) ||
-          t.pnr.toLowerCase().includes(q) ||
-          t.ticketNumber.toLowerCase().includes(q) ||
-          t.passengerName.toLowerCase().includes(q)
+          (t.id && t.id.toLowerCase().includes(q)) ||
+          (t.pnr && t.pnr.toLowerCase().includes(q)) ||
+          (t.ticketNumber && t.ticketNumber.toLowerCase().includes(q)) ||
+          (t.passengerName && t.passengerName.toLowerCase().includes(q)) ||
+          (t.phone && t.phone.toLowerCase().includes(q))
         ).slice(0, 4);
 
         const matchedCustomers = customers.filter(c =>
-          c.name.toLowerCase().includes(q) ||
-          c.email.toLowerCase().includes(q) ||
-          c.phone.toLowerCase().includes(q) ||
-          c.id.toLowerCase().includes(q)
+          (c.name && c.name.toLowerCase().includes(q)) ||
+          (c.email && c.email.toLowerCase().includes(q)) ||
+          (c.phone && c.phone.toLowerCase().includes(q)) ||
+          (c.passport && c.passport.toLowerCase().includes(q)) ||
+          (c.id && c.id.toLowerCase().includes(q))
         ).slice(0, 3);
 
+        clearElement(searchDropdown);
+
         if (matchedTickets.length === 0 && matchedCustomers.length === 0) {
-          searchDropdown.innerHTML = `
-            <div class="p-md text-center text-muted text-sm">
-              No results found for "<strong>${query}</strong>"
-            </div>
-          `;
+          const emptyItem = createElement('div', { className: 'p-md text-center text-muted text-sm' });
+          emptyItem.appendChild(document.createTextNode('No results found for "'));
+          const queryTextNode = createElement('strong', {}, query);
+          emptyItem.appendChild(queryTextNode);
+          emptyItem.appendChild(document.createTextNode('"'));
+          searchDropdown.appendChild(emptyItem);
           searchDropdown.classList.remove('d-none');
           return;
         }
 
-        let html = '';
+        // Safe DOM building for Tickets
         if (matchedTickets.length > 0) {
-          html += `<div class="search-dropdown-header">Tickets & Reservations</div>`;
+          const ticketHeader = createElement('div', { className: 'search-dropdown-header' }, 'Tickets & Reservations');
+          searchDropdown.appendChild(ticketHeader);
+
           matchedTickets.forEach(t => {
-            html += `
-              <a href="/tickets/${t.id}" class="search-dropdown-item" data-link>
-                <div>
-                  <div class="font-semibold" style="font-size: 14px;">${t.passengerName}</div>
-                  <div class="text-xs text-muted">${t.id} • PNR: <strong style="color: var(--color-primary);">${t.pnr}</strong> • ${t.origin} ✈ ${t.destination}</div>
-                </div>
-                <span class="badge ${t.status === 'CONFIRMED' || t.status === 'PAID' ? 'badge-confirmed' : 'badge-partially-paid'}">${t.status}</span>
-              </a>
-            `;
+            const item = createElement('a', {
+              href: `/tickets/${t.id}`,
+              className: 'search-dropdown-item',
+              'data-link': ''
+            });
+
+            const leftCol = createElement('div');
+            const nameEl = createElement('div', { className: 'font-semibold', style: 'font-size: 14px;' }, t.passengerName);
+            const metaEl = createElement('div', { className: 'text-xs text-muted' });
+
+            metaEl.appendChild(document.createTextNode(`${t.id} • PNR: `));
+            const pnrStrong = createElement('strong', { style: 'color: var(--color-primary);' }, t.pnr);
+            metaEl.appendChild(pnrStrong);
+            metaEl.appendChild(document.createTextNode(` • ${t.origin || ''} ✈ ${t.destination || ''}`));
+
+            leftCol.appendChild(nameEl);
+            leftCol.appendChild(metaEl);
+
+            const badgeClass = t.status === 'CONFIRMED' || t.status === 'PAID' ? 'badge-confirmed' : 'badge-partially-paid';
+            const badgeEl = createElement('span', { className: `badge ${badgeClass}` }, t.status);
+
+            item.appendChild(leftCol);
+            item.appendChild(badgeEl);
+            searchDropdown.appendChild(item);
           });
         }
 
+        // Safe DOM building for Customers
         if (matchedCustomers.length > 0) {
-          html += `<div class="search-dropdown-header">Customers</div>`;
+          const custHeader = createElement('div', { className: 'search-dropdown-header' }, 'Customers');
+          searchDropdown.appendChild(custHeader);
+
           matchedCustomers.forEach(c => {
-            html += `
-              <a href="/customers/${c.id}" class="search-dropdown-item" data-link>
-                <div>
-                  <div class="font-semibold" style="font-size: 14px;">${c.name} ${c.isVip ? '<span class="badge badge-vip ml-xs">VIP</span>' : ''}</div>
-                  <div class="text-xs text-muted">${c.email || c.phone || c.id}</div>
-                </div>
-                <span class="text-xs text-accent font-semibold">Profile ›</span>
-              </a>
-            `;
+            const item = createElement('a', {
+              href: `/customers/${c.id}`,
+              className: 'search-dropdown-item',
+              'data-link': ''
+            });
+
+            const leftCol = createElement('div');
+            const nameRow = createElement('div', { className: 'font-semibold', style: 'font-size: 14px;' });
+            nameRow.appendChild(document.createTextNode(c.name || 'Customer'));
+
+            if (c.isVip) {
+              const vipBadge = createElement('span', { className: 'badge badge-vip ml-xs' }, 'VIP');
+              nameRow.appendChild(vipBadge);
+            }
+
+            const metaEl = createElement('div', { className: 'text-xs text-muted' }, c.email || c.phone || c.id);
+
+            leftCol.appendChild(nameRow);
+            leftCol.appendChild(metaEl);
+
+            const actionSpan = createElement('span', { className: 'text-xs text-accent font-semibold' }, 'Profile ›');
+
+            item.appendChild(leftCol);
+            item.appendChild(actionSpan);
+            searchDropdown.appendChild(item);
           });
         }
 
-        searchDropdown.innerHTML = html;
         searchDropdown.classList.remove('d-none');
       };
 
@@ -214,7 +256,6 @@ class App {
         const query = searchInput.value.trim();
         if (searchDropdown) searchDropdown.classList.add('d-none');
         if (query) {
-          // If exact match with a ticket ID or PNR
           const { tickets } = store.getState();
           const exact = tickets.find(t => t.id.toLowerCase() === query.toLowerCase() || t.pnr.toLowerCase() === query.toLowerCase());
           if (exact) {
@@ -243,10 +284,10 @@ class App {
               ${recent.map(r => `
                 <div class="p-sm" style="background-color: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border-soft);">
                   <div class="d-flex justify-between text-xs text-muted mb-xxs">
-                    <strong>${r.user}</strong>
+                    <strong>${escapeHtml(r.user)}</strong>
                     <span>${new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
-                  <div class="text-sm font-medium">${r.description}</div>
+                  <div class="text-sm font-medium">${escapeHtml(r.description)}</div>
                 </div>
               `).join('')}
             </div>
@@ -269,7 +310,7 @@ class App {
     if (helpBtn) {
       helpBtn.addEventListener('click', () => {
         openModal({
-          title: 'AfriciaTravel Operational Guide',
+          title: 'VoyageDesk Operational Guide',
           subtitle: 'System shortcuts and operational documentation',
           contentHtml: `
             <div class="d-flex flex-column gap-md text-sm">
@@ -277,14 +318,14 @@ class App {
                 <h4 style="margin-bottom: 6px;">Key Operations Workflows</h4>
                 <ul style="padding-left: 20px; color: var(--color-text-secondary); line-height: 1.6;">
                   <li><strong>Issue Ticket:</strong> Go to <code>/tickets/new</code>, fill customer, itinerary, and financial amounts. Remaining balance is automatically computed.</li>
-                  <li><strong>Record Payment:</strong> In ticket details, click <strong>+ Add Payment</strong>. Payments are append-only.</li>
+                  <li><strong>Record Payment:</strong> In ticket details, click <strong>+ Add Payment</strong>. Payments are append-only and balance-validated.</li>
                   <li><strong>Schedule Modification:</strong> In ticket details, click <strong>Modify Flight</strong>. Previous flights are archived in history.</li>
                   <li><strong>Process Refund:</strong> Available refundable balances are strictly validated.</li>
                 </ul>
               </div>
               <div class="p-sm" style="background-color: var(--color-surface); border-radius: var(--radius-md);">
                 <strong>Technical Support</strong>
-                <p class="text-xs text-muted" style="margin-top: 4px;">Internal Travel Agency Operations Terminal v1.0.0 (Production Build)</p>
+                <p class="text-xs text-muted" style="margin-top: 4px;">Internal Travel Agency Operations Terminal v1.0.0 (Hardened Baseline)</p>
               </div>
             </div>
           `,
@@ -303,7 +344,7 @@ class App {
   }
 
   updateHeaderProfile() {
-    const { currentUser } = store.getState();
+    const currentUser = AuthService.getCurrentUser();
     if (!currentUser) return;
     const nameEl = document.querySelector('.topbar-user-name');
     const roleEl = document.querySelector('.topbar-user-role');
