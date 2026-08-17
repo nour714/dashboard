@@ -5,16 +5,16 @@
   --color-primary-container: #131b2e;
   --color-sidebar: #131b2e;
   --color-sidebar-hover: #1e293b;
-  --color-sidebar-active: #2563eb;
+  --color-sidebar-active: #d42b2b;
   --color-sidebar-text: #94a3b8;
   --color-sidebar-text-active: #ffffff;
 
-  /* Colors - Interactive & Accents */
-  --color-accent: #2563eb;
-  --color-accent-strong: #0051d5;
-  --color-accent-hover: #1d4ed8;
-  --color-accent-soft: #eff6ff;
-  --color-accent-border: #bfdbfe;
+  /* Colors - Interactive & Accents (Brand Red) */
+  --color-accent: #d42b2b;
+  --color-accent-strong: #b91c1c;
+  --color-accent-hover: #c02424;
+  --color-accent-soft: #fef2f2;
+  --color-accent-border: #fecaca;
 
   /* Colors - Semantic States */
   --color-success: #059669;
@@ -27,10 +27,10 @@
   --color-warning-bg: #fef3c7;
   --color-warning-border: #fde68a;
 
-  --color-danger: #ba1a1a;
-  --color-danger-dark: #93000a;
-  --color-danger-bg: #ffdad6;
-  --color-danger-border: #fecaca;
+  --color-danger: #991b1b;
+  --color-danger-dark: #7f1d1d;
+  --color-danger-bg: #fee2e2;
+  --color-danger-border: #fca5a5;
 
   --color-info: #0284c7;
   --color-info-bg: #e0f2fe;
