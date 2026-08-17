@@ -101,13 +101,14 @@
   gap: 8px;
   padding: 10px 14px;
   background-color: var(--color-accent);
-  color: #ffffff;
+  color: #ffffff !important;
   border-radius: var(--radius-md);
   font-family: var(--font-family-heading);
   font-size: var(--font-size-label-md);
   font-weight: var(--font-weight-semibold);
-  transition: background-color var(--transition-fast), transform var(--transition-fast);
+  transition: background-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
   text-decoration: none;
+  border: 1px solid transparent;
 }
 
 .sidebar-new-btn svg {
@@ -117,14 +118,20 @@
   max-width: 16px !important;
   stroke-width: 2.5;
   flex-shrink: 0;
+  stroke: #ffffff !important;
 }
 
-.sidebar-new-btn:hover {
+.sidebar-new-btn:hover,
+.sidebar-new-btn:focus-visible {
   background-color: var(--color-accent-hover);
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(212, 43, 43, 0.4);
+  transform: translateY(-1px);
 }
 
 .sidebar-new-btn:active {
   transform: scale(0.98);
+  box-shadow: none;
 }
 
 /* Sidebar Nav */
