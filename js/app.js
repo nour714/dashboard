@@ -353,7 +353,15 @@ class App {
   }
 }
 
-// Start application on DOM ready
-document.addEventListener('DOMContentLoaded', () => {
-  window.AfricaTravel = new App();
-});
+// Start application safely on DOM ready or immediately if already loaded
+function bootstrap() {
+  if (!window.AfricaTravel) {
+    window.AfricaTravel = new App();
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootstrap);
+} else {
+  bootstrap();
+}

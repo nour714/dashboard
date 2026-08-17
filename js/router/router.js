@@ -73,7 +73,7 @@ export class Router {
     return null;
   }
 
-  resolveCurrentRoute() {
+  async resolveCurrentRoute() {
     let pathname = window.location.pathname;
     const isAuthenticated = AuthService.isAuthenticated();
 
@@ -108,7 +108,7 @@ export class Router {
     if (matched) {
       this.currentRoute = matched.route;
       this.currentParams = matched.params;
-      this.render(matched.route, matched.params, query);
+      await this.render(matched.route, matched.params, query);
     } else {
       this.renderNotFound(pathname);
     }
@@ -116,10 +116,12 @@ export class Router {
     // Scroll to top
     window.scrollTo(0, 0);
 
-    // Notify document/app shell of path change
-    window.dispatchEvent(new CustomEvent('AfricaTravel:route-changed', {
-      detail: { path: pathname, route: matched ? matched.route : null }
-    }));
+    // Notify app shell of path change (deferred to avoid re-entrant routing)
+    queueMicrotask(() => {
+      window.dispatchEvent(new CustomEvent('AfricaTravel:route-changed', {
+        detail: { path: pathname, route: matched ? matched.route : null }
+      }));
+    });
   }
 
   async render(route, params, query) {
