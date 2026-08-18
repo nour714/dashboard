@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "africatravel",
   "version": "1.0.0",
   "description": "AfricaTravel — Internal Travel Agency Management System",
@@ -6,9 +6,9 @@
   "scripts": {
     "build": "echo 'Static build ready'",
     "start": "node server.js",
-    "test": "node test/business-flow.test.js"
+    "test": "node test/business-flow.test.js && node test/i18n-bilingual.test.js"
   },
-  "keywords": ["travel", "agency", "ticketing", "operations"],
+  "keywords": ["travel", "agency", "ticketing", "operations", "i18n", "rtl"],
   "author": "AfricaTravel Engineering",
   "license": "ISC"
 }

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AfricaTravel - Reusable Tabs Component
  */
 
@@ -14,7 +14,7 @@ export function renderTabs(tabs = [], activeTabId = '') {
       aria-selected="${t.id === currentActive ? 'true' : 'false'}"
     >
       ${t.label}
-      ${t.badge ? `<span class="badge badge-neutral" style="margin-left: 4px;">${t.badge}</span>` : ''}
+      ${t.badge ? `<span class="badge badge-neutral ms-xs">${t.badge}</span>` : ''}
     </button>
   `).join('');
 

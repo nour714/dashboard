@@ -1,95 +1,80 @@
-/**
- * AfricaTravel — Reusable Status Badge Component
+ï»¿/**
+ * AfricaTravel - Reusable Status Badge Component
  */
+
+import { i18n } from '../i18n/i18n.js';
+import { escapeHtml } from '../utils/security.js';
 
 export function renderStatusBadge(status) {
   if (!status) return '';
   const s = String(status).toUpperCase();
 
   let badgeClass = 'badge-neutral';
-  let label = s;
+  let labelKey = s;
 
   switch (s) {
     case 'PAID':
     case 'PAID IN FULL':
       badgeClass = 'badge-paid';
-      label = 'PAID';
+      labelKey = 'PAID';
       break;
     case 'PARTIALLY PAID':
       badgeClass = 'badge-partially-paid';
-      label = 'PARTIALLY PAID';
+      labelKey = 'PARTIALLY PAID';
       break;
     case 'PENDING':
     case 'PENDING PAY':
       badgeClass = 'badge-pending-pay';
-      label = 'PENDING PAY';
+      labelKey = 'PENDING';
       break;
     case 'CONFIRMED':
     case 'ISSUED':
       badgeClass = 'badge-confirmed';
-      label = s === 'ISSUED' ? 'ISSUED' : 'CONFIRMED';
+      labelKey = 'CONFIRMED';
       break;
     case 'MODIFIED':
       badgeClass = 'badge-modified';
-      label = 'MODIFIED';
+      labelKey = 'MODIFIED';
       break;
     case 'REFUND REQUESTED':
       badgeClass = 'badge-refund-requested';
-      label = 'REFUND REQUESTED';
+      labelKey = 'REFUND REQUESTED';
       break;
     case 'REFUNDED':
       badgeClass = 'badge-refunded';
-      label = 'REFUNDED';
+      labelKey = 'REFUNDED';
       break;
     case 'CANCELLED':
       badgeClass = 'badge-cancelled';
-      label = 'CANCELLED';
+      labelKey = 'CANCELLED';
       break;
     case 'COMPLETED':
       badgeClass = 'badge-completed';
-      label = 'COMPLETED';
+      labelKey = 'COMPLETED';
       break;
-    case 'PROCESSING':
-      badgeClass = 'badge-processing';
-      label = 'PROCESSING';
-      break;
-    case 'REJECTED':
-      badgeClass = 'badge-rejected';
-      label = 'REJECTED';
+    case 'BOOKED':
+      badgeClass = 'badge-pending-pay';
+      labelKey = 'BOOKED';
       break;
     case 'ACTIVE':
       badgeClass = 'badge-active';
-      label = 'ACTIVE';
+      labelKey = 'ACTIVE';
       break;
-    case 'AWAY':
-      badgeClass = 'badge-away';
-      label = 'AWAY';
-      break;
-    case 'SCHEDULED':
-      badgeClass = 'badge-scheduled';
-      label = 'SCHEDULED';
-      break;
-    case 'DELAYED':
-      badgeClass = 'badge-delayed';
-      label = 'DELAYED';
-      break;
-    case 'FLOWN':
-      badgeClass = 'badge-flown';
-      label = 'FLOWN';
-      break;
-    case 'ADMIN':
-      badgeClass = 'badge-admin';
-      label = 'ADMIN';
-      break;
-    case 'AGENT':
-      badgeClass = 'badge-agent';
-      label = 'AGENT';
+    case 'INACTIVE':
+      badgeClass = 'badge-neutral';
+      labelKey = 'INACTIVE';
       break;
     case 'VIP':
       badgeClass = 'badge-vip';
-      label = 'VIP';
+      labelKey = 'VIP';
+      break;
+    default:
+      badgeClass = 'badge-neutral';
+      labelKey = s;
       break;
   }
 
-  return `<span class="badge ${badgeClass}"><span class="badge-dot"></span>${label}</span>`;
+  const translatedLabel = i18n.translateStatus(labelKey) || labelKey;
+
+  return `<span class="badge ${badgeClass}"><span class="badge-dot"></span>${escapeHtml(translatedLabel)}</span>`;
 }

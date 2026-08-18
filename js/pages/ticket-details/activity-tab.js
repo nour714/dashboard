@@ -1,10 +1,11 @@
-/**
- * AfricaTravel — Ticket Details: Activity Timeline Tab Component
+ï»¿/**
+ * AfricaTravel - Ticket Details: Activity Timeline Tab Component
  */
 
 import { store } from '../../state/store.js';
 import { formatDateTime, formatRelativeTime } from '../../utils/calculations.js';
 import { escapeHtml } from '../../utils/security.js';
+import { t } from '../../i18n/i18n.js';
 
 export function renderActivityTab(ticket) {
   const { activityLogs = [] } = store.getState();
@@ -12,7 +13,7 @@ export function renderActivityTab(ticket) {
 
   const logsHtml = ticketLogs.length === 0 ? `
     <div class="p-lg text-center text-muted">
-      <p>No activity records logged for ticket #${escapeHtml(ticket.id)}.</p>
+      <p>${escapeHtml(t('common.noData'))}</p>
     </div>
   ` : `
     <div class="timeline">
@@ -20,7 +21,7 @@ export function renderActivityTab(ticket) {
         const initials = log.user.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'US';
         return `
           <div class="timeline-item">
-            <div class="timeline-avatar">
+            <div class="sidebar-user-avatar" style="width: 32px; height: 32px; font-size: 12px; background-color: var(--color-primary);">
               ${initials}
             </div>
             <div class="timeline-content">
@@ -41,7 +42,7 @@ export function renderActivityTab(ticket) {
   return `
     <div class="tab-pane" id="tab-pane-activity">
       <div class="card-header">
-        <h3 class="card-title">Audit Trail & Activity Timeline</h3>
+        <h3 class="card-title">${escapeHtml(t('ticketDetails.activityTab.title'))}</h3>
       </div>
       <div class="card-body">
         ${logsHtml}

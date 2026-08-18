@@ -1,22 +1,23 @@
-/**
- * AfricaTravel — Ticket Details: Refunds Tab Component
+ï»¿/**
+ * AfricaTravel - Ticket Details: Refunds Tab Component
  */
 
 import { icons } from '../../components/icons.js';
 import { renderStatusBadge } from '../../components/status-badge.js';
 import { formatCurrency, formatDateTime } from '../../utils/calculations.js';
 import { escapeHtml } from '../../utils/security.js';
+import { t } from '../../i18n/i18n.js';
 
 export function renderRefundsTab(ticket) {
   const refundsRows = ticket.refunds.length === 0 ? `
     <tr>
       <td colspan="6" class="text-center text-muted p-lg">
-        <p>No refund transactions processed for this ticket.</p>
+        <p>${escapeHtml(t('ticketDetails.refundsTab.empty'))}</p>
       </td>
     </tr>
   ` : ticket.refunds.map(r => `
     <tr>
-      <td><strong class="cell-main">${escapeHtml(r.id)}</strong></td>
+      <td><strong class="cell-main ltr-data">${escapeHtml(r.id)}</strong></td>
       <td>
         <span class="tabular-nums font-bold text-danger">
           ${formatCurrency(r.amount, r.currency || ticket.currency)}
@@ -32,22 +33,22 @@ export function renderRefundsTab(ticket) {
   return `
     <div class="tab-pane" id="tab-pane-refunds">
       <div class="card-header">
-        <h3 class="card-title">Refund Transactions</h3>
+        <h3 class="card-title">${escapeHtml(t('ticketDetails.refundsTab.title'))}</h3>
         <button type="button" class="btn btn-sm btn-danger-outline" id="tab-add-refund-trigger-btn">
           ${icons.refunds('w-4 h-4')}
-          <span>Process Refund</span>
+          <span>${escapeHtml(t('ticketDetails.refundsTab.requestBtn'))}</span>
         </button>
       </div>
       <div class="table-responsive">
         <table class="data-table">
           <thead>
             <tr>
-              <th>REFUND ID</th>
-              <th>AMOUNT</th>
-              <th>REASON</th>
-              <th>STATUS</th>
-              <th>DATE PROCESSED</th>
-              <th>PROCESSED BY</th>
+              <th>${escapeHtml(t('ticketDetails.refundsTab.table.id'))}</th>
+              <th>${escapeHtml(t('ticketDetails.refundsTab.table.amount'))}</th>
+              <th>${escapeHtml(t('ticketDetails.refundsTab.table.reason'))}</th>
+              <th>${escapeHtml(t('ticketDetails.refundsTab.table.status'))}</th>
+              <th>${escapeHtml(t('ticketDetails.refundsTab.table.date'))}</th>
+              <th>${escapeHtml(t('ticketDetails.refundsTab.table.processedBy'))}</th>
             </tr>
           </thead>
           <tbody>

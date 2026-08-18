@@ -77,12 +77,19 @@
 .mb-lg { margin-bottom: var(--spacing-lg); }
 .mb-xl { margin-bottom: var(--spacing-xl); }
 
-.ml-xs { margin-left: var(--spacing-xs); }
-.ml-sm { margin-left: var(--spacing-sm); }
-.ml-md { margin-left: var(--spacing-md); }
-.mr-xs { margin-right: var(--spacing-xs); }
-.mr-sm { margin-right: var(--spacing-sm); }
-.mr-md { margin-right: var(--spacing-md); }
+.ml-xs, .ms-xs { margin-inline-start: var(--spacing-xs); }
+.ml-sm, .ms-sm { margin-inline-start: var(--spacing-sm); }
+.ml-md, .ms-md { margin-inline-start: var(--spacing-md); }
+.mr-xs, .me-xs { margin-inline-end: var(--spacing-xs); }
+.mr-sm, .me-sm { margin-inline-end: var(--spacing-sm); }
+.mr-md, .me-md { margin-inline-end: var(--spacing-md); }
+
+.ps-xs { padding-inline-start: var(--spacing-xs); }
+.ps-sm { padding-inline-start: var(--spacing-sm); }
+.ps-md { padding-inline-start: var(--spacing-md); }
+.pe-xs { padding-inline-end: var(--spacing-xs); }
+.pe-sm { padding-inline-end: var(--spacing-sm); }
+.pe-md { padding-inline-end: var(--spacing-md); }
 
 .p-0 { padding: 0; }
 .p-xs { padding: var(--spacing-xs); }
@@ -97,6 +104,8 @@
 .pt-lg { padding-top: var(--spacing-lg); }
 
 /* Typography */
+.text-start { text-align: start; }
+.text-end { text-align: end; }
 .text-left { text-align: left; }
 .text-center { text-align: center; }
 .text-right { text-align: right; }

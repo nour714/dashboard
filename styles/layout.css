@@ -19,9 +19,11 @@
   position: fixed;
   top: 0;
   bottom: 0;
-  left: 0;
+  inset-inline-start: 0;
+  inset-inline-end: auto;
   z-index: var(--z-sidebar);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-inline-end: 1px solid rgba(255, 255, 255, 0.06);
+  border-inline-start: none;
   transition: width var(--transition-normal), transform var(--transition-normal);
   user-select: none;
 }
@@ -163,6 +165,7 @@
   transition: all var(--transition-fast);
   text-decoration: none;
   position: relative;
+  text-align: start;
 }
 
 .nav-link svg {
@@ -171,6 +174,7 @@
   stroke-width: 2;
   opacity: 0.8;
   transition: opacity var(--transition-fast);
+  flex-shrink: 0;
 }
 
 .nav-link:hover {
@@ -198,7 +202,7 @@
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
 }
 
 .sidebar-user {
@@ -206,36 +210,36 @@
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  border-radius: var(--radius-md);
-  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-lg);
+  color: #ffffff;
+  text-decoration: none;
+  transition: background-color var(--transition-fast);
+}
+
+.sidebar-user:hover {
+  background-color: var(--color-sidebar-hover);
 }
 
 .sidebar-user-avatar {
   width: 34px;
   height: 34px;
   border-radius: var(--radius-full);
-  background-color: #3b82f6;
+  background-color: #2563eb;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: var(--font-weight-bold);
+  font-family: var(--font-family-heading);
   font-size: 13px;
+  font-weight: var(--font-weight-bold);
   flex-shrink: 0;
-  overflow: hidden;
-}
-
-.sidebar-user-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .sidebar-user-info {
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  flex: 1;
+  overflow: hidden;
+  line-height: 1.2;
 }
 
 .sidebar-user-name {
@@ -244,33 +248,34 @@
   font-weight: var(--font-weight-semibold);
   color: #ffffff;
   white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .sidebar-user-role {
   font-size: 11px;
   color: #64748b;
   white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
+  overflow: hidden;
 }
 
-/* Main Layout Area */
+/* Main Workspace */
 .app-main-wrap {
   flex: 1;
-  margin-left: var(--sidebar-width);
+  min-width: 0;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  min-width: 0;
-  transition: margin-left var(--transition-normal);
+  margin-inline-start: var(--sidebar-width);
+  margin-inline-end: 0;
+  transition: margin var(--transition-normal);
 }
 
 /* Topbar Header */
 .app-topbar {
   height: var(--topbar-height);
-  background-color: var(--color-surface-card);
+  background-color: #ffffff;
   border-bottom: 1px solid var(--color-border-soft);
   position: sticky;
   top: 0;
@@ -278,7 +283,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--spacing-lg);
+  padding: 0 var(--container-margin);
   gap: var(--spacing-md);
 }
 
@@ -308,7 +313,8 @@
 
 .topbar-search-icon {
   position: absolute;
-  left: 12px;
+  inset-inline-start: 12px;
+  inset-inline-end: auto;
   top: 50%;
   transform: translateY(-50%);
   color: var(--color-text-muted);
@@ -320,19 +326,21 @@
 .topbar-search-input {
   width: 100%;
   height: 38px;
-  padding: 0 12px 0 36px;
+  padding-inline-start: 36px;
+  padding-inline-end: 12px;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-md);
   font-size: var(--font-size-body-md);
   color: var(--color-text);
   transition: all var(--transition-fast);
+  text-align: start;
 }
 
 .topbar-search-input:focus {
   background-color: #ffffff;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 2px rgba(212, 43, 43, 0.15);
   outline: none;
 }
 
@@ -343,8 +351,8 @@
 .search-dropdown {
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   background-color: #ffffff;
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-lg);
@@ -352,6 +360,7 @@
   max-height: 380px;
   overflow-y: auto;
   z-index: 100;
+  text-align: start;
 }
 
 .search-dropdown-item {
@@ -385,6 +394,34 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+}
+
+/* Language Switcher Pill in Topbar */
+.topbar-lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-full);
+  color: var(--color-text);
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-label-sm);
+  font-weight: var(--font-weight-semibold);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.topbar-lang-btn:hover {
+  background-color: var(--color-surface-soft);
+  border-color: var(--color-border);
+}
+
+.topbar-lang-btn svg {
+  width: 14px;
+  height: 14px;
+  color: var(--color-accent);
 }
 
 .topbar-new-ticket-btn {
@@ -449,7 +486,8 @@
 .notification-badge {
   position: absolute;
   top: 6px;
-  right: 6px;
+  inset-inline-end: 6px;
+  inset-inline-start: auto;
   width: 8px;
   height: 8px;
   background-color: var(--color-danger);
@@ -483,6 +521,7 @@
   font-size: 12px;
   font-weight: var(--font-weight-bold);
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .topbar-user-avatar img {
@@ -523,8 +562,8 @@
   display: none;
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   height: var(--bottombar-height);
   background-color: #ffffff;
   border-top: 1px solid var(--color-border-soft);
@@ -589,8 +628,8 @@
 .mobile-drawer {
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   background-color: #ffffff;
   border-top-left-radius: var(--radius-2xl);
   border-top-right-radius: var(--radius-2xl);

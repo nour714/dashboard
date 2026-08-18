@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AfricaTravel — Main Application Entry Point
  */
 
@@ -12,6 +12,7 @@ import { renderBottomNav, bindBottomNavEvents } from './components/bottom-nav.js
 import { openModal, closeModal } from './components/modal.js';
 import { createElement, clearElement, appendChildren } from './utils/dom.js';
 import { escapeHtml } from './utils/security.js';
+import { i18n, t } from './i18n/i18n.js';
 
 class App {
   constructor() {
@@ -22,10 +23,25 @@ class App {
   }
 
   init() {
+    // Apply document attributes on start
+    i18n.applyDocumentAttributes();
+
     // Listen to route changes
     window.addEventListener('AfricaTravel:route-changed', (e) => {
       const { path } = e.detail;
       this.handleRouteChange(path);
+    });
+
+    // Listen to language changes
+    window.addEventListener('AfricaTravel:language-changed', () => {
+      const currentPath = window.location.pathname;
+      if (this.shellRendered) {
+        this.renderAppShell(currentPath);
+        this.router.mountElement = document.getElementById('app-content-mount');
+        this.router.resolveCurrentRoute();
+      } else {
+        this.setupShellForCurrentPath();
+      }
     });
 
     // Subscribe to store updates for header badge sync and auth state transitions
@@ -119,6 +135,14 @@ class App {
   }
 
   bindGlobalEvents() {
+    // Language Switcher in Topbar
+    const langToggleBtn = document.getElementById('topbar-lang-toggle-btn');
+    if (langToggleBtn) {
+      langToggleBtn.addEventListener('click', () => {
+        i18n.toggleLanguage();
+      });
+    }
+
     // Global Search Form with Safe DOM Live Suggestions
     const searchForm = document.getElementById('topbar-global-search');
     const searchInput = document.getElementById('global-search-input');
@@ -135,12 +159,12 @@ class App {
         }
 
         const { tickets = [], customers = [] } = store.getState();
-        const matchedTickets = tickets.filter(t =>
-          (t.id && t.id.toLowerCase().includes(q)) ||
-          (t.pnr && t.pnr.toLowerCase().includes(q)) ||
-          (t.ticketNumber && t.ticketNumber.toLowerCase().includes(q)) ||
-          (t.passengerName && t.passengerName.toLowerCase().includes(q)) ||
-          (t.phone && t.phone.toLowerCase().includes(q))
+        const matchedTickets = tickets.filter(tData =>
+          (tData.id && tData.id.toLowerCase().includes(q)) ||
+          (tData.pnr && tData.pnr.toLowerCase().includes(q)) ||
+          (tData.ticketNumber && tData.ticketNumber.toLowerCase().includes(q)) ||
+          (tData.passengerName && tData.passengerName.toLowerCase().includes(q)) ||
+          (tData.phone && tData.phone.toLowerCase().includes(q))
         ).slice(0, 4);
 
         const matchedCustomers = customers.filter(c =>
@@ -155,7 +179,7 @@ class App {
 
         if (matchedTickets.length === 0 && matchedCustomers.length === 0) {
           const emptyItem = createElement('div', { className: 'p-md text-center text-muted text-sm' });
-          emptyItem.appendChild(document.createTextNode('No results found for "'));
+          emptyItem.appendChild(document.createTextNode(t('common.noData') + ' "'));
           const queryTextNode = createElement('strong', {}, query);
           emptyItem.appendChild(queryTextNode);
           emptyItem.appendChild(document.createTextNode('"'));
@@ -166,30 +190,30 @@ class App {
 
         // Safe DOM building for Tickets
         if (matchedTickets.length > 0) {
-          const ticketHeader = createElement('div', { className: 'search-dropdown-header' }, 'Tickets & Reservations');
+          const ticketHeader = createElement('div', { className: 'search-dropdown-header' }, t('nav.tickets'));
           searchDropdown.appendChild(ticketHeader);
 
-          matchedTickets.forEach(t => {
+          matchedTickets.forEach(tData => {
             const item = createElement('a', {
-              href: `/tickets/${t.id}`,
+              href: `/tickets/${tData.id}`,
               className: 'search-dropdown-item',
               'data-link': ''
             });
 
             const leftCol = createElement('div');
-            const nameEl = createElement('div', { className: 'font-semibold', style: 'font-size: 14px;' }, t.passengerName);
+            const nameEl = createElement('div', { className: 'font-semibold', style: 'font-size: 14px;' }, tData.passengerName);
             const metaEl = createElement('div', { className: 'text-xs text-muted' });
 
-            metaEl.appendChild(document.createTextNode(`${t.id} • PNR: `));
-            const pnrStrong = createElement('strong', { style: 'color: var(--color-primary);' }, t.pnr);
+            metaEl.appendChild(document.createTextNode(`${tData.id} • PNR: `));
+            const pnrStrong = createElement('strong', { style: 'color: var(--color-primary);' }, tData.pnr);
             metaEl.appendChild(pnrStrong);
-            metaEl.appendChild(document.createTextNode(` • ${t.origin || ''} ✈ ${t.destination || ''}`));
+            metaEl.appendChild(document.createTextNode(` • ${tData.origin || ''} ✈ ${tData.destination || ''}`));
 
             leftCol.appendChild(nameEl);
             leftCol.appendChild(metaEl);
 
-            const badgeClass = t.status === 'CONFIRMED' || t.status === 'PAID' ? 'badge-confirmed' : 'badge-partially-paid';
-            const badgeEl = createElement('span', { className: `badge ${badgeClass}` }, t.status);
+            const badgeClass = tData.status === 'CONFIRMED' || tData.status === 'PAID' ? 'badge-confirmed' : 'badge-partially-paid';
+            const badgeEl = createElement('span', { className: `badge ${badgeClass}` }, i18n.translateStatus(tData.status));
 
             item.appendChild(leftCol);
             item.appendChild(badgeEl);
@@ -199,7 +223,7 @@ class App {
 
         // Safe DOM building for Customers
         if (matchedCustomers.length > 0) {
-          const custHeader = createElement('div', { className: 'search-dropdown-header' }, 'Customers');
+          const custHeader = createElement('div', { className: 'search-dropdown-header' }, t('nav.customers'));
           searchDropdown.appendChild(custHeader);
 
           matchedCustomers.forEach(c => {
@@ -214,16 +238,16 @@ class App {
             nameRow.appendChild(document.createTextNode(c.name || 'Customer'));
 
             if (c.isVip) {
-              const vipBadge = createElement('span', { className: 'badge badge-vip ml-xs' }, 'VIP');
+              const vipBadge = createElement('span', { className: 'badge badge-vip ms-xs' }, 'VIP');
               nameRow.appendChild(vipBadge);
             }
 
-            const metaEl = createElement('div', { className: 'text-xs text-muted' }, c.email || c.phone || c.id);
+            const metaEl = createElement('div', { className: 'text-xs text-muted ltr-data' }, c.email || c.phone || c.id);
 
             leftCol.appendChild(nameRow);
             leftCol.appendChild(metaEl);
 
-            const actionSpan = createElement('span', { className: 'text-xs text-accent font-semibold' }, 'Profile ›');
+            const actionSpan = createElement('span', { className: 'text-xs text-accent font-semibold' }, `${t('common.details')} ›`);
 
             item.appendChild(leftCol);
             item.appendChild(actionSpan);
@@ -257,7 +281,7 @@ class App {
         if (searchDropdown) searchDropdown.classList.add('d-none');
         if (query) {
           const { tickets } = store.getState();
-          const exact = tickets.find(t => t.id.toLowerCase() === query.toLowerCase() || t.pnr.toLowerCase() === query.toLowerCase());
+          const exact = tickets.find(tData => tData.id.toLowerCase() === query.toLowerCase() || tData.pnr.toLowerCase() === query.toLowerCase());
           if (exact) {
             this.router.navigateTo(`/tickets/${exact.id}`);
           } else {
@@ -276,8 +300,8 @@ class App {
         const recent = activityLogs.slice(0, 4);
 
         openModal({
-          title: 'Notifications & Alerts',
-          subtitle: 'Recent system operations and ticketing updates',
+          title: t('modals.notifications.title'),
+          subtitle: t('modals.notifications.subtitle'),
           maxWidth: '480px',
           contentHtml: `
             <div class="d-flex flex-column gap-sm">
@@ -293,7 +317,7 @@ class App {
             </div>
           `,
           footerHtml: `
-            <a href="/activity" class="btn btn-sm btn-primary" id="view-all-audit-btn" data-link>View Full Audit Trail</a>
+            <a href="/activity" class="btn btn-sm btn-primary" id="view-all-audit-btn" data-link>${escapeHtml(t('modals.notifications.viewAll'))}</a>
           `,
           onOpen: (modalEl) => {
             const link = modalEl.querySelector('#view-all-audit-btn');
@@ -310,27 +334,27 @@ class App {
     if (helpBtn) {
       helpBtn.addEventListener('click', () => {
         openModal({
-          title: 'AfricaTravel Operational Guide',
-          subtitle: 'System shortcuts and operational documentation',
+          title: t('modals.help.title'),
+          subtitle: t('modals.help.subtitle'),
           contentHtml: `
             <div class="d-flex flex-column gap-md text-sm">
               <div>
-                <h4 style="margin-bottom: 6px;">Key Operations Workflows</h4>
-                <ul style="padding-left: 20px; color: var(--color-text-secondary); line-height: 1.6;">
-                  <li><strong>Issue Ticket:</strong> Go to <code>/tickets/new</code>, fill customer, itinerary, and financial amounts. Remaining balance is automatically computed.</li>
-                  <li><strong>Record Payment:</strong> In ticket details, click <strong>+ Add Payment</strong>. Payments are append-only and balance-validated.</li>
-                  <li><strong>Schedule Modification:</strong> In ticket details, click <strong>Modify Flight</strong>. Previous flights are archived in history.</li>
-                  <li><strong>Process Refund:</strong> Available refundable balances are strictly validated.</li>
+                <h4 style="margin-bottom: 6px;">${escapeHtml(t('modals.help.workflows'))}</h4>
+                <ul style="padding-inline-start: 20px; color: var(--color-text-secondary); line-height: 1.6;">
+                  <li><strong>${escapeHtml(t('tickets.createTicket'))}:</strong> ${escapeHtml(t('modals.help.issueTicketDesc'))}</li>
+                  <li><strong>${escapeHtml(t('ticketDetails.actions.addPayment'))}:</strong> ${escapeHtml(t('modals.help.recordPaymentDesc'))}</li>
+                  <li><strong>${escapeHtml(t('ticketDetails.actions.modifyFlight'))}:</strong> ${escapeHtml(t('modals.help.modifyFlightDesc'))}</li>
+                  <li><strong>${escapeHtml(t('ticketDetails.actions.requestRefund'))}:</strong> ${escapeHtml(t('modals.help.refundDesc'))}</li>
                 </ul>
               </div>
               <div class="p-sm" style="background-color: var(--color-surface); border-radius: var(--radius-md);">
-                <strong>Technical Support</strong>
-                <p class="text-xs text-muted" style="margin-top: 4px;">Internal Travel Agency Operations Terminal v1.0.0 (Hardened Baseline)</p>
+                <strong>${escapeHtml(t('modals.help.techSupport'))}</strong>
+                <p class="text-xs text-muted" style="margin-top: 4px;">${escapeHtml(t('brand.terminal'))} v1.0.0 (Bilingual LTR/RTL)</p>
               </div>
             </div>
           `,
           footerHtml: `
-            <button type="button" class="btn btn-secondary" onclick="document.querySelector('#modal-close-trigger')?.click()">Close</button>
+            <button type="button" class="btn btn-secondary" onclick="document.querySelector('#modal-close-trigger')?.click()">${escapeHtml(t('common.close'))}</button>
           `
         });
       });

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AfricaTravel — Ticket Action Modals (Payment, Modification, Refund, Edit)
  */
 
@@ -7,22 +7,23 @@ import { openModal, closeModal } from '../../components/modal.js';
 import { showToast } from '../../components/toast.js';
 import { formatCurrency } from '../../utils/calculations.js';
 import { escapeHtml } from '../../utils/security.js';
+import { t } from '../../i18n/i18n.js';
 
 export function openAddPaymentModal(ticket, onSuccess) {
   const financials = TicketService.getTicketFinancials(ticket);
 
   openModal({
-    title: `Record Payment for Ticket #${ticket.id}`,
-    subtitle: `Remaining balance: ${formatCurrency(financials.remaining, financials.currency)}`,
+    title: `${t('modals.addPayment.title')} #${ticket.id}`,
+    subtitle: `${t('modals.addPayment.remainingIs')} ${formatCurrency(financials.remaining, financials.currency)}`,
     contentHtml: `
       <form id="record-payment-form" class="d-flex flex-column gap-md">
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label" for="pay-amount">Payment Amount (${escapeHtml(ticket.currency)}) *</label>
+            <label class="form-label" for="pay-amount">${escapeHtml(t('modals.addPayment.amount'))} *</label>
             <input
               type="number"
               id="pay-amount"
-              class="form-control"
+              class="form-control tabular-nums"
               placeholder="0.00"
               value="${financials.remaining > 0 ? financials.remaining : ''}"
               max="${financials.remaining}"
@@ -30,42 +31,43 @@ export function openAddPaymentModal(ticket, onSuccess) {
               step="0.01"
               required
             />
-            <span class="text-xs text-muted mt-xxs">Max payable: ${formatCurrency(financials.remaining, financials.currency)}</span>
+            <span class="text-xs text-muted mt-xxs">${escapeHtml(t('modals.addPayment.remainingIs'))} ${formatCurrency(financials.remaining, financials.currency)}</span>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="pay-method">Payment Method *</label>
+            <label class="form-label" for="pay-method">${escapeHtml(t('modals.addPayment.method'))} *</label>
             <select id="pay-method" class="form-control" required>
-              <option value="Credit Card">Credit Card</option>
-              <option value="Cash">Cash</option>
-              <option value="Bank Transfer">Bank Transfer</option>
-              <option value="Corporate Credit">Corporate Credit</option>
-              <option value="POS Terminal">POS Terminal</option>
+              <option value="Cash">Cash (نقدًا)</option>
+              <option value="Credit Card">Credit Card (بطاقة ائتمان)</option>
+              <option value="Bank Transfer">Bank Transfer (تحويل بنكي)</option>
+              <option value="Vodafone Cash">Vodafone Cash (فودافون كاش)</option>
+              <option value="InstaPay">InstaPay (إنستاباي)</option>
+              <option value="Corporate Credit">Corporate Credit (حساب شركات)</option>
             </select>
           </div>
         </div>
 
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label" for="pay-date">Transaction Date *</label>
+            <label class="form-label" for="pay-date">${escapeHtml(t('common.date'))} *</label>
             <input type="datetime-local" id="pay-date" class="form-control" value="${new Date().toISOString().slice(0, 16)}" required />
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="pay-ref">Reference / Auth Code</label>
-            <input type="text" id="pay-ref" class="form-control" placeholder="e.g. AUTH-VISA-8821" value="REF-${Math.floor(100000 + Math.random() * 900000)}" />
+            <label class="form-label" for="pay-ref">${escapeHtml(t('modals.addPayment.ref'))}</label>
+            <input type="text" id="pay-ref" class="form-control ltr-field" placeholder="${escapeHtml(t('modals.addPayment.refPlaceholder'))}" value="REF-${Math.floor(100000 + Math.random() * 900000)}" />
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="pay-notes">Transaction Notes</label>
-          <textarea id="pay-notes" class="form-control" placeholder="Optional internal notes..."></textarea>
+          <label class="form-label" for="pay-notes">${escapeHtml(t('modals.addPayment.notes'))}</label>
+          <textarea id="pay-notes" class="form-control" placeholder="..."></textarea>
         </div>
       </form>
     `,
     footerHtml: `
-      <button type="button" class="btn btn-secondary" id="modal-cancel-pay">Cancel</button>
-      <button type="button" class="btn btn-primary" id="modal-submit-pay">Record Payment</button>
+      <button type="button" class="btn btn-secondary" id="modal-cancel-pay">${escapeHtml(t('common.cancel'))}</button>
+      <button type="button" class="btn btn-primary" id="modal-submit-pay">${escapeHtml(t('modals.addPayment.submit'))}</button>
     `,
     onOpen: (modalEl) => {
       const cancelBtn = modalEl.querySelector('#modal-cancel-pay');
@@ -96,7 +98,7 @@ export function openAddPaymentModal(ticket, onSuccess) {
           }
 
           closeModal();
-          showToast(`Payment of ${formatCurrency(amount, ticket.currency)} recorded successfully!`, 'success');
+          showToast(t('toasts.paymentAdded'), 'success');
           if (onSuccess) onSuccess();
         });
       }
@@ -106,48 +108,53 @@ export function openAddPaymentModal(ticket, onSuccess) {
 
 export function openModifyFlightModal(ticket, onSuccess) {
   openModal({
-    title: `Modify Flight Schedule — Ticket #${ticket.id}`,
-    subtitle: `Current: ${ticket.origin} → ${ticket.destination} (${ticket.flightNumber || 'MS 901'})`,
+    title: `${t('modals.modifyFlight.title')} #${ticket.id}`,
+    subtitle: `${ticket.origin} ✈ ${ticket.destination} (${ticket.flightNumber || 'MS 901'})`,
     contentHtml: `
       <form id="modify-flight-form" class="d-flex flex-column gap-md">
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label" for="mod-flight-num">New Flight Number</label>
-            <input type="text" id="mod-flight-num" class="form-control" value="${escapeHtml(ticket.flightNumber || 'MS 905')}" required />
+            <label class="form-label" for="mod-flight-num">${escapeHtml(t('modals.modifyFlight.newFlightNumber'))}</label>
+            <input type="text" id="mod-flight-num" class="form-control ltr-field" value="${escapeHtml(ticket.flightNumber || 'MS 905')}" required />
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="mod-change-fee">Change / Reissue Fee (${escapeHtml(ticket.currency)})</label>
-            <input type="number" id="mod-change-fee" class="form-control" value="1200" min="0" step="1" required />
+            <label class="form-label" for="mod-change-fee">${escapeHtml(t('modals.modifyFlight.modFee'))}</label>
+            <input type="number" id="mod-change-fee" class="form-control tabular-nums" value="1200" min="0" />
           </div>
         </div>
 
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label" for="mod-dep-date">New Departure Date & Time *</label>
-            <input type="datetime-local" id="mod-dep-date" class="form-control" value="${ticket.departureDate ? ticket.departureDate.slice(0, 16) : ''}" required />
+            <label class="form-label" for="mod-dep-date">${escapeHtml(t('modals.modifyFlight.newDeparture'))} *</label>
+            <input type="datetime-local" id="mod-dep-date" class="form-control" value="${ticket.departureDate || ''}" required />
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="mod-arr-date">New Arrival Date & Time</label>
-            <input type="datetime-local" id="mod-arr-date" class="form-control" value="${ticket.arrivalDate ? ticket.arrivalDate.slice(0, 16) : ''}" />
+            <label class="form-label" for="mod-arr-date">${escapeHtml(t('modals.modifyFlight.newArrival'))} *</label>
+            <input type="datetime-local" id="mod-arr-date" class="form-control" value="${ticket.arrivalDate || ''}" required />
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="mod-reason">Reason for Modification *</label>
-          <input type="text" id="mod-reason" class="form-control" placeholder="e.g. Customer requested date change" value="Customer requested schedule adjustment" required />
+          <label class="form-label" for="mod-reason">${escapeHtml(t('modals.modifyFlight.reason'))} *</label>
+          <select id="mod-reason" class="form-control" required>
+            <option value="Passenger Request">Passenger Request</option>
+            <option value="Airline Reschedule">Airline Reschedule</option>
+            <option value="Flight Cancellation">Flight Cancellation</option>
+            <option value="Operational Change">Operational Change</option>
+          </select>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="mod-notes">Schedule Change Note</label>
-          <textarea id="mod-notes" class="form-control" placeholder="e.g. Reissued on ticket stock 077-9921827361..."></textarea>
+          <label class="form-label" for="mod-note">${escapeHtml(t('common.notes'))}</label>
+          <input type="text" id="mod-note" class="form-control" placeholder="..." />
         </div>
       </form>
     `,
     footerHtml: `
-      <button type="button" class="btn btn-secondary" id="modal-cancel-mod">Cancel</button>
-      <button type="button" class="btn btn-primary" id="modal-submit-mod">Apply Modification</button>
+      <button type="button" class="btn btn-secondary" id="modal-cancel-mod">${escapeHtml(t('common.cancel'))}</button>
+      <button type="button" class="btn btn-primary" id="modal-submit-mod">${escapeHtml(t('modals.modifyFlight.submit'))}</button>
     `,
     onOpen: (modalEl) => {
       const cancelBtn = modalEl.querySelector('#modal-cancel-mod');
@@ -158,11 +165,11 @@ export function openModifyFlightModal(ticket, onSuccess) {
       if (submitBtn) {
         submitBtn.addEventListener('click', () => {
           const flightNumber = modalEl.querySelector('#mod-flight-num').value.trim();
-          const changeFee = Number(modalEl.querySelector('#mod-change-fee').value);
+          const changeFee = Number(modalEl.querySelector('#mod-change-fee').value) || 0;
           const newDepartureDate = modalEl.querySelector('#mod-dep-date').value;
           const newArrivalDate = modalEl.querySelector('#mod-arr-date').value;
-          const reason = modalEl.querySelector('#mod-reason').value.trim();
-          const note = modalEl.querySelector('#mod-notes').value.trim();
+          const reason = modalEl.querySelector('#mod-reason').value;
+          const note = modalEl.querySelector('#mod-note').value.trim();
 
           const result = TicketService.addModification(ticket.id, {
             flightNumber,
@@ -180,7 +187,7 @@ export function openModifyFlightModal(ticket, onSuccess) {
           }
 
           closeModal();
-          showToast(`Flight schedule updated successfully!`, 'success');
+          showToast(t('toasts.flightModified'), 'success');
           if (onSuccess) onSuccess();
         });
       }
@@ -192,17 +199,17 @@ export function openAddRefundModal(ticket, onSuccess) {
   const financials = TicketService.getTicketFinancials(ticket);
 
   openModal({
-    title: `Process Refund for Ticket #${ticket.id}`,
-    subtitle: `Total Paid: ${formatCurrency(financials.totalPaid, financials.currency)} | Already Refunded: ${formatCurrency(financials.totalRefunded, financials.currency)} | Max Available: ${formatCurrency(financials.availableRefund, financials.currency)}`,
+    title: `${t('modals.processRefund.title')} #${ticket.id}`,
+    subtitle: `${t('modals.processRefund.availableRefundable')} ${formatCurrency(financials.availableRefund, financials.currency)}`,
     contentHtml: `
       <form id="add-refund-form" class="d-flex flex-column gap-md">
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label" for="refund-amount">Refund Amount (${escapeHtml(ticket.currency)}) *</label>
+            <label class="form-label" for="refund-amount">${escapeHtml(t('modals.processRefund.refundAmount'))} *</label>
             <input
               type="number"
               id="refund-amount"
-              class="form-control"
+              class="form-control tabular-nums"
               placeholder="0.00"
               value="${financials.availableRefund > 0 ? financials.availableRefund : ''}"
               max="${financials.availableRefund}"
@@ -210,33 +217,32 @@ export function openAddRefundModal(ticket, onSuccess) {
               step="0.01"
               required
             />
-            <span class="text-xs text-muted mt-xxs">Max refundable: ${formatCurrency(financials.availableRefund, financials.currency)}</span>
+            <span class="text-xs text-muted mt-xxs">${escapeHtml(t('modals.processRefund.availableRefundable'))} ${formatCurrency(financials.availableRefund, financials.currency)}</span>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="refund-status">Refund Action</label>
+            <label class="form-label" for="refund-status">${escapeHtml(t('common.status'))}</label>
             <select id="refund-status" class="form-control">
-              <option value="COMPLETED">Process & Finalize Refund Immediately</option>
-              <option value="REQUESTED">Submit Refund Request for Approval</option>
+              <option value="COMPLETED">COMPLETED (مكتمل)</option>
+              <option value="REQUESTED">REQUESTED (طلب استرداد)</option>
             </select>
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="refund-reason">Refund Reason *</label>
+          <label class="form-label" for="refund-reason">${escapeHtml(t('modals.processRefund.reason'))} *</label>
           <select id="refund-reason" class="form-control" required>
-            <option value="Customer Cancellation">Customer Cancellation</option>
-            <option value="Flight Cancelled by Airline">Flight Cancelled by Airline</option>
-            <option value="Medical Emergency">Medical Emergency</option>
-            <option value="Schedule Incompatibility">Schedule Incompatibility</option>
-            <option value="Duplicate Booking">Duplicate Booking</option>
+            <option value="Customer Cancellation">Customer Cancellation (إلغاء من العميل)</option>
+            <option value="Flight Cancelled by Airline">Flight Cancelled by Airline (إلغاء من شركة الطيران)</option>
+            <option value="Medical Emergency">Medical Emergency (ظرف طبي)</option>
+            <option value="Schedule Incompatibility">Schedule Incompatibility (عدم توافق المواعيد)</option>
           </select>
         </div>
       </form>
     `,
     footerHtml: `
-      <button type="button" class="btn btn-secondary" id="modal-cancel-refund">Cancel</button>
-      <button type="button" class="btn btn-danger" id="modal-submit-refund">Execute Refund</button>
+      <button type="button" class="btn btn-secondary" id="modal-cancel-refund">${escapeHtml(t('common.cancel'))}</button>
+      <button type="button" class="btn btn-danger" id="modal-submit-refund">${escapeHtml(t('modals.processRefund.submit'))}</button>
     `,
     onOpen: (modalEl) => {
       const cancelBtn = modalEl.querySelector('#modal-cancel-refund');
@@ -263,7 +269,7 @@ export function openAddRefundModal(ticket, onSuccess) {
           }
 
           closeModal();
-          showToast(`Refund of ${formatCurrency(amount, ticket.currency)} processed successfully!`, 'success');
+          showToast(t('toasts.refundCreated'), 'success');
           if (onSuccess) onSuccess();
         });
       }
@@ -273,25 +279,25 @@ export function openAddRefundModal(ticket, onSuccess) {
 
 export function openEditTicketModal(ticket, onSuccess) {
   openModal({
-    title: `Edit Ticket #${ticket.id}`,
-    subtitle: `Update passenger or reservation details`,
+    title: `${t('common.edit')} #${ticket.id}`,
+    subtitle: t('ticketDetails.overview.passengerCard'),
     contentHtml: `
       <div class="d-flex flex-column gap-md">
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label" for="edit-pax-name">Passenger Name *</label>
+            <label class="form-label" for="edit-pax-name">${escapeHtml(t('ticketCreate.passengerInfo.passengerName'))} *</label>
             <input type="text" id="edit-pax-name" class="form-control" value="${escapeHtml(ticket.passengerName || '')}" required />
           </div>
           <div class="form-group">
-            <label class="form-label" for="edit-pax-phone">Phone Number</label>
-            <input type="text" id="edit-pax-phone" class="form-control" value="${escapeHtml(ticket.phone || '')}" />
+            <label class="form-label" for="edit-pax-phone">${escapeHtml(t('ticketCreate.passengerInfo.phone'))}</label>
+            <input type="text" id="edit-pax-phone" class="form-control ltr-field" value="${escapeHtml(ticket.phone || '')}" />
           </div>
         </div>
 
         <div class="form-grid-2">
           <div class="form-group">
             <label class="form-label" for="edit-seat">Seat Assignment</label>
-            <input type="text" id="edit-seat" class="form-control" value="${escapeHtml(ticket.seat || '12A')}" />
+            <input type="text" id="edit-seat" class="form-control ltr-field" value="${escapeHtml(ticket.seat || '12A')}" />
           </div>
           <div class="form-group">
             <label class="form-label" for="edit-baggage">Baggage Allowance</label>
@@ -301,24 +307,24 @@ export function openEditTicketModal(ticket, onSuccess) {
 
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label" for="edit-dep-date">Departure Date</label>
+            <label class="form-label" for="edit-dep-date">${escapeHtml(t('tickets.table.travelDate'))}</label>
             <input type="date" id="edit-dep-date" class="form-control" value="${ticket.departureDate ? ticket.departureDate.slice(0, 10) : ''}" />
           </div>
           <div class="form-group">
-            <label class="form-label" for="edit-status">Status</label>
+            <label class="form-label" for="edit-status">${escapeHtml(t('common.status'))}</label>
             <select id="edit-status" class="form-control">
-              <option value="CONFIRMED" ${ticket.status === 'CONFIRMED' ? 'selected' : ''}>Confirmed</option>
-              <option value="PARTIALLY PAID" ${ticket.status === 'PARTIALLY PAID' ? 'selected' : ''}>Partially Paid</option>
-              <option value="PAID" ${ticket.status === 'PAID' ? 'selected' : ''}>Paid</option>
-              <option value="CANCELLED" ${ticket.status === 'CANCELLED' ? 'selected' : ''}>Cancelled</option>
+              <option value="CONFIRMED" ${ticket.status === 'CONFIRMED' ? 'selected' : ''}>CONFIRMED</option>
+              <option value="PARTIALLY PAID" ${ticket.status === 'PARTIALLY PAID' ? 'selected' : ''}>PARTIALLY PAID</option>
+              <option value="PAID" ${ticket.status === 'PAID' ? 'selected' : ''}>PAID</option>
+              <option value="CANCELLED" ${ticket.status === 'CANCELLED' ? 'selected' : ''}>CANCELLED</option>
             </select>
           </div>
         </div>
       </div>
     `,
     footerHtml: `
-      <button type="button" class="btn btn-secondary" id="modal-cancel-edit-ticket">Cancel</button>
-      <button type="button" class="btn btn-primary" id="modal-save-edit-ticket">Save Changes</button>
+      <button type="button" class="btn btn-secondary" id="modal-cancel-edit-ticket">${escapeHtml(t('common.cancel'))}</button>
+      <button type="button" class="btn btn-primary" id="modal-save-edit-ticket">${escapeHtml(t('common.saveChanges'))}</button>
     `,
     onOpen: (modalEl) => {
       const cancelBtn = modalEl.querySelector('#modal-cancel-edit-ticket');
@@ -329,7 +335,7 @@ export function openEditTicketModal(ticket, onSuccess) {
         saveBtn.addEventListener('click', () => {
           const name = modalEl.querySelector('#edit-pax-name').value.trim();
           if (!name) {
-            showToast('Passenger name is required', 'error');
+            showToast(t('validation.emptyPassenger'), 'error');
             return;
           }
 
@@ -348,7 +354,7 @@ export function openEditTicketModal(ticket, onSuccess) {
           }
 
           closeModal();
-          showToast(`Ticket #${ticket.id} updated successfully!`, 'success');
+          showToast(t('toasts.customerUpdated'), 'success');
           if (onSuccess) onSuccess();
         });
       }

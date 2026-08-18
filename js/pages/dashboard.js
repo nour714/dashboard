@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AfricaTravel — Dashboard Page
  */
 
@@ -15,6 +15,7 @@ import {
   formatRelativeTime
 } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
+import { t } from '../i18n/i18n.js';
 
 export const DashboardPage = {
   render() {
@@ -55,23 +56,23 @@ export const DashboardPage = {
       return `
         <tr>
           <td>
-            <a href="/tickets/${escapeHtml(t.id)}" class="cell-main" data-link>${escapeHtml(t.id)}</a>
+            <a href="/tickets/${escapeHtml(t.id)}" class="cell-main ltr-data" data-link>${escapeHtml(t.id)}</a>
             <div class="cell-sub">${formatDateTime(t.createdAt)}</div>
           </td>
           <td>
             <div class="cell-main">${escapeHtml(t.passengerName)}</div>
-            <div class="cell-sub">${escapeHtml(t.phone || t.email || 'Direct Client')}</div>
+            <div class="cell-sub ltr-data">${escapeHtml(t.phone || t.email || 'Direct Client')}</div>
           </td>
           <td>
             <div class="airline-tag">
-              <span class="airline-code-badge">${escapeHtml(t.airlineCode || 'MS')}</span>
-              <span>${escapeHtml(t.origin)} ✈ ${escapeHtml(t.destination)}</span>
+              <span class="airline-code-badge ltr-data">${escapeHtml(t.airlineCode || 'MS')}</span>
+              <span class="ltr-data">${escapeHtml(t.origin)} ✈ ${escapeHtml(t.destination)}</span>
             </div>
           </td>
           <td>
             <div class="tabular-nums font-semibold">${formatCurrency(t.ticketPrice, t.currency)}</div>
             <div class="cell-sub ${isPaid ? 'text-success' : 'text-danger'}">
-              ${isPaid ? `Paid: ${formatCurrency(totalPaid, t.currency)}` : `Rem: ${formatCurrency(remaining, t.currency)}`}
+              ${isPaid ? `${escapeHtml(t('common.paid'))}: ${formatCurrency(totalPaid, t.currency)}` : `${escapeHtml(t('common.remaining'))}: ${formatCurrency(remaining, t.currency)}`}
             </div>
           </td>
           <td>
@@ -88,16 +89,16 @@ export const DashboardPage = {
             ${icons.airplane('w-4 h-4')}
           </div>
           <div>
-            <div class="font-semibold" style="font-size: 14px;">
-              ${escapeHtml(t.origin)} → ${escapeHtml(t.destination)}
+            <div class="font-semibold ltr-data" style="font-size: 14px;">
+              ${escapeHtml(t.origin)} ✈ ${escapeHtml(t.destination)}
             </div>
             <div class="text-sm text-muted">
-              ${escapeHtml(t.flightNumber || 'MS 901')} • ${escapeHtml(t.passengerName)}
+              <span class="ltr-data">${escapeHtml(t.flightNumber || 'MS 901')}</span> • ${escapeHtml(t.passengerName)}
             </div>
           </div>
         </div>
-        <div class="text-right">
-          <span class="airline-code-badge">${escapeHtml(t.pnr)}</span>
+        <div class="text-end">
+          <span class="airline-code-badge ltr-data">${escapeHtml(t.pnr)}</span>
           <div class="mt-xs">${renderStatusBadge(t.status)}</div>
         </div>
       </div>
@@ -121,37 +122,37 @@ export const DashboardPage = {
       <!-- KPI Row -->
       <div class="stat-card-grid">
         ${renderStatCard({
-          label: 'Total Tickets',
+          label: t('dashboard.kpi.activeTickets'),
           value: totalTickets,
           icon: 'ticket',
           iconStyle: 'accent',
-          trendText: '+12% vs last month',
-          trendDirection: 'positive'
+          subtext: t('dashboard.kpi.activeSubtitle')
         })}
 
         ${renderStatCard({
-          label: 'Total Value (EGP)',
-          value: formatCompactNumber(totalSales),
+          label: t('dashboard.kpi.totalSales'),
+          value: formatCurrency(totalSales),
           icon: 'dollarSign',
           iconStyle: 'accent',
-          subtext: 'MTD Revenue'
+          subtext: t('dashboard.kpi.salesSubtitle')
         })}
 
         ${renderStatCard({
-          label: 'Collected (EGP)',
-          value: formatCompactNumber(totalCollected),
+          label: t('dashboard.kpi.totalCollected'),
+          value: formatCurrency(totalCollected),
           icon: 'check',
           iconStyle: 'success',
           progress: collectionRate,
-          subtext: `${collectionRate}% Collection Rate`
+          subtext: `${collectionRate}% ${t('common.paid')}`
         })}
 
         ${renderStatCard({
-          label: 'Outstanding (EGP)',
-          value: formatCompactNumber(totalOutstanding),
+          label: t('dashboard.kpi.remainingBalance'),
+          value: formatCurrency(totalOutstanding),
           icon: 'alertTriangle',
           iconStyle: 'danger',
-          alertPill: totalOutstanding > 0 ? 'REQUIRES ACTION' : ''
+          alertPill: totalOutstanding > 0 ? (totalOutstanding > 0 ? t('common.remaining') : '') : '',
+          subtext: t('dashboard.kpi.remainingSubtitle')
         })}
       </div>
 
@@ -161,18 +162,18 @@ export const DashboardPage = {
         <div class="col-span-8">
           <div class="card">
             <div class="card-header">
-              <h2 class="card-title">Recent Tickets</h2>
-              <a href="/tickets" class="btn btn-sm btn-ghost" data-link>View All</a>
+              <h2 class="card-title">${escapeHtml(t('dashboard.recentTickets.title'))}</h2>
+              <a href="/tickets" class="btn btn-sm btn-ghost" data-link>${escapeHtml(t('common.viewAll'))}</a>
             </div>
             <div class="table-responsive">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>Ticket</th>
-                    <th>Customer</th>
-                    <th>Route</th>
-                    <th>Amount</th>
-                    <th>Status</th>
+                    <th>${escapeHtml(t('tickets.table.ticketNumber'))}</th>
+                    <th>${escapeHtml(t('tickets.table.passenger'))}</th>
+                    <th>${escapeHtml(t('tickets.table.route'))}</th>
+                    <th>${escapeHtml(t('tickets.table.price'))}</th>
+                    <th>${escapeHtml(t('tickets.table.status'))}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -188,18 +189,18 @@ export const DashboardPage = {
           <!-- Upcoming Flights -->
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title">Upcoming Flights (24h)</h3>
+              <h3 class="card-title">${escapeHtml(t('ticketCreate.flightInfo.title'))}</h3>
             </div>
             <div class="card-body p-sm">
-              ${upcomingFlightsHtml || '<p class="text-sm text-muted p-sm">No scheduled flights in the next 24 hours.</p>'}
+              ${upcomingFlightsHtml || `<p class="text-sm text-muted p-sm">${escapeHtml(t('common.noData'))}</p>`}
             </div>
           </div>
 
           <!-- Recent Activity -->
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title">Recent Activity</h3>
-              <a href="/activity" class="btn btn-sm btn-ghost" data-link>Audit Trail</a>
+              <h3 class="card-title">${escapeHtml(t('dashboard.recentActivity.title'))}</h3>
+              <a href="/activity" class="btn btn-sm btn-ghost" data-link>${escapeHtml(t('nav.activity'))}</a>
             </div>
             <div class="card-body">
               ${recentActivitiesHtml}

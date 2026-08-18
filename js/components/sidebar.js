@@ -5,6 +5,7 @@
 import { icons } from './icons.js';
 import { AuthService } from '../services/auth-service.js';
 import { escapeHtml } from '../utils/security.js';
+import { t } from '../i18n/i18n.js';
 
 export function renderSidebar(activePath = '/dashboard') {
   const currentUser = AuthService.getCurrentUser() || {};
@@ -13,18 +14,18 @@ export function renderSidebar(activePath = '/dashboard') {
   const initials = userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'AH';
 
   const mainNav = [
-    { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { path: '/tickets', label: 'Tickets', icon: 'ticket' },
-    { path: '/customers', label: 'Customers', icon: 'customers' },
-    { path: '/payments', label: 'Payments', icon: 'payments' },
-    { path: '/refunds', label: 'Refunds', icon: 'refunds' },
-    { path: '/reports', label: 'Reports', icon: 'reports' }
+    { path: '/dashboard', label: t('nav.dashboard'), icon: 'dashboard' },
+    { path: '/tickets', label: t('nav.tickets'), icon: 'ticket' },
+    { path: '/customers', label: t('nav.customers'), icon: 'customers' },
+    { path: '/payments', label: t('nav.payments'), icon: 'payments' },
+    { path: '/refunds', label: t('nav.refunds'), icon: 'refunds' },
+    { path: '/reports', label: t('nav.reports'), icon: 'reports' }
   ];
 
   const adminNav = [
-    { path: '/employees', label: 'Employees', icon: 'employees' },
-    { path: '/activity', label: 'Activity Log', icon: 'activity' },
-    { path: '/settings', label: 'Settings', icon: 'settings' }
+    { path: '/employees', label: t('nav.employees'), icon: 'employees' },
+    { path: '/activity', label: t('nav.activity'), icon: 'activity' },
+    { path: '/settings', label: t('nav.settings'), icon: 'settings' }
   ];
 
   const renderLinks = (items) => items.map(item => {
@@ -33,9 +34,9 @@ export function renderSidebar(activePath = '/dashboard') {
     const iconSvg = typeof icons[item.icon] === 'function' ? icons[item.icon]('nav-icon') : '';
 
     return `
-      <a href="${item.path}" class="nav-link ${isActive ? 'active' : ''}" data-link title="${item.label}">
+      <a href="${item.path}" class="nav-link ${isActive ? 'active' : ''}" data-link title="${escapeHtml(item.label)}">
         ${iconSvg}
-        <span>${item.label}</span>
+        <span>${escapeHtml(item.label)}</span>
       </a>
     `;
   }).join('');
@@ -43,13 +44,13 @@ export function renderSidebar(activePath = '/dashboard') {
   return `
     <aside class="app-sidebar" id="app-sidebar">
       <div class="sidebar-header">
-        <a href="/dashboard" class="sidebar-logo" data-link aria-label="AfricaTravel Home Dashboard">
+        <a href="/dashboard" class="sidebar-logo" data-link aria-label="${escapeHtml(t('dashboard.title'))}">
           <div class="sidebar-logo-icon">
-            <img src="/assets/logo.png" alt="AfricaTravel Logo" class="sidebar-logo-img" />
+            <img src="/assets/logo.png" alt="AfricaTravel Logo" class="sidebar-logo-img no-flip" />
           </div>
           <div class="sidebar-logo-text">
             <span class="sidebar-logo-title">AfricaTravel</span>
-            <span class="sidebar-logo-subtitle">Travel Operations</span>
+            <span class="sidebar-logo-subtitle">${escapeHtml(t('brand.tagline'))}</span>
           </div>
         </a>
       </div>
@@ -57,18 +58,18 @@ export function renderSidebar(activePath = '/dashboard') {
       <div class="sidebar-action-wrap">
         <a href="/tickets/new" class="sidebar-new-btn" data-link>
           ${icons.plus('w-4 h-4')}
-          <span>New Ticket</span>
+          <span>${escapeHtml(t('nav.newTicket'))}</span>
         </a>
       </div>
 
-      <nav class="sidebar-nav" aria-label="Main Navigation">
+      <nav class="sidebar-nav" aria-label="${escapeHtml(t('nav.administration'))}">
         ${renderLinks(mainNav)}
         <div class="sidebar-divider"></div>
         ${renderLinks(adminNav)}
       </nav>
 
       <div class="sidebar-footer">
-        <a href="/settings" class="sidebar-user" data-link>
+        <a href="/settings" class="sidebar-user" data-link aria-label="${escapeHtml(t('settings.tabs.profile'))}">
           <div class="sidebar-user-avatar">
             ${escapeHtml(initials)}
           </div>

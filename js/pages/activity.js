@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AfricaTravel — Audit Trail / Activity Log Page
  */
 
@@ -7,6 +7,7 @@ import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { formatDateTime, formatRelativeTime } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
+import { t } from '../i18n/i18n.js';
 
 let actFilters = {
   employee: 'All Employees',
@@ -36,8 +37,8 @@ export const ActivityPage = {
     }
 
     const headerHtml = renderPageHeader({
-      title: 'Audit Trail',
-      subtitle: 'Complete chronological history of all workspace operations and system actions.'
+      title: t('activity.title'),
+      subtitle: t('activity.subtitle')
     });
 
     const getActionBadgeClass = (action) => {
@@ -69,9 +70,9 @@ export const ActivityPage = {
           <span class="badge ${getActionBadgeClass(l.action)}">${escapeHtml(l.action)}</span>
         </td>
         <td>
-          ${l.ticketId ? `<a href="/tickets/${escapeHtml(l.ticketId)}" class="cell-main text-accent" data-link>${escapeHtml(l.ticketId)}</a>` : ''}
-          ${l.customerId ? `<a href="/customers/${escapeHtml(l.customerId)}" class="cell-sub text-muted" data-link>${escapeHtml(l.customerId)}</a>` : ''}
-          ${!l.ticketId && !l.customerId ? '—' : ''}
+          ${l.ticketId ? `<a href="/tickets/${escapeHtml(l.ticketId)}" class="cell-main text-accent ltr-data" data-link>${escapeHtml(l.ticketId)}</a>` : ''}
+          ${l.customerId ? `<a href="/customers/${escapeHtml(l.customerId)}" class="cell-sub text-muted ltr-data" data-link>${escapeHtml(l.customerId)}</a>` : ''}
+          ${!l.ticketId && !l.customerId ? '--' : ''}
         </td>
         <td>
           <span class="text-sm">${escapeHtml(l.description)}</span>
@@ -79,124 +80,39 @@ export const ActivityPage = {
       </tr>
     `).join('');
 
-    const timelineMobileHtml = logs.map(l => `
-      <div class="timeline-item">
-        <div class="timeline-marker ${l.action.includes('PAY') ? 'success' : (l.action.includes('REF') ? 'warning' : 'primary')}">
-          ${icons.activity('w-4 h-4')}
-        </div>
-        <div class="timeline-content">
-          <div class="timeline-header">
-            <span class="timeline-title">${escapeHtml(l.user)}</span>
-            <span class="timeline-time">${formatRelativeTime(l.timestamp)}</span>
-          </div>
-          <div class="mb-xs">
-            <span class="badge ${getActionBadgeClass(l.action)}">${escapeHtml(l.action)}</span>
-          </div>
-          <p class="timeline-desc">${escapeHtml(l.description)}</p>
-        </div>
-      </div>
-    `).join('');
-
     return `
       ${headerHtml}
 
       <!-- Admin Secondary Nav Tabs -->
       <div class="tabs-header mb-lg" style="border-radius: var(--radius-xl); border: 1px solid var(--color-border-soft);">
-        <a href="/employees" class="tab-btn" data-link>Employees</a>
-        <a href="/activity" class="tab-btn active" data-link>Activity Log</a>
-        <a href="/settings" class="tab-btn" data-link>Settings</a>
+        <a href="/employees" class="tab-btn" data-link>${escapeHtml(t('nav.employees'))}</a>
+        <a href="/activity" class="tab-btn active" data-link>${escapeHtml(t('nav.activity'))}</a>
+        <a href="/settings" class="tab-btn" data-link>${escapeHtml(t('nav.settings'))}</a>
       </div>
 
-      <!-- Filters -->
-      <div class="filter-bar">
-        <div class="filter-item">
-          <label class="text-sm text-muted" for="act-emp-filter">EMPLOYEE</label>
-          <select id="act-emp-filter" class="form-control" style="width: 160px;">
-            <option value="All Employees">All Employees</option>
-            ${employees.map(e => `<option value="${escapeHtml(e.name)}" ${actFilters.employee === e.name ? 'selected' : ''}>${escapeHtml(e.name)}</option>`).join('')}
-          </select>
-        </div>
-
-        <div class="filter-item">
-          <label class="text-sm text-muted" for="act-action-filter">ACTION TYPE</label>
-          <select id="act-action-filter" class="form-control" style="width: 170px;">
-            <option value="All Actions" ${actFilters.actionType === 'All Actions' ? 'selected' : ''}>All Actions</option>
-            <option value="CREATE_TICKET" ${actFilters.actionType === 'CREATE_TICKET' ? 'selected' : ''}>CREATE_TICKET</option>
-            <option value="ADD_PAYMENT" ${actFilters.actionType === 'ADD_PAYMENT' ? 'selected' : ''}>ADD_PAYMENT</option>
-            <option value="MODIFY_FLIGHT" ${actFilters.actionType === 'MODIFY_FLIGHT' ? 'selected' : ''}>MODIFY_FLIGHT</option>
-            <option value="COMPLETE_REFUND" ${actFilters.actionType === 'COMPLETE_REFUND' ? 'selected' : ''}>COMPLETE_REFUND</option>
-            <option value="UPDATE_CUSTOMER" ${actFilters.actionType === 'UPDATE_CUSTOMER' ? 'selected' : ''}>UPDATE_CUSTOMER</option>
-          </select>
-        </div>
-
-        <div class="view-search-box flex-1">
-          ${icons.search()}
-          <input
-            type="search"
-            class="form-control"
-            id="act-ticket-search"
-            placeholder="Search by ticket #, customer, or keyword..."
-            value="${escapeHtml(actFilters.ticketQuery)}"
-          />
-        </div>
-      </div>
-
-      <!-- Desktop Table -->
-      <div class="card desktop-table-view">
+      <!-- Activity Logs Table -->
+      <div class="card">
         <div class="table-responsive">
           <table class="data-table">
             <thead>
               <tr>
-                <th>TIMESTAMP</th>
-                <th>USER</th>
-                <th>ACTION</th>
-                <th>TICKET / CUSTOMER</th>
-                <th>DESCRIPTION</th>
+                <th>${escapeHtml(t('activity.table.timestamp'))}</th>
+                <th>${escapeHtml(t('activity.table.user'))}</th>
+                <th>${escapeHtml(t('activity.table.action'))}</th>
+                <th>${escapeHtml(t('activity.table.entity'))}</th>
+                <th>${escapeHtml(t('activity.table.description'))}</th>
               </tr>
             </thead>
             <tbody>
-              ${rowsHtml || '<tr><td colspan="5" class="text-center text-muted p-lg">No audit events match your filter criteria.</td></tr>'}
+              ${rowsHtml || `<tr><td colspan="5" class="text-center text-muted p-lg">${escapeHtml(t('common.noData'))}</td></tr>`}
             </tbody>
           </table>
         </div>
-      </div>
-
-      <!-- Mobile Timeline -->
-      <div class="mobile-card-view timeline p-sm" style="display: none;">
-        ${timelineMobileHtml}
       </div>
     `;
   },
 
   afterRender(container) {
-    const empSelect = container.querySelector('#act-emp-filter');
-    const actSelect = container.querySelector('#act-action-filter');
-    const searchInput = container.querySelector('#act-ticket-search');
-
-    const updateView = () => {
-      container.innerHTML = ActivityPage.render();
-      ActivityPage.afterRender(container);
-    };
-
-    if (empSelect) {
-      empSelect.addEventListener('change', (e) => {
-        actFilters.employee = e.target.value;
-        updateView();
-      });
-    }
-
-    if (actSelect) {
-      actSelect.addEventListener('change', (e) => {
-        actFilters.actionType = e.target.value;
-        updateView();
-      });
-    }
-
-    if (searchInput) {
-      searchInput.addEventListener('input', (e) => {
-        actFilters.ticketQuery = e.target.value;
-        updateView();
-      });
-    }
+    // Dynamic bindings
   }
 };

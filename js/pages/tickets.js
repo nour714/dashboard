@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AfricaTravel — Tickets Management Page
  */
 
@@ -15,6 +15,7 @@ import {
   formatDate
 } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
+import { t, i18n } from '../i18n/i18n.js';
 
 let currentFilters = {
   search: '',
@@ -25,43 +26,43 @@ let currentFilters = {
 
 function renderTicketRows(tickets) {
   if (tickets.length === 0) return '';
-  return tickets.map(t => {
-    const totalPaid = calculateTotalPaid(t.payments);
-    const remaining = calculateRemaining(t.ticketPrice, totalPaid);
+  return tickets.map(tData => {
+    const totalPaid = calculateTotalPaid(tData.payments);
+    const remaining = calculateRemaining(tData.ticketPrice, totalPaid);
     const isPaid = remaining === 0;
 
     return `
       <tr>
         <td>
-          <a href="/tickets/${escapeHtml(t.id)}" class="cell-main" data-link>${escapeHtml(t.ticketNumber)}</a>
-          <div class="cell-sub font-medium">PNR: <strong style="color: var(--color-primary);">${escapeHtml(t.pnr)}</strong></div>
+          <a href="/tickets/${escapeHtml(tData.id)}" class="cell-main ltr-data" data-link>${escapeHtml(tData.ticketNumber)}</a>
+          <div class="cell-sub font-medium">PNR: <strong class="ltr-data" style="color: var(--color-primary);">${escapeHtml(tData.pnr)}</strong></div>
         </td>
         <td>
-          <div class="cell-main">${escapeHtml(t.passengerName)}</div>
-          <div class="cell-sub">${escapeHtml(t.phone || t.email || '—')}</div>
+          <div class="cell-main">${escapeHtml(tData.passengerName)}</div>
+          <div class="cell-sub ltr-data">${escapeHtml(tData.phone || tData.email || '--')}</div>
         </td>
         <td>
           <div class="airline-tag">
-            <span class="airline-code-badge">${escapeHtml(t.airlineCode || 'MS')}</span>
-            <span>${escapeHtml(t.airline)}</span>
+            <span class="airline-code-badge ltr-data">${escapeHtml(tData.airlineCode || 'MS')}</span>
+            <span>${escapeHtml(tData.airline)}</span>
           </div>
-          <div class="cell-sub">${escapeHtml(t.origin)} ✈ ${escapeHtml(t.destination)}</div>
+          <div class="cell-sub ltr-data">${escapeHtml(tData.origin)} ✈ ${escapeHtml(tData.destination)}</div>
         </td>
         <td>
-          <div class="tabular-nums font-medium">${formatDate(t.departureDate)}</div>
-          <div class="cell-sub">${t.departureDate ? new Date(t.departureDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}</div>
+          <div class="tabular-nums font-medium">${formatDate(tData.departureDate)}</div>
+          <div class="cell-sub">${tData.departureDate ? new Date(tData.departureDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}</div>
         </td>
         <td>
-          <div class="tabular-nums font-semibold">${formatCurrency(t.ticketPrice, t.currency)}</div>
+          <div class="tabular-nums font-semibold">${formatCurrency(tData.ticketPrice, tData.currency)}</div>
         </td>
         <td>
           <div class="tabular-nums font-semibold ${isPaid ? 'text-success' : 'text-danger'}">
-            ${isPaid ? `EGP 0` : formatCurrency(remaining, t.currency)}
+            ${isPaid ? formatCurrency(0, tData.currency) : formatCurrency(remaining, tData.currency)}
           </div>
-          <div class="cell-sub">Paid: ${formatCurrency(totalPaid, t.currency)}</div>
+          <div class="cell-sub">${escapeHtml(t('common.paid'))}: ${formatCurrency(totalPaid, tData.currency)}</div>
         </td>
         <td>
-          ${renderStatusBadge(t.status)}
+          ${renderStatusBadge(tData.status)}
         </td>
       </tr>
     `;
@@ -70,30 +71,30 @@ function renderTicketRows(tickets) {
 
 function renderMobileCards(tickets) {
   if (tickets.length === 0) return '';
-  return tickets.map(t => {
-    const totalPaid = calculateTotalPaid(t.payments);
-    const remaining = calculateRemaining(t.ticketPrice, totalPaid);
+  return tickets.map(tData => {
+    const totalPaid = calculateTotalPaid(tData.payments);
+    const remaining = calculateRemaining(tData.ticketPrice, totalPaid);
 
     return `
-      <a href="/tickets/${escapeHtml(t.id)}" class="mobile-data-card" data-link>
+      <a href="/tickets/${escapeHtml(tData.id)}" class="mobile-data-card" data-link>
         <div class="mobile-card-top">
-          <span class="mobile-card-id">#${escapeHtml(t.id)}</span>
-          ${renderStatusBadge(t.status)}
+          <span class="mobile-card-id ltr-data">#${escapeHtml(tData.id)}</span>
+          ${renderStatusBadge(tData.status)}
         </div>
-        <div class="font-bold" style="font-size: 16px;">${escapeHtml(t.passengerName)}</div>
+        <div class="font-bold" style="font-size: 16px;">${escapeHtml(tData.passengerName)}</div>
         <div class="mobile-card-route">
-          <span>${escapeHtml(t.airlineCode || 'MS')}</span>
-          <span>${escapeHtml(t.origin)} → ${escapeHtml(t.destination)}</span>
+          <span class="ltr-data">${escapeHtml(tData.airlineCode || 'MS')}</span>
+          <span class="ltr-data">${escapeHtml(tData.origin)} ✈ ${escapeHtml(tData.destination)}</span>
         </div>
         <div class="text-sm text-muted">
-          PNR: <strong>${escapeHtml(t.pnr)}</strong> • ${formatDate(t.departureDate)}
+          PNR: <strong class="ltr-data">${escapeHtml(tData.pnr)}</strong> • ${formatDate(tData.departureDate)}
         </div>
         <div class="mobile-card-meta">
           <div>
-            <div class="text-sm text-muted">Price / Balance</div>
-            <div class="font-semibold tabular-nums">${formatCurrency(t.ticketPrice, t.currency)} (${formatCurrency(remaining, t.currency)} rem)</div>
+            <div class="text-sm text-muted">${escapeHtml(t('common.price'))} / ${escapeHtml(t('common.remaining'))}</div>
+            <div class="font-semibold tabular-nums">${formatCurrency(tData.ticketPrice, tData.currency)} (${formatCurrency(remaining, tData.currency)})</div>
           </div>
-          <span class="text-accent font-semibold text-sm">Manage ›</span>
+          <span class="text-accent font-semibold text-sm">${escapeHtml(t('common.details'))} ›</span>
         </div>
       </a>
     `;
@@ -109,16 +110,16 @@ export const TicketsPage = {
     const tickets = TicketService.getAllTickets(currentFilters);
 
     const headerHtml = renderPageHeader({
-      title: 'Tickets',
-      subtitle: 'Manage and monitor all airline tickets.',
+      title: t('tickets.title'),
+      subtitle: t('tickets.subtitle'),
       actionsHtml: `
         <button type="button" class="btn btn-secondary" id="export-tickets-btn">
           ${icons.download('w-4 h-4')}
-          <span>Export</span>
+          <span>${escapeHtml(t('common.export'))}</span>
         </button>
         <a href="/tickets/new" class="btn btn-primary" data-link>
           ${icons.plus('w-4 h-4')}
-          <span>New Ticket</span>
+          <span>${escapeHtml(t('tickets.createTicket'))}</span>
         </a>
       `
     });
@@ -134,37 +135,37 @@ export const TicketsPage = {
             type="search"
             class="form-control"
             id="ticket-search-input"
-            placeholder="Search by PNR, Ticket #, or Customer..."
+            placeholder="${escapeHtml(t('tickets.searchPlaceholder'))}"
             value="${escapeHtml(currentFilters.search)}"
             autocomplete="off"
           />
         </div>
 
         <div class="filter-item">
-          <label class="text-sm text-muted" for="ticket-status-filter">STATUS</label>
-          <select class="form-control" id="ticket-status-filter" style="width: 150px;">
-            <option value="All Statuses" ${currentFilters.status === 'All Statuses' ? 'selected' : ''}>All Statuses</option>
-            <option value="CONFIRMED" ${currentFilters.status === 'CONFIRMED' ? 'selected' : ''}>CONFIRMED</option>
-            <option value="PARTIALLY PAID" ${currentFilters.status === 'PARTIALLY PAID' ? 'selected' : ''}>PARTIALLY PAID</option>
-            <option value="PAID" ${currentFilters.status === 'PAID' ? 'selected' : ''}>PAID</option>
-            <option value="CANCELLED" ${currentFilters.status === 'CANCELLED' ? 'selected' : ''}>CANCELLED</option>
-            <option value="REFUNDED" ${currentFilters.status === 'REFUNDED' ? 'selected' : ''}>REFUNDED</option>
+          <label class="text-sm text-muted" for="ticket-status-filter">${escapeHtml(t('tickets.filterStatus'))}</label>
+          <select class="form-control" id="ticket-status-filter" style="min-width: 140px;">
+            <option value="All Statuses" ${currentFilters.status === 'All Statuses' ? 'selected' : ''}>${escapeHtml(t('common.all'))}</option>
+            <option value="CONFIRMED" ${currentFilters.status === 'CONFIRMED' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('CONFIRMED'))}</option>
+            <option value="PARTIALLY PAID" ${currentFilters.status === 'PARTIALLY PAID' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('PARTIALLY PAID'))}</option>
+            <option value="PAID" ${currentFilters.status === 'PAID' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('PAID'))}</option>
+            <option value="CANCELLED" ${currentFilters.status === 'CANCELLED' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('CANCELLED'))}</option>
+            <option value="REFUNDED" ${currentFilters.status === 'REFUNDED' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('REFUNDED'))}</option>
           </select>
         </div>
 
         <div class="filter-item">
-          <label class="text-sm text-muted" for="ticket-airline-filter">AIRLINE</label>
-          <select class="form-control" id="ticket-airline-filter" style="width: 160px;">
-            <option value="All Airlines" ${currentFilters.airline === 'All Airlines' ? 'selected' : ''}>All Airlines</option>
-            <option value="EgyptAir" ${currentFilters.airline === 'EgyptAir' ? 'selected' : ''}>EgyptAir</option>
-            <option value="Emirates" ${currentFilters.airline === 'Emirates' ? 'selected' : ''}>Emirates</option>
-            <option value="Qatar Airways" ${currentFilters.airline === 'Qatar Airways' ? 'selected' : ''}>Qatar Airways</option>
-            <option value="British Airways" ${currentFilters.airline === 'British Airways' ? 'selected' : ''}>British Airways</option>
+          <label class="text-sm text-muted" for="ticket-airline-filter">${escapeHtml(t('tickets.filterAirline'))}</label>
+          <select class="form-control" id="ticket-airline-filter" style="min-width: 150px;">
+            <option value="All Airlines" ${currentFilters.airline === 'All Airlines' ? 'selected' : ''}>${escapeHtml(t('common.all'))}</option>
+            <option value="EgyptAir" ${currentFilters.airline === 'EgyptAir' ? 'selected' : ''}>EgyptAir (مصر للطيران)</option>
+            <option value="Emirates" ${currentFilters.airline === 'Emirates' ? 'selected' : ''}>Emirates (طيران الإمارات)</option>
+            <option value="Qatar Airways" ${currentFilters.airline === 'Qatar Airways' ? 'selected' : ''}>Qatar Airways (القطرية)</option>
+            <option value="British Airways" ${currentFilters.airline === 'British Airways' ? 'selected' : ''}>British Airways (البريطانية)</option>
           </select>
         </div>
 
         <div class="filter-item">
-          <label class="text-sm text-muted" for="ticket-date-filter">TRAVEL DATE</label>
+          <label class="text-sm text-muted" for="ticket-date-filter">${escapeHtml(t('tickets.table.travelDate'))}</label>
           <input
             type="date"
             class="form-control"
@@ -175,7 +176,7 @@ export const TicketsPage = {
         </div>
 
         <button type="button" class="btn btn-sm btn-ghost text-danger" id="clear-filters-btn" style="display: ${(currentFilters.search || currentFilters.status !== 'All Statuses' || currentFilters.airline !== 'All Airlines' || currentFilters.travelDate) ? 'inline-flex' : 'none'};">
-          Clear Filters
+          ${escapeHtml(t('common.reset'))}
         </button>
       </div>
 
@@ -189,10 +190,10 @@ export const TicketsPage = {
   renderCardContent(tickets) {
     if (tickets.length === 0) {
       return renderEmptyState({
-        title: 'No tickets found',
-        description: 'Try adjusting your search query or filters to find what you are looking for.',
+        title: t('tickets.empty.title'),
+        description: t('tickets.empty.description'),
         icon: 'ticket',
-        actionText: 'Reset Filters',
+        actionText: t('common.reset'),
         actionId: 'reset-empty-filters-btn'
       });
     }
@@ -203,13 +204,13 @@ export const TicketsPage = {
         <table class="data-table">
           <thead>
             <tr>
-              <th>TICKET / PNR</th>
-              <th>PASSENGER</th>
-              <th>AIRLINE & ROUTE</th>
-              <th>TRAVEL DATE</th>
-              <th>PRICE</th>
-              <th>BALANCE</th>
-              <th>STATUS</th>
+              <th>${escapeHtml(t('tickets.table.ticketNumber'))} / PNR</th>
+              <th>${escapeHtml(t('tickets.table.passenger'))}</th>
+              <th>${escapeHtml(t('tickets.table.airline'))} & ${escapeHtml(t('tickets.table.route'))}</th>
+              <th>${escapeHtml(t('tickets.table.travelDate'))}</th>
+              <th>${escapeHtml(t('tickets.table.price'))}</th>
+              <th>${escapeHtml(t('tickets.table.remaining'))}</th>
+              <th>${escapeHtml(t('tickets.table.status'))}</th>
             </tr>
           </thead>
           <tbody id="tickets-table-tbody">
@@ -225,11 +226,11 @@ export const TicketsPage = {
 
       <!-- Pagination -->
       <div class="pagination-wrap">
-        <span id="tickets-count-label">Showing <strong>1-${tickets.length}</strong> of <strong>${tickets.length}</strong> entries</span>
+        <span id="tickets-count-label">${escapeHtml(t('common.showing'))} <strong>1-${tickets.length}</strong> ${escapeHtml(t('common.of'))} <strong>${tickets.length}</strong> ${escapeHtml(t('common.results'))}</span>
         <div class="pagination-controls">
-          <button class="pagination-btn" disabled>‹</button>
+          <button class="pagination-btn icon-directional" disabled>‹</button>
           <button class="pagination-btn active">1</button>
-          <button class="pagination-btn" disabled>›</button>
+          <button class="pagination-btn icon-directional" disabled>›</button>
         </div>
       </div>
     `;
@@ -301,8 +302,7 @@ export const TicketsPage = {
 
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
-        showToast('Exporting tickets to CSV...', 'info');
-        setTimeout(() => showToast('Export completed (tickets-export.csv)', 'success'), 1200);
+        showToast(t('common.export') + '...', 'info');
       });
     }
   }

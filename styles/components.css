@@ -193,7 +193,12 @@ select.form-control {
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 16px;
-  padding-right: 36px;
+  padding-inline-end: 36px;
+  padding-inline-start: 12px;
+}
+
+[dir="rtl"] select.form-control {
+  background-position: left 10px center;
 }
 
 textarea.form-control {
@@ -212,9 +217,11 @@ textarea.form-control {
   padding: 0 12px;
   background-color: var(--color-surface-soft);
   border: 1px solid var(--color-border-soft);
-  border-right: none;
-  border-top-left-radius: var(--radius-md);
-  border-bottom-left-radius: var(--radius-md);
+  border-inline-end: none;
+  border-start-start-radius: var(--radius-md);
+  border-end-start-radius: var(--radius-md);
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
   color: var(--color-text-secondary);
   font-family: var(--font-family-heading);
   font-weight: var(--font-weight-medium);
@@ -222,8 +229,10 @@ textarea.form-control {
 }
 
 .input-prefix-group .form-control {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+  border-start-end-radius: var(--radius-md);
+  border-end-end-radius: var(--radius-md);
 }
 
 .form-grid-2 {
@@ -546,7 +555,7 @@ textarea.form-control {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  text-align: left;
+  text-align: start;
   font-size: var(--font-size-body-md);
 }
 
@@ -986,7 +995,8 @@ textarea.form-control {
 .timeline-item::before {
   content: '';
   position: absolute;
-  left: 15px;
+  inset-inline-start: 15px;
+  inset-inline-end: auto;
   top: 30px;
   bottom: 0;
   width: 2px;
@@ -1122,7 +1132,8 @@ textarea.form-control {
 .toast-container {
   position: fixed;
   bottom: 24px;
-  right: 24px;
+  inset-inline-end: 24px;
+  inset-inline-start: auto;
   z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
@@ -1149,17 +1160,20 @@ textarea.form-control {
 
 .toast.toast-success {
   background-color: #065f46;
-  border-left: 4px solid #34d399;
+  border-inline-start: 4px solid #34d399;
+  border-inline-end: none;
 }
 
 .toast.toast-error {
   background-color: #991b1b;
-  border-left: 4px solid #f87171;
+  border-inline-start: 4px solid #f87171;
+  border-inline-end: none;
 }
 
 .toast.toast-info {
   background-color: #1e3a8a;
-  border-left: 4px solid #60a5fa;
+  border-inline-start: 4px solid #60a5fa;
+  border-inline-end: none;
 }
 
 @keyframes toastIn {

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -7,28 +7,52 @@
   <meta name="theme-color" content="#131b2e" />
   <title>AfricaTravel — Travel Operations</title>
 
+  <!-- Immediate Language & Direction Initialization to Prevent Layout Shift -->
+  <script>
+    (function() {
+      try {
+        var stored = localStorage.getItem('africatravel.language');
+        var lang = stored;
+        if (!lang) {
+          if (navigator.language && navigator.language.startsWith('ar')) {
+            lang = 'ar';
+          } else {
+            lang = 'en';
+          }
+        }
+        if (lang === 'ar') {
+          document.documentElement.lang = 'ar';
+          document.documentElement.dir = 'rtl';
+        } else {
+          document.documentElement.lang = 'en';
+          document.documentElement.dir = 'ltr';
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="/assets/favicon.png" />
   <link rel="alternate icon" href="/assets/logo.png" />
 
-  <!-- Google Fonts: Geist & Inter -->
+  <!-- Google Fonts: Geist, Inter & Noto Sans Arabic -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <!-- Stylesheets with Cache Busting -->
-  <link rel="stylesheet" href="/styles/tokens.css?v=2.4.0" />
-  <link rel="stylesheet" href="/styles/base.css?v=2.4.0" />
-  <link rel="stylesheet" href="/styles/layout.css?v=2.4.0" />
-  <link rel="stylesheet" href="/styles/components.css?v=2.4.0" />
-  <link rel="stylesheet" href="/styles/utilities.css?v=2.4.0" />
-  <link rel="stylesheet" href="/styles/responsive.css?v=2.4.0" />
+  <link rel="stylesheet" href="/styles/tokens.css?v=2.5.0" />
+  <link rel="stylesheet" href="/styles/base.css?v=2.5.0" />
+  <link rel="stylesheet" href="/styles/layout.css?v=2.5.0" />
+  <link rel="stylesheet" href="/styles/components.css?v=2.5.0" />
+  <link rel="stylesheet" href="/styles/utilities.css?v=2.5.0" />
+  <link rel="stylesheet" href="/styles/responsive.css?v=2.5.0" />
 </head>
 <body>
   <!-- App Container -->
   <div id="app"></div>
 
   <!-- Entry Script -->
-  <script type="module" src="/js/app.js?v=2.4.0"></script>
+  <script type="module" src="/js/app.js?v=2.5.0"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AfricaTravel — Create Ticket / New Reservation Page
  */
 
@@ -7,6 +7,8 @@ import { TicketService } from '../services/ticket-service.js';
 import { icons } from '../components/icons.js';
 import { showToast } from '../components/toast.js';
 import { formatCurrency } from '../utils/calculations.js';
+import { escapeHtml } from '../utils/security.js';
+import { t } from '../i18n/i18n.js';
 
 export const TicketCreatePage = {
   render() {
@@ -15,16 +17,15 @@ export const TicketCreatePage = {
       <div class="page-header">
         <div class="page-header-left">
           <div class="page-breadcrumbs">
-            <a href="/tickets" data-link>Tickets</a>
-            <span>›</span>
-            <span>Create Ticket</span>
+            <a href="/tickets" data-link>${escapeHtml(t('nav.tickets'))}</a>
+            <span class="breadcrumb-separator">›</span>
+            <span>${escapeHtml(t('ticketCreate.title'))}</span>
           </div>
-          <h1 class="page-title">New Reservation</h1>
-          <p class="page-subtitle">Complete the itinerary and financial details to issue a new ticket.</p>
+          <h1 class="page-title">${escapeHtml(t('ticketCreate.title'))}</h1>
+          <p class="page-subtitle">${escapeHtml(t('ticketCreate.subtitle'))}</p>
         </div>
         <div class="page-actions">
-          <a href="/tickets" class="btn btn-secondary" data-link>Cancel</a>
-          <button type="button" class="btn btn-secondary" id="save-draft-btn">Save Draft</button>
+          <a href="/tickets" class="btn btn-secondary" data-link>${escapeHtml(t('common.cancel'))}</a>
         </div>
       </div>
 
@@ -37,32 +38,28 @@ export const TicketCreatePage = {
               <div class="card-header">
                 <div class="d-flex items-center gap-xs">
                   ${icons.user('w-5 h-5')}
-                  <h3 class="card-title">Customer Identity</h3>
-                </div>
-                <div class="d-flex gap-xs">
-                  <button type="button" class="btn btn-sm btn-secondary" id="search-existing-cust-btn">Search Existing</button>
-                  <button type="button" class="btn btn-sm btn-primary" id="new-cust-toggle-btn">Create New</button>
+                  <h3 class="card-title">${escapeHtml(t('ticketCreate.passengerInfo.title'))}</h3>
                 </div>
               </div>
               <div class="card-body">
                 <div class="form-grid-2">
                   <div class="form-group">
-                    <label class="form-label" for="cust-name">Full Legal Name *</label>
+                    <label class="form-label" for="cust-name">${escapeHtml(t('ticketCreate.passengerInfo.passengerName'))} *</label>
                     <input
                       type="text"
                       id="cust-name"
                       class="form-control"
-                      placeholder="e.g. Jane Doe"
+                      placeholder="${escapeHtml(t('ticketCreate.passengerInfo.passengerNamePlaceholder'))}"
                       required
                     />
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="cust-passport">Passport Number *</label>
+                    <label class="form-label" for="cust-passport">${escapeHtml(t('ticketCreate.passengerInfo.passport'))} *</label>
                     <input
                       type="text"
                       id="cust-passport"
-                      class="form-control"
-                      placeholder="e.g. A12345678"
+                      class="form-control ltr-field"
+                      placeholder="${escapeHtml(t('ticketCreate.passengerInfo.passportPlaceholder'))}"
                       required
                     />
                   </div>
@@ -70,22 +67,22 @@ export const TicketCreatePage = {
 
                 <div class="form-grid-2">
                   <div class="form-group">
-                    <label class="form-label" for="cust-phone">Contact Phone</label>
+                    <label class="form-label" for="cust-phone">${escapeHtml(t('ticketCreate.passengerInfo.phone'))}</label>
                     <input
                       type="tel"
                       id="cust-phone"
-                      class="form-control"
-                      placeholder="+20 100 000 0000"
+                      class="form-control ltr-field"
+                      placeholder="${escapeHtml(t('ticketCreate.passengerInfo.phonePlaceholder'))}"
                     />
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="cust-nationality">Nationality</label>
+                    <label class="form-label" for="cust-nationality">${escapeHtml(t('customerDetails.nationality'))}</label>
                     <select id="cust-nationality" class="form-control">
-                      <option value="Egyptian (EGY)">Egyptian (EGY)</option>
-                      <option value="American (USA)">American (USA)</option>
-                      <option value="British (GBR)">British (GBR)</option>
-                      <option value="Saudi (SAU)">Saudi (SAU)</option>
-                      <option value="Emirati (UAE)">Emirati (UAE)</option>
+                      <option value="Egyptian (EGY)">Egyptian (مصر)</option>
+                      <option value="Saudi (SAU)">Saudi (السعودية)</option>
+                      <option value="Emirati (UAE)">Emirati (الإمارات)</option>
+                      <option value="American (USA)">American (أمريكا)</option>
+                      <option value="British (GBR)">British (بريطانيا)</option>
                     </select>
                   </div>
                 </div>
@@ -97,15 +94,15 @@ export const TicketCreatePage = {
               <div class="card-header">
                 <div class="d-flex items-center gap-xs">
                   ${icons.airplane('w-5 h-5')}
-                  <h3 class="card-title">Itinerary Details</h3>
+                  <h3 class="card-title">${escapeHtml(t('ticketCreate.flightInfo.title'))}</h3>
                 </div>
               </div>
               <div class="card-body">
                 <div class="form-grid-3">
                   <div class="form-group">
-                    <label class="form-label" for="flight-airline">Airline *</label>
+                    <label class="form-label" for="flight-airline">${escapeHtml(t('ticketCreate.flightInfo.airline'))} *</label>
                     <select id="flight-airline" class="form-control" required>
-                      <option value="">Select Carrier</option>
+                      <option value="">-- ${escapeHtml(t('ticketCreate.flightInfo.airline'))} --</option>
                       <option value="EgyptAir" data-code="MS">EgyptAir (MS)</option>
                       <option value="Emirates" data-code="EK">Emirates (EK)</option>
                       <option value="Qatar Airways" data-code="QR">Qatar Airways (QR)</option>
@@ -116,46 +113,46 @@ export const TicketCreatePage = {
                     </select>
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="flight-pnr">PNR (Locator) *</label>
+                    <label class="form-label" for="flight-pnr">${escapeHtml(t('ticketCreate.flightInfo.pnr'))} *</label>
                     <input
                       type="text"
                       id="flight-pnr"
-                      class="form-control font-semibold"
-                      placeholder="6-CHAR CODE"
+                      class="form-control font-semibold ltr-field"
+                      placeholder="${escapeHtml(t('ticketCreate.flightInfo.pnrPlaceholder'))}"
                       maxlength="6"
                       style="text-transform: uppercase;"
                       required
                     />
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="flight-ticket-num">Ticket Number</label>
+                    <label class="form-label" for="flight-ticket-num">${escapeHtml(t('ticketCreate.flightInfo.ticketNumber'))}</label>
                     <input
                       type="text"
                       id="flight-ticket-num"
-                      class="form-control"
-                      placeholder="13-digit code"
+                      class="form-control ltr-field"
+                      placeholder="${escapeHtml(t('ticketCreate.flightInfo.ticketNumberPlaceholder'))}"
                     />
                   </div>
                 </div>
 
                 <div class="form-grid-2">
                   <div class="form-group">
-                    <label class="form-label" for="flight-origin">Origin Airport (Code/Name) *</label>
+                    <label class="form-label" for="flight-origin">${escapeHtml(t('ticketCreate.flightInfo.origin'))} *</label>
                     <input
                       type="text"
                       id="flight-origin"
-                      class="form-control"
-                      placeholder="e.g. CAI - Cairo"
+                      class="form-control ltr-field"
+                      placeholder="CAI - Cairo"
                       required
                     />
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="flight-dest">Destination Airport *</label>
+                    <label class="form-label" for="flight-dest">${escapeHtml(t('ticketCreate.flightInfo.destination'))} *</label>
                     <input
                       type="text"
                       id="flight-dest"
-                      class="form-control"
-                      placeholder="e.g. DXB - Dubai"
+                      class="form-control ltr-field"
+                      placeholder="DXB - Dubai"
                       required
                     />
                   </div>
@@ -163,7 +160,7 @@ export const TicketCreatePage = {
 
                 <div class="form-grid-2">
                   <div class="form-group">
-                    <label class="form-label" for="flight-dep-date">Departure Date & Time *</label>
+                    <label class="form-label" for="flight-dep-date">${escapeHtml(t('ticketCreate.flightInfo.departureDate'))} *</label>
                     <input
                       type="datetime-local"
                       id="flight-dep-date"
@@ -172,99 +169,104 @@ export const TicketCreatePage = {
                     />
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="flight-arr-date">Arrival Date & Time</label>
+                    <label class="form-label" for="flight-arr-date">${escapeHtml(t('ticketCreate.flightInfo.returnDate'))} *</label>
                     <input
                       type="datetime-local"
                       id="flight-arr-date"
                       class="form-control"
+                      required
                     />
                   </div>
                 </div>
 
                 <div class="form-grid-2">
                   <div class="form-group">
-                    <label class="form-label" for="flight-seat">Seat Assignment</label>
+                    <label class="form-label" for="flight-seat">Seat / Class</label>
                     <input
                       type="text"
                       id="flight-seat"
-                      class="form-control"
-                      placeholder="e.g. 12A"
+                      class="form-control ltr-field"
+                      placeholder="e.g. 14B (Economy)"
                     />
                   </div>
                   <div class="form-group">
                     <label class="form-label" for="flight-baggage">Baggage Allowance</label>
                     <select id="flight-baggage" class="form-control">
-                      <option value="Carry-on only">Carry-on only</option>
-                      <option value="1 x 23kg">1 x 23kg</option>
-                      <option value="2 x 23kg" selected>2 x 23kg</option>
-                      <option value="2 x 32kg (Business)">2 x 32kg (Business)</option>
+                      <option value="2x 23kg Checked">2x 23kg Checked</option>
+                      <option value="1x 23kg Checked">1x 23kg Checked</option>
+                      <option value="2x 32kg Business">2x 32kg Business</option>
+                      <option value="Hand Luggage Only (7kg)">Hand Luggage Only (7kg)</option>
                     </select>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- 3. Financial Ledger -->
+            <!-- 3. Financials & Payment -->
             <div class="card">
               <div class="card-header">
                 <div class="d-flex items-center gap-xs">
                   ${icons.payments('w-5 h-5')}
-                  <h3 class="card-title">Financial Ledger</h3>
+                  <h3 class="card-title">${escapeHtml(t('ticketCreate.financials.title'))}</h3>
                 </div>
               </div>
               <div class="card-body">
-                <div class="form-group">
-                  <label class="form-label" for="ticket-price">Total Ticket Price *</label>
-                  <div class="input-prefix-group">
-                    <select id="ticket-currency" class="form-control" style="max-width: 100px; border-right: none; border-top-right-radius: 0; border-bottom-right-radius: 0; background-color: var(--color-surface-soft); font-weight: bold;">
-                      <option value="EGP" selected>EGP</option>
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                      <option value="SAR">SAR</option>
-                      <option value="AED">AED</option>
-                    </select>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label class="form-label" for="ticket-price">${escapeHtml(t('ticketCreate.financials.ticketPrice'))} *</label>
                     <input
                       type="number"
                       id="ticket-price"
-                      class="form-control font-bold"
+                      class="form-control tabular-nums"
                       placeholder="0.00"
                       min="1"
                       step="any"
                       required
                     />
                   </div>
+                  <div class="form-group">
+                    <label class="form-label" for="ticket-currency">Currency</label>
+                    <select id="ticket-currency" class="form-control">
+                      <option value="EGP" selected>EGP (جنيه مصري)</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="EUR">EUR (€)</option>
+                      <option value="SAR">SAR (ريال)</option>
+                      <option value="AED">AED (درهم)</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div class="form-grid-3">
                   <div class="form-group">
-                    <label class="form-label" for="initial-payment">Initial Payment</label>
+                    <label class="form-label" for="initial-payment">${escapeHtml(t('ticketCreate.financials.initialPayment'))}</label>
                     <input
                       type="number"
                       id="initial-payment"
-                      class="form-control"
+                      class="form-control tabular-nums"
                       placeholder="0.00"
                       min="0"
                       step="any"
+                      value="0"
                     />
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="payment-method">Payment Method</label>
+                    <label class="form-label" for="payment-method">${escapeHtml(t('ticketCreate.financials.paymentMethod'))}</label>
                     <select id="payment-method" class="form-control">
-                      <option value="Credit Card">Credit Card</option>
-                      <option value="Cash">Cash</option>
-                      <option value="Bank Transfer">Bank Transfer</option>
-                      <option value="Vodafone Cash">Vodafone Cash</option>
-                      <option value="InstaPay">InstaPay</option>
-                      <option value="Corporate Account">Corporate Account</option>
+                      <option value="Cash">Cash (نقدًا)</option>
+                      <option value="Credit Card">Credit Card (بطاقة ائتمان)</option>
+                      <option value="Bank Transfer">Bank Transfer (تحويل بنكي)</option>
+                      <option value="Vodafone Cash">Vodafone Cash (فودافون كاش)</option>
+                      <option value="InstaPay">InstaPay (إنستاباي)</option>
+                      <option value="Corporate Account">Corporate Account (حساب شركات)</option>
                     </select>
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="payment-ref">Ref / Auth Code</label>
+                    <label class="form-label" for="payment-ref">${escapeHtml(t('ticketCreate.financials.paymentRef'))}</label>
                     <input
                       type="text"
                       id="payment-ref"
-                      class="form-control"
-                      placeholder="OPTIONAL"
+                      class="form-control ltr-field"
+                      placeholder="${escapeHtml(t('ticketCreate.financials.paymentRefPlaceholder'))}"
                     />
                   </div>
                 </div>
@@ -276,20 +278,20 @@ export const TicketCreatePage = {
           <div class="col-span-4">
             <div class="card" style="position: sticky; top: calc(var(--topbar-height) + 20px);">
               <div class="card-header">
-                <h3 class="card-title">Transaction Summary</h3>
+                <h3 class="card-title">${escapeHtml(t('ticketDetails.overview.financialSummary'))}</h3>
               </div>
               <div class="card-body">
                 <div class="d-flex flex-column gap-sm mb-md">
                   <div class="d-flex justify-between text-sm">
-                    <span class="text-muted">Customer</span>
+                    <span class="text-muted">${escapeHtml(t('tickets.table.passenger'))}</span>
                     <strong id="summary-customer">--</strong>
                   </div>
                   <div class="d-flex justify-between text-sm">
-                    <span class="text-muted">Route</span>
-                    <strong id="summary-route">--- to ---</strong>
+                    <span class="text-muted">${escapeHtml(t('tickets.table.route'))}</span>
+                    <strong id="summary-route" class="ltr-data">--- ✈ ---</strong>
                   </div>
                   <div class="d-flex justify-between text-sm">
-                    <span class="text-muted">Carrier</span>
+                    <span class="text-muted">${escapeHtml(t('tickets.table.airline'))}</span>
                     <strong id="summary-carrier">--</strong>
                   </div>
                 </div>
@@ -298,22 +300,22 @@ export const TicketCreatePage = {
 
                 <div class="d-flex flex-column gap-sm mb-lg">
                   <div class="d-flex justify-between items-center">
-                    <span class="text-muted">Total Price</span>
-                    <span class="tabular-nums font-bold" style="font-size: 20px;" id="summary-total">EGP 0</span>
+                    <span class="text-muted">${escapeHtml(t('ticketCreate.financials.ticketPrice'))}</span>
+                    <span class="tabular-nums font-bold" style="font-size: 20px;" id="summary-total">0</span>
                   </div>
                   <div class="d-flex justify-between items-center">
-                    <span class="text-muted">Collected</span>
-                    <span class="tabular-nums font-semibold text-success" id="summary-collected">EGP 0</span>
+                    <span class="text-muted">${escapeHtml(t('common.paid'))}</span>
+                    <span class="tabular-nums font-semibold text-success" id="summary-collected">0</span>
                   </div>
                   <div class="d-flex justify-between items-center">
-                    <span class="text-muted">Balance Due</span>
-                    <span class="tabular-nums font-bold text-danger" id="summary-balance">EGP 0</span>
+                    <span class="text-muted">${escapeHtml(t('common.remaining'))}</span>
+                    <span class="tabular-nums font-bold text-danger" id="summary-balance">0</span>
                   </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-block btn-lg" id="submit-ticket-btn">
                   ${icons.check('w-5 h-5')}
-                  <span>Create Ticket</span>
+                  <span>${escapeHtml(t('ticketCreate.buttons.submit'))}</span>
                 </button>
               </div>
             </div>
@@ -353,7 +355,7 @@ export const TicketCreatePage = {
       const remaining = Math.max(0, price - initialPaid);
 
       if (summaryCustomer) summaryCustomer.textContent = cust;
-      if (summaryRoute) summaryRoute.textContent = `${origin} to ${dest}`;
+      if (summaryRoute) summaryRoute.textContent = `${origin} ✈ ${dest}`;
       if (summaryCarrier) summaryCarrier.textContent = carrier;
 
       if (summaryTotal) summaryTotal.textContent = formatCurrency(price, currency);
@@ -408,18 +410,11 @@ export const TicketCreatePage = {
         }
 
         const newTicket = result.data;
-        showToast(`Ticket ${newTicket.id} created successfully!`, 'success');
+        showToast(t('toasts.ticketCreated'), 'success');
 
         // Navigate to new ticket details
         window.history.pushState(null, null, `/tickets/${newTicket.id}`);
         window.dispatchEvent(new PopStateEvent('popstate'));
-      });
-    }
-
-    const draftBtn = container.querySelector('#save-draft-btn');
-    if (draftBtn) {
-      draftBtn.addEventListener('click', () => {
-        showToast('Reservation draft saved in memory', 'info');
       });
     }
   }

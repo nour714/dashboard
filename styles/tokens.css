@@ -61,9 +61,9 @@
   --color-border-soft: #e2e8f0;
   --color-border-dark: #94a3b8;
 
-  /* Typography */
-  --font-family-heading: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-family-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  /* Typography - Bilingual Font Stacks */
+  --font-family-heading: 'Geist', 'Noto Sans Arabic', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-family-body: 'Inter', 'Noto Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-family-mono: 'Geist Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 
   /* Font Sizes & Line Heights */
@@ -151,4 +151,13 @@
   --z-modal: 100;
   --z-toast: 110;
   --z-tooltip: 120;
+}
+
+/* RTL Typography & Direction Overrides */
+[dir="rtl"] {
+  --font-family-heading: 'Noto Sans Arabic', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-family-body: 'Noto Sans Arabic', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --line-height-body-md: 22px;
+  --line-height-body-lg: 26px;
+  --line-height-label-md: 20px;
 }
