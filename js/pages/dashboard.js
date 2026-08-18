@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel — Dashboard Page
  */
 
@@ -27,10 +27,10 @@ export const DashboardPage = {
     let totalCollected = 0;
     let totalOutstanding = 0;
 
-    tickets.forEach(t => {
-      const price = Number(t.ticketPrice) || 0;
+    tickets.forEach(tk => {
+      const price = Number(tk.ticketPrice) || 0;
       totalSales += price;
-      const paid = calculateTotalPaid(t.payments);
+      const paid = calculateTotalPaid(tk.payments);
       totalCollected += paid;
       totalOutstanding += calculateRemaining(price, paid);
     });
@@ -42,47 +42,47 @@ export const DashboardPage = {
 
     // Upcoming Flights (Next 3)
     const upcomingFlights = tickets
-      .filter(t => t.status !== 'CANCELLED' && t.status !== 'REFUNDED')
+      .filter(tk => tk.status !== 'CANCELLED' && tk.status !== 'REFUNDED')
       .slice(0, 3);
 
     // Recent Activities (Top 5)
     const recentActivities = activityLogs.slice(0, 5);
 
-    const recentTicketsHtml = recentTickets.map(t => {
-      const totalPaid = calculateTotalPaid(t.payments);
-      const remaining = calculateRemaining(t.ticketPrice, totalPaid);
+    const recentTicketsHtml = recentTickets.map(tk => {
+      const totalPaid = calculateTotalPaid(tk.payments);
+      const remaining = calculateRemaining(tk.ticketPrice, totalPaid);
       const isPaid = remaining === 0;
 
       return `
         <tr>
           <td>
-            <a href="/tickets/${escapeHtml(t.id)}" class="cell-main ltr-data" data-link>${escapeHtml(t.id)}</a>
-            <div class="cell-sub">${formatDateTime(t.createdAt)}</div>
+            <a href="/tickets/${escapeHtml(tk.id)}" class="cell-main ltr-data" data-link>${escapeHtml(tk.id)}</a>
+            <div class="cell-sub">${formatDateTime(tk.createdAt)}</div>
           </td>
           <td>
-            <div class="cell-main">${escapeHtml(t.passengerName)}</div>
-            <div class="cell-sub ltr-data">${escapeHtml(t.phone || t.email || 'Direct Client')}</div>
+            <div class="cell-main">${escapeHtml(tk.passengerName)}</div>
+            <div class="cell-sub ltr-data">${escapeHtml(tk.phone || tk.email || 'Direct Client')}</div>
           </td>
           <td>
             <div class="airline-tag">
-              <span class="airline-code-badge ltr-data">${escapeHtml(t.airlineCode || 'MS')}</span>
-              <span class="ltr-data">${escapeHtml(t.origin)} ✈ ${escapeHtml(t.destination)}</span>
+              <span class="airline-code-badge ltr-data">${escapeHtml(tk.airlineCode || 'MS')}</span>
+              <span class="ltr-data">${escapeHtml(tk.origin)} ✈ ${escapeHtml(tk.destination)}</span>
             </div>
           </td>
           <td>
-            <div class="tabular-nums font-semibold">${formatCurrency(t.ticketPrice, t.currency)}</div>
+            <div class="tabular-nums font-semibold">${formatCurrency(tk.ticketPrice, tk.currency)}</div>
             <div class="cell-sub ${isPaid ? 'text-success' : 'text-danger'}">
-              ${isPaid ? `${escapeHtml(t('common.paid'))}: ${formatCurrency(totalPaid, t.currency)}` : `${escapeHtml(t('common.remaining'))}: ${formatCurrency(remaining, t.currency)}`}
+              ${isPaid ? `${escapeHtml(t('common.paid'))}: ${formatCurrency(totalPaid, tk.currency)}` : `${escapeHtml(t('common.remaining'))}: ${formatCurrency(remaining, tk.currency)}`}
             </div>
           </td>
           <td>
-            ${renderStatusBadge(t.status)}
+            ${renderStatusBadge(tk.status)}
           </td>
         </tr>
       `;
     }).join('');
 
-    const upcomingFlightsHtml = upcomingFlights.map(t => `
+    const upcomingFlightsHtml = upcomingFlights.map(tk => `
       <div class="d-flex items-center justify-between p-sm mb-xs" style="background-color: var(--color-surface); border: 1px solid var(--color-border-soft); border-radius: var(--radius-lg);">
         <div class="d-flex items-center gap-sm">
           <div style="width: 38px; height: 38px; border-radius: var(--radius-md); background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center;">
@@ -90,16 +90,16 @@ export const DashboardPage = {
           </div>
           <div>
             <div class="font-semibold ltr-data" style="font-size: 14px;">
-              ${escapeHtml(t.origin)} ✈ ${escapeHtml(t.destination)}
+              ${escapeHtml(tk.origin)} ✈ ${escapeHtml(tk.destination)}
             </div>
             <div class="text-sm text-muted">
-              <span class="ltr-data">${escapeHtml(t.flightNumber || 'MS 901')}</span> • ${escapeHtml(t.passengerName)}
+              <span class="ltr-data">${escapeHtml(tk.flightNumber || 'MS 901')}</span> • ${escapeHtml(tk.passengerName)}
             </div>
           </div>
         </div>
         <div class="text-end">
-          <span class="airline-code-badge ltr-data">${escapeHtml(t.pnr)}</span>
-          <div class="mt-xs">${renderStatusBadge(t.status)}</div>
+          <span class="airline-code-badge ltr-data">${escapeHtml(tk.pnr)}</span>
+          <div class="mt-xs">${renderStatusBadge(tk.status)}</div>
         </div>
       </div>
     `).join('');
