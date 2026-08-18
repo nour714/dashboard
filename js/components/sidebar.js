@@ -9,9 +9,12 @@ import { t } from '../i18n/i18n.js';
 
 export function renderSidebar(activePath = '/dashboard') {
   const currentUser = AuthService.getCurrentUser() || {};
-  const userName = currentUser.name || currentUser.fullName || 'Mohamed Raafat';
-  const userRole = currentUser.title || currentUser.role || 'Senior Operations Director';
-  const initials = userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'AH';
+  const isAr = i18n.getLanguage() === 'ar';
+  const rawName = currentUser.name || currentUser.fullName || 'Mohamed Raafat';
+  const userName = (rawName === 'Mohamed Raafat' && isAr) ? 'محمد رأفت' : rawName;
+  const rawRole = currentUser.title || currentUser.role || 'Senior Operations Director';
+  const userRole = t(`roles.${rawRole}`) || rawRole;
+  const initials = isAr ? 'م.ر' : (userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'MR');
 
   const mainNav = [
     { path: '/dashboard', label: t('nav.dashboard'), icon: 'dashboard' },

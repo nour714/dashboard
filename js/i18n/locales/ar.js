@@ -93,6 +93,16 @@ export const ar = {
     disabled: 'معطّل'
   },
 
+  // User Roles
+  roles: {
+    admin: 'مسؤول النظام',
+    agent: 'وكيل حجز تذاكر',
+    ADMIN: 'مسؤول النظام',
+    AGENT: 'وكيل حجز تذاكر',
+    operationsDirector: 'مدير أول العمليات',
+    'Senior Operations Director': 'مدير أول العمليات'
+  },
+
   // Status Labels
   status: {
     CONFIRMED: 'مؤكدة',

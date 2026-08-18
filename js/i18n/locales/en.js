@@ -93,6 +93,16 @@ export const en = {
     disabled: 'Disabled'
   },
 
+  // User Roles
+  roles: {
+    admin: 'Administrator',
+    agent: 'Ticketing Agent',
+    ADMIN: 'Administrator',
+    AGENT: 'Ticketing Agent',
+    operationsDirector: 'Senior Operations Director',
+    'Senior Operations Director': 'Senior Operations Director'
+  },
+
   // Status Labels
   status: {
     CONFIRMED: 'CONFIRMED',

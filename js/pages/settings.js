@@ -47,8 +47,12 @@ export const SettingsPage = {
     let contentHtml = '';
 
     if (activeSection === 'profile') {
-      const userName = currentUser.name || currentUser.fullName || 'Mohamed Raafat';
-      const userInitials = userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase();
+      const isAr = i18n.getLanguage() === 'ar';
+      const rawName = currentUser.name || currentUser.fullName || 'Mohamed Raafat';
+      const userName = (rawName === 'Mohamed Raafat' && isAr) ? 'محمد رأفت' : rawName;
+      const rawRole = currentUser.title || currentUser.role || 'Senior Operations Director';
+      const userRole = t(`roles.${rawRole}`) || rawRole;
+      const userInitials = isAr ? 'م.ر' : (userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'MR');
 
       contentHtml = `
         <div class="card mb-lg">
@@ -62,7 +66,7 @@ export const SettingsPage = {
             <form id="profile-form">
               <div class="d-flex items-center gap-md mb-lg">
                 <div class="sidebar-user-avatar" style="width: 64px; height: 64px; font-size: 22px; background: linear-gradient(135deg, #1e3a8a, #2563eb);">
-                  ${userInitials}
+                  ${escapeHtml(userInitials)}
                 </div>
                 <div>
                   <button type="button" class="btn btn-sm btn-secondary" id="change-avatar-btn">${escapeHtml(t('settings.profile.changePhoto'))}</button>
@@ -82,7 +86,7 @@ export const SettingsPage = {
 
               <div class="form-group">
                 <label class="form-label" for="setting-role">${escapeHtml(t('settings.profile.roleTitle'))}</label>
-                <input type="text" id="setting-role" class="form-control" value="${escapeHtml(currentUser.title || currentUser.role || 'Senior Operations Director')}" readonly disabled />
+                <input type="text" id="setting-role" class="form-control" value="${escapeHtml(userRole)}" readonly disabled />
               </div>
 
               <div class="d-flex justify-end gap-sm mt-md">
