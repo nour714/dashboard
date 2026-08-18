@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel — Settings Page
  */
 
@@ -35,9 +35,9 @@ export const SettingsPage = {
     const menuHtml = settingsMenu.map(m => `
       <button
         type="button"
-        class="nav-link ${m.id === activeSection ? 'active' : ''}"
+        class="tab-btn ${m.id === activeSection ? 'active' : ''}"
         data-settings-target="${m.id}"
-        style="color: var(--color-text); border: 1px solid var(--color-border-soft); margin-bottom: 6px; background-color: ${m.id === activeSection ? 'var(--color-accent-soft)' : '#ffffff'}; border-color: ${m.id === activeSection ? 'var(--color-accent-border)' : 'var(--color-border-soft)'}; color: ${m.id === activeSection ? 'var(--color-accent)' : 'var(--color-text)'};"
+        style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; padding: 12px 18px; border: none; border-bottom: 2px solid ${m.id === activeSection ? 'var(--color-accent)' : 'transparent'}; color: ${m.id === activeSection ? 'var(--color-accent)' : 'var(--color-text-secondary)'}; background: transparent; cursor: pointer; white-space: nowrap; font-weight: ${m.id === activeSection ? '600' : '500'}; transition: all var(--transition-fast);"
       >
         ${icons[m.icon] ? icons[m.icon]('w-4 h-4') : ''}
         <span>${escapeHtml(m.label)}</span>
@@ -274,18 +274,14 @@ export const SettingsPage = {
         <a href="/settings" class="tab-btn active" data-link>${escapeHtml(t('nav.settings'))}</a>
       </div>
 
-      <div class="grid grid-cols-12 gap-lg">
-        <!-- Settings Sidebar (4 Cols) -->
-        <div class="col-span-4">
-          <div class="card p-sm">
-            ${menuHtml}
-          </div>
-        </div>
+      <!-- Settings Horizontal Tabs -->
+      <div class="tabs-header mb-lg" style="border-radius: var(--radius-xl); border: 1px solid var(--color-border-soft); background: var(--color-surface-card); padding: 0 var(--spacing-sm); display: flex; align-items: center; gap: 4px; overflow-x: auto; scrollbar-width: none;">
+        ${menuHtml}
+      </div>
 
-        <!-- Settings Content (8 Cols) -->
-        <div class="col-span-8">
-          ${contentHtml}
-        </div>
+      <!-- Settings Content (Full Width) -->
+      <div class="w-100">
+        ${contentHtml}
       </div>
     `;
   },
