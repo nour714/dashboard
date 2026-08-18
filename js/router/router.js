@@ -6,6 +6,39 @@
 
 import { AuthService } from '../services/auth-service.js';
 
+// Helper functions for modern top loading progress bar
+function startRouteProgressBar() {
+  if (typeof document === 'undefined') return;
+  let bar = document.getElementById('route-progress-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'route-progress-bar';
+    bar.className = 'route-progress-bar';
+    document.body.appendChild(bar);
+  }
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+  bar.style.opacity = '1';
+  requestAnimationFrame(() => {
+    bar.style.transition = 'width 180ms cubic-bezier(0.16, 1, 0.3, 1), opacity 150ms ease';
+    bar.style.width = '70%';
+  });
+}
+
+function completeRouteProgressBar() {
+  if (typeof document === 'undefined') return;
+  const bar = document.getElementById('route-progress-bar');
+  if (bar) {
+    bar.style.width = '100%';
+    setTimeout(() => {
+      bar.style.opacity = '0';
+      setTimeout(() => {
+        bar.style.width = '0%';
+      }, 200);
+    }, 120);
+  }
+}
+
 export class Router {
   constructor(routes = [], mountElement) {
     this.routes = routes;
@@ -123,39 +156,6 @@ export class Router {
       }));
     });
   }
-
-// Helper functions for modern top loading progress bar
-function startRouteProgressBar() {
-  if (typeof document === 'undefined') return;
-  let bar = document.getElementById('route-progress-bar');
-  if (!bar) {
-    bar = document.createElement('div');
-    bar.id = 'route-progress-bar';
-    bar.className = 'route-progress-bar';
-    document.body.appendChild(bar);
-  }
-  bar.style.transition = 'none';
-  bar.style.width = '0%';
-  bar.style.opacity = '1';
-  requestAnimationFrame(() => {
-    bar.style.transition = 'width 180ms cubic-bezier(0.16, 1, 0.3, 1), opacity 150ms ease';
-    bar.style.width = '70%';
-  });
-}
-
-function completeRouteProgressBar() {
-  if (typeof document === 'undefined') return;
-  const bar = document.getElementById('route-progress-bar');
-  if (bar) {
-    bar.style.width = '100%';
-    setTimeout(() => {
-      bar.style.opacity = '0';
-      setTimeout(() => {
-        bar.style.width = '0%';
-      }, 200);
-    }, 120);
-  }
-}
 
   async render(route, params, query) {
     if (!this.mountElement) return;
