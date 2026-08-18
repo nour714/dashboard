@@ -24,7 +24,7 @@ import { validateRefund } from '../domain/refund-rules.js';
 import { validateModification } from '../domain/modification-rules.js';
 import { NotFoundError, ValidationError } from '../domain/errors.js';
 
-const STORAGE_KEY = 'AfricaTravel_STORE_V2';
+const STORAGE_KEY = 'AfricaTravel_STORE_V3';
 
 class Store {
   constructor() {
@@ -39,7 +39,7 @@ class Store {
         if (saved) {
           const parsed = JSON.parse(saved);
           const user = parsed.currentUser || INITIAL_SETTINGS.profile;
-          user.name = user.name || user.fullName || 'Ahmed Hassan';
+          user.name = user.name || user.fullName || 'Mohamed Raafat';
           user.title = user.title || user.role || 'Senior Operations Director';
           delete user.avatar; // Ensure initials are used cleanly
 
@@ -54,7 +54,7 @@ class Store {
     }
 
     const defaultUser = { ...INITIAL_SETTINGS.profile };
-    defaultUser.name = defaultUser.name || defaultUser.fullName || 'Ahmed Hassan';
+    defaultUser.name = defaultUser.name || defaultUser.fullName || 'Mohamed Raafat';
     defaultUser.title = defaultUser.title || defaultUser.role || 'Senior Operations Director';
     delete defaultUser.avatar;
 

@@ -348,7 +348,7 @@ class App {
     if (!currentUser) return;
     const nameEl = document.querySelector('.topbar-user-name');
     const roleEl = document.querySelector('.topbar-user-role');
-    if (nameEl) nameEl.textContent = currentUser.name || currentUser.fullName || 'Ahmed Hassan';
+    if (nameEl) nameEl.textContent = currentUser.name || currentUser.fullName || 'Mohamed Raafat';
     if (roleEl) roleEl.textContent = currentUser.title || currentUser.role || 'Senior Operations Director';
   }
 }

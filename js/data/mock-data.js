@@ -88,7 +88,7 @@ export const INITIAL_CUSTOMERS = [
 export const INITIAL_EMPLOYEES = [
   {
     id: 'EMP-101',
-    name: 'Ahmed Hassan',
+    name: 'Mohamed Raafat',
     email: 'admin@africatravel.com',
     role: 'ADMIN',
     title: 'Senior Operations Director',
@@ -102,8 +102,8 @@ export const INITIAL_EMPLOYEES = [
   },
   {
     id: 'EMP-102',
-    name: 'Sarah Jenkins',
-    email: 'sarah.j@africatravel.com',
+    name: 'Ahmed Raafat',
+    email: 'ahmed.r@africatravel.com',
     role: 'ADMIN',
     title: 'Senior Operations Manager',
     ticketsCount: 3892,
@@ -116,8 +116,8 @@ export const INITIAL_EMPLOYEES = [
   },
   {
     id: 'EMP-103',
-    name: 'Marcus Reed',
-    email: 'marcus.r@africatravel.com',
+    name: 'Nour Wael',
+    email: 'nour.w@africatravel.com',
     role: 'AGENT',
     title: 'Ticketing Officer',
     ticketsCount: 2104,
@@ -125,13 +125,13 @@ export const INITIAL_EMPLOYEES = [
     collected: 185000,
     refunds: 3500,
     outstanding: 4000,
-    status: 'AWAY',
+    status: 'ACTIVE',
     lastActive: '35 mins ago'
   },
   {
     id: 'EMP-104',
-    name: 'Lena Chen',
-    email: 'lena.c@africatravel.com',
+    name: 'Hashem Ahmed',
+    email: 'hashem.a@africatravel.com',
     role: 'AGENT',
     title: 'Customer Operations Specialist',
     ticketsCount: 1540,
@@ -495,8 +495,8 @@ export const INITIAL_ACTIVITY_LOGS = [
 
 export const INITIAL_SETTINGS = {
   profile: {
-    name: 'Ahmed Hassan',
-    fullName: 'Ahmed Hassan',
+    name: 'Mohamed Raafat',
+    fullName: 'Mohamed Raafat',
     email: 'admin@africatravel.com',
     role: 'Senior Operations Director',
     title: 'Senior Operations Director',

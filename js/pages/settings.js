@@ -45,7 +45,7 @@ export const SettingsPage = {
     let contentHtml = '';
 
     if (activeSection === 'profile') {
-      const userName = currentUser.name || currentUser.fullName || 'Ahmed Hassan';
+      const userName = currentUser.name || currentUser.fullName || 'Mohamed Raafat';
       const userInitials = userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase();
 
       contentHtml = `

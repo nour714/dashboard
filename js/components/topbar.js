@@ -8,7 +8,7 @@ import { escapeHtml } from '../utils/security.js';
 
 export function renderTopbar() {
   const currentUser = AuthService.getCurrentUser() || {};
-  const userName = currentUser.name || currentUser.fullName || 'Ahmed Hassan';
+  const userName = currentUser.name || currentUser.fullName || 'Mohamed Raafat';
   const userRole = currentUser.title || currentUser.role || 'Senior Operations Director';
   const initials = userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'AH';
 
