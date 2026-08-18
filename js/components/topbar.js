@@ -64,13 +64,9 @@ export function renderTopbar() {
           ${icons.help('w-5 h-5')}
         </button>
 
-        <a href="/settings" class="topbar-user-badge" data-link aria-label="${escapeHtml(t('settings.tabs.profile'))}">
+        <a href="/settings" class="topbar-user-badge" data-link aria-label="${escapeHtml(t('settings.tabs.profile'))}" title="${escapeHtml(userName)}">
           <div class="topbar-user-avatar">
             ${escapeHtml(initials)}
-          </div>
-          <div class="topbar-user-meta hide-mobile">
-            <span class="topbar-user-name">${escapeHtml(userName)}</span>
-            <span class="topbar-user-role">${escapeHtml(userRole)}</span>
           </div>
         </a>
       </div>
