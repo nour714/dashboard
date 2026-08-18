@@ -5,7 +5,7 @@
 import { icons } from './icons.js';
 import { AuthService } from '../services/auth-service.js';
 import { escapeHtml } from '../utils/security.js';
-import { t } from '../i18n/i18n.js';
+import { i18n, t } from '../i18n/i18n.js';
 
 export function renderSidebar(activePath = '/dashboard') {
   const currentUser = AuthService.getCurrentUser() || {};
