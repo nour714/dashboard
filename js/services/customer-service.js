@@ -26,6 +26,10 @@ export const CustomerService = {
     return this.getAllCustomers(query);
   },
 
+  searchCustomers(query) {
+    return this.getAllCustomers(query);
+  },
+
   getCustomerById(customerId) {
     if (!customerId) return null;
     const { customers } = store.getState();
