@@ -1,0 +1,95 @@
+/**
+ * AfricaTravel - Ticket, Payment, Refund, and Modification Controller
+ */
+
+import { TicketService } from '../services/ticket.service.js';
+import { NotFoundError } from '../domain/errors.js';
+
+export const TicketController = {
+  async getTickets(req, res, next) {
+    try {
+      const result = await TicketService.getTickets(req.query);
+      return res.status(200).json({
+        success: true,
+        data: result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getTicketById(req, res, next) {
+    try {
+      const ticket = await TicketService.getTicketById(req.params.id);
+      if (!ticket) {
+        throw new NotFoundError('Ticket', req.params.id);
+      }
+      return res.status(200).json({
+        success: true,
+        data: ticket
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async createTicket(req, res, next) {
+    try {
+      const ticket = await TicketService.createTicket(req.body, req.user);
+      return res.status(201).json({
+        success: true,
+        data: ticket
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async updateTicket(req, res, next) {
+    try {
+      const ticket = await TicketService.updateTicket(req.params.id, req.body, req.user);
+      return res.status(200).json({
+        success: true,
+        data: ticket
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async addPayment(req, res, next) {
+    try {
+      const payment = await TicketService.addPayment(req.params.id, req.body, req.user);
+      return res.status(201).json({
+        success: true,
+        data: payment
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async addRefund(req, res, next) {
+    try {
+      const refund = await TicketService.addRefund(req.params.id, req.body, req.user);
+      return res.status(201).json({
+        success: true,
+        data: refund
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async addModification(req, res, next) {
+    try {
+      const mod = await TicketService.addModification(req.params.id, req.body, req.user);
+      return res.status(201).json({
+        success: true,
+        data: mod
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+};

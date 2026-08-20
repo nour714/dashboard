@@ -3,12 +3,50 @@
   "version": "1.0.0",
   "description": "AfricaTravel — Internal Travel Agency Management System",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "build": "echo 'Static build ready'",
     "start": "node server.js",
-    "test": "node test/business-flow.test.js && node test/i18n-bilingual.test.js"
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "node prisma/seed.js",
+    "test:frontend": "node test/business-flow.test.js && node test/i18n-bilingual.test.js",
+    "test:domain": "node test/backend-domain.test.js",
+    "test:auth": "node test/backend-auth.test.js",
+    "test:api": "node test/backend-api.test.js",
+    "test": "node test/business-flow.test.js && node test/i18n-bilingual.test.js && node test/backend-domain.test.js && node test/backend-auth.test.js && node test/backend-api.test.js"
   },
-  "keywords": ["travel", "agency", "ticketing", "operations", "i18n", "rtl"],
+  "keywords": [
+    "travel",
+    "agency",
+    "ticketing",
+    "operations",
+    "i18n",
+    "rtl",
+    "backend",
+    "express",
+    "postgresql",
+    "prisma"
+  ],
   "author": "AfricaTravel Engineering",
-  "license": "ISC"
+  "license": "ISC",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.4.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.2",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "prisma": "^6.4.1"
+  }
 }

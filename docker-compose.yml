@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database Container
+  postgres:
+    image: postgres:16-alpine
+    container_name: africatravel_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: africatravel
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d africatravel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # AfricaTravel Application Container (Node.js 26)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: africatravel_app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: "postgresql://postgres:postgrespassword@postgres:5432/africatravel?schema=public"
+      JWT_SECRET: "africatravel_production_super_secret_jwt_key_2026"
+      JWT_REFRESH_SECRET: "africatravel_production_super_secret_refresh_key_2026"
+      CORS_ORIGIN: "http://localhost:3000,http://127.0.0.1:3000"
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:

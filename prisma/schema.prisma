@@ -1,0 +1,219 @@
+// AfricaTravel - Prisma Database Schema for PostgreSQL
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  AGENT
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model User {
+  id            String          @id
+  name          String
+  email         String          @unique
+  role          Role            @default(AGENT)
+  title         String
+  passwordHash  String
+  status        EmployeeStatus  @default(ACTIVE)
+  lastActive    String?         @default("Just now")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  // Relations
+  tickets       Ticket[]        @relation("TicketCreatedBy")
+  payments      Payment[]       @relation("PaymentAddedBy")
+  modifications Modification[]  @relation("ModificationProcessedBy")
+  refunds       Refund[]        @relation("RefundProcessedBy")
+  auditLogs     AuditLog[]      @relation("AuditUser")
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model Customer {
+  id          String         @id
+  name        String
+  email       String?
+  phone       String?
+  passport    String?
+  nationality String         @default("Egyptian (EGY)")
+  isVip       Boolean        @default(false)
+  memberSince String         @default("2024")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relations
+  tickets     Ticket[]
+  notes       CustomerNote[]
+
+  @@map("customers")
+}
+
+model CustomerNote {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  author     String
+  text       String
+  date       DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@map("customer_notes")
+}
+
+model Ticket {
+  id                     String         @id
+  ticketNumber           String         @unique
+  pnr                    String
+  customerId             String
+  customer               Customer       @relation(fields: [customerId], references: [id])
+  passengerName          String
+  phone                  String?
+  passport               String?
+  nationality            String?
+  dob                    String?
+  email                  String?
+  airline                String
+  airlineCode            String
+  flightNumber           String
+  returnFlightNumber     String?
+  origin                 String
+  originTerminal         String?
+  originAirportName      String?
+  destination            String
+  destinationTerminal    String?
+  destinationAirportName String?
+  departureDate          DateTime
+  arrivalDate            DateTime
+  returnDepartureDate    DateTime?
+  returnArrivalDate      DateTime?
+  tripType               String         @default("One Way")
+  flightDuration         String?
+  cabinClass             String         @default("Economy (Y)")
+  seat                   String?
+  baggage                String?
+  ticketPrice            Decimal        @db.Decimal(12, 2)
+  currency               String         @default("EGP")
+  status                 String         @default("CONFIRMED")
+  createdBy              String
+  createdById            String?
+  user                   User?          @relation("TicketCreatedBy", fields: [createdById], references: [id])
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  // Relations
+  payments               Payment[]
+  modifications          Modification[]
+  refunds                Refund[]
+
+  @@map("tickets")
+}
+
+model Payment {
+  id        String   @id
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  amount    Decimal  @db.Decimal(12, 2)
+  currency  String   @default("EGP")
+  method    String   @default("Credit Card")
+  reference String?
+  date      DateTime @default(now())
+  addedBy   String
+  addedById String?
+  user      User?    @relation("PaymentAddedBy", fields: [addedById], references: [id])
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@map("payments")
+}
+
+model Modification {
+  id             String   @id
+  ticketId       String
+  ticket         Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  title          String
+  originalFlight Json
+  newFlight      Json
+  changeFee      Decimal  @default(0) @db.Decimal(12, 2)
+  currency       String   @default("EGP")
+  reason         String
+  requestedBy    String
+  processedBy    String
+  processedById  String?
+  user           User?    @relation("ModificationProcessedBy", fields: [processedById], references: [id])
+  date           DateTime @default(now())
+  status         String   @default("COMPLETED")
+  createdAt      DateTime @default(now())
+
+  @@map("modifications")
+}
+
+model Refund {
+  id             String    @id
+  ticketId       String
+  ticket         Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  originalAmount Decimal?  @db.Decimal(12, 2)
+  totalPaid      Decimal?  @db.Decimal(12, 2)
+  amount         Decimal   @db.Decimal(12, 2)
+  currency       String    @default("EGP")
+  reason         String
+  status         String    @default("COMPLETED")
+  requestedDate  DateTime  @default(now())
+  processedDate  DateTime? @default(now())
+  processedBy    String
+  processedById  String?
+  user           User?     @relation("RefundProcessedBy", fields: [processedById], references: [id])
+  createdAt      DateTime  @default(now())
+
+  @@map("refunds")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  timestamp   DateTime @default(now())
+  user        String
+  userId      String?
+  userRef     User?    @relation("AuditUser", fields: [userId], references: [id])
+  action      String
+  ticketId    String?
+  customerId  String?
+  description String
+  metadata    Json?
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revoked   Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+model SystemSetting {
+  id        String   @id @default("default")
+  data      Json
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}

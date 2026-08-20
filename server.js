@@ -1,127 +1,52 @@
+/**
+ * AfricaTravel - Main Production Server Entry Point
+ *
+ * Bootstraps the Express application, PostgreSQL Prisma connection, and static SPA router.
+ */
+
 import http from 'http';
-import fs from 'fs';
+import { fileURLToPath } from 'url';
 import path from 'path';
-import url, { fileURLToPath } from 'url';
+import { createApp } from './server/src/app.js';
+import { validatePath } from './server/src/middleware/security.js';
+import { env } from './server/src/config/env.js';
+import { checkDatabaseHealth } from './server/src/config/database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-const PORT = 3000;
 const ROOT_DIR = __dirname;
+const PORT = env.PORT || 3000;
 
-const MIME_TYPES = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.mjs': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.woff2': 'font/woff2',
-  '.woff': 'font/woff',
-  '.ttf': 'font/ttf'
-};
+export { validatePath };
 
 /**
- * Validates whether a pathname is safe to serve from the root directory.
- * Prevents path traversal and blocks any dotfile/dotfolder access (.git, .env, etc.).
- * @param {string} pathname
+ * Creates and wraps the Express server instance
  * @param {string} rootDir
- * @returns {{ isSafe: boolean, resolvedPath: string, reason?: string }}
+ * @returns {http.Server}
  */
-export function validatePath(pathname, rootDir = ROOT_DIR) {
-  const resolvedRoot = path.resolve(rootDir);
-
-  // Split and check for dotfile/dotfolder segments (e.g., .git, .env, ..)
-  const segments = pathname.split(/[/\\]/).filter(Boolean);
-  const hasDotSegment = segments.some(seg => seg.startsWith('.'));
-  if (hasDotSegment) {
-    return { isSafe: false, resolvedPath: '', reason: 'dotfile_blocked' };
-  }
-
-  // Resolve target path safely relative to root
-  const resolvedPath = path.resolve(resolvedRoot, '.' + path.sep + pathname);
-
-  // Check if resolved path stays strictly within resolvedRoot
-  const isInsideRoot = resolvedPath === resolvedRoot || resolvedPath.startsWith(resolvedRoot + path.sep);
-  if (!isInsideRoot) {
-    return { isSafe: false, resolvedPath: '', reason: 'path_traversal' };
-  }
-
-  return { isSafe: true, resolvedPath };
-}
-
 export function createServer(rootDir = ROOT_DIR) {
-  return http.createServer((req, res) => {
-    const parsedUrl = url.parse(req.url);
-    let pathname = decodeURIComponent(parsedUrl.pathname);
-
-    // If root, serve index.html
-    if (pathname === '/') {
-      pathname = '/index.html';
-    }
-
-    // Security Check: Path Traversal & Dotfile/Dotfolder Prevention
-    const pathValidation = validatePath(pathname, rootDir);
-    if (!pathValidation.isSafe) {
-      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end('403 Forbidden');
-      return;
-    }
-
-    let filePath = pathValidation.resolvedPath;
-
-    fs.stat(filePath, (err, stats) => {
-      if (err || !stats.isFile()) {
-        // If requested file doesn't exist and has no extension, fallback to index.html for SPA
-        if (!path.extname(pathname)) {
-          const indexValidation = validatePath('/index.html', rootDir);
-          if (!indexValidation.isSafe) {
-            res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
-            res.end('403 Forbidden');
-            return;
-          }
-          filePath = indexValidation.resolvedPath;
-        } else {
-          res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-          res.end('404 Not Found');
-          return;
-        }
-      }
-
-      const ext = path.extname(filePath).toLowerCase();
-      const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-
-      fs.readFile(filePath, (readErr, content) => {
-        if (readErr) {
-          res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-          res.end('500 Internal Server Error');
-          return;
-        }
-        res.writeHead(200, {
-          'Content-Type': contentType,
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-          'X-Content-Type-Options': 'nosniff'
-        });
-        res.end(content);
-      });
-    });
-  });
+  const app = createApp(rootDir);
+  return http.createServer(app);
 }
 
-const server = createServer();
+export const server = createServer(ROOT_DIR);
 
 // Start standalone server when executed directly
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  server.listen(PORT, '127.0.0.1', () => {
-    console.log(`AfricaTravel server running at http://127.0.0.1:${PORT}`);
+  server.listen(PORT, '127.0.0.1', async () => {
+    console.log(`\n✈️  ======================================================`);
+    console.log(`   AfricaTravel Operations Platform Server`);
+    console.log(`   Running at:  http://127.0.0.1:${PORT}`);
+    console.log(`   API Base:    http://127.0.0.1:${PORT}/api`);
+    console.log(`   Environment: ${env.NODE_ENV}`);
+    console.log(`   Node.js:     ${process.version}`);
+    console.log(`======================================================\n`);
+
+    const dbHealthy = await checkDatabaseHealth();
+    if (dbHealthy) {
+      console.log('✅ Connected to PostgreSQL database successfully.');
+    } else {
+      console.log('ℹ️  PostgreSQL database connection in standby mode (using mock / fallback until DB container connects).');
+    }
   });
 }
-
-export { server };
