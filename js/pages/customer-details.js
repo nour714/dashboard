@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel — Customer Details Page
  */
 
@@ -19,7 +19,7 @@ import { escapeHtml } from '../utils/security.js';
 import { t } from '../i18n/i18n.js';
 
 export const CustomerDetailsPage = {
-  render(params) {
+  render(params, activeTab = 'tickets') {
     const customerId = params.id;
     const customer = CustomerService.getCustomerById(customerId);
 
@@ -69,6 +69,82 @@ export const CustomerDetailsPage = {
         </tr>
       `;
     }).join('');
+
+    const allPayments = [];
+    const allRefunds = [];
+    stats.tickets.forEach(tData => {
+      (tData.payments || []).forEach(p => {
+        allPayments.push({
+          ...p,
+          ticketId: tData.id,
+          ticketNumber: tData.ticketNumber,
+          pnr: tData.pnr,
+          currency: tData.currency
+        });
+      });
+      (tData.refunds || []).forEach(r => {
+        allRefunds.push({
+          ...r,
+          ticketId: tData.id,
+          pnr: tData.pnr,
+          currency: tData.currency
+        });
+      });
+    });
+    allPayments.sort((a, b) => new Date(b.date) - new Date(a.date));
+    allRefunds.sort((a, b) => new Date(b.requestedDate || b.date) - new Date(a.requestedDate || a.date));
+
+    const paymentRows = allPayments.map(p => `
+      <tr>
+        <td>
+          <div class="cell-main">${formatDateTime(p.date)}</div>
+          <a href="/tickets/${escapeHtml(p.ticketId)}" class="cell-sub font-medium text-accent ltr-data" data-link>
+            ${escapeHtml(p.ticketId)} (PNR: ${escapeHtml(p.pnr)})
+          </a>
+        </td>
+        <td>
+          <span class="tabular-nums font-bold text-success" style="font-size: 15px;">
+            ${formatCurrency(p.amount, p.currency || 'EGP')}
+          </span>
+        </td>
+        <td>
+          <div class="d-flex items-center gap-xs">
+            ${icons.payments('w-4 h-4 text-muted')}
+            <span>${escapeHtml(p.method)}</span>
+          </div>
+        </td>
+        <td>
+          <span class="airline-code-badge ltr-data">${escapeHtml(p.reference || 'N/A')}</span>
+        </td>
+        <td>
+          <span class="text-sm font-medium">${escapeHtml(p.addedBy || 'Agent')}</span>
+        </td>
+      </tr>
+    `).join('');
+
+    const refundRows = allRefunds.map(r => `
+      <tr>
+        <td><strong class="cell-main ltr-data">${escapeHtml(r.id)}</strong></td>
+        <td>
+          <a href="/tickets/${escapeHtml(r.ticketId)}" class="cell-main text-accent ltr-data" data-link>${escapeHtml(r.ticketId)}</a>
+          <div class="cell-sub font-medium">PNR: <span class="ltr-data">${escapeHtml(r.pnr)}</span></div>
+        </td>
+        <td>
+          <span class="tabular-nums font-bold text-danger" style="font-size: 15px;">
+            ${formatCurrency(r.amount, r.currency)}
+          </span>
+        </td>
+        <td>
+          <span class="text-sm">${escapeHtml(r.reason)}</span>
+        </td>
+        <td>
+          ${renderStatusBadge(r.status)}
+        </td>
+        <td>
+          <span class="text-sm text-muted">${formatDateTime(r.requestedDate)}</span>
+        </td>
+      </tr>
+    `).join('');
 
     const notesHtml = (customer.notes || []).map(n => `
       <div class="p-sm mb-xs" style="background-color: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border-soft);">
@@ -154,9 +230,9 @@ export const CustomerDetailsPage = {
 
       <!-- Tab Container -->
       <div class="card" id="customer-tabs-card">
-        ${renderTabs(tabs, 'tickets')}
+        ${renderTabs(tabs, activeTab)}
 
-        <div class="tab-pane active" id="tab-pane-tickets">
+        <div class="tab-pane ${activeTab === 'tickets' ? 'active' : ''}" id="tab-pane-tickets">
           <div class="table-responsive">
             <table class="data-table">
               <thead>
@@ -176,10 +252,68 @@ export const CustomerDetailsPage = {
           </div>
         </div>
 
-        <div class="tab-pane" id="tab-pane-notes">
+        <div class="tab-pane ${activeTab === 'payments' ? 'active' : ''}" id="tab-pane-payments">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>${escapeHtml(t('payments.table.date'))} & ${escapeHtml(t('payments.table.ticketId'))}</th>
+                  <th>${escapeHtml(t('payments.table.amount'))}</th>
+                  <th>${escapeHtml(t('payments.table.method'))}</th>
+                  <th>${escapeHtml(t('payments.table.reference'))}</th>
+                  <th>${escapeHtml(t('payments.table.collectedBy'))}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${paymentRows || `<tr><td colspan="5" class="text-center text-muted p-lg">${escapeHtml(t('common.noData'))}</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-pane ${activeTab === 'refunds' ? 'active' : ''}" id="tab-pane-refunds">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>${escapeHtml(t('refunds.table.id'))}</th>
+                  <th>${escapeHtml(t('refunds.table.ticketId'))}</th>
+                  <th>${escapeHtml(t('refunds.table.refundAmount'))}</th>
+                  <th>${escapeHtml(t('common.reason'))}</th>
+                  <th>${escapeHtml(t('refunds.table.status'))}</th>
+                  <th>${escapeHtml(t('common.date'))}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${refundRows || `<tr><td colspan="6" class="text-center text-muted p-lg">${escapeHtml(t('common.noData'))}</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-pane ${activeTab === 'notes' ? 'active' : ''}" id="tab-pane-notes">
           <div class="card-body">
-            <div class="mb-md">
-              ${notesHtml || `<p class="text-sm text-muted">${escapeHtml(t('common.noData'))}</p>`}
+            <div class="mb-lg" id="customer-notes-list">
+              ${notesHtml || `<p class="text-sm text-muted mb-md">${escapeHtml(t('common.noData'))}</p>`}
+            </div>
+
+            <!-- Add Note Form -->
+            <div class="pt-md" style="border-top: 1px solid var(--color-border-soft);">
+              <h4 class="font-semibold text-sm mb-sm">${escapeHtml(t('customerDetails.notes'))}</h4>
+              <div class="form-group mb-sm">
+                <textarea
+                  id="new-customer-note-text"
+                  class="form-control"
+                  rows="3"
+                  placeholder="${escapeHtml(t('customerDetails.notePlaceholder'))}"
+                ></textarea>
+              </div>
+              <div class="d-flex justify-end">
+                <button type="button" class="btn btn-primary" id="btn-add-customer-note">
+                  ${icons.plus('w-4 h-4')}
+                  <span>${escapeHtml(t('customerDetails.addNote'))}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -187,7 +321,7 @@ export const CustomerDetailsPage = {
     `;
   },
 
-  afterRender(container, params) {
+  afterRender(container, params, activeTab = 'tickets') {
     const customerId = params.id;
     const tabCard = container.querySelector('#customer-tabs-card');
     if (tabCard) {
@@ -240,7 +374,7 @@ export const CustomerDetailsPage = {
             const save = modalEl.querySelector('#save-edit-cust');
             if (cancel) cancel.addEventListener('click', closeModal);
             if (save) {
-              save.addEventListener('click', () => {
+              save.addEventListener('click', async () => {
                 const name = modalEl.querySelector('#edit-c-name').value.trim();
                 const passport = modalEl.querySelector('#edit-c-pass').value.trim();
                 if (!name || !passport) {
@@ -248,13 +382,20 @@ export const CustomerDetailsPage = {
                   return;
                 }
 
-                CustomerService.updateCustomer(customerId, {
+                save.disabled = true;
+                const result = await CustomerService.updateCustomer(customerId, {
                   name,
                   passport,
                   phone: modalEl.querySelector('#edit-c-phone').value.trim(),
                   email: modalEl.querySelector('#edit-c-email').value.trim(),
                   nationality: modalEl.querySelector('#edit-c-nat').value.trim()
                 });
+                save.disabled = false;
+
+                if (!result.success) {
+                  showToast(result.error?.message || 'Failed to update customer', 'error');
+                  return;
+                }
 
                 closeModal();
                 showToast(t('toasts.customerUpdated'), 'success');
@@ -264,6 +405,32 @@ export const CustomerDetailsPage = {
             }
           }
         });
+      });
+    }
+
+    const addNoteBtn = container.querySelector('#btn-add-customer-note');
+    const noteTextarea = container.querySelector('#new-customer-note-text');
+    if (addNoteBtn && noteTextarea) {
+      addNoteBtn.addEventListener('click', async () => {
+        const text = noteTextarea.value.trim();
+        if (!text) {
+          showToast(t('validation.requiredField'), 'error');
+          return;
+        }
+
+        addNoteBtn.disabled = true;
+        const result = await CustomerService.addNote(customerId, text);
+        addNoteBtn.disabled = false;
+
+        if (!result.success) {
+          showToast(result.error?.message || 'Failed to add note', 'error');
+          return;
+        }
+
+        noteTextarea.value = '';
+        showToast(t('toasts.noteAdded'), 'success');
+        container.innerHTML = CustomerDetailsPage.render(params, 'notes');
+        CustomerDetailsPage.afterRender(container, params, 'notes');
       });
     }
   }

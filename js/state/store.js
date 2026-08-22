@@ -1,82 +1,45 @@
 /**
- * AfricaTravel — Reactive State Store & Persistence Layer
+ * AfricaTravel — Reactive State Store (API-Backed Cache)
  *
- * Implements hardened mutation boundary: all mutations enforce domain validation
- * before state changes can occur.
+ * Replaces the previous localStorage/mock-data store with a thin in-memory
+ * cache hydrated from the backend API. Reads stay synchronous (pages read
+ * from the cache); mutations call the API first and only patch the cache
+ * once the backend confirms the write, so the server (and its domain
+ * validation layer) remains the single source of truth.
  */
 
-import {
-  INITIAL_CUSTOMERS,
-  INITIAL_EMPLOYEES,
-  INITIAL_TICKETS,
-  INITIAL_ACTIVITY_LOGS,
-  INITIAL_SETTINGS
-} from '../data/mock-data.js';
-
-import {
-  calculateTotalPaid,
-  calculateRemaining,
-  derivePaymentStatus,
-  validateTicketCreation
-} from '../domain/ticket-rules.js';
-import { validatePayment } from '../domain/payment-rules.js';
-import { validateRefund } from '../domain/refund-rules.js';
-import { validateModification } from '../domain/modification-rules.js';
-import { NotFoundError, ValidationError } from '../domain/errors.js';
-
-const STORAGE_KEY = 'AfricaTravel_STORE_V3';
+import { apiClient } from '../services/api-client.js';
+import { getStoredUser, setSession, clearSession, hasSession, updateStoredUser } from '../services/api-client.js';
+import { calculateTotalPaid, derivePaymentStatus } from '../domain/ticket-rules.js';
+import { NotFoundError } from '../domain/errors.js';
+import { INITIAL_SETTINGS } from '../data/mock-data.js';
 
 class Store {
   constructor() {
     this.listeners = new Set();
+    this.hydrated = false;
+    this.hydrating = null;
     this.state = this.loadInitialState();
   }
 
   loadInitialState() {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          const user = parsed.currentUser || INITIAL_SETTINGS.profile;
-          user.name = user.name || user.fullName || 'Mohamed Raafat';
-          user.title = user.title || user.role || 'Senior Operations Director';
-          delete user.avatar; // Ensure initials are used cleanly
-
-          return {
-            ...parsed,
-            currentUser: user
-          };
-        }
-      }
-    } catch (e) {
-      console.warn('Could not restore state from localStorage, using seed data', e);
-    }
-
+    const storedUser = getStoredUser();
     const defaultUser = { ...INITIAL_SETTINGS.profile };
-    defaultUser.name = defaultUser.name || defaultUser.fullName || 'Mohamed Raafat';
-    defaultUser.title = defaultUser.title || defaultUser.role || 'Senior Operations Director';
-    delete defaultUser.avatar;
+
+    const currentUser = storedUser
+      ? { ...defaultUser, ...storedUser, name: storedUser.name || defaultUser.name, title: storedUser.title || defaultUser.title }
+      : null;
+    if (currentUser) delete currentUser.avatar;
 
     return {
-      tickets: INITIAL_TICKETS,
-      customers: INITIAL_CUSTOMERS,
-      employees: INITIAL_EMPLOYEES,
-      activityLogs: INITIAL_ACTIVITY_LOGS,
+      tickets: [],
+      customers: [],
+      employees: [],
+      activityLogs: [],
       settings: INITIAL_SETTINGS,
-      currentUser: defaultUser,
-      isAuthenticated: true
+      currentUser,
+      isAuthenticated: hasSession()
     };
-  }
-
-  saveState() {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
-      }
-    } catch (e) {
-      console.error('Failed to save state to localStorage', e);
-    }
   }
 
   getState() {
@@ -89,7 +52,6 @@ class Store {
   }
 
   notify() {
-    this.saveState();
     this.listeners.forEach(listener => {
       try {
         listener(this.state);
@@ -99,404 +61,259 @@ class Store {
     });
   }
 
-  // --- Auth Actions ---
-  login(email, password) {
-    const employee = this.state.employees.find(e => e.email.toLowerCase() === (email || '').toLowerCase()) || {
-      id: 'EMP-101',
-      name: (email || 'admin').split('@')[0],
-      email: email || 'admin@africatravel.com',
-      role: 'ADMIN',
-      avatar: this.state.settings.profile.avatar
-    };
+  // --- Hydration: fetches live data from the backend once per session ---
+  async ensureHydrated() {
+    if (this.hydrated) return;
+    if (this.hydrating) return this.hydrating;
 
-    this.state.currentUser = {
-      ...this.state.settings.profile,
-      ...employee
-    };
-    this.state.isAuthenticated = true;
-    this.notify();
-    return true;
-  }
-
-  logout() {
-    this.state.isAuthenticated = false;
-    this.state.currentUser = null;
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    } catch (e) {
-      console.error('Failed to clear session storage', e);
-    }
-    this.notify();
-  }
-
-  // --- Ticket Actions & Hardened Mutation Boundary ---
-  applyTicketCreation(ticketData) {
-    validateTicketCreation(ticketData);
-
-    const newId = `TK-${Math.floor(10000 + Math.random() * 90000)}`;
-    const ticketNumber = ticketData.ticketNumber || `077-${Math.floor(1000000000 + Math.random() * 9000000000)}`;
-    const pnr = ticketData.pnr || `PNR${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-
-    // Calculate initial payments
-    const payments = [];
-    if (ticketData.initialPayment && Number(ticketData.initialPayment) > 0) {
-      payments.push({
-        id: `PAY-${Date.now()}`,
-        ticketId: newId,
-        amount: Number(ticketData.initialPayment),
-        currency: ticketData.currency || 'EGP',
-        method: ticketData.paymentMethod || 'Credit Card',
-        reference: ticketData.paymentReference || `INIT-${pnr}`,
-        date: ticketData.paymentDate || new Date().toISOString(),
-        addedBy: this.state.currentUser?.name || 'Agent',
-        notes: 'Initial payment upon ticket issuance'
-      });
-    }
-
-    const totalPaid = calculateTotalPaid(payments);
-    const status = derivePaymentStatus(ticketData.ticketPrice, totalPaid, 'CONFIRMED');
-
-    const newTicket = {
-      id: newId,
-      ticketNumber,
-      pnr,
-      customerId: ticketData.customerId || 'CUST-8924',
-      passengerName: ticketData.passengerName || ticketData.customerName,
-      phone: ticketData.phone || '',
-      passport: ticketData.passport || '',
-      nationality: ticketData.nationality || '',
-      dob: ticketData.dob || '',
-      email: ticketData.email || '',
-      airline: ticketData.airline || 'EgyptAir',
-      airlineCode: ticketData.airlineCode || 'MS',
-      flightNumber: ticketData.flightNumber || `${ticketData.airlineCode || 'MS'} 901`,
-      origin: ticketData.origin || 'CAI',
-      destination: ticketData.destination || 'DXB',
-      departureDate: ticketData.departureDate || new Date().toISOString(),
-      arrivalDate: ticketData.arrivalDate || new Date().toISOString(),
-      tripType: ticketData.tripType || 'One Way',
-      cabinClass: ticketData.cabinClass || 'Economy (Y)',
-      seat: ticketData.seat || '12A',
-      baggage: ticketData.baggage || '1 x 23kg',
-      ticketPrice: Number(ticketData.ticketPrice) || 0,
-      currency: ticketData.currency || 'EGP',
-      status: status,
-      createdBy: this.state.currentUser?.name || 'Agent',
-      createdById: this.state.currentUser?.id || 'EMP-101',
-      createdAt: new Date().toISOString(),
-      payments: payments,
-      modifications: [],
-      refunds: []
-    };
-
-    this.state.tickets.unshift(newTicket);
-
-    // Add activity log
-    this.addActivityLog({
-      action: 'CREATE_TICKET',
-      ticketId: newId,
-      customerId: newTicket.customerId,
-      description: `Created ticket ${newId} (${newTicket.origin} ✈ ${newTicket.destination}) for ${newTicket.passengerName}.`
+    this.hydrating = this.hydrate().finally(() => {
+      this.hydrating = null;
     });
+    return this.hydrating;
+  }
+
+  async hydrate() {
+    if (!hasSession()) return;
+
+    const [ticketsRes, customersRes, employeesRes, activityRes] = await Promise.all([
+      apiClient.get('/tickets', { limit: 100 }),
+      apiClient.get('/customers'),
+      apiClient.get('/employees'),
+      apiClient.get('/activity', { limit: 100 })
+    ]);
+
+    if (ticketsRes.success) this.state.tickets = ticketsRes.data.tickets || [];
+    if (customersRes.success) this.state.customers = customersRes.data || [];
+    // Employees endpoint is ADMIN-only; agents simply keep an empty list.
+    if (employeesRes.success) this.state.employees = employeesRes.data || [];
+    if (activityRes.success) this.state.activityLogs = activityRes.data.logs || activityRes.data || [];
+
+    this.hydrated = true;
+    this.notify();
+  }
+
+  async refreshTickets() {
+    const res = await apiClient.get('/tickets', { limit: 100 });
+    if (res.success) {
+      this.state.tickets = res.data.tickets || [];
+      this.notify();
+    }
+    return res;
+  }
+
+  // --- Auth Actions ---
+  async login(email, password) {
+    const res = await apiClient.post('/auth/login', { email, password }, { auth: false });
+    if (!res.success) {
+      return { success: false, error: res.error };
+    }
+
+    const { user, accessToken, refreshToken } = res.data;
+    setSession({ accessToken, refreshToken, user });
+
+    this.state.currentUser = { ...INITIAL_SETTINGS.profile, ...user };
+    this.state.isAuthenticated = true;
+    this.hydrated = false;
 
     this.notify();
-    return newTicket;
+    await this.ensureHydrated();
+    return { success: true, user: this.state.currentUser };
   }
 
-  createTicket(ticketData) {
-    return this.applyTicketCreation(ticketData);
-  }
+  async logout() {
+    const refreshToken = (typeof localStorage !== 'undefined' && localStorage.getItem('AfricaTravel_REFRESH_TOKEN')) || null;
+    try {
+      await apiClient.post('/auth/logout', { refreshToken });
+    } catch (e) {
+      // Best-effort server-side revocation; always clear local session regardless.
+    }
 
-  updateTicket(ticketId, updates) {
-    const ticketIndex = this.state.tickets.findIndex(t => t.id === ticketId);
-    if (ticketIndex === -1) throw new NotFoundError('Ticket', ticketId);
-
-    this.state.tickets[ticketIndex] = {
-      ...this.state.tickets[ticketIndex],
-      ...updates
+    clearSession();
+    this.state = {
+      tickets: [],
+      customers: [],
+      employees: [],
+      activityLogs: [],
+      settings: INITIAL_SETTINGS,
+      currentUser: null,
+      isAuthenticated: false
     };
+    this.hydrated = false;
+    this.notify();
+  }
 
-    this.addActivityLog({
+  // --- Ticket Actions ---
+  async createTicket(ticketData) {
+    const res = await apiClient.post('/tickets', ticketData);
+    if (!res.success) return res;
+
+    this.state.tickets.unshift(res.data);
+    this.pushActivityLog({
+      action: 'CREATE_TICKET',
+      ticketId: res.data.id,
+      customerId: res.data.customerId,
+      description: `Created ticket ${res.data.id} (${res.data.origin} ✈ ${res.data.destination}) for ${res.data.passengerName}.`
+    });
+    this.notify();
+    return res;
+  }
+
+  async updateTicket(ticketId, updates) {
+    const res = await apiClient.patch(`/tickets/${ticketId}`, updates);
+    if (!res.success) return res;
+
+    const index = this.state.tickets.findIndex(t => t.id === ticketId);
+    if (index !== -1) this.state.tickets[index] = res.data;
+
+    this.pushActivityLog({
       action: 'UPDATE_TICKET',
       ticketId,
-      customerId: this.state.tickets[ticketIndex].customerId,
+      customerId: res.data.customerId,
       description: `Updated details for ticket ${ticketId}.`
     });
-
     this.notify();
-    return this.state.tickets[ticketIndex];
+    return res;
   }
 
-  // --- Payment Actions & Mutation Boundary ---
-  applyPayment(ticketId, paymentData) {
+  // --- Payment Actions ---
+  async addPayment(ticketId, paymentData) {
+    const res = await apiClient.post(`/tickets/${ticketId}/payments`, paymentData);
+    if (!res.success) return res;
+
     const ticket = this.state.tickets.find(t => t.id === ticketId);
-    if (!ticket) throw new NotFoundError('Ticket', ticketId);
+    if (ticket) {
+      if (!Array.isArray(ticket.payments)) ticket.payments = [];
+      ticket.payments.unshift(res.data);
+      const totalPaid = calculateTotalPaid(ticket.payments);
+      ticket.status = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status);
+    }
 
-    // Domain validation enforced at Store boundary
-    validatePayment(ticket, paymentData);
-
-    const newPayment = {
-      id: `PAY-${Date.now()}`,
-      ticketId,
-      amount: Number(paymentData.amount) || 0,
-      currency: paymentData.currency || ticket.currency || 'EGP',
-      method: paymentData.method || 'Credit Card',
-      reference: paymentData.reference || `REF-${Math.floor(100000 + Math.random() * 900000)}`,
-      date: paymentData.date || new Date().toISOString(),
-      addedBy: this.state.currentUser?.name || 'Agent',
-      notes: paymentData.notes || ''
-    };
-
-    ticket.payments.push(newPayment);
-
-    // Recalculate status
-    const totalPaid = calculateTotalPaid(ticket.payments);
-    ticket.status = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status);
-
-    this.addActivityLog({
+    this.pushActivityLog({
       action: 'ADD_PAYMENT',
       ticketId,
-      customerId: ticket.customerId,
-      description: `Recorded payment of ${newPayment.amount.toLocaleString()} ${newPayment.currency} via ${newPayment.method} (${newPayment.reference}).`
+      customerId: ticket?.customerId,
+      description: `Recorded payment of ${Number(res.data.amount).toLocaleString()} ${res.data.currency} via ${res.data.method} (${res.data.reference}).`
     });
-
     this.notify();
-    return newPayment;
+    return res;
   }
 
-  addPayment(ticketId, paymentData) {
-    return this.applyPayment(ticketId, paymentData);
-  }
+  // --- Flight Modification Actions ---
+  async addModification(ticketId, modData) {
+    const res = await apiClient.post(`/tickets/${ticketId}/modifications`, modData);
+    if (!res.success) return res;
 
-  // --- Flight Modification Actions & Mutation Boundary ---
-  applyModification(ticketId, modData) {
     const ticket = this.state.tickets.find(t => t.id === ticketId);
-    if (!ticket) throw new NotFoundError('Ticket', ticketId);
-
-    // Domain validation enforced at Store boundary
-    validateModification(ticket, modData);
-
-    const modIndex = ticket.modifications.length + 1;
-    const newMod = {
-      id: `MOD-${Date.now()}`,
-      ticketId,
-      title: `Modification #${modIndex}`,
-      originalFlight: {
-        flightNumber: ticket.flightNumber,
-        date: ticket.departureDate,
-        route: `${ticket.origin} → ${ticket.destination}`,
-        duration: ticket.flightDuration || '3h 30m'
-      },
-      newFlight: {
-        flightNumber: modData.flightNumber || ticket.flightNumber,
-        date: modData.newDepartureDate || ticket.departureDate,
-        route: `${ticket.origin} → ${ticket.destination}`,
-        note: modData.note || 'Schedule adjusted'
-      },
-      changeFee: Number(modData.changeFee) || 0,
-      currency: ticket.currency,
-      reason: modData.reason || 'Customer requested schedule adjustment',
-      requestedBy: modData.requestedBy || ticket.passengerName,
-      processedBy: this.state.currentUser?.name || 'Agent',
-      date: new Date().toISOString(),
-      status: 'COMPLETED'
-    };
-
-    // Update ticket departure/arrival if requested
-    if (modData.newDepartureDate) {
-      ticket.departureDate = modData.newDepartureDate;
-    }
-    if (modData.newArrivalDate) {
-      ticket.arrivalDate = modData.newArrivalDate;
+    if (ticket) {
+      if (!Array.isArray(ticket.modifications)) ticket.modifications = [];
+      ticket.modifications.push(res.data);
+      if (modData.newDepartureDate) ticket.departureDate = modData.newDepartureDate;
+      if (modData.newArrivalDate) ticket.arrivalDate = modData.newArrivalDate;
     }
 
-    ticket.modifications.push(newMod);
-
-    this.addActivityLog({
+    this.pushActivityLog({
       action: 'MODIFY_FLIGHT',
       ticketId,
-      customerId: ticket.customerId,
-      description: `Added flight modification for ${ticketId} with change fee ${newMod.changeFee} ${ticket.currency}. Reason: ${newMod.reason}`
+      customerId: ticket?.customerId,
+      description: `Added flight modification for ${ticketId} with change fee ${res.data.changeFee} ${res.data.currency}. Reason: ${res.data.reason}`
     });
-
     this.notify();
-    return newMod;
+    return res;
   }
 
-  addModification(ticketId, modData) {
-    return this.applyModification(ticketId, modData);
-  }
+  // --- Refund Actions ---
+  async addRefund(ticketId, refundData) {
+    const res = await apiClient.post(`/tickets/${ticketId}/refunds`, refundData);
+    if (!res.success) return res;
 
-  // --- Refund Actions & Mutation Boundary ---
-  applyRefund(ticketId, refundData) {
     const ticket = this.state.tickets.find(t => t.id === ticketId);
-    if (!ticket) throw new NotFoundError('Ticket', ticketId);
-
-    // Domain validation enforced at Store boundary
-    validateRefund(ticket, refundData);
-
-    const totalPaid = calculateTotalPaid(ticket.payments);
-    const refundAmount = Number(refundData.amount) || 0;
-
-    const newRefund = {
-      id: `RF-${Math.floor(9000 + Math.random() * 1000)}`,
-      ticketId,
-      originalAmount: ticket.ticketPrice,
-      totalPaid: totalPaid,
-      amount: refundAmount,
-      currency: ticket.currency,
-      reason: refundData.reason || 'Customer cancellation request',
-      status: refundData.status || 'COMPLETED',
-      requestedDate: new Date().toISOString(),
-      processedDate: new Date().toISOString(),
-      processedBy: this.state.currentUser?.name || 'Agent'
-    };
-
-    ticket.refunds.push(newRefund);
-
-    if (newRefund.status === 'COMPLETED') {
-      ticket.status = 'REFUNDED';
-    } else {
-      ticket.status = 'REFUND REQUESTED';
+    if (ticket) {
+      if (!Array.isArray(ticket.refunds)) ticket.refunds = [];
+      ticket.refunds.push(res.data);
+      ticket.status = res.data.status === 'COMPLETED' ? 'REFUNDED' : 'REFUND REQUESTED';
     }
 
-    this.addActivityLog({
-      action: newRefund.status === 'COMPLETED' ? 'COMPLETE_REFUND' : 'ADD_REFUND',
+    this.pushActivityLog({
+      action: res.data.status === 'COMPLETED' ? 'COMPLETE_REFUND' : 'ADD_REFUND',
       ticketId,
-      customerId: ticket.customerId,
-      description: `Processed refund of ${refundAmount.toLocaleString()} ${ticket.currency} for ${ticketId}. Reason: ${newRefund.reason}`
+      customerId: ticket?.customerId,
+      description: `Processed refund of ${Number(res.data.amount).toLocaleString()} ${res.data.currency} for ${ticketId}. Reason: ${res.data.reason}`
     });
-
     this.notify();
-    return newRefund;
+    return res;
   }
 
-  addRefund(ticketId, refundData) {
-    return this.applyRefund(ticketId, refundData);
-  }
+  // --- Customer Actions ---
+  async createCustomer(custData) {
+    const res = await apiClient.post('/customers', custData);
+    if (!res.success) return res;
 
-  // --- Customer Actions & Mutation Boundary ---
-  applyCustomerCreation(custData) {
-    if (!custData.name || !custData.name.trim()) {
-      throw new ValidationError('Customer name is required', 'name');
-    }
-
-    const newCust = {
-      id: `CUST-${Math.floor(8900 + Math.random() * 1000)}`,
-      name: custData.name.trim(),
-      email: custData.email ? custData.email.trim() : '',
-      phone: custData.phone ? custData.phone.trim() : '',
-      passport: custData.passport ? custData.passport.trim() : '',
-      nationality: custData.nationality || 'Egyptian (EGY)',
-      isVip: Boolean(custData.isVip),
-      memberSince: String(new Date().getFullYear()),
-      notes: custData.initialNote ? [{
-        author: this.state.currentUser?.name || 'Agent',
-        date: new Date().toISOString(),
-        text: custData.initialNote.trim()
-      }] : []
-    };
-
-    this.state.customers.unshift(newCust);
-
-    this.addActivityLog({
+    this.state.customers.unshift(res.data);
+    this.pushActivityLog({
       action: 'UPDATE_CUSTOMER',
       ticketId: null,
-      customerId: newCust.id,
-      description: `Created new customer record for ${newCust.name} (${newCust.id}).`
+      customerId: res.data.id,
+      description: `Created new customer record for ${res.data.name} (${res.data.id}).`
     });
-
     this.notify();
-    return newCust;
+    return res;
   }
 
-  createCustomer(custData) {
-    return this.applyCustomerCreation(custData);
-  }
+  async updateCustomer(customerId, updates) {
+    const res = await apiClient.patch(`/customers/${customerId}`, updates);
+    if (!res.success) return res;
 
-  updateCustomer(customerId, updates) {
     const index = this.state.customers.findIndex(c => c.id === customerId);
-    if (index === -1) throw new NotFoundError('Customer', customerId);
+    if (index !== -1) this.state.customers[index] = res.data;
 
-    this.state.customers[index] = {
-      ...this.state.customers[index],
-      ...updates
-    };
-
-    this.addActivityLog({
+    this.pushActivityLog({
       action: 'UPDATE_CUSTOMER',
       ticketId: null,
       customerId,
-      description: `Updated profile for customer ${this.state.customers[index].name}.`
+      description: `Updated profile for customer ${res.data.name}.`
     });
-
     this.notify();
-    return this.state.customers[index];
+    return res;
   }
 
-  addCustomerNote(customerId, noteText) {
+  async addCustomerNote(customerId, noteText) {
+    const res = await apiClient.post(`/customers/${customerId}/notes`, { text: noteText });
+    if (!res.success) return res;
+
     const customer = this.state.customers.find(c => c.id === customerId);
-    if (!customer) throw new NotFoundError('Customer', customerId);
-
-    if (!Array.isArray(customer.notes)) {
-      customer.notes = [];
+    if (customer) {
+      if (!Array.isArray(customer.notes)) customer.notes = [];
+      customer.notes.unshift(res.data);
     }
-
-    const note = {
-      author: this.state.currentUser?.name || 'Agent',
-      date: new Date().toISOString(),
-      text: (noteText || '').trim()
-    };
-
-    customer.notes.unshift(note);
     this.notify();
-    return note;
+    return res;
   }
 
-  // --- Employee Actions ---
-  addEmployee(empData) {
-    if (!empData.name || !empData.email) {
-      throw new ValidationError('Name and email are required for new employee', 'name');
-    }
+  // --- Employee Actions (ADMIN only) ---
+  async addEmployee(empData) {
+    const res = await apiClient.post('/employees', empData);
+    if (!res.success) return res;
 
-    const newEmp = {
-      id: `EMP-${Math.floor(100 + Math.random() * 900)}`,
-      name: empData.name.trim(),
-      email: empData.email.trim(),
-      role: empData.role || 'AGENT',
-      title: empData.title || (empData.role === 'ADMIN' ? 'Operations Director' : 'Ticketing Officer'),
-      ticketsCount: 0,
-      sales: 0,
-      collected: 0,
-      refunds: 0,
-      outstanding: 0,
-      status: 'ACTIVE',
-      lastActive: 'Just now'
-    };
-
-    this.state.employees.unshift(newEmp);
+    this.state.employees.unshift(res.data);
     this.notify();
-    return newEmp;
+    return res;
   }
 
-  // --- Activity Log Actions ---
-  addActivityLog(logData) {
+  // --- Activity Log (optimistic local append; backend is authoritative) ---
+  pushActivityLog(logData) {
     const newLog = {
       id: `ACT-${Math.floor(900 + Math.random() * 9000)}`,
       timestamp: new Date().toISOString(),
-      user: this.state.currentUser?.name || 'Admin User',
+      user: this.state.currentUser?.name || 'Agent',
       action: logData.action,
       ticketId: logData.ticketId || null,
       customerId: logData.customerId || null,
       description: logData.description
     };
-
     this.state.activityLogs.unshift(newLog);
   }
 
-  // --- Settings Actions ---
+  // --- Settings Actions (local-only profile display; no backend self-profile endpoint yet) ---
   updateSettings(section, data) {
     if (!this.state.settings[section]) {
       this.state.settings[section] = {};
@@ -510,6 +327,7 @@ class Store {
         ...(this.state.currentUser || {}),
         ...data
       };
+      updateStoredUser(data);
     }
     this.notify();
   }

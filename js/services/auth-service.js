@@ -1,15 +1,18 @@
 /**
- * AfricaTravel — Mock Authentication Service
+ * AfricaTravel — Authentication Service
  *
- * NOTE: Authentication is currently mocked for frontend development and will be
- * replaced by the backend authentication API during backend integration.
+ * Talks to the real backend JWT auth API (/api/auth/*). Access + refresh
+ * tokens and the current user profile are persisted via api-client's session
+ * helpers so route guards (AuthService.isAuthenticated) can check synchronously
+ * without a network round-trip.
  */
 
 import { store } from '../state/store.js';
+import { getStoredUser, hasSession } from './api-client.js';
 
 export const AuthService = {
   /**
-   * Performs client-side mock authentication
+   * Authenticates against the backend and hydrates application state.
    * @param {string} email
    * @param {string} password
    * @returns {Promise<{success: boolean, user?: object, error?: string}>}
@@ -22,50 +25,42 @@ export const AuthService = {
       return { success: false, error: 'Password is required' };
     }
 
-    try {
-      const ok = store.login(email.trim(), password);
-      if (ok) {
-        return {
-          success: true,
-          user: store.getState().currentUser
-        };
-      }
-      return { success: false, error: 'Authentication failed' };
-    } catch (err) {
-      return {
-        success: false,
-        error: err.message || 'Authentication failed'
-      };
+    const result = await store.login(email.trim(), password);
+    if (!result.success) {
+      return { success: false, error: result.error?.message || 'Authentication failed' };
     }
+    return { success: true, user: result.user };
   },
 
   /**
-   * Terminates the current session and clears local auth state
+   * Revokes the refresh token server-side and clears local session state.
    * @returns {Promise<{success: boolean}>}
    */
   async logout() {
-    store.logout();
+    await store.logout();
     return { success: true };
   },
 
   /**
-   * Returns whether a user session is active
+   * Synchronous check used by route guards — based on presence of a stored
+   * access token, not a live server round-trip.
    * @returns {boolean}
    */
   isAuthenticated() {
-    return Boolean(store.getState().isAuthenticated);
+    return hasSession();
   },
 
   /**
-   * Returns current active user profile or null
+   * Returns the cached current user profile, or null if signed out.
    * @returns {object|null}
    */
   getCurrentUser() {
-    return store.getState().currentUser || null;
+    return store.getState().currentUser || getStoredUser();
   },
 
   /**
-   * Updates user profile in current state
+   * Updates the locally displayed profile. Note: there is currently no
+   * backend self-profile endpoint, so this only affects the local UI.
    * @param {object} profileData
    */
   updateProfile(profileData) {

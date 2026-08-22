@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel — Create Ticket / New Reservation Page
  */
 
@@ -371,7 +371,7 @@ export const TicketCreatePage = {
     });
 
     if (form) {
-      form.addEventListener('submit', (e) => {
+      form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const airlineOpt = airlineSelect.options[airlineSelect.selectedIndex];
@@ -402,10 +402,14 @@ export const TicketCreatePage = {
           paymentReference: container.querySelector('#payment-ref').value.trim()
         };
 
-        const result = TicketService.createTicket(ticketData);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+
+        const result = await TicketService.createTicket(ticketData);
+        if (submitBtn) submitBtn.disabled = false;
 
         if (!result.success) {
-          showToast(result.error.message, 'error');
+          showToast(result.error?.message || 'Failed to create ticket', 'error');
           return;
         }
 

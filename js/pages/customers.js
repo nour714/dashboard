@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel — Customers CRM Page
  */
 
@@ -217,23 +217,32 @@ export const CustomersPage = {
             const submit = modalEl.querySelector('#submit-new-cust');
             if (cancel) cancel.addEventListener('click', closeModal);
             if (submit) {
-              submit.addEventListener('click', () => {
+              submit.addEventListener('click', async () => {
                 const name = modalEl.querySelector('#new-cust-name').value.trim();
                 const passport = modalEl.querySelector('#new-cust-passport').value.trim();
                 if (!name || !passport) {
                   showToast(t('validation.requiredField'), 'error');
                   return;
                 }
-                const newC = CustomerService.createCustomer({
+
+                submit.disabled = true;
+                const result = await CustomerService.createCustomer({
                   name,
                   passport,
                   phone: modalEl.querySelector('#new-cust-phone').value.trim(),
                   email: modalEl.querySelector('#new-cust-email').value.trim(),
                   nationality: modalEl.querySelector('#new-cust-nationality').value.trim()
                 });
+                submit.disabled = false;
+
+                if (!result.success) {
+                  showToast(result.error?.message || 'Failed to create customer', 'error');
+                  return;
+                }
+
                 closeModal();
                 showToast(t('toasts.customerCreated'), 'success');
-                window.history.pushState(null, null, `/customers/${newC.id}`);
+                window.history.pushState(null, null, `/customers/${result.data.id}`);
                 window.dispatchEvent(new PopStateEvent('popstate'));
               });
             }

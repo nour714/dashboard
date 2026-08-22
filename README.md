@@ -1,121 +1,60 @@
-# AfricaTravel — Travel Agency Operations Platform
+# AfricaTravel — Frontend/Backend Integration (Work in Progress)
 
-**AfricaTravel** is a modern, high-efficiency internal travel agency management frontend application built from scratch with pure **HTML5**, **CSS3 (Custom Properties & Design Tokens)**, and **Vanilla JavaScript (ES Modules)**.
+هذا zip فيه الملفات اللي اتعدّلت/اتضافت لغاية دلوقتي في مهمة توصيل الفرونت اند بالباك اند.
+مش كل حاجة خلصت — التفاصيل تحت.
 
-It provides complete lifecycle management for flight ticketing, financial payment ledgers, flight itinerary modifications, refund processing, CRM customer profiles, business intelligence reporting, employee administration, and workspace audit trails.
+## طريقة التطبيق
 
-> [!NOTE]
-> **Authentication Notice**: Authentication is currently mocked for frontend development and will be replaced by the backend authentication API.
-
----
-
-## 1. Technology Architecture
-
-* **Language & Runtime**: HTML5, CSS3, Vanilla JavaScript (ES2022+ Modules)
-* **Design System**: Strict CSS Custom Properties (`styles/tokens.css`, `styles/base.css`, `styles/layout.css`, `styles/components.css`, `styles/utilities.css`, `styles/responsive.css`)
-* **Typography**: Google Fonts — **Geist** (Headings, Labels, Tabular Figures) & **Inter** (Body text)
-* **Color Palette**: Primary Structural Navy `#0F172A`, Sidebar `#131B2E`, Background `#F7F9FB`, Surface `#FFFFFF`, Accent Blue `#2563EB`, Success `#15803D`, Warning `#D97706`, Danger `#DC2626`
-* **Routing & Guards**: Pure client-side SPA History API router (`js/router/router.js`) supporting dynamic parameters (`/tickets/:id`), query strings (`/tickets?q=...`), strict authentication route guards, and 404 state.
-* **State Management**: Reactive state store (`js/state/store.js`) with pub/sub subscriptions, automatic audit logging, mutation boundary validation (`applyPayment`, `applyRefund`, `applyModification`, `createTicket`), and `localStorage` state persistence.
-* **Security & Safe DOM**: Centralized sanitization (`js/utils/security.js`) and safe DOM node rendering utilities (`js/utils/dom.js`) preventing XSS vulnerabilities on all dynamic data.
-* **No Framework Dependencies**: 0% React, 0% Vue, 0% Angular, 0% Tailwind, 0% Bootstrap, 0% jQuery.
-
----
-
-## 2. Directory Structure
+انسخ الملفات دي فوق نفس المسارات في الريبو بتاعك (`dashboard/`)، مع الحفاظ على نفس البنية:
 
 ```
-africatravel/
-├── index.html                  # HTML5 SPA Entry Shell
-├── package.json                # Project manifest (ESM)
-├── server.js                   # Lightweight static & SPA HTTP server
-├── README.md                   # Full system documentation
-├── styles/
-│   ├── tokens.css              # Design tokens (colors, typography, spacing, radius, shadows)
-│   ├── base.css                # CSS reset, typography, base styles, tabular numbers
-│   ├── layout.css              # App shell, fixed sidebar, topbar, mobile bottom nav
-│   ├── components.css          # Buttons, forms, badges, stat cards, tables, modals, tabs
-│   ├── utilities.css           # Utility classes (flex, grid, spacing, alignments, login)
-│   └── responsive.css          # Tablet (1024/768px) and mobile (430/390/320px) rules
-├── test/
-│   └── business-flow.test.js   # Automated business domain rule & security regression tests
-└── js/
-    ├── app.js                  # Application bootstrap and global event coordinator
-    ├── domain/                 # Domain business rules and validation errors
-    │   ├── errors.js           # AppError, ValidationError, BusinessRuleError, NotFoundError
-    │   ├── ticket-rules.js     # Accounting calculations and status transitions
-    │   ├── payment-rules.js    # Payment validation (balance bounds)
-    │   ├── refund-rules.js     # Refund validation (available refund bounds)
-    │   └── modification-rules.js # Modification validation (fee and schedule chronology)
-    ├── utils/
-    │   ├── calculations.js     # Centralized financial math and currency/date formatters
-    │   ├── dom.js              # Safe DOM creation helpers (createElement, setText, appendChildren)
-    │   └── security.js         # HTML escaping and text sanitization (escapeHtml, sanitizeText)
-    ├── data/
-    │   └── mock-data.js        # Rich dataset (EgyptAir, Emirates, Qatar Airways, etc.)
-    ├── state/
-    │   └── store.js            # Reactive state store with validated mutation boundary
-    ├── services/
-    │   ├── auth-service.js     # Isolated mock authentication service boundary
-    │   ├── ticket-service.js   # Ticket, payment, modification, and refund service
-    │   ├── customer-service.js # Customer CRM statistics and profiles
-    │   └── report-service.js   # Analytics KPIs, dynamic calculation vs mock fallback boundary
-    ├── router/
-    │   ├── router.js           # Client-side History API router with route guards
-    │   └── routes.js           # Route-to-page module registry
-    ├── components/
-    │   ├── icons.js            # SVG icon dictionary
-    │   ├── status-badge.js     # Accessible status pill renderer
-    │   ├── stat-card.js        # KPI card generator with trend indicators
-    │   ├── page-header.js      # Page header with breadcrumbs and actions
-    │   ├── modal.js            # Desktop modal & mobile bottom-sheet manager
-    │   ├── tabs.js             # Tab headers and pane switching binder
-    │   ├── toast.js            # Toast notification controller
-    │   ├── empty-state.js      # Empty state markup generator
-    │   ├── sidebar.js          # Desktop/tablet navigation sidebar
-    │   ├── topbar.js           # Topbar with global search and user profile
-    │   └── bottom-nav.js       # Mobile bottom navigation & More drawer
-    └── pages/
-        ├── login.js            # Split-view desktop / clean mobile login
-        ├── dashboard.js        # Operations dashboard with KPIs, tickets, activity
-        ├── tickets.js          # Ticket management with search, filters, cards/table
-        ├── ticket-create.js    # Multi-section ticket creation with live balance summary
-        ├── ticket-details.js   # Ticket details dossier
-        ├── ticket-details/     # Modular tabs and action modal controllers
-        ├── payments.js         # Payments ledger and transaction history
-        ├── refunds.js          # Refund requests with available balance validation
-        ├── customers.js        # Customer CRM list and search
-        ├── customer-details.js # Customer profile with lifetime stats and ticket history
-        ├── reports.js          # Business intelligence analytics and charts
-        ├── employees.js        # Staff roster with role/status filters and invite modal
-        ├── activity.js         # Workspace audit trail with multi-filter query
-        └── settings.js         # Workspace settings (Profile, Company, Security, Currency)
+js/app.js
+js/pages/ticket-create.js
+js/pages/ticket-details/ticket-actions.js
+js/services/auth-service.js
+js/services/customer-service.js
+js/services/ticket-service.js
+js/state/store.js
+js/services/api-client.js   ← ملف جديد بالكامل
 ```
 
----
-
-## 3. Business Rules & Mutation Boundary
-
-The safe data flow is strictly enforced:
-$$\text{UI} \longrightarrow \text{Service Layer} \longrightarrow \text{Domain Validation} \longrightarrow \text{Store Mutation}$$
-
-* **Payment Rule**: `amount > 0` and `amount <= remaining balance`. Violations return `"Payment exceeds the remaining balance."`
-* **Refund Rule**: `amount > 0` and `amount <= available refund (totalPaid - totalRefunded)`. Violations return `"Refund exceeds the available refundable amount."`
-* **Modification Rule**: `changeFee >= 0` and `arrivalDate >= departureDate`.
-* **Report Separation**: Clear separation between `mockReportData` (demo baseline fallback) and `buildReportFromTickets` (dynamically calculated from state).
-
----
-
-## 4. Running and Testing the Application
-
-### Start Local Server
-```bash
-npm start
-# or node server.js
+أو استخدم `frontend-backend-integration.patch` مع:
 ```
-Open your browser at `http://localhost:3000`.
-
-### Run Automated Tests
-```bash
-npm test
+git apply frontend-backend-integration.patch
 ```
+(لازم تكون واقف في نفس نقطة الـ commit اللي اشتغلنا عليها، وإلا الـ patch ممكن يفشل)
+
+## اللي اتعمل ✅
+
+1. **`js/services/api-client.js`** (جديد) — fetch wrapper مركزي بيرفق JWT، بيعمل auto-refresh للـ access token، وبيدير الـ session (access/refresh token + current user) في localStorage.
+
+2. **`js/state/store.js`** — اتحول بالكامل من localStorage/mock-data لـ **API-backed cache**:
+   - القراءة (`getState()`) sync زي الأول، من كاش في الميموري
+   - الكتابة (mutations) بقت async وبتنادي الـ backend الأول، وبعدين تحدّث الكاش المحلي بس لو السيرفر رجّع نجاح
+   - فيه `ensureHydrated()` بيجيب tickets/customers/employees/activity من الـ API مرة واحدة عند بداية الجلسة
+
+3. **`js/services/auth-service.js`** — login/logout حقيقيين على `/api/auth/*` بدل الـ mock القديم.
+
+4. **`js/services/ticket-service.js`** + **`customer-service.js`** — الـ reads فضلت sync (بتقرا من كاش الـ store)، والـ writes (createTicket, addPayment, addModification, addRefund, updateTicket, createCustomer, updateCustomer, addNote) بقت async.
+
+5. **`js/app.js`** — `setupShellForCurrentPath()` بقت async وبتستنى `store.ensureHydrated()` قبل ما تبني شل التطبيق، عشان الصفحات تلاقي بيانات حقيقية جاهزة وقت الـ render.
+
+6. **`js/pages/ticket-details/ticket-actions.js`** — الأربع submit handlers (Add Payment, Modify Flight, Process Refund, Edit Ticket) اتحولوا لـ `async` مع `await` على نداءات الـ service، وبقى فيه تعطيل مؤقت لزرار الـ submit أثناء الطلب (منع الضغط المتكرر).
+
+7. **`js/pages/ticket-create.js`** — نفس المعاملة: submit handler بقى async وبينتظر `TicketService.createTicket(...)`.
+
+كل الملفات دي اتعملها `node --check` وعدت من غير أخطاء syntax.
+
+## اللي لسه ناقص ⏳
+
+- **`js/pages/customers.js`** و **`js/pages/customer-details.js`** — أي مكان بينادي `CustomerService.createCustomer` / `updateCustomer` / `addNote` لسه محتاج يتحول لـ `async/await` بنفس الأسلوب اللي اتعمل في `ticket-actions.js`.
+- **`js/pages/employees.js`** — لو فيه UI بينادي `store.addEmployee`، يحتاج نفس المعاملة (وهو endpoint ADMIN-only في الباك اند).
+- **مفيش تجربة حقيقية على سيرفر شغال** — التعديلات دي اتعملها syntax-check بس (`node --check`)، لسه محتاجة تجربة في متصفح حقيقي بعد:
+  1. `npx prisma migrate dev` على قاعدة PostgreSQL شغالة
+  2. `npm run prisma:seed` (لو موجود سكريبت seed)
+  3. `npm start` وتجربة تسجيل الدخول والعمليات فعليًا
+- **صفحة الـ Settings/Profile**: `AuthService.updateProfile()` لسه بتحدّث محليًا بس، لأن مفيش endpoint في الباك اند لتحديث بروفايل المستخدم الحالي (`/api/employees/:id` مقصور على ADMIN فقط حسب الراوتس الحالية).
+
+## ملاحظة أمان مهمة
+
+كل عمليات الكتابة (payments, refunds, modifications) بتعتمد دلوقتي بالكامل على الـ validation اللي في الباك اند (`validatePayment`, `validateRefund`, `validateModification`) — مفيش تكرار للـ validation في الفرونت اند، ده مقصود عشان السيرفر يفضل هو مصدر الحقيقة الوحيد ومفيش فرصة لـ bypass زي المرة اللي فاتت.

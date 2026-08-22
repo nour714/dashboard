@@ -57,7 +57,7 @@ class App {
     this.setupShellForCurrentPath();
   }
 
-  setupShellForCurrentPath() {
+  async setupShellForCurrentPath() {
     const pathname = window.location.pathname;
     const isAuthenticated = AuthService.isAuthenticated();
 
@@ -67,6 +67,13 @@ class App {
       const mount = document.getElementById('app-page-mount');
       this.router = new Router(routes, mount);
       return;
+    }
+
+    // Ensure the API-backed cache is populated before any page reads it
+    try {
+      await store.ensureHydrated();
+    } catch (e) {
+      console.error('Failed to hydrate application state from backend', e);
     }
 
     // Render Full App Shell

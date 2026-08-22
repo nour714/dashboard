@@ -76,14 +76,15 @@ export function openAddPaymentModal(ticket, onSuccess) {
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
       if (submitBtn) {
-        submitBtn.addEventListener('click', () => {
+        submitBtn.addEventListener('click', async () => {
           const amount = Number(modalEl.querySelector('#pay-amount').value);
           const method = modalEl.querySelector('#pay-method').value;
           const date = modalEl.querySelector('#pay-date').value;
           const reference = modalEl.querySelector('#pay-ref').value.trim();
           const notes = modalEl.querySelector('#pay-notes').value.trim();
 
-          const result = TicketService.addPayment(ticket.id, {
+          submitBtn.disabled = true;
+          const result = await TicketService.addPayment(ticket.id, {
             amount,
             method,
             date,
@@ -91,6 +92,7 @@ export function openAddPaymentModal(ticket, onSuccess) {
             notes,
             currency: ticket.currency
           });
+          submitBtn.disabled = false;
 
           if (!result.success) {
             showToast(result.error.message, 'error');
@@ -163,7 +165,7 @@ export function openModifyFlightModal(ticket, onSuccess) {
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
       if (submitBtn) {
-        submitBtn.addEventListener('click', () => {
+        submitBtn.addEventListener('click', async () => {
           const flightNumber = modalEl.querySelector('#mod-flight-num').value.trim();
           const changeFee = Number(modalEl.querySelector('#mod-change-fee').value) || 0;
           const newDepartureDate = modalEl.querySelector('#mod-dep-date').value;
@@ -171,7 +173,8 @@ export function openModifyFlightModal(ticket, onSuccess) {
           const reason = modalEl.querySelector('#mod-reason').value;
           const note = modalEl.querySelector('#mod-note').value.trim();
 
-          const result = TicketService.addModification(ticket.id, {
+          submitBtn.disabled = true;
+          const result = await TicketService.addModification(ticket.id, {
             flightNumber,
             changeFee,
             newDepartureDate,
@@ -180,6 +183,7 @@ export function openModifyFlightModal(ticket, onSuccess) {
             note,
             currency: ticket.currency
           });
+          submitBtn.disabled = false;
 
           if (!result.success) {
             showToast(result.error.message, 'error');
@@ -251,17 +255,19 @@ export function openAddRefundModal(ticket, onSuccess) {
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
       if (submitBtn) {
-        submitBtn.addEventListener('click', () => {
+        submitBtn.addEventListener('click', async () => {
           const amount = Number(modalEl.querySelector('#refund-amount').value);
           const reason = modalEl.querySelector('#refund-reason').value;
           const status = modalEl.querySelector('#refund-status').value;
 
-          const result = TicketService.addRefund(ticket.id, {
+          submitBtn.disabled = true;
+          const result = await TicketService.addRefund(ticket.id, {
             amount,
             reason,
             status,
             currency: ticket.currency
           });
+          submitBtn.disabled = false;
 
           if (!result.success) {
             showToast(result.error.message, 'error');
@@ -332,14 +338,15 @@ export function openEditTicketModal(ticket, onSuccess) {
 
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
       if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
+        saveBtn.addEventListener('click', async () => {
           const name = modalEl.querySelector('#edit-pax-name').value.trim();
           if (!name) {
             showToast(t('validation.emptyPassenger'), 'error');
             return;
           }
 
-          const result = TicketService.updateTicket(ticket.id, {
+          saveBtn.disabled = true;
+          const result = await TicketService.updateTicket(ticket.id, {
             passengerName: name,
             phone: modalEl.querySelector('#edit-pax-phone').value.trim(),
             seat: modalEl.querySelector('#edit-seat').value.trim(),
@@ -347,6 +354,7 @@ export function openEditTicketModal(ticket, onSuccess) {
             departureDate: modalEl.querySelector('#edit-dep-date').value || ticket.departureDate,
             status: modalEl.querySelector('#edit-status').value
           });
+          saveBtn.disabled = false;
 
           if (!result.success) {
             showToast(result.error.message, 'error');

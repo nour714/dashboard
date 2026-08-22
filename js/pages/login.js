@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel — Login Page
  */
 
@@ -132,7 +132,12 @@ export const LoginPage = {
         return;
       }
 
+      const submitBtn = form.querySelector('#login-submit-btn');
+      if (submitBtn) submitBtn.disabled = true;
+
       const res = await AuthService.login(email, password);
+      if (submitBtn) submitBtn.disabled = false;
+
       if (!res.success) {
         showToast(res.error || 'Authentication failed', 'error');
         return;

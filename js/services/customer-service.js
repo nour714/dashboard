@@ -1,12 +1,12 @@
 /**
  * AfricaTravel — Customer Service
  *
- * Provides customer CRM directory queries, lifetime stats, and customer management.
+ * Reads are synchronous against the store's hydrated cache. Writes go
+ * through the backend API via the store's async mutation methods.
  */
 
 import { store } from '../state/store.js';
 import { calculateTotalPaid, calculateRemaining, calculateTotalRefunded } from '../domain/ticket-rules.js';
-import { ValidationError, NotFoundError } from '../domain/errors.js';
 
 export const CustomerService = {
   getAllCustomers(query = '') {
@@ -67,55 +67,44 @@ export const CustomerService = {
     };
   },
 
-  createCustomer(data) {
+  /**
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
+   */
+  async createCustomer(data) {
     try {
-      if (!data.name || !data.name.trim()) {
-        throw new ValidationError('Customer name is required', 'name');
-      }
-      const customer = store.applyCustomerCreation(data);
-      return { success: true, data: customer };
+      return await store.createCustomer(data);
     } catch (err) {
       return {
         success: false,
-        error: {
-          message: err.message || 'Failed to create customer',
-          code: err.code || 'CREATE_CUSTOMER_ERROR'
-        }
+        error: { message: err.message || 'Failed to create customer', code: err.code || 'CREATE_CUSTOMER_ERROR' }
       };
     }
   },
 
-  updateCustomer(customerId, data) {
+  /**
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
+   */
+  async updateCustomer(customerId, data) {
     try {
-      const customer = this.getCustomerById(customerId);
-      if (!customer) throw new NotFoundError('Customer', customerId);
-      const updated = store.updateCustomer(customerId, data);
-      return { success: true, data: updated };
+      return await store.updateCustomer(customerId, data);
     } catch (err) {
       return {
         success: false,
-        error: {
-          message: err.message || 'Failed to update customer',
-          code: err.code || 'UPDATE_CUSTOMER_ERROR'
-        }
+        error: { message: err.message || 'Failed to update customer', code: err.code || 'UPDATE_CUSTOMER_ERROR' }
       };
     }
   },
 
-  addNote(customerId, text) {
+  /**
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
+   */
+  async addNote(customerId, text) {
     try {
-      if (!text || !text.trim()) {
-        throw new ValidationError('Note text cannot be empty', 'text');
-      }
-      const note = store.addCustomerNote(customerId, text.trim());
-      return { success: true, data: note };
+      return await store.addCustomerNote(customerId, (text || '').trim());
     } catch (err) {
       return {
         success: false,
-        error: {
-          message: err.message || 'Failed to add customer note',
-          code: err.code || 'ADD_NOTE_ERROR'
-        }
+        error: { message: err.message || 'Failed to add customer note', code: err.code || 'ADD_NOTE_ERROR' }
       };
     }
   }

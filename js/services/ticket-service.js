@@ -1,8 +1,10 @@
 /**
  * AfricaTravel — Ticket, Payment, and Refund Service
  *
- * Provides a clean, domain-validated API interface for tickets, payments,
- * modifications, and refunds.
+ * Reads are synchronous against the store's hydrated in-memory cache. Writes
+ * (create/update/payment/modification/refund) are async: they call the
+ * backend API — which enforces domain validation server-side — and only
+ * patch the local cache once the server confirms the write.
  */
 
 import { store } from '../state/store.js';
@@ -13,17 +15,12 @@ import {
   calculateTotalRefunded,
   calculateAvailableRefund,
   calculateNetValue,
-  derivePaymentStatus,
-  validateTicketCreation
+  derivePaymentStatus
 } from '../domain/ticket-rules.js';
-import { validatePayment } from '../domain/payment-rules.js';
-import { validateRefund } from '../domain/refund-rules.js';
-import { validateModification } from '../domain/modification-rules.js';
-import { NotFoundError } from '../domain/errors.js';
 
 export const TicketService = {
   /**
-   * Retrieves all tickets with optional filtering
+   * Retrieves all cached tickets with optional client-side filtering.
    * @param {object} filters
    * @returns {Array<object>}
    */
@@ -67,7 +64,7 @@ export const TicketService = {
   },
 
   /**
-   * Finds ticket by ID, ticketNumber, or PNR
+   * Finds a cached ticket by ID, ticketNumber, or PNR.
    * @param {string} ticketId
    * @returns {object|null}
    */
@@ -82,7 +79,7 @@ export const TicketService = {
   },
 
   /**
-   * Computes financial balance snapshot for a ticket
+   * Computes financial balance snapshot for a ticket (mirrors backend logic).
    * @param {object} ticket
    * @returns {object}
    */
@@ -110,130 +107,91 @@ export const TicketService = {
   },
 
   /**
-   * Issues a new ticket after validating domain rules
+   * Issues a new ticket. Domain validation is enforced by the backend.
    * @param {object} data
-   * @returns {{success: boolean, data?: object, error?: object}}
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
    */
-  createTicket(data) {
+  async createTicket(data) {
     try {
-      validateTicketCreation(data);
-      const newTicket = store.applyTicketCreation(data);
-      return { success: true, data: newTicket };
+      return await store.createTicket(data);
     } catch (err) {
       return {
         success: false,
-        error: {
-          message: err.message || 'Failed to create ticket',
-          code: err.code || 'CREATE_TICKET_ERROR',
-          field: err.field || null
-        }
+        error: { message: err.message || 'Failed to create ticket', code: err.code || 'CREATE_TICKET_ERROR' }
       };
     }
   },
 
   /**
-   * Updates non-financial details of a ticket
+   * Updates non-financial details of a ticket.
    * @param {string} ticketId
    * @param {object} updates
-   * @returns {{success: boolean, data?: object, error?: object}}
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
    */
-  updateTicket(ticketId, updates) {
+  async updateTicket(ticketId, updates) {
     try {
-      const ticket = this.getTicketById(ticketId);
-      if (!ticket) throw new NotFoundError('Ticket', ticketId);
-      const updated = store.updateTicket(ticket.id, updates);
-      return { success: true, data: updated };
+      return await store.updateTicket(ticketId, updates);
     } catch (err) {
       return {
         success: false,
-        error: {
-          message: err.message || 'Failed to update ticket',
-          code: err.code || 'UPDATE_TICKET_ERROR'
-        }
+        error: { message: err.message || 'Failed to update ticket', code: err.code || 'UPDATE_TICKET_ERROR' }
       };
     }
   },
 
   /**
-   * Records a payment against a ticket
+   * Records a payment against a ticket. Backend enforces the remaining-balance rule.
    * @param {string} ticketId
    * @param {object} paymentData
-   * @returns {{success: boolean, data?: object, error?: object}}
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
    */
-  addPayment(ticketId, paymentData) {
+  async addPayment(ticketId, paymentData) {
     try {
-      const ticket = this.getTicketById(ticketId);
-      if (!ticket) throw new NotFoundError('Ticket', ticketId);
-
-      validatePayment(ticket, paymentData);
-      const payment = store.applyPayment(ticket.id, paymentData);
-      return { success: true, data: payment };
+      return await store.addPayment(ticketId, paymentData);
     } catch (err) {
       return {
         success: false,
-        error: {
-          message: err.message || 'Failed to record payment',
-          code: err.code || 'PAYMENT_ERROR',
-          field: err.field || null
-        }
+        error: { message: err.message || 'Failed to record payment', code: err.code || 'PAYMENT_ERROR' }
       };
     }
   },
 
   /**
-   * Applies flight schedule modification
+   * Applies a flight schedule modification. Backend enforces schedule-chronology rules.
    * @param {string} ticketId
    * @param {object} modData
-   * @returns {{success: boolean, data?: object, error?: object}}
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
    */
-  addModification(ticketId, modData) {
+  async addModification(ticketId, modData) {
     try {
-      const ticket = this.getTicketById(ticketId);
-      if (!ticket) throw new NotFoundError('Ticket', ticketId);
-
-      validateModification(ticket, modData);
-      const mod = store.applyModification(ticket.id, modData);
-      return { success: true, data: mod };
+      return await store.addModification(ticketId, modData);
     } catch (err) {
       return {
         success: false,
-        error: {
-          message: err.message || 'Failed to apply modification',
-          code: err.code || 'MODIFICATION_ERROR',
-          field: err.field || null
-        }
+        error: { message: err.message || 'Failed to apply modification', code: err.code || 'MODIFICATION_ERROR' }
       };
     }
   },
 
   /**
-   * Processes a refund against a ticket
+   * Processes a refund against a ticket. Backend enforces the available-refund rule.
    * @param {string} ticketId
    * @param {object} refundData
-   * @returns {{success: boolean, data?: object, error?: object}}
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
    */
-  addRefund(ticketId, refundData) {
+  async addRefund(ticketId, refundData) {
     try {
-      const ticket = this.getTicketById(ticketId);
-      if (!ticket) throw new NotFoundError('Ticket', ticketId);
-
-      validateRefund(ticket, refundData);
-      const refund = store.applyRefund(ticket.id, refundData);
-      return { success: true, data: refund };
+      return await store.addRefund(ticketId, refundData);
     } catch (err) {
       return {
         success: false,
-        error: {
-          message: err.message || 'Failed to process refund',
-          code: err.code || 'REFUND_ERROR',
-          field: err.field || null
-        }
+        error: { message: err.message || 'Failed to process refund', code: err.code || 'REFUND_ERROR' }
       };
     }
   }
 };
 
-// Aliased service interfaces for future backend endpoint separation
+// Aliased service interfaces retained for call-site compatibility
 export const PaymentService = {
   addPayment(ticketId, paymentData) {
     return TicketService.addPayment(ticketId, paymentData);
