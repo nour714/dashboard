@@ -1,8 +1,9 @@
-﻿/**
+/**
  * AfricaTravel — Business Intelligence & Reports Page
  */
 
 import { ReportService } from '../services/report-service.js';
+import { AuthService } from '../services/auth-service.js';
 import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { showToast } from '../components/toast.js';
@@ -12,6 +13,9 @@ import { t } from '../i18n/i18n.js';
 
 export const ReportsPage = {
   render() {
+    const currentUser = AuthService.getCurrentUser();
+    const isAdmin = (currentUser?.role || '').toUpperCase() === 'ADMIN';
+
     const kpis = ReportService.getKPIs();
     const employees = ReportService.getEmployeePerformance();
     const airlines = ReportService.getAirlinePerformance();
@@ -116,7 +120,7 @@ export const ReportsPage = {
                   </tr>
                 </thead>
                 <tbody>
-                  ${employeeRows || `<tr><td colspan="4" class="text-center text-muted p-md">${escapeHtml(t('common.noData'))}</td></tr>`}
+                  ${!isAdmin ? `<tr><td colspan="4" class="text-center text-muted p-md">${escapeHtml(t('reports.adminOnlyEmployees'))}</td></tr>` : (employeeRows || `<tr><td colspan="4" class="text-center text-muted p-md">${escapeHtml(t('common.noData'))}</td></tr>`)}
                 </tbody>
               </table>
             </div>

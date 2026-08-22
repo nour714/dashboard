@@ -1,8 +1,9 @@
-﻿/**
+/**
  * AfricaTravel — Employees Administration Page
  */
 
 import { store } from '../state/store.js';
+import { AuthService } from '../services/auth-service.js';
 import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { renderStatusBadge } from '../components/status-badge.js';
@@ -15,6 +16,18 @@ let statusFilter = 'All Statuses';
 
 export const EmployeesPage = {
   render() {
+    const currentUser = AuthService.getCurrentUser();
+    const isAdmin = (currentUser?.role || '').toUpperCase() === 'ADMIN';
+
+    if (!isAdmin) {
+      return `
+        <div class="empty-state" style="padding: 64px 24px; text-align: center;">
+          <h2>${escapeHtml(t('employees.accessRestricted') || 'Access Restricted')}</h2>
+          <p class="text-muted">${escapeHtml(t('employees.adminOnlyMessage') || 'This page is only available to administrators.')}</p>
+        </div>
+      `;
+    }
+
     const { employees } = store.getState();
 
     let filtered = employees;

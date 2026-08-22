@@ -3,10 +3,14 @@
  */
 
 import { icons } from './icons.js';
+import { AuthService } from '../services/auth-service.js';
 import { t } from '../i18n/i18n.js';
 import { escapeHtml } from '../utils/security.js';
 
 export function renderBottomNav(activePath = '/dashboard') {
+  const currentUser = AuthService.getCurrentUser() || {};
+  const isAdmin = (currentUser.role || '').toUpperCase() === 'ADMIN';
+
   const isDashboard = activePath === '/dashboard';
   const isTickets = activePath.startsWith('/tickets');
   const isCustomers = activePath.startsWith('/customers');
@@ -51,10 +55,12 @@ export function renderBottomNav(activePath = '/dashboard') {
           ${icons.reports()}
           <span>${escapeHtml(t('nav.reports'))}</span>
         </a>
+        ${isAdmin ? `
         <a href="/employees" class="drawer-nav-item" data-link>
           ${icons.employees()}
           <span>${escapeHtml(t('nav.employees'))}</span>
         </a>
+        ` : ''}
         <a href="/activity" class="drawer-nav-item" data-link>
           ${icons.activity()}
           <span>${escapeHtml(t('nav.activity'))}</span>

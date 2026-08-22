@@ -146,9 +146,10 @@ export const AuthService = {
   },
 
   /**
-   * Refreshes an expired access token using a valid refresh token
+   * Refreshes an expired access token using a valid refresh token.
+   * Implements token rotation: the used refresh token is revoked and a new one is issued.
    * @param {string} rawRefreshToken
-   * @returns {Promise<{accessToken: string, refreshToken?: string}>}
+   * @returns {Promise<{accessToken: string, refreshToken: string}>}
    */
   async refresh(rawRefreshToken) {
     if (!rawRefreshToken) {
@@ -171,11 +172,30 @@ export const AuthService = {
       throw new BusinessRuleError('Account is inactive', 'ACCOUNT_INACTIVE');
     }
 
-    // Generate new access token
+    // Rotate: revoke the used token and issue a brand new one
+    const newRawRefreshToken = this.generateRefreshTokenString();
+    const newTokenHash = this.hashToken(newRawRefreshToken);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await prisma.$transaction([
+      prisma.refreshToken.update({
+        where: { id: tokenRecord.id },
+        data: { revoked: true }
+      }),
+      prisma.refreshToken.create({
+        data: {
+          tokenHash: newTokenHash,
+          userId: tokenRecord.user.id,
+          expiresAt
+        }
+      })
+    ]);
+
     const newAccessToken = this.generateAccessToken(tokenRecord.user);
 
     return {
-      accessToken: newAccessToken
+      accessToken: newAccessToken,
+      refreshToken: newRawRefreshToken
     };
   },
 

@@ -430,6 +430,7 @@ export const en = {
     },
     salesByAirline: 'Sales Volume by Airline',
     agentPerformance: 'Agent Sales Performance',
+    adminOnlyEmployees: 'Employee performance data requires administrator access.',
     monthlyTrends: 'Monthly Revenue Progression'
   },
 
@@ -437,6 +438,8 @@ export const en = {
   employees: {
     title: 'Employees',
     subtitle: 'Manage agency staff, ticketing agents, operational roles, and system access.',
+    accessRestricted: 'Access Restricted',
+    adminOnlyMessage: 'This page is only available to administrators.',
     addEmployee: 'Add Employee',
     searchPlaceholder: 'Search employees by name, role, or email...',
     table: {

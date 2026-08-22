@@ -25,8 +25,10 @@ export function renderSidebar(activePath = '/dashboard') {
     { path: '/reports', label: t('nav.reports'), icon: 'reports' }
   ];
 
+  const isAdmin = (currentUser.role || '').toUpperCase() === 'ADMIN';
+
   const adminNav = [
-    { path: '/employees', label: t('nav.employees'), icon: 'employees' },
+    ...(isAdmin ? [{ path: '/employees', label: t('nav.employees'), icon: 'employees' }] : []),
     { path: '/activity', label: t('nav.activity'), icon: 'activity' },
     { path: '/settings', label: t('nav.settings'), icon: 'settings' }
   ];

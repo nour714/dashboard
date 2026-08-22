@@ -430,6 +430,7 @@ export const ar = {
     },
     salesByAirline: 'حجم المبيعات حسب شركة الطيران',
     agentPerformance: 'أداء مبيعات الوكلاء',
+    adminOnlyEmployees: 'بيانات أداء الموظفين تتطلب صلاحيات المسؤول (Administrator).',
     monthlyTrends: 'تطور الإيرادات الشهرية'
   },
 
@@ -437,6 +438,8 @@ export const ar = {
   employees: {
     title: 'الموظفون',
     subtitle: 'إدارة فريق العمل، وكلاء إصدار التذاكر، الأدوار التشغيلية، وصلاحيات النظام.',
+    accessRestricted: 'الوصول مقيد',
+    adminOnlyMessage: 'هذه الصفحة متاحة فقط للمسؤولين (Administrators).',
     addEmployee: 'إضافة موظف',
     searchPlaceholder: 'ابحث باسم الموظف، المسمى الوظيفي، أو البريد الإلكتروني...',
     table: {

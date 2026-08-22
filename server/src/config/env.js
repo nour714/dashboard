@@ -29,4 +29,20 @@ if (!parsedEnv.success) {
   process.exit(1);
 }
 
+// Prevent production startup with well-known insecure default secrets
+const INSECURE_DEFAULTS = [
+  'africatravel_super_secret_jwt_access_key_2026_dev_key',
+  'africatravel_super_secret_jwt_refresh_key_2026_dev_key',
+  'africatravel_production_super_secret_jwt_key_2026',
+  'africatravel_production_super_secret_refresh_key_2026'
+];
+
+if (
+  parsedEnv.data.NODE_ENV === 'production' &&
+  (INSECURE_DEFAULTS.includes(parsedEnv.data.JWT_SECRET) || INSECURE_DEFAULTS.includes(parsedEnv.data.JWT_REFRESH_SECRET))
+) {
+  console.error('❌ FATAL: JWT_SECRET/JWT_REFRESH_SECRET are using insecure default values in production. Set real secrets in your .env file.');
+  process.exit(1);
+}
+
 export const env = parsedEnv.data;
