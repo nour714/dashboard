@@ -49,8 +49,15 @@ export function createApp(rootDir = ROOT_DIR) {
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
-  // Mount API Endpoints
+  // Mount API Endpoints (supports both /api prefix and stripped serverless routes)
   app.use('/api', apiRouter);
+  app.use((req, res, next) => {
+    const isApiSubpath = ['/auth', '/tickets', '/customers', '/employees', '/reports', '/activity', '/health'].some(p => req.path.startsWith(p));
+    if (isApiSubpath) {
+      return apiRouter(req, res, next);
+    }
+    next();
+  });
 
   // Static Frontend Assets & SPA Fallback Handler
   app.use((req, res, next) => {
