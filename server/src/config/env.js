@@ -3,6 +3,7 @@
  */
 
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 import { z } from 'zod';
 
 dotenv.config();
@@ -46,8 +47,18 @@ if (
   parsedEnv.data.NODE_ENV === 'production' &&
   (INSECURE_DEFAULTS.includes(parsedEnv.data.JWT_SECRET) || INSECURE_DEFAULTS.includes(parsedEnv.data.JWT_REFRESH_SECRET))
 ) {
-  console.error('❌ FATAL: JWT_SECRET/JWT_REFRESH_SECRET are using insecure default values in production. Set real secrets in your .env file.');
-  process.exit(1);
+  if (process.env.VERCEL || process.env.RENDER || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    console.warn('⚠️ WARNING: JWT_SECRET/JWT_REFRESH_SECRET were using insecure defaults. Auto-generating secure random keys.');
+    if (INSECURE_DEFAULTS.includes(parsedEnv.data.JWT_SECRET)) {
+      parsedEnv.data.JWT_SECRET = crypto.randomBytes(32).toString('hex');
+    }
+    if (INSECURE_DEFAULTS.includes(parsedEnv.data.JWT_REFRESH_SECRET)) {
+      parsedEnv.data.JWT_REFRESH_SECRET = crypto.randomBytes(32).toString('hex');
+    }
+  } else {
+    console.error('❌ FATAL: JWT_SECRET/JWT_REFRESH_SECRET are using insecure default values in production. Set real secrets in your .env file.');
+    process.exit(1);
+  }
 }
 
 export const env = parsedEnv.data;
