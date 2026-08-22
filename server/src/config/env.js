@@ -22,6 +22,11 @@ const envSchema = z.object({
   DEFAULT_ADMIN_PASSWORD: z.string().default('password123')
 });
 
+// Support Vercel + Supabase integration env variable names
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = process.env.POSTGRES_PRISMA_URL || process.env.POSTGRES_URL || process.env.SUPABASE_DATABASE_URL;
+}
+
 const parsedEnv = envSchema.safeParse(process.env);
 
 if (!parsedEnv.success) {
