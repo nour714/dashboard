@@ -47,4 +47,3 @@ export async function checkDatabaseHealth() {
   }
 }
 
-export const prisma = getPrismaClient();
