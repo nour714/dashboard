@@ -26,6 +26,14 @@ export function getPrismaClient() {
 }
 
 /**
+ * Sets or overrides the PrismaClient instance (useful for testing)
+ * @param {PrismaClient|object} client
+ */
+export function setPrismaClient(client) {
+  prismaInstance = client;
+}
+
+/**
  * Checks connection health to PostgreSQL database
  * @returns {Promise<boolean>}
  */

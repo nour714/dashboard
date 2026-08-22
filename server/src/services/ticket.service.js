@@ -184,11 +184,36 @@ export const TicketService = {
     const ticketNumber = data.ticketNumber || `077-${Math.floor(1000000000 + Math.random() * 9000000000)}`;
     const pnr = data.pnr || `PNR${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
-    // Verify or find default customer
+    // Find or create customer
     let customerId = data.customerId;
+
     if (!customerId) {
-      const firstCustomer = await prisma.customer.findFirst();
-      customerId = firstCustomer ? firstCustomer.id : 'CUST-8924';
+      // Try to match an existing customer by passport number (most reliable identifier available)
+      let matchedCustomer = null;
+      if (data.passport && data.passport.trim()) {
+        matchedCustomer = await prisma.customer.findFirst({
+          where: { passport: data.passport.trim() }
+        });
+      }
+
+      if (matchedCustomer) {
+        customerId = matchedCustomer.id;
+      } else {
+        // No matching customer found — create one from the passenger details on the ticket form
+        const newCustomer = await prisma.customer.create({
+          data: {
+            id: `CUST-${Math.floor(8900 + Math.random() * 1000)}`,
+            name: data.passengerName.trim(),
+            email: data.email ? data.email.trim() : null,
+            phone: data.phone ? data.phone.trim() : null,
+            passport: data.passport ? data.passport.trim() : null,
+            nationality: data.nationality || 'Egyptian (EGY)',
+            isVip: false,
+            memberSince: String(new Date().getFullYear())
+          }
+        });
+        customerId = newCustomer.id;
+      }
     }
 
     const price = Number(data.ticketPrice);
