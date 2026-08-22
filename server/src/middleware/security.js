@@ -16,11 +16,21 @@ export const helmetMiddleware = helmet({
 
 export const corsMiddleware = cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+    // Allow requests with no origin (e.g. mobile apps, curl, same-origin, server-to-server)
     if (!origin) return callback(null, true);
 
-    const allowedOrigins = env.CORS_ORIGIN.split(',').map(s => s.trim());
-    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+    const allowedOrigins = env.CORS_ORIGIN ? env.CORS_ORIGIN.split(',').map(s => s.trim()) : [];
+    
+    // Allow configured origins, wildcard, Vercel deployments, or localhost
+    const isVercelOrigin = origin.endsWith('.vercel.app') || origin.includes('vercel.app');
+    const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
+
+    if (
+      allowedOrigins.includes('*') ||
+      allowedOrigins.includes(origin) ||
+      isVercelOrigin ||
+      isLocalhost
+    ) {
       return callback(null, true);
     }
     return callback(new Error(`Origin ${origin} is not allowed by CORS`));
