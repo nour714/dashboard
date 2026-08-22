@@ -61,6 +61,17 @@ export function errorHandler(err, req, res, next) {
     });
   }
 
+  // Handle Prisma Database Connection Errors
+  if (err.name === 'PrismaClientInitializationError' || err.code === 'P1001' || err.message?.includes('database server')) {
+    return res.status(503).json({
+      success: false,
+      error: {
+        message: 'Cannot connect to PostgreSQL database. Please ensure DATABASE_URL is properly configured in Vercel environment variables.',
+        code: 'DATABASE_UNAVAILABLE'
+      }
+    });
+  }
+
   // Log unexpected server errors
   console.error('🔥 Unexpected Error:', err);
 
