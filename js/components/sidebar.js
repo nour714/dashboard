@@ -9,6 +9,7 @@ import { i18n, t } from '../i18n/i18n.js';
 
 export function renderSidebar(activePath = '/dashboard') {
   const currentUser = AuthService.getCurrentUser() || {};
+  const isTicketOnly = (currentUser.role || '').toUpperCase() === 'TICKET_ONLY';
   const isAr = i18n.getLanguage() === 'ar';
   const rawName = currentUser.name || currentUser.fullName || 'Mohamed Raafat';
   const userName = (rawName === 'Mohamed Raafat' && isAr) ? 'محمد رأفت' : rawName;
@@ -49,7 +50,7 @@ export function renderSidebar(activePath = '/dashboard') {
   return `
     <aside class="app-sidebar" id="app-sidebar">
       <div class="sidebar-header">
-        <a href="/dashboard" class="sidebar-logo" data-link aria-label="${escapeHtml(t('dashboard.title'))}">
+        <a href="${isTicketOnly ? '/tickets/new' : '/dashboard'}" class="sidebar-logo" data-link aria-label="${escapeHtml(t('dashboard.title'))}">
           <div class="sidebar-logo-icon">
             <img src="/assets/logo.png" alt="AfricaTravel Logo" class="sidebar-logo-img no-flip" />
           </div>
@@ -68,13 +69,13 @@ export function renderSidebar(activePath = '/dashboard') {
       </div>
 
       <nav class="sidebar-nav" aria-label="${escapeHtml(t('nav.administration'))}">
-        ${renderLinks(mainNav)}
+        ${isTicketOnly ? '' : `${renderLinks(mainNav)}
         <div class="sidebar-divider"></div>
-        ${renderLinks(adminNav)}
+        ${renderLinks(adminNav)}`}
       </nav>
 
       <div class="sidebar-footer">
-        <a href="/settings" class="sidebar-user" data-link aria-label="${escapeHtml(t('settings.tabs.profile'))}">
+        <a href="${isTicketOnly ? '/tickets/new' : '/settings'}" class="sidebar-user" data-link aria-label="${escapeHtml(t('settings.tabs.profile'))}">
           <div class="sidebar-user-avatar">
             ${escapeHtml(initials)}
           </div>

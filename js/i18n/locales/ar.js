@@ -465,6 +465,24 @@ export const ar = {
       branch: 'فرع العمل',
       status: 'الحالة',
       actions: 'الإجراءات'
+    },
+    passwordTooShort: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل',
+    createFailed: 'فشل إنشاء الموظف',
+    credentialsWarning: 'شارك بيانات الدخول هذه بأمان مع الموظف الجديد. لن تظهر مرة أخرى.',
+    newEmployeeCredentials: 'بيانات دخول الموظف الجديد',
+    password: 'كلمة المرور',
+    titleLabel: 'المسمى الوظيفي',
+    generate: 'إنشاء',
+    show: 'إظهار',
+    hide: 'إخفاء',
+    copy: 'نسخ',
+    copied: 'تم النسخ',
+    copyFailed: 'تعذر نسخ بيانات الدخول',
+    done: 'تم',
+    roles: {
+      admin: 'مسؤول النظام',
+      agent: 'وكيل حجز تذاكر',
+      ticketOnly: 'إنشاء تذاكر فقط'
     }
   },
 

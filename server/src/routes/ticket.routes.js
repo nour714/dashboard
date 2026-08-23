@@ -21,14 +21,14 @@ const router = Router();
 router.use(authenticate);
 
 // Ticket CRUD
-router.get('/', validate({ query: queryTicketsSchema }), TicketController.getTickets);
+router.get('/', requireRole('ADMIN', 'AGENT'), validate({ query: queryTicketsSchema }), TicketController.getTickets);
 router.get('/:id', TicketController.getTicketById);
 router.post('/', validate({ body: createTicketSchema }), TicketController.createTicket);
-router.patch('/:id', validate({ body: updateTicketSchema }), TicketController.updateTicket);
+router.patch('/:id', requireRole('ADMIN', 'AGENT'), validate({ body: updateTicketSchema }), TicketController.updateTicket);
 
 // Financial & Operational Ledger Sub-resources (Enforce Domain Validation Layer)
-router.post('/:id/payments', validate({ body: addPaymentSchema }), TicketController.addPayment);
+router.post('/:id/payments', requireRole('ADMIN', 'AGENT'), validate({ body: addPaymentSchema }), TicketController.addPayment);
 router.post('/:id/refunds', requireRole('ADMIN'), validate({ body: addRefundSchema }), TicketController.addRefund);
-router.post('/:id/modifications', validate({ body: addModificationSchema }), TicketController.addModification);
+router.post('/:id/modifications', requireRole('ADMIN', 'AGENT'), validate({ body: addModificationSchema }), TicketController.addModification);
 
 export default router;

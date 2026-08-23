@@ -10,6 +10,18 @@ import { escapeHtml } from '../utils/security.js';
 export function renderBottomNav(activePath = '/dashboard') {
   const currentUser = AuthService.getCurrentUser() || {};
   const isAdmin = (currentUser.role || '').toUpperCase() === 'ADMIN';
+  const isTicketOnly = (currentUser.role || '').toUpperCase() === 'TICKET_ONLY';
+
+  if (isTicketOnly) {
+    const isCreateTicket = activePath === '/tickets/new' || activePath === '/tickets/create';
+    return `
+      <nav class="app-bottom-nav" aria-label="${escapeHtml(t('nav.newTicket'))}">
+        <a href="/tickets/new" class="bottom-nav-item ${isCreateTicket ? 'active' : ''}" data-link>
+          ${icons.plus()}
+          <span>${escapeHtml(t('nav.newTicket'))}</span>
+        </a>
+      </nav>`;
+  }
 
   const isDashboard = activePath === '/dashboard';
   const isTickets = activePath.startsWith('/tickets');

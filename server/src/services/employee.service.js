@@ -103,7 +103,7 @@ export const EmployeeService = {
     }
 
     const saltRounds = 10;
-    const passwordHash = await bcrypt.hash(data.password || 'password123', saltRounds);
+    const passwordHash = await bcrypt.hash(data.password, saltRounds);
     const newId = `EMP-${Math.floor(100 + Math.random() * 900)}`;
 
     const newUser = await prisma.user.create({
@@ -111,8 +111,8 @@ export const EmployeeService = {
         id: newId,
         name: data.name.trim(),
         email: cleanEmail,
-        role: data.role === 'ADMIN' ? 'ADMIN' : 'AGENT',
-        title: data.title || (data.role === 'ADMIN' ? 'Operations Director' : 'Ticketing Officer'),
+        role: ['ADMIN', 'AGENT', 'TICKET_ONLY'].includes(data.role) ? data.role : 'AGENT',
+        title: data.title || (data.role === 'ADMIN' ? 'Operations Director' : data.role === 'TICKET_ONLY' ? 'Ticket Creation Officer' : 'Ticketing Officer'),
         passwordHash,
         status: data.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
         lastActive: 'Just now'
@@ -162,7 +162,7 @@ export const EmployeeService = {
 
     const data = {};
     if (updates.name) data.name = updates.name.trim();
-    if (updates.role) data.role = updates.role === 'ADMIN' ? 'ADMIN' : 'AGENT';
+    if (updates.role) data.role = ['ADMIN', 'AGENT', 'TICKET_ONLY'].includes(updates.role) ? updates.role : 'AGENT';
     if (updates.title) data.title = updates.title;
     if (updates.status) data.status = updates.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE';
 

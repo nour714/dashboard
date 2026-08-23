@@ -11,7 +11,7 @@ const router = Router();
 // All settings routes require authentication
 router.use(authenticate);
 
-router.get('/', SettingController.getSettings);
+router.get('/', requireRole('ADMIN', 'AGENT'), SettingController.getSettings);
 router.patch('/', requireRole('ADMIN'), SettingController.updateSettings);
 router.put('/', requireRole('ADMIN'), SettingController.updateSettings);
 

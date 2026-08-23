@@ -103,6 +103,25 @@ async function runApiTests() {
     assert(unauthedTickets.statusCode === 401, 'GET /api/tickets without token returns 401 Unauthorized');
     assert(unauthedTickets.json?.error?.code === 'UNAUTHORIZED', 'Protected endpoint returns UNAUTHORIZED error code');
 
+    const ticketOnlyToken = AuthService.generateAccessToken({
+      id: 'EMP-TICKET-ONLY',
+      name: 'Ticket Only User',
+      email: 'ticket-only@example.com',
+      role: 'TICKET_ONLY',
+      title: 'Ticket Creation Officer'
+    });
+    const ticketOnlyHeaders = { authorization: `Bearer ${ticketOnlyToken}` };
+    const restrictedRequests = [
+      ['GET /api/customers', { method: 'GET', path: '/api/customers', headers: ticketOnlyHeaders }],
+      ['GET /api/reports/summary', { method: 'GET', path: '/api/reports/summary', headers: ticketOnlyHeaders }],
+      ['PATCH /api/tickets/:id', { method: 'PATCH', path: '/api/tickets/TKT-1', headers: ticketOnlyHeaders, body: {} }],
+      ['POST /api/tickets/:id/payments', { method: 'POST', path: '/api/tickets/TKT-1/payments', headers: ticketOnlyHeaders, body: {} }]
+    ];
+    for (const [label, request] of restrictedRequests) {
+      const response = await makeRequest(server, request);
+      assert(response.statusCode === 403, `${label} returns 403 for TICKET_ONLY`);
+    }
+
     // 4. Static Asset and SPA Fallback Serving
     console.log('\n--- 4. Static Frontend & SPA Fallback ---');
     const indexRes = await makeRequest(server, { path: '/index.html' });

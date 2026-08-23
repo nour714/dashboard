@@ -7,12 +7,53 @@ import { AuthService } from '../services/auth-service.js';
 import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { renderStatusBadge } from '../components/status-badge.js';
+import { openModal, closeModal } from '../components/modal.js';
+import { showToast } from '../components/toast.js';
 import { formatCurrency } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
 import { t } from '../i18n/i18n.js';
 
 let roleFilter = 'All Roles';
 let statusFilter = 'All Statuses';
+
+function showEmployeeCreatedConfirmation(email, password) {
+  openModal({
+    title: t('employees.newEmployeeCredentials'),
+    contentHtml: `
+      <div class="d-flex flex-column gap-md">
+        <p class="text-muted">${escapeHtml(t('employees.credentialsWarning'))}</p>
+        <div class="form-group">
+          <label class="form-label">${escapeHtml(t('employees.table.email'))}</label>
+          <div class="d-flex gap-sm">
+            <code class="form-control ltr-data" style="display: block; overflow-wrap: anywhere;">${escapeHtml(email)}</code>
+            <button type="button" class="btn btn-secondary" id="copy-employee-email">${escapeHtml(t('employees.copy'))}</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">${escapeHtml(t('employees.password'))}</label>
+          <div class="d-flex gap-sm">
+            <code class="form-control ltr-data" style="display: block; overflow-wrap: anywhere;">${escapeHtml(password)}</code>
+            <button type="button" class="btn btn-secondary" id="copy-employee-password">${escapeHtml(t('employees.copy'))}</button>
+          </div>
+        </div>
+      </div>
+    `,
+    footerHtml: `<button type="button" class="btn btn-primary" id="employee-credentials-done">${escapeHtml(t('employees.done'))}</button>`,
+    onOpen: (modalEl) => {
+      const copy = (selector, value) => modalEl.querySelector(selector)?.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(value);
+          showToast(t('employees.copied'), 'success');
+        } catch {
+          showToast(t('employees.copyFailed'), 'error');
+        }
+      });
+      copy('#copy-employee-email', email);
+      copy('#copy-employee-password', password);
+      modalEl.querySelector('#employee-credentials-done')?.addEventListener('click', closeModal);
+    }
+  });
+}
 
 export const EmployeesPage = {
   render() {
@@ -41,7 +82,11 @@ export const EmployeesPage = {
     const headerHtml = renderPageHeader({
       title: t('employees.title'),
       subtitle: t('employees.subtitle'),
-      actionsHtml: ''
+      actionsHtml: `
+        <button type="button" class="btn btn-primary" id="add-employee-btn">
+          ${escapeHtml(t('employees.addEmployee'))}
+        </button>
+      `
     });
 
     const rowsHtml = filtered.map(e => `
@@ -103,6 +148,91 @@ export const EmployeesPage = {
   },
 
   afterRender(container) {
-    // Dynamic event bindings if needed
+    const addEmployeeBtn = container.querySelector('#add-employee-btn');
+    if (!addEmployeeBtn) return;
+
+    addEmployeeBtn.addEventListener('click', () => {
+      openModal({
+        title: t('employees.addEmployee'),
+        contentHtml: `
+          <form id="new-employee-form" class="d-flex flex-column gap-md">
+            <div class="form-group">
+              <label class="form-label" for="new-emp-name">${escapeHtml(t('employees.table.name'))} *</label>
+              <input type="text" id="new-emp-name" class="form-control" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="new-emp-email">${escapeHtml(t('employees.table.email'))} *</label>
+              <input type="email" id="new-emp-email" class="form-control ltr-field" required />
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label" for="new-emp-role">${escapeHtml(t('employees.table.role'))} *</label>
+                <select id="new-emp-role" class="form-control" required>
+                  <option value="AGENT">${escapeHtml(t('employees.roles.agent'))}</option>
+                  <option value="ADMIN">${escapeHtml(t('employees.roles.admin'))}</option>
+                  <option value="TICKET_ONLY">${escapeHtml(t('employees.roles.ticketOnly'))}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="new-emp-title">${escapeHtml(t('employees.titleLabel'))}</label>
+                <input type="text" id="new-emp-title" class="form-control" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="new-emp-password">${escapeHtml(t('employees.password'))} *</label>
+              <div class="d-flex gap-sm">
+                <input type="password" id="new-emp-password" class="form-control ltr-field" minlength="8" required />
+                <button type="button" class="btn btn-secondary" id="generate-emp-password">${escapeHtml(t('employees.generate'))}</button>
+                <button type="button" class="btn btn-secondary" id="toggle-emp-password">${escapeHtml(t('employees.show'))}</button>
+              </div>
+            </div>
+          </form>
+        `,
+        footerHtml: `
+          <button type="button" class="btn btn-secondary" id="cancel-new-employee">${escapeHtml(t('common.cancel'))}</button>
+          <button type="button" class="btn btn-primary" id="submit-new-employee">${escapeHtml(t('common.save'))}</button>
+        `,
+        onOpen: (modalEl) => {
+          const passwordInput = modalEl.querySelector('#new-emp-password');
+          const togglePasswordBtn = modalEl.querySelector('#toggle-emp-password');
+          modalEl.querySelector('#cancel-new-employee')?.addEventListener('click', closeModal);
+          modalEl.querySelector('#generate-emp-password')?.addEventListener('click', () => {
+            passwordInput.value = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+            passwordInput.type = 'text';
+            togglePasswordBtn.textContent = t('employees.hide');
+          });
+          togglePasswordBtn?.addEventListener('click', () => {
+            passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+            togglePasswordBtn.textContent = passwordInput.type === 'password' ? t('employees.show') : t('employees.hide');
+          });
+
+          const submitBtn = modalEl.querySelector('#submit-new-employee');
+          submitBtn?.addEventListener('click', async () => {
+            const name = modalEl.querySelector('#new-emp-name').value.trim();
+            const email = modalEl.querySelector('#new-emp-email').value.trim();
+            const role = modalEl.querySelector('#new-emp-role').value;
+            const title = modalEl.querySelector('#new-emp-title').value.trim();
+            const password = passwordInput.value;
+            if (!name || !email || !password) {
+              showToast(t('validation.requiredField'), 'error');
+              return;
+            }
+            if (password.length < 8) {
+              showToast(t('employees.passwordTooShort'), 'error');
+              return;
+            }
+            submitBtn.disabled = true;
+            const result = await store.addEmployee({ name, email, role, title, password, status: 'ACTIVE' });
+            submitBtn.disabled = false;
+            if (!result.success) {
+              showToast(result.error?.message || t('employees.createFailed'), 'error');
+              return;
+            }
+            closeModal();
+            showEmployeeCreatedConfirmation(email, password);
+          });
+        }
+      });
+    });
   }
 };

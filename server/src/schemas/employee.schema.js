@@ -7,17 +7,17 @@ import { z } from 'zod';
 export const createEmployeeSchema = z.object({
   name: z.string().min(1, 'Name is required').trim(),
   email: z.string().email('Valid work email is required').trim(),
-  role: z.enum(['ADMIN', 'AGENT']).default('AGENT'),
+  role: z.enum(['ADMIN', 'AGENT', 'TICKET_ONLY']).default('AGENT'),
   title: z.string().optional(),
-  password: z.string().min(6, 'Password must be at least 6 characters').default('password123'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
   status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE')
 });
 
 export const updateEmployeeSchema = z.object({
   name: z.string().min(1).optional(),
   email: z.string().email().optional(),
-  role: z.enum(['ADMIN', 'AGENT']).optional(),
+  role: z.enum(['ADMIN', 'AGENT', 'TICKET_ONLY']).optional(),
   title: z.string().optional(),
   status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
-  password: z.string().min(6).optional()
+  password: z.string().min(8).optional()
 });

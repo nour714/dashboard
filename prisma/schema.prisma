@@ -13,6 +13,7 @@ generator client {
 enum Role {
   ADMIN
   AGENT
+  TICKET_ONLY
 }
 
 enum EmployeeStatus {

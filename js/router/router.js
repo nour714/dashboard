@@ -131,6 +131,14 @@ export class Router {
       pathname = '/dashboard';
     }
 
+    const currentUser = AuthService.getCurrentUser();
+    const isTicketOnly = (currentUser?.role || '').toUpperCase() === 'TICKET_ONLY';
+    const canViewTicketDetail = /^\/tickets\/[^/]+$/.test(pathname) && !['/tickets/new', '/tickets/create'].includes(pathname);
+    if (isTicketOnly && !['/tickets/new', '/tickets/create'].includes(pathname) && !canViewTicketDetail) {
+      window.history.replaceState(null, null, '/tickets/new');
+      pathname = '/tickets/new';
+    }
+
     const matched = this.matchRoute(pathname);
 
     // Extract query params

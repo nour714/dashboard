@@ -74,6 +74,24 @@ async function runRbacUiTests() {
   assert(!adminEmployeesPage.includes('Access Restricted') && !adminEmployeesPage.includes('الوصول مقيد'), 'Employees page does NOT show Access Restricted for ADMIN');
   assert(adminEmployeesPage.includes('data-table'), 'Employees page renders employees table for ADMIN');
 
+  // 3. Test TICKET_ONLY navigation visibility
+  console.log('\n--- 3. TICKET_ONLY Role Visibility ---');
+  store.state.currentUser = {
+    id: 'USR-TICKET-ONLY',
+    name: 'Ticket Only User',
+    role: 'TICKET_ONLY',
+    title: 'Ticket Creation Officer'
+  };
+  const ticketOnlySidebar = renderSidebar('/tickets/new');
+  assert(ticketOnlySidebar.includes('href="/tickets/new"'), 'Sidebar retains Create Ticket link for TICKET_ONLY');
+  assert(!ticketOnlySidebar.includes('href="/dashboard"'), 'Sidebar hides Dashboard for TICKET_ONLY');
+  assert(!ticketOnlySidebar.includes('href="/customers"'), 'Sidebar hides Customers for TICKET_ONLY');
+  assert(!ticketOnlySidebar.includes('href="/reports"'), 'Sidebar hides Reports for TICKET_ONLY');
+
+  const ticketOnlyBottomNav = renderBottomNav('/tickets/new');
+  assert(ticketOnlyBottomNav.includes('href="/tickets/new"'), 'Mobile nav retains Create Ticket for TICKET_ONLY');
+  assert(!ticketOnlyBottomNav.includes('href="/customers"'), 'Mobile nav hides Customers for TICKET_ONLY');
+
   console.log('\n========================================================');
   console.log(`RBAC UI Tests: ${passed} passed, ${failed} failed`);
   console.log('========================================================\n');
