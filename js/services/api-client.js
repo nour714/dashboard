@@ -149,8 +149,9 @@ async function request(method, path, { body, auth = true, retry = true } = {}) {
     json = { success: false, error: { message: 'Invalid server response', code: 'INVALID_RESPONSE' } };
   }
 
-  // Access token expired: attempt a single silent refresh then retry once
-  if (res.status === 401 && auth && retry && json?.error?.code === 'TOKEN_EXPIRED') {
+  // Any 401 other than bad login credentials: attempt a single silent refresh
+  // then retry once. This covers expired and not-yet-restored access tokens.
+  if (res.status === 401 && auth && retry && json?.error?.code !== 'INVALID_CREDENTIALS') {
     try {
       await refreshAccessToken();
       return request(method, path, { body, auth, retry: false });
@@ -160,14 +161,6 @@ async function request(method, path, { body, auth = true, retry = true } = {}) {
         window.location.href = '/login';
       }
       return json;
-    }
-  }
-
-  // Any other auth failure: clear session and bounce to login
-  if (res.status === 401 && auth && json?.error?.code !== 'INVALID_CREDENTIALS') {
-    clearSession();
-    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-      window.location.href = '/login';
     }
   }
 
@@ -188,4 +181,3 @@ export const apiClient = {
     return request('DELETE', path, opts);
   }
 };
-
