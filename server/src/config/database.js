@@ -41,9 +41,15 @@ export async function checkDatabaseHealth() {
   try {
     const client = getPrismaClient();
     await client.$queryRaw`SELECT 1`;
-    return true;
+    return { ok: true };
   } catch (err) {
-    return false;
+    const maskedUrl = env.DATABASE_URL ? env.DATABASE_URL.replace(/:[^:@]+@/, ':****@') : 'NOT_SET';
+    return { 
+      ok: false, 
+      error: err.message || 'Database connection error',
+      code: err.code || err.name,
+      dbHost: maskedUrl
+    };
   }
 }
 

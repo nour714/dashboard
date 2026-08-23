@@ -19,12 +19,14 @@ apiRouter.use(apiRateLimiter);
 
 // Health check endpoint
 apiRouter.get('/health', async (req, res) => {
-  const dbConnected = await checkDatabaseHealth();
+  const healthResult = await checkDatabaseHealth();
+  const dbConnected = healthResult.ok;
   res.status(dbConnected ? 200 : 503).json({
     success: true,
     data: {
       status: dbConnected ? 'healthy' : 'degraded',
       database: dbConnected ? 'connected' : 'disconnected',
+      details: healthResult.ok ? undefined : healthResult,
       timestamp: new Date().toISOString()
     }
   });
