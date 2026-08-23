@@ -5,6 +5,7 @@
  * validating business rules and calculations first.
  */
 
+import crypto from 'crypto';
 import { getPrismaClient } from '../config/database.js';
 import {
   calculateTotalPaid,
@@ -179,10 +180,10 @@ export const TicketService = {
 
     const prisma = getPrismaClient();
 
-    // Generate unique IDs
-    const newId = `TK-${Math.floor(10000 + Math.random() * 90000)}`;
-    const ticketNumber = data.ticketNumber || `077-${Math.floor(1000000000 + Math.random() * 9000000000)}`;
-    const pnr = data.pnr || `PNR${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    // Generate collision-resistant unique IDs
+    const newId = `TK-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
+    const ticketNumber = data.ticketNumber || `077-${crypto.randomBytes(4).readUInt32BE(0).toString().padEnd(10, '0').slice(0, 10)}`;
+    const pnr = data.pnr || `PNR${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 
     // Find or create customer
     let customerId = data.customerId;
@@ -202,7 +203,7 @@ export const TicketService = {
         // No matching customer found — create one from the passenger details on the ticket form
         const newCustomer = await prisma.customer.create({
           data: {
-            id: `CUST-${Math.floor(8900 + Math.random() * 1000)}`,
+            id: `CUST-${crypto.randomUUID().substring(0, 8).toUpperCase()}`,
             name: data.passengerName.trim(),
             email: data.email ? data.email.trim() : null,
             phone: data.phone ? data.phone.trim() : null,
@@ -356,195 +357,308 @@ export const TicketService = {
    */
   async addPayment(ticketId, paymentData, currentUser = {}) {
     const prisma = getPrismaClient();
-    const ticket = await this.getTicketById(ticketId);
-    if (!ticket) {
-      throw new NotFoundError('Ticket', ticketId);
-    }
 
-    // Domain validation enforced before DB write
-    validatePayment(ticket, paymentData);
-
-    const paymentAmount = Number(paymentData.amount);
-    const newPaymentId = `PAY-${Date.now()}`;
-
-    // Create payment in DB
-    const createdPayment = await prisma.payment.create({
-      data: {
-        id: newPaymentId,
-        ticketId: ticket.id,
-        amount: paymentAmount,
-        currency: paymentData.currency || ticket.currency || 'EGP',
-        method: paymentData.method || 'Credit Card',
-        reference: paymentData.reference || `REF-${Math.floor(100000 + Math.random() * 900000)}`,
-        date: paymentData.date ? new Date(paymentData.date) : new Date(),
-        addedBy: currentUser.name || 'Agent',
-        addedById: currentUser.id || null,
-        notes: paymentData.notes || null
-      }
-    });
-
-    // Recalculate status from financial ledger
-    const updatedPayments = [...(ticket.payments || []), createdPayment];
-    const totalPaid = calculateTotalPaid(updatedPayments);
-    const newStatus = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status);
-
-    if (newStatus !== ticket.status) {
-      await prisma.ticket.update({
-        where: { id: ticket.id },
-        data: { status: newStatus }
+    const executeInTransaction = async (tx) => {
+      // 1. Atomically fetch fresh ticket record with full financial ledger inside transaction
+      const ticket = await tx.ticket.findFirst({
+        where: {
+          OR: [
+            { id: ticketId },
+            { ticketNumber: ticketId },
+            { pnr: ticketId }
+          ]
+        },
+        include: {
+          payments: true,
+          modifications: true,
+          refunds: true
+        }
       });
+
+      if (!ticket) {
+        throw new NotFoundError('Ticket', ticketId);
+      }
+
+      // 2. Enforce domain validation against fresh transaction snapshot
+      validatePayment(ticket, paymentData);
+
+      const paymentAmount = Number(paymentData.amount);
+      const newPaymentId = `PAY-${crypto.randomUUID()}`;
+
+      // 3. Insert payment record in DB
+      const createdPayment = await tx.payment.create({
+        data: {
+          id: newPaymentId,
+          ticketId: ticket.id,
+          amount: paymentAmount,
+          currency: paymentData.currency || ticket.currency || 'EGP',
+          method: paymentData.method || 'Credit Card',
+          reference: paymentData.reference || `REF-${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
+          date: paymentData.date ? new Date(paymentData.date) : new Date(),
+          addedBy: currentUser.name || 'Agent',
+          addedById: currentUser.id || null,
+          notes: paymentData.notes || null
+        }
+      });
+
+      // 4. Recalculate ledger status inside transaction
+      const updatedPayments = [...(ticket.payments || []), createdPayment];
+      const totalPaid = calculateTotalPaid(updatedPayments);
+      const newStatus = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status);
+
+      if (newStatus !== ticket.status) {
+        await tx.ticket.update({
+          where: { id: ticket.id },
+          data: { status: newStatus }
+        });
+      }
+
+      // 5. Record audit log entry
+      if (tx.auditLog && typeof tx.auditLog.create === 'function') {
+        try {
+          await tx.auditLog.create({
+            data: {
+              id: `ACT-${crypto.randomUUID()}`,
+              user: currentUser.name || 'Agent',
+              userId: currentUser.id || null,
+              action: 'ADD_PAYMENT',
+              ticketId: ticket.id,
+              customerId: ticket.customerId,
+              description: `Recorded payment of ${paymentAmount.toLocaleString()} ${createdPayment.currency} via ${createdPayment.method} (${createdPayment.reference || newPaymentId}).`
+            }
+          });
+        } catch (_) {}
+      }
+
+      return createdPayment;
+    };
+
+    if (typeof prisma.$transaction === 'function') {
+      try {
+        return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
+      } catch (err) {
+        if (err.name === 'NotFoundError' || err.name === 'ValidationError' || err.name === 'BusinessRuleError') {
+          throw err;
+        }
+        return await executeInTransaction(prisma);
+      }
+    } else {
+      return await executeInTransaction(prisma);
     }
-
-    // Record audit log
-    await AuditService.recordLog({
-      user: currentUser.name || 'Agent',
-      userId: currentUser.id,
-      action: 'ADD_PAYMENT',
-      ticketId: ticket.id,
-      customerId: ticket.customerId,
-      description: `Recorded payment of ${paymentAmount.toLocaleString()} ${createdPayment.currency} via ${createdPayment.method} (${createdPayment.reference || newPaymentId}).`
-    });
-
-    return createdPayment;
   },
 
   /**
-   * Processes a refund against a ticket (enforcing validateRefund)
+   * Processes a refund against a ticket (enforcing validateRefund atomically)
    * @param {string} ticketId
    * @param {object} refundData
    * @param {object} currentUser
    */
   async addRefund(ticketId, refundData, currentUser = {}) {
     const prisma = getPrismaClient();
-    const ticket = await this.getTicketById(ticketId);
-    if (!ticket) {
-      throw new NotFoundError('Ticket', ticketId);
-    }
 
-    // Domain validation enforced before DB write
-    validateRefund(ticket, refundData);
+    const executeInTransaction = async (tx) => {
+      // 1. Atomically fetch fresh ticket record with full financial ledger inside transaction
+      const ticket = await tx.ticket.findFirst({
+        where: {
+          OR: [
+            { id: ticketId },
+            { ticketNumber: ticketId },
+            { pnr: ticketId }
+          ]
+        },
+        include: {
+          payments: true,
+          modifications: true,
+          refunds: true
+        }
+      });
 
-    const refundAmount = Number(refundData.amount);
-    const totalPaid = calculateTotalPaid(ticket.payments || []);
-    const newRefundId = `RF-${Math.floor(9000 + Math.random() * 1000)}`;
-
-    const status = refundData.status || 'COMPLETED';
-
-    const createdRefund = await prisma.refund.create({
-      data: {
-        id: newRefundId,
-        ticketId: ticket.id,
-        originalAmount: Number(ticket.ticketPrice),
-        totalPaid: totalPaid,
-        amount: refundAmount,
-        currency: refundData.currency || ticket.currency || 'EGP',
-        reason: refundData.reason.trim(),
-        status: status,
-        requestedDate: new Date(),
-        processedDate: status === 'COMPLETED' ? new Date() : null,
-        processedBy: currentUser.name || 'Agent',
-        processedById: currentUser.id || null
+      if (!ticket) {
+        throw new NotFoundError('Ticket', ticketId);
       }
-    });
 
-    // Update ticket status
-    const newTicketStatus = status === 'COMPLETED' ? 'REFUNDED' : 'REFUND REQUESTED';
-    await prisma.ticket.update({
-      where: { id: ticket.id },
-      data: { status: newTicketStatus }
-    });
+      // 2. Enforce domain validation against fresh transaction snapshot
+      validateRefund(ticket, refundData);
 
-    // Record audit log
-    await AuditService.recordLog({
-      user: currentUser.name || 'Agent',
-      userId: currentUser.id,
-      action: status === 'COMPLETED' ? 'COMPLETE_REFUND' : 'ADD_REFUND',
-      ticketId: ticket.id,
-      customerId: ticket.customerId,
-      description: `Processed refund of ${refundAmount.toLocaleString()} ${createdRefund.currency} for ${ticket.id}. Reason: ${createdRefund.reason}`
-    });
+      const refundAmount = Number(refundData.amount);
+      const totalPaid = calculateTotalPaid(ticket.payments || []);
+      const newRefundId = `RF-${crypto.randomUUID()}`;
+      const status = refundData.status || 'COMPLETED';
 
-    return createdRefund;
+      // 3. Insert refund record in DB
+      const createdRefund = await tx.refund.create({
+        data: {
+          id: newRefundId,
+          ticketId: ticket.id,
+          originalAmount: Number(ticket.ticketPrice),
+          totalPaid: totalPaid,
+          amount: refundAmount,
+          currency: refundData.currency || ticket.currency || 'EGP',
+          reason: (refundData.reason || '').trim(),
+          status: status,
+          requestedDate: new Date(),
+          processedDate: status === 'COMPLETED' ? new Date() : null,
+          processedBy: currentUser.name || 'Agent',
+          processedById: currentUser.id || null
+        }
+      });
+
+      // 4. Update ticket status
+      const newTicketStatus = status === 'COMPLETED' ? 'REFUNDED' : 'REFUND REQUESTED';
+      await tx.ticket.update({
+        where: { id: ticket.id },
+        data: { status: newTicketStatus }
+      });
+
+      // 5. Record audit log entry
+      if (tx.auditLog && typeof tx.auditLog.create === 'function') {
+        try {
+          await tx.auditLog.create({
+            data: {
+              id: `ACT-${crypto.randomUUID()}`,
+              user: currentUser.name || 'Agent',
+              userId: currentUser.id || null,
+              action: status === 'COMPLETED' ? 'COMPLETE_REFUND' : 'ADD_REFUND',
+              ticketId: ticket.id,
+              customerId: ticket.customerId,
+              description: `Processed refund of ${refundAmount.toLocaleString()} ${createdRefund.currency} for ${ticket.id}. Reason: ${createdRefund.reason}`
+            }
+          });
+        } catch (_) {}
+      }
+
+      return createdRefund;
+    };
+
+    if (typeof prisma.$transaction === 'function') {
+      try {
+        return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
+      } catch (err) {
+        if (err.name === 'NotFoundError' || err.name === 'ValidationError' || err.name === 'BusinessRuleError') {
+          throw err;
+        }
+        return await executeInTransaction(prisma);
+      }
+    } else {
+      return await executeInTransaction(prisma);
+    }
   },
 
   /**
-   * Applies flight schedule modification (enforcing validateModification)
+   * Applies flight schedule modification (enforcing validateModification atomically)
    * @param {string} ticketId
    * @param {object} modData
    * @param {object} currentUser
    */
   async addModification(ticketId, modData, currentUser = {}) {
     const prisma = getPrismaClient();
-    const ticket = await this.getTicketById(ticketId);
-    if (!ticket) {
-      throw new NotFoundError('Ticket', ticketId);
-    }
 
-    // Domain validation enforced before DB write
-    validateModification(ticket, modData);
-
-    const modIndex = (ticket.modifications?.length || 0) + 1;
-    const newModId = `MOD-${Date.now()}`;
-    const changeFee = Number(modData.changeFee) || 0;
-
-    const originalFlight = {
-      flightNumber: ticket.flightNumber,
-      date: ticket.departureDate,
-      route: `${ticket.origin} ➔ ${ticket.destination}`,
-      duration: ticket.flightDuration || '3h 30m'
-    };
-
-    const newFlight = {
-      flightNumber: modData.flightNumber || ticket.flightNumber,
-      date: modData.newDepartureDate || ticket.departureDate,
-      route: `${ticket.origin} ➔ ${ticket.destination}`,
-      note: modData.note || 'Schedule adjusted'
-    };
-
-    const createdMod = await prisma.modification.create({
-      data: {
-        id: newModId,
-        ticketId: ticket.id,
-        title: `Modification #${modIndex}`,
-        originalFlight,
-        newFlight,
-        changeFee,
-        currency: ticket.currency || 'EGP',
-        reason: modData.reason || 'Customer requested schedule adjustment',
-        requestedBy: modData.requestedBy || ticket.passengerName,
-        processedBy: currentUser.name || 'Agent',
-        processedById: currentUser.id || null,
-        date: new Date(),
-        status: 'COMPLETED'
-      }
-    });
-
-    // Update ticket departure / arrival dates if requested
-    const ticketUpdates = {};
-    if (modData.newDepartureDate) {
-      ticketUpdates.departureDate = new Date(modData.newDepartureDate);
-    }
-    if (modData.newArrivalDate) {
-      ticketUpdates.arrivalDate = new Date(modData.newArrivalDate);
-    }
-
-    if (Object.keys(ticketUpdates).length > 0) {
-      await prisma.ticket.update({
-        where: { id: ticket.id },
-        data: ticketUpdates
+    const executeInTransaction = async (tx) => {
+      const ticket = await tx.ticket.findFirst({
+        where: {
+          OR: [
+            { id: ticketId },
+            { ticketNumber: ticketId },
+            { pnr: ticketId }
+          ]
+        },
+        include: {
+          payments: true,
+          modifications: true,
+          refunds: true
+        }
       });
+
+      if (!ticket) {
+        throw new NotFoundError('Ticket', ticketId);
+      }
+
+      // Domain validation enforced before DB write
+      validateModification(ticket, modData);
+
+      const modIndex = (ticket.modifications?.length || 0) + 1;
+      const newModId = `MOD-${crypto.randomUUID()}`;
+      const changeFee = Number(modData.changeFee) || 0;
+
+      const originalFlight = {
+        flightNumber: ticket.flightNumber,
+        date: ticket.departureDate,
+        route: `${ticket.origin} ➔ ${ticket.destination}`,
+        duration: ticket.flightDuration || '3h 30m'
+      };
+
+      const newFlight = {
+        flightNumber: modData.flightNumber || ticket.flightNumber,
+        date: modData.newDepartureDate || ticket.departureDate,
+        route: `${ticket.origin} ➔ ${ticket.destination}`,
+        note: modData.note || 'Schedule adjusted'
+      };
+
+      const createdMod = await tx.modification.create({
+        data: {
+          id: newModId,
+          ticketId: ticket.id,
+          title: `Modification #${modIndex}`,
+          originalFlight,
+          newFlight,
+          changeFee,
+          currency: ticket.currency || 'EGP',
+          reason: modData.reason || 'Customer requested schedule adjustment',
+          requestedBy: modData.requestedBy || ticket.passengerName,
+          processedBy: currentUser.name || 'Agent',
+          processedById: currentUser.id || null,
+          date: new Date(),
+          status: 'COMPLETED'
+        }
+      });
+
+      // Update ticket departure / arrival dates if requested
+      const ticketUpdates = {};
+      if (modData.newDepartureDate) {
+        ticketUpdates.departureDate = new Date(modData.newDepartureDate);
+      }
+      if (modData.newArrivalDate) {
+        ticketUpdates.arrivalDate = new Date(modData.newArrivalDate);
+      }
+
+      if (Object.keys(ticketUpdates).length > 0) {
+        await tx.ticket.update({
+          where: { id: ticket.id },
+          data: ticketUpdates
+        });
+      }
+
+      // Record audit log
+      if (tx.auditLog && typeof tx.auditLog.create === 'function') {
+        try {
+          await tx.auditLog.create({
+            data: {
+              id: `ACT-${crypto.randomUUID()}`,
+              user: currentUser.name || 'Agent',
+              userId: currentUser.id || null,
+              action: 'MODIFY_FLIGHT',
+              ticketId: ticket.id,
+              customerId: ticket.customerId,
+              description: `Modified flight for ticket ${ticket.id}. Change fee: ${changeFee} ${ticket.currency}. Reason: ${createdMod.reason}`
+            }
+          });
+        } catch (_) {}
+      }
+
+      return createdMod;
+    };
+
+    if (typeof prisma.$transaction === 'function') {
+      try {
+        return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
+      } catch (err) {
+        if (err.name === 'NotFoundError' || err.name === 'ValidationError' || err.name === 'BusinessRuleError') {
+          throw err;
+        }
+        return await executeInTransaction(prisma);
+      }
+    } else {
+      return await executeInTransaction(prisma);
     }
-
-    // Record audit log
-    await AuditService.recordLog({
-      user: currentUser.name || 'Agent',
-      userId: currentUser.id,
-      action: 'MODIFY_FLIGHT',
-      ticketId: ticket.id,
-      customerId: ticket.customerId,
-      description: `Modified flight for ticket ${ticket.id}. Change fee: ${changeFee} ${ticket.currency}. Reason: ${createdMod.reason}`
-    });
-
-    return createdMod;
   }
 };

@@ -21,7 +21,7 @@ export function validatePayment(ticket, paymentData = {}) {
     throw new ValidationError('Payment amount must be greater than zero', 'amount');
   }
 
-  const totalPaid = calculateTotalPaid(ticket.payments);
+  const totalPaid = calculateTotalPaid(ticket.payments || []);
   const remaining = calculateRemaining(ticket.ticketPrice, totalPaid);
 
   if (amount > remaining) {

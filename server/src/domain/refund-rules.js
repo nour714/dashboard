@@ -21,8 +21,8 @@ export function validateRefund(ticket, refundData = {}) {
     throw new ValidationError('Refund amount must be greater than zero', 'amount');
   }
 
-  const totalPaid = calculateTotalPaid(ticket.payments);
-  const totalRefunded = calculateTotalRefunded(ticket.refunds);
+  const totalPaid = calculateTotalPaid(ticket.payments || []);
+  const totalRefunded = calculateTotalRefunded(ticket.refunds || []);
   const availableRefund = calculateAvailableRefund(totalPaid, totalRefunded);
 
   if (amount > availableRefund) {
