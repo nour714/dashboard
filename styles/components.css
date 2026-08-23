@@ -815,6 +815,13 @@ textarea.form-control {
   color: var(--color-text);
 }
 
+.breadcrumb-separator {
+  display: inline-block;
+  color: var(--color-text-muted);
+  user-select: none;
+  font-size: 13px;
+}
+
 .page-title {
   font-size: var(--font-size-headline-lg);
   font-weight: var(--font-weight-bold);

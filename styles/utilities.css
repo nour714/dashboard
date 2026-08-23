@@ -201,7 +201,7 @@
 
 .view-search-box svg {
   position: absolute;
-  left: 10px;
+  inset-inline-start: 10px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--color-text-muted);
@@ -210,7 +210,7 @@
 }
 
 .view-search-box input {
-  padding-left: 32px;
+  padding-inline-start: 32px;
 }
 
 /* Login Page specific styling */

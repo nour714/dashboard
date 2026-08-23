@@ -129,9 +129,13 @@ svg {
 
 /* Directional Icon Flipping Rules */
 [dir="rtl"] .icon-directional,
-[dir="rtl"] .icon-flip-rtl,
+[dir="rtl"] .icon-flip-rtl {
+  transform: scaleX(-1);
+}
+
 [dir="rtl"] .breadcrumb-separator {
   transform: scaleX(-1);
+  display: inline-block;
 }
 
 /* Official Logo & Brand Visuals: NEVER MIRROR */
