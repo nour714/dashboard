@@ -23,20 +23,29 @@ const envSchema = z.object({
   DEFAULT_ADMIN_PASSWORD: z.string().default('password123')
 });
 
-// Prioritize remote Supabase integration URLs over local defaults
-const candidateUrls = [
-  process.env.DATABASE_URL,
-  process.env.POSTGRES_PRISMA_URL,
-  process.env.POSTGRES_URL,
-  process.env.POSTGRES_URL_NON_POOLING,
-  process.env.SUPABASE_DATABASE_URL
-].filter(Boolean);
+// Construct DATABASE_URL from individual Vercel/Supabase integration variables if available
+if (process.env.POSTGRES_HOST && process.env.POSTGRES_USER && process.env.POSTGRES_PASSWORD) {
+  const host = process.env.POSTGRES_HOST;
+  const user = process.env.POSTGRES_USER;
+  const password = encodeURIComponent(process.env.POSTGRES_PASSWORD);
+  const db = process.env.POSTGRES_DATABASE || 'postgres';
+  process.env.DATABASE_URL = `postgresql://${user}:${password}@${host}:5432/${db}?sslmode=require`;
+} else {
+  // Prioritize remote Supabase integration URLs over local defaults
+  const candidateUrls = [
+    process.env.DATABASE_URL,
+    process.env.POSTGRES_PRISMA_URL,
+    process.env.POSTGRES_URL,
+    process.env.POSTGRES_URL_NON_POOLING,
+    process.env.SUPABASE_DATABASE_URL
+  ].filter(Boolean);
 
-const remoteDbUrl = candidateUrls.find(u => !u.includes('localhost') && !u.includes('127.0.0.1'));
-if (remoteDbUrl) {
-  process.env.DATABASE_URL = remoteDbUrl;
-} else if (candidateUrls.length > 0) {
-  process.env.DATABASE_URL = candidateUrls[0];
+  const remoteDbUrl = candidateUrls.find(u => !u.includes('localhost') && !u.includes('127.0.0.1'));
+  if (remoteDbUrl) {
+    process.env.DATABASE_URL = remoteDbUrl;
+  } else if (candidateUrls.length > 0) {
+    process.env.DATABASE_URL = candidateUrls[0];
+  }
 }
 
 const parsedEnv = envSchema.safeParse(process.env);
