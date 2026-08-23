@@ -13,6 +13,7 @@ router.use(authenticate);
 router.get('/summary', ReportController.getSummary);
 router.get('/revenue', ReportController.getRevenue);
 router.get('/airlines', ReportController.getAirlines);
+router.get('/customer-payments', ReportController.getCustomerPayments);
 router.get('/full', ReportController.getFullReport);
 
 export default router;

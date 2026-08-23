@@ -440,7 +440,13 @@ export const ar = {
     salesByAirline: 'حجم المبيعات حسب شركة الطيران',
     agentPerformance: 'أداء مبيعات الوكلاء',
     adminOnlyEmployees: 'بيانات أداء الموظفين تتطلب صلاحيات المسؤول (Administrator).',
-    monthlyTrends: 'تطور الإيرادات الشهرية'
+    monthlyTrends: 'تطور الإيرادات الشهرية',
+    customerPayments: {
+      title: 'مدفوعات العملاء',
+      customerTicket: 'العميل / رقم التذكرة',
+      oneWay: 'ذهاب فقط',
+      roundTrip: 'ذهاب وعودة'
+    }
   },
 
   // Employees Page

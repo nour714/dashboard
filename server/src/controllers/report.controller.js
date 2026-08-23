@@ -51,5 +51,17 @@ export const ReportController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  async getCustomerPayments(req, res, next) {
+    try {
+      const rows = await ReportService.getCustomerPayments();
+      return res.status(200).json({
+        success: true,
+        data: rows
+      });
+    } catch (err) {
+      next(err);
+    }
   }
 };

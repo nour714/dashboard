@@ -6,6 +6,7 @@
  */
 
 import { store } from '../state/store.js';
+import { apiClient } from './api-client.js';
 import {
   calculateTotalPaid,
   calculateRemaining,
@@ -162,5 +163,41 @@ export const ReportService = {
   getReportData() {
     const { tickets, employees } = store.getState();
     return buildReportFromTickets(tickets, employees);
+  },
+
+  /**
+   * Per-ticket customer payment breakdown derived from store state
+   */
+  getCustomerPayments() {
+    const { tickets = [], customers = [] } = store.getState();
+    const customerMap = new Map(customers.map(c => [c.id, c.name]));
+
+    const rows = tickets.map(t => {
+      const price = Number(t.ticketPrice) || 0;
+      const paid = calculateTotalPaid(t.payments || []);
+      const remaining = calculateRemaining(price, paid);
+      const customerName = (t.customerId ? customerMap.get(t.customerId) : null) || t.passengerName || 'Unknown';
+
+      return {
+        ticketId: t.id,
+        ticketNumber: t.ticketNumber || t.id,
+        customerId: t.customerId,
+        customerName,
+        ticketPrice: price,
+        totalPaid: paid,
+        totalRemaining: remaining,
+        tripType: t.tripType || 'One Way'
+      };
+    });
+
+    rows.sort((a, b) => a.customerName.localeCompare(b.customerName));
+    return rows;
+  },
+
+  /**
+   * Fetches customer payments breakdown directly from backend API endpoint
+   */
+  async fetchCustomerPayments() {
+    return await apiClient.get('/reports/customer-payments');
   }
 };

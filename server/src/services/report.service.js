@@ -152,5 +152,43 @@ export const ReportService = {
       employeePerformance,
       weeklyTrends: mockReportFallback.weeklyTrends
     };
+  },
+
+  /**
+   * Per-ticket customer payment breakdown: who paid how much, how much
+   * remains, and their trip type.
+   */
+  async getCustomerPayments() {
+    const prisma = getPrismaClient();
+    const tickets = await prisma.ticket.findMany({
+      include: {
+        payments: true,
+        customer: true
+      },
+      orderBy: {
+        customer: { name: 'asc' }
+      }
+    });
+
+    const rows = tickets.map(t => {
+      const price = Number(t.ticketPrice) || 0;
+      const paid = calculateTotalPaid(t.payments || []);
+      const remaining = calculateRemaining(price, paid);
+
+      return {
+        ticketId: t.id,
+        ticketNumber: t.ticketNumber || t.id,
+        customerId: t.customerId,
+        customerName: t.customer?.name || t.passengerName || 'Unknown',
+        ticketPrice: price,
+        totalPaid: paid,
+        totalRemaining: remaining,
+        tripType: t.tripType || 'One Way'
+      };
+    });
+
+    // Secondary safe sort by customerName in case customer is null/fallback
+    rows.sort((a, b) => a.customerName.localeCompare(b.customerName));
+    return rows;
   }
 };

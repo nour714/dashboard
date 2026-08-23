@@ -440,7 +440,13 @@ export const en = {
     salesByAirline: 'Sales Volume by Airline',
     agentPerformance: 'Agent Sales Performance',
     adminOnlyEmployees: 'Employee performance data requires administrator access.',
-    monthlyTrends: 'Monthly Revenue Progression'
+    monthlyTrends: 'Monthly Revenue Progression',
+    customerPayments: {
+      title: 'Customer Payments',
+      customerTicket: 'Customer / Ticket №',
+      oneWay: 'One Way',
+      roundTrip: 'Round Trip'
+    }
   },
 
   // Employees Page

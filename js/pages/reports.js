@@ -19,6 +19,7 @@ export const ReportsPage = {
     const kpis = ReportService.getKPIs();
     const employees = ReportService.getEmployeePerformance();
     const airlines = ReportService.getAirlinePerformance();
+    const customerPayments = ReportService.getCustomerPayments();
 
     const headerHtml = renderPageHeader({
       title: t('reports.title'),
@@ -64,6 +65,22 @@ export const ReportsPage = {
         <td class="tabular-nums font-bold">${formatCurrency(a.totalRevenue, 'EGP')}</td>
         <td>
           <span class="badge badge-neutral">${escapeHtml(a.refundRate)}</span>
+        </td>
+      </tr>
+    `).join('');
+
+    const customerPaymentRows = customerPayments.map(row => `
+      <tr>
+        <td>
+          <strong class="cell-main">${escapeHtml(row.customerName)}</strong>
+          <div class="cell-sub ltr-data">${escapeHtml(row.ticketNumber)}</div>
+        </td>
+        <td class="tabular-nums font-bold text-success">${formatCurrency(row.totalPaid, 'EGP')}</td>
+        <td class="tabular-nums font-bold ${row.totalRemaining > 0 ? 'text-danger' : 'text-success'}">${formatCurrency(row.totalRemaining, 'EGP')}</td>
+        <td>
+          <span class="badge ${row.tripType === 'Round Trip' ? 'badge-accent' : 'badge-neutral'}">
+            ${escapeHtml(row.tripType === 'Round Trip' ? t('reports.customerPayments.roundTrip') : t('reports.customerPayments.oneWay'))}
+          </span>
         </td>
       </tr>
     `).join('');
@@ -149,6 +166,28 @@ export const ReportsPage = {
               </table>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Customer Payments Section -->
+      <div class="card mt-lg">
+        <div class="card-header">
+          <h3 class="card-title">${escapeHtml(t('reports.customerPayments.title'))}</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>${escapeHtml(t('reports.customerPayments.customerTicket'))}</th>
+                <th>${escapeHtml(t('common.paid'))}</th>
+                <th>${escapeHtml(t('common.remaining'))}</th>
+                <th>${escapeHtml(t('ticketCreate.flightInfo.tripType'))}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${customerPaymentRows || `<tr><td colspan="4" class="text-center text-muted p-md">${escapeHtml(t('common.noData'))}</td></tr>`}
+            </tbody>
+          </table>
         </div>
       </div>
     `;
