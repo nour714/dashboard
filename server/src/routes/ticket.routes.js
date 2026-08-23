@@ -4,7 +4,7 @@
 
 import { Router } from 'express';
 import { TicketController } from '../controllers/ticket.controller.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import {
   createTicketSchema,
@@ -28,7 +28,7 @@ router.patch('/:id', validate({ body: updateTicketSchema }), TicketController.up
 
 // Financial & Operational Ledger Sub-resources (Enforce Domain Validation Layer)
 router.post('/:id/payments', validate({ body: addPaymentSchema }), TicketController.addPayment);
-router.post('/:id/refunds', validate({ body: addRefundSchema }), TicketController.addRefund);
+router.post('/:id/refunds', requireRole('ADMIN'), validate({ body: addRefundSchema }), TicketController.addRefund);
 router.post('/:id/modifications', validate({ body: addModificationSchema }), TicketController.addModification);
 
 export default router;

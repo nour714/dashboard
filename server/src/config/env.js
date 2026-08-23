@@ -26,16 +26,16 @@ const envSchema = z.object({
 function resolveDatabaseUrl() {
   let url = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING;
 
-  // If URL contains [YOUR-PASSWORD] placeholder, replace it
+  // If URL contains [YOUR-PASSWORD] placeholder, replace it from env
   if (url && url.includes('[YOUR-PASSWORD]') && process.env.POSTGRES_PASSWORD) {
     url = url.replace('[YOUR-PASSWORD]', encodeURIComponent(process.env.POSTGRES_PASSWORD));
-  } else if (url && url.includes('[YOUR-PASSWORD]')) {
-    url = url.replace('[YOUR-PASSWORD]', '0JDRgoBu4nl2eHxQ');
   }
 
-  // If in Vercel or Cloud and still pointing to localhost or missing, use project Supabase pooler
-  if ((!url || url.includes('localhost') || url.includes('127.0.0.1')) && (process.env.VERCEL || process.env.RENDER || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
-    url = 'postgresql://postgres.ismizpdvycxvyiwwzvbg:0JDRgoBu4nl2eHxQ@aws-0-eu-west-1.pooler.supabase.co:6543/postgres?pgbouncer=true';
+  // In cloud environments, a real DATABASE_URL must be configured
+  if ((!url || url.includes('localhost') || url.includes('127.0.0.1') || url.includes('[YOUR-PASSWORD]')) && (process.env.VERCEL || process.env.RENDER || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
+    throw new Error(
+      'DATABASE_URL is not configured. Set it in your deployment environment variables.'
+    );
   }
 
   return url || 'postgresql://postgres:postgres@localhost:5432/africatravel?schema=public';

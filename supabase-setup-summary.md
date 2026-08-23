@@ -3,7 +3,7 @@
 ## اللي اتعمل فعليًا (مش برومبت — ده اتنفذ بالفعل على حسابك)
 
 ✅ اتعمل مشروع Supabase جديد اسمه **`africatravel`** (منفصل عن مشروعك القديم `nour714's Project`)
-- **Project ref:** `ismizpdvycxvyiwwzvbg`
+- **Project ref:** `<YOUR_PROJECT_REF>`
 - **Region:** `eu-west-1`
 - **التكلفة:** $0/شهريًا (Free tier)
 - **الحالة:** `ACTIVE_HEALTHY`
@@ -33,14 +33,14 @@
 
 Supabase لأسباب أمنية **مبيرجعش الباسورد عن طريق الـ API خالص** — لازم تجيبه إنت من الداشبورد:
 
-1. افتح: https://supabase.com/dashboard/project/ismizpdvycxvyiwwzvbg/settings/database
+1. افتح: https://supabase.com/dashboard/project/<YOUR_PROJECT_REF>/settings/database
 2. تحت "Connection string" اختار "URI" و "Direct connection"
 3. انسخ الباسورد (أو اعمل reset لو نسيته)
 
 ### 2. حدّث ملف `.env` عندك (مش `.env.example`)
 
 ```
-DATABASE_URL="postgresql://postgres:[PASTE_PASSWORD_HERE]@db.ismizpdvycxvyiwwzvbg.supabase.co:5432/postgres?schema=public"
+DATABASE_URL="postgresql://postgres:[PASTE_PASSWORD_HERE]@db.<YOUR_PROJECT_REF>.supabase.co:5432/postgres?schema=public"
 ```
 
 (الـ `.env.example` في الريبو اتحدّث بالفعل بنفس الـ host، بس فيه `[PASSWORD]` placeholder — انسخه لـ `.env` واستبدل الجزء ده بس)

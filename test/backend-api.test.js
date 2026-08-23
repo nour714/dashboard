@@ -125,6 +125,18 @@ async function runApiTests() {
     assert(healthRes.headers['x-content-type-options'] === 'nosniff', 'X-Content-Type-Options: nosniff header present');
     assert(healthRes.headers['x-frame-options'] === 'SAMEORIGIN' || healthRes.headers['x-frame-options'] === 'DENY', 'X-Frame-Options header present');
 
+    // 7. RBAC: AGENT cannot process refunds (ADMIN-only)
+    console.log('\n--- 7. Refund RBAC Enforcement ---');
+    const agentToken = AuthService.generateAccessToken({ id: 'EMP-103', name: 'Nour Wael', email: 'nour.w@africatravel.com', role: 'AGENT', title: 'Ticketing Officer' });
+    const agentRefundRes = await makeRequest(server, {
+      method: 'POST',
+      path: '/api/tickets/TK-10254/refunds',
+      headers: { 'Authorization': `Bearer ${agentToken}` },
+      body: { amount: 1000, reason: 'Test refund', currency: 'EGP' }
+    });
+    assert(agentRefundRes.statusCode === 403, 'AGENT calling POST /api/tickets/:id/refunds receives 403 Forbidden');
+    assert(agentRefundRes.json?.error?.code === 'FORBIDDEN', 'Refund rejection returns FORBIDDEN error code');
+
     console.log('\n========================================================');
     console.log(`Backend API Integration Tests: ${passed} passed, ${failed} failed`);
     console.log('========================================================\n');
