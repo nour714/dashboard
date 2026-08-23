@@ -23,30 +23,25 @@ const envSchema = z.object({
   DEFAULT_ADMIN_PASSWORD: z.string().default('password123')
 });
 
-// Construct DATABASE_URL from individual Vercel/Supabase integration variables if available
-if (process.env.POSTGRES_HOST && process.env.POSTGRES_USER && process.env.POSTGRES_PASSWORD) {
-  const host = process.env.POSTGRES_HOST;
-  const user = process.env.POSTGRES_USER;
-  const password = encodeURIComponent(process.env.POSTGRES_PASSWORD);
-  const db = process.env.POSTGRES_DATABASE || 'postgres';
-  process.env.DATABASE_URL = `postgresql://${user}:${password}@${host}:5432/${db}?sslmode=require`;
-} else {
-  // Prioritize remote Supabase integration URLs over local defaults
-  const candidateUrls = [
-    process.env.DATABASE_URL,
-    process.env.POSTGRES_PRISMA_URL,
-    process.env.POSTGRES_URL,
-    process.env.POSTGRES_URL_NON_POOLING,
-    process.env.SUPABASE_DATABASE_URL
-  ].filter(Boolean);
+function resolveDatabaseUrl() {
+  let url = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING;
 
-  const remoteDbUrl = candidateUrls.find(u => !u.includes('localhost') && !u.includes('127.0.0.1'));
-  if (remoteDbUrl) {
-    process.env.DATABASE_URL = remoteDbUrl;
-  } else if (candidateUrls.length > 0) {
-    process.env.DATABASE_URL = candidateUrls[0];
+  // If URL contains [YOUR-PASSWORD] placeholder, replace it
+  if (url && url.includes('[YOUR-PASSWORD]') && process.env.POSTGRES_PASSWORD) {
+    url = url.replace('[YOUR-PASSWORD]', encodeURIComponent(process.env.POSTGRES_PASSWORD));
+  } else if (url && url.includes('[YOUR-PASSWORD]')) {
+    url = url.replace('[YOUR-PASSWORD]', '0JDRgoBu4nl2eHxQ');
   }
+
+  // If in Vercel or Cloud and still pointing to localhost or missing, use project Supabase pooler
+  if ((!url || url.includes('localhost') || url.includes('127.0.0.1')) && (process.env.VERCEL || process.env.RENDER || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
+    url = 'postgresql://postgres.ismizpdvycxvyiwwzvbg:0JDRgoBu4nl2eHxQ@aws-0-eu-west-1.pooler.supabase.co:6543/postgres?pgbouncer=true';
+  }
+
+  return url || 'postgresql://postgres:postgres@localhost:5432/africatravel?schema=public';
 }
+
+process.env.DATABASE_URL = resolveDatabaseUrl();
 
 const parsedEnv = envSchema.safeParse(process.env);
 let envData;
