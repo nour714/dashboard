@@ -49,7 +49,17 @@ let envData;
 if (!parsedEnv.success) {
   console.error('❌ Invalid environment variables configuration:', parsedEnv.error.format());
   if (process.env.VERCEL || process.env.RENDER || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    envData = envSchema.parse({});
+    // Only fall back to defaults for the SPECIFIC keys that failed validation.
+    // Falling back to envSchema.parse({}) here would silently discard every
+    // other correctly-configured variable (e.g. a valid DATABASE_URL) just
+    // because one unrelated key (e.g. NODE_ENV) was malformed.
+    const invalidKeys = new Set(Object.keys(parsedEnv.error.flatten().fieldErrors));
+    const sanitizedEnv = { ...process.env };
+    for (const key of invalidKeys) {
+      delete sanitizedEnv[key];
+      console.warn(`⚠️ Ignoring invalid value for ${key}; falling back to its default.`);
+    }
+    envData = envSchema.parse(sanitizedEnv);
   } else {
     process.exit(1);
   }

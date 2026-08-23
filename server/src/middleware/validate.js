@@ -32,7 +32,18 @@ export function validate(schemas = {}) {
             issues: parsedQuery.error.issues
           });
         }
-        req.query = parsedQuery.data;
+        // Express 5 defines `req.query` as a getter-only property on the
+        // prototype (no setter), so a plain `req.query = ...` assignment
+        // throws "Cannot set property query of #<IncomingMessage> which
+        // has only a getter". Object.defineProperty creates an own,
+        // writable property on this specific request instance instead,
+        // which shadows the prototype getter without touching it.
+        Object.defineProperty(req, 'query', {
+          value: parsedQuery.data,
+          writable: true,
+          enumerable: true,
+          configurable: true
+        });
       }
 
       if (schemas.params) {
