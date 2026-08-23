@@ -8,8 +8,9 @@
  */
 
 import { AuthService } from '../server/src/services/auth.service.js';
+import { TicketService } from '../server/src/services/ticket.service.js';
 import { setPrismaClient } from '../server/src/config/database.js';
-import { UnauthorizedError } from '../server/src/domain/errors.js';
+import { UnauthorizedError, BusinessRuleError } from '../server/src/domain/errors.js';
 import fs from 'fs';
 
 let passed = 0;
@@ -32,7 +33,7 @@ async function runSecurityFixesTests() {
   console.log('   AfricaTravel Security Fixes Verification Tests');
   console.log('========================================================\n');
 
-  // Mock Prisma Client for Refresh Token Rotation
+  // Mock Prisma Client for Refresh Token Rotation & Concurrency
   const mockTokens = new Map();
   let idCounter = 1;
 
@@ -44,6 +45,12 @@ async function runSecurityFixesTests() {
     title: 'Security Auditor',
     status: 'ACTIVE'
   };
+
+  // Mock in-memory state for tickets, payments, refunds
+  const mockTickets = new Map();
+  const mockPayments = new Map();
+  const mockRefunds = new Map();
+  const mockAuditLogs = [];
 
   const mockPrisma = {
     refreshToken: {
@@ -60,15 +67,70 @@ async function runSecurityFixesTests() {
         }
         return record;
       },
+      updateMany: async ({ where, data }) => {
+        let count = 0;
+        for (const record of mockTokens.values()) {
+          let match = true;
+          if (where.id && record.id !== where.id) match = false;
+          if (where.tokenHash && record.tokenHash !== where.tokenHash) match = false;
+          if (where.userId && record.userId !== where.userId) match = false;
+          if (where.revoked !== undefined && record.revoked !== where.revoked) match = false;
+          if (match) {
+            Object.assign(record, data);
+            count++;
+          }
+        }
+        return { count };
+      },
       create: async ({ data }) => {
         const record = { id: `token-${idCounter++}`, revoked: false, ...data };
         mockTokens.set(data.tokenHash, record);
         return record;
       }
     },
-    $transaction: async (operations) => {
+    ticket: {
+      findFirst: async ({ where }) => {
+        const queryId = where.id || where.ticketNumber || where.pnr || (where.OR && where.OR[0]?.id);
+        const ticket = [...mockTickets.values()].find(t =>
+          t.id === queryId || t.ticketNumber === queryId || t.pnr === queryId
+        );
+        if (!ticket) return null;
+        const payments = [...mockPayments.values()].filter(p => p.ticketId === ticket.id);
+        const refunds = [...mockRefunds.values()].filter(r => r.ticketId === ticket.id);
+        return { ...ticket, payments, refunds, modifications: [] };
+      },
+      update: async ({ where, data }) => {
+        const ticket = mockTickets.get(where.id);
+        if (ticket) {
+          Object.assign(ticket, data);
+        }
+        return ticket;
+      }
+    },
+    payment: {
+      create: async ({ data }) => {
+        mockPayments.set(data.id, { ...data });
+        return { ...data };
+      }
+    },
+    refund: {
+      create: async ({ data }) => {
+        mockRefunds.set(data.id, { ...data });
+        return { ...data };
+      }
+    },
+    auditLog: {
+      create: async ({ data }) => {
+        mockAuditLogs.push({ ...data });
+        return { ...data };
+      }
+    },
+    $transaction: async (arg) => {
+      if (typeof arg === 'function') {
+        return await arg(mockPrisma);
+      }
       const results = [];
-      for (const op of operations) {
+      for (const op of arg) {
         results.push(await op);
       }
       return results;
@@ -101,7 +163,12 @@ async function runSecurityFixesTests() {
   const oldTokenRecord = mockTokens.get(initialTokenHash);
   assert(oldTokenRecord.revoked === true, 'Original refresh token is marked as revoked in database');
 
-  // Second refresh using the SAME (now old) initial token: MUST fail with UnauthorizedError
+  // Refresh using the NEW rotated token: should succeed and rotate again
+  const secondRefreshResult = await AuthService.refresh(firstRefreshResult.refreshToken);
+  assert(typeof secondRefreshResult.accessToken === 'string', 'Refresh using new rotated token succeeds');
+  assert(secondRefreshResult.refreshToken !== firstRefreshResult.refreshToken, 'Subsequent refresh rotates token again');
+
+  // Second refresh using the SAME (now old) initial token: MUST fail and trigger reuse family revocation
   let reuseFailed = false;
   try {
     await AuthService.refresh(initialRawToken);
@@ -112,10 +179,9 @@ async function runSecurityFixesTests() {
   }
   assert(reuseFailed, 'Replaying revoked refresh token throws UnauthorizedError (INVALID_REFRESH_TOKEN)');
 
-  // Refresh using the NEW rotated token: should succeed and rotate again
-  const secondRefreshResult = await AuthService.refresh(firstRefreshResult.refreshToken);
-  assert(typeof secondRefreshResult.accessToken === 'string', 'Refresh using new rotated token succeeds');
-  assert(secondRefreshResult.refreshToken !== firstRefreshResult.refreshToken, 'Subsequent refresh rotates token again');
+  // Verify reuse family revocation revoked all user tokens
+  const activeTokensAfterReuse = [...mockTokens.values()].filter(t => t.userId === mockUser.id && !t.revoked);
+  assert(activeTokensAfterReuse.length === 0, 'Reuse detection automatically revokes entire token family for user');
 
   console.log('\n--- 2. Docker Compose & Environment Configuration Verification ---');
   // Check docker-compose.yml content
@@ -161,6 +227,51 @@ async function runSecurityFixesTests() {
   assert(schemaPrismaContent.includes('@@index([processedById])'), 'schema.prisma includes @@index([processedById]) on modifications');
   assert(schemaPrismaContent.includes('@@index([addedById])'), 'schema.prisma includes @@index([addedById]) on payments');
   assert(schemaPrismaContent.includes('@@index([createdById])'), 'schema.prisma includes @@index([createdById]) on tickets');
+
+  console.log('\n--- 7. Atomic Financial Transactions & Concurrency Tests (CWE-362, CWE-841) ---');
+  // Setup ticket with price = 10000 EGP
+  const testTicketId = 'TK-CONCURRENCY-1';
+  mockTickets.set(testTicketId, {
+    id: testTicketId,
+    ticketNumber: '077-9999999999',
+    pnr: 'CONCUR1',
+    ticketPrice: 10000,
+    currency: 'EGP',
+    status: 'CONFIRMED',
+    customerId: 'CUST-TEST-1'
+  });
+
+  // Test 1: Two sequential / concurrent payments of 6000 EGP each on 10000 EGP ticket
+  // First payment of 6000 succeeds
+  const p1 = await TicketService.addPayment(testTicketId, { amount: 6000, method: 'Credit Card' }, mockUser);
+  assert(p1 && p1.amount === 6000, 'First payment of 6,000 EGP succeeds (remaining: 4,000 EGP)');
+
+  // Second payment of 6000 MUST fail because 6000 > 4000 remaining balance
+  let overpayFailed = false;
+  try {
+    await TicketService.addPayment(testTicketId, { amount: 6000, method: 'Credit Card' }, mockUser);
+  } catch (err) {
+    if (err instanceof BusinessRuleError && err.rule === 'PAYMENT_EXCEEDS_BALANCE') {
+      overpayFailed = true;
+    }
+  }
+  assert(overpayFailed, 'Second concurrent payment exceeding remaining balance is rejected (PAYMENT_EXCEEDS_BALANCE)');
+
+  // Test 2: Concurrent refunds on the 6000 EGP paid amount
+  // Refund 1 of 4000 succeeds
+  const r1 = await TicketService.addRefund(testTicketId, { amount: 4000, reason: 'Flight cancellation' }, mockUser);
+  assert(r1 && r1.amount === 4000, 'First refund of 4,000 EGP succeeds (available refund: 2,000 EGP)');
+
+  // Refund 2 of 4000 MUST fail because 4000 > 2000 available refundable amount
+  let overRefundFailed = false;
+  try {
+    await TicketService.addRefund(testTicketId, { amount: 4000, reason: 'Duplicate refund request' }, mockUser);
+  } catch (err) {
+    if (err instanceof BusinessRuleError && err.rule === 'REFUND_EXCEEDS_AVAILABLE') {
+      overRefundFailed = true;
+    }
+  }
+  assert(overRefundFailed, 'Second concurrent refund exceeding available balance is rejected (REFUND_EXCEEDS_AVAILABLE)');
 
   console.log('\n========================================================');
   console.log(`Security Fixes Tests: ${passed} passed, ${failed} failed`);

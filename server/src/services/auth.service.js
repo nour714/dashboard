@@ -152,7 +152,10 @@ export const AuthService = {
 
   /**
    * Refreshes an expired access token using a valid refresh token.
-   * Implements token rotation: the used refresh token is revoked and a new one is issued.
+   * Implements atomic token rotation with reuse family detection:
+   * 1. Detects reuse of previously revoked tokens and revokes the whole family/session.
+   * 2. Uses atomic updateMany where revoked = false to claim token (guaranteeing rowCount === 1).
+   * 3. Creates the replacement token within the same transaction.
    * @param {string} rawRefreshToken
    * @returns {Promise<{accessToken: string, refreshToken: string}>}
    */
@@ -169,32 +172,67 @@ export const AuthService = {
       include: { user: true }
     });
 
-    if (!tokenRecord || tokenRecord.revoked || tokenRecord.expiresAt < new Date()) {
+    if (!tokenRecord) {
       throw new UnauthorizedError('Refresh token is invalid or expired', 'INVALID_REFRESH_TOKEN');
+    }
+
+    // Reuse Family Detection: If an already-revoked token is presented, someone is replaying/stealing tokens.
+    // Invalidate all active tokens for this user immediately.
+    if (tokenRecord.revoked) {
+      await prisma.refreshToken.updateMany({
+        where: { userId: tokenRecord.userId },
+        data: { revoked: true }
+      });
+      throw new UnauthorizedError('Refresh token reuse detected. All sessions revoked for security.', 'INVALID_REFRESH_TOKEN');
+    }
+
+    if (tokenRecord.expiresAt < new Date()) {
+      throw new UnauthorizedError('Refresh token is expired', 'INVALID_REFRESH_TOKEN');
     }
 
     if (tokenRecord.user.status !== 'ACTIVE') {
       throw new BusinessRuleError('Account is inactive', 'ACCOUNT_INACTIVE');
     }
 
-    // Rotate: revoke the used token and issue a brand new one
+    // Atomic Claim: Ensure only 1 concurrent request can rotate this specific token
     const newRawRefreshToken = this.generateRefreshTokenString();
     const newTokenHash = this.hashToken(newRawRefreshToken);
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    await prisma.$transaction([
-      prisma.refreshToken.update({
-        where: { id: tokenRecord.id },
+    const executeRotation = async (tx) => {
+      const claimResult = await tx.refreshToken.updateMany({
+        where: {
+          id: tokenRecord.id,
+          revoked: false
+        },
         data: { revoked: true }
-      }),
-      prisma.refreshToken.create({
+      });
+
+      // Verify that exactly 1 row was updated (atomic claim succeeded)
+      if (!claimResult || claimResult.count !== 1) {
+        // Race condition / reuse conflict detected: revoke all tokens for this user
+        await tx.refreshToken.updateMany({
+          where: { userId: tokenRecord.userId },
+          data: { revoked: true }
+        });
+        throw new UnauthorizedError('Refresh token already claimed or reused concurrently', 'INVALID_REFRESH_TOKEN');
+      }
+
+      // Create new replacement refresh token inside the same transaction
+      await tx.refreshToken.create({
         data: {
           tokenHash: newTokenHash,
           userId: tokenRecord.user.id,
           expiresAt
         }
-      })
-    ]);
+      });
+    };
+
+    if (typeof prisma.$transaction === 'function') {
+      await prisma.$transaction(executeRotation);
+    } else {
+      await executeRotation(prisma);
+    }
 
     const newAccessToken = this.generateAccessToken(tokenRecord.user);
 
