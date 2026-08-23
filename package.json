@@ -18,9 +18,10 @@
     "test:auth": "node test/backend-auth.test.js",
     "test:api": "node test/backend-api.test.js",
     "test:tickets": "node test/ticket-customer-link.test.js",
+    "test:passport": "node test/passport-document.test.js",
     "test:rbac": "node test/rbac-ui.test.js",
     "test:security": "node test/security-fixes.test.js",
-    "test": "node test/i18n-bilingual.test.js && node test/backend-domain.test.js && node test/backend-auth.test.js && node test/ticket-customer-link.test.js && node test/rbac-ui.test.js && node test/security-fixes.test.js && node test/backend-api.test.js"
+    "test": "node test/i18n-bilingual.test.js && node test/backend-domain.test.js && node test/backend-auth.test.js && node test/ticket-customer-link.test.js && node test/passport-document.test.js && node test/rbac-ui.test.js && node test/security-fixes.test.js && node test/backend-api.test.js"
   },
   "keywords": [
     "travel",
@@ -47,8 +48,10 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
+    "file-type": "^22.0.2",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
+    "multer": "^2.2.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

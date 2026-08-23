@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS "customers" (
     "email" TEXT,
     "phone" TEXT,
     "passport" TEXT,
+    "passportDocPath" TEXT,
+    "passportDocUploadedAt" TIMESTAMP(3),
     "nationality" TEXT NOT NULL DEFAULT 'Egyptian (EGY)',
     "isVip" BOOLEAN NOT NULL DEFAULT false,
     "memberSince" TEXT NOT NULL DEFAULT '2024',

@@ -44,20 +44,22 @@ model User {
 }
 
 model Customer {
-  id          String         @id
-  name        String
-  email       String?
-  phone       String?
-  passport    String?
-  nationality String         @default("Egyptian (EGY)")
-  isVip       Boolean        @default(false)
-  memberSince String         @default("2024")
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id                    String         @id
+  name                  String
+  email                 String?
+  phone                 String?
+  passport              String?
+  passportDocPath       String?        // storage path inside the bucket, e.g. "customers/{id}/passport-{uuid}.jpg"
+  passportDocUploadedAt DateTime?
+  nationality           String         @default("Egyptian (EGY)")
+  isVip                 Boolean        @default(false)
+  memberSince           String         @default("2024")
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
   // Relations
-  tickets     Ticket[]
-  notes       CustomerNote[]
+  tickets               Ticket[]
+  notes                 CustomerNote[]
 
   @@map("customers")
 }

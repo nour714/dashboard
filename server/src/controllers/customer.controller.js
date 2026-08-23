@@ -68,5 +68,52 @@ export const CustomerController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  async uploadPassportDocument(req, res, next) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            message: 'No file uploaded. Please attach a passport document.',
+            code: 'VALIDATION_ERROR'
+          }
+        });
+      }
+      const result = await CustomerService.uploadPassportDocument(
+        req.params.id,
+        req.file.buffer,
+        req.file.mimetype,
+        req.user
+      );
+      return res.status(200).json({
+        success: true,
+        data: { uploadedAt: result.uploadedAt }
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getPassportDocument(req, res, next) {
+    try {
+      const result = await CustomerService.getPassportDocumentUrl(req.params.id);
+      return res.status(200).json({
+        success: true,
+        data: result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async deletePassportDocument(req, res, next) {
+    try {
+      await CustomerService.deletePassportDocument(req.params.id, req.user);
+      return res.status(204).end();
+    } catch (err) {
+      next(err);
+    }
   }
 };

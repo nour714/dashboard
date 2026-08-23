@@ -3,6 +3,7 @@
  */
 
 import { CustomerService } from '../services/customer-service.js';
+import { AuthService } from '../services/auth-service.js';
 import { icons } from '../components/icons.js';
 import { renderStatusBadge } from '../components/status-badge.js';
 import { renderTabs, bindTabs } from '../components/tabs.js';
@@ -34,6 +35,8 @@ export const CustomerDetailsPage = {
     }
 
     const stats = CustomerService.getCustomerStats(customerId);
+    const currentUser = AuthService.getCurrentUser();
+    const isAdmin = (currentUser?.role || '').toUpperCase() === 'ADMIN';
 
     const tabs = [
       { id: 'tickets', label: t('customerDetails.bookingHistory'), badge: stats.tickets.length },
@@ -210,7 +213,51 @@ export const CustomerDetailsPage = {
           </div>
         </div>
 
-        <div class="col-span-8">
+        <!-- Passport Document Section -->
+        <div class="col-span-4">
+          <div class="card p-md">
+            <h3 class="card-title mb-md">${escapeHtml('Passport Document')}</h3>
+            <div id="passport-doc-section" class="d-flex flex-column gap-sm">
+              ${customer.passportDocUploadedAt ? `
+                <div class="d-flex flex-column gap-sm">
+                  <div class="d-flex justify-between align-items-center text-sm">
+                    <span class="text-muted">Uploaded</span>
+                    <span>${escapeHtml(formatDate(customer.passportDocUploadedAt))}</span>
+                  </div>
+                  <div class="d-flex gap-sm" style="margin-top: 4px;">
+                    <button type="button" class="btn btn-primary btn-sm" id="btn-view-passport-doc" style="flex:1;">
+                      ${icons.eye || ''} View Document
+                    </button>
+                    ${isAdmin ? `
+                      <button type="button" class="btn btn-danger btn-sm" id="btn-delete-passport-doc">
+                        ${icons.trash || ''} Delete
+                      </button>
+                    ` : ''}
+                  </div>
+                  <div class="text-sm" style="margin-top: 4px;">
+                    <span class="text-muted">Replace:</span>
+                    <input type="file" id="passport-doc-input" accept=".jpg,.jpeg,.png,.pdf" class="form-control" style="font-size:12px; padding:4px; margin-top:4px;" />
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-upload-passport-doc" style="margin-top:6px; width:100%;" disabled>
+                      Upload New
+                    </button>
+                    <div id="passport-doc-error" class="text-danger text-xs" style="margin-top:4px; display:none;"></div>
+                  </div>
+                </div>
+              ` : `
+                <div class="d-flex flex-column gap-sm">
+                  <p class="text-muted text-sm" style="margin:0;">No passport document uploaded yet.</p>
+                  <input type="file" id="passport-doc-input" accept=".jpg,.jpeg,.png,.pdf" class="form-control" style="font-size:12px; padding:4px;" />
+                  <button type="button" class="btn btn-primary btn-sm" id="btn-upload-passport-doc" style="width:100%;" disabled>
+                    Upload Document
+                  </button>
+                  <div id="passport-doc-error" class="text-danger text-xs" style="margin-top:4px; display:none;"></div>
+                </div>
+              `}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-span-4">
           <div class="stat-card-grid" style="margin-bottom: 0;">
             <div class="stat-card">
               <span class="stat-card-label">${escapeHtml(t('customerDetails.totalTickets'))}</span>
@@ -431,6 +478,118 @@ export const CustomerDetailsPage = {
         showToast(t('toasts.noteAdded'), 'success');
         container.innerHTML = CustomerDetailsPage.render(params, 'notes');
         CustomerDetailsPage.afterRender(container, params, 'notes');
+      });
+    }
+
+    // --- Passport Document Handlers ---
+    const passportInput = container.querySelector('#passport-doc-input');
+    const passportUploadBtn = container.querySelector('#btn-upload-passport-doc');
+    const passportError = container.querySelector('#passport-doc-error');
+
+    if (passportInput && passportUploadBtn) {
+      passportInput.addEventListener('change', () => {
+        const file = passportInput.files[0];
+        if (passportError) { passportError.style.display = 'none'; passportError.textContent = ''; }
+
+        if (!file) {
+          passportUploadBtn.disabled = true;
+          return;
+        }
+
+        // Client-side validation (UX only — server is the real gatekeeper)
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf'];
+        const ext = '.' + file.name.split('.').pop().toLowerCase();
+        if (!allowedExtensions.includes(ext)) {
+          if (passportError) {
+            passportError.textContent = 'Only .jpg, .jpeg, .png, and .pdf files are allowed.';
+            passportError.style.display = 'block';
+          }
+          passportUploadBtn.disabled = true;
+          passportInput.value = '';
+          return;
+        }
+
+        const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+        if (file.size > MAX_SIZE) {
+          if (passportError) {
+            passportError.textContent = 'File size exceeds the 5MB limit.';
+            passportError.style.display = 'block';
+          }
+          passportUploadBtn.disabled = true;
+          passportInput.value = '';
+          return;
+        }
+
+        passportUploadBtn.disabled = false;
+      });
+
+      passportUploadBtn.addEventListener('click', async () => {
+        const file = passportInput.files[0];
+        if (!file) return;
+
+        passportUploadBtn.disabled = true;
+        passportUploadBtn.textContent = 'Uploading…';
+        if (passportError) { passportError.style.display = 'none'; }
+
+        const result = await CustomerService.uploadPassportDocument(customerId, file);
+
+        if (!result.success) {
+          passportUploadBtn.disabled = false;
+          passportUploadBtn.textContent = 'Upload Document';
+          if (passportError) {
+            passportError.textContent = result.error?.message || 'Upload failed. Please try again.';
+            passportError.style.display = 'block';
+          }
+          showToast(result.error?.message || 'Upload failed', 'error');
+          return;
+        }
+
+        showToast('Passport document uploaded successfully.', 'success');
+        container.innerHTML = CustomerDetailsPage.render(params, activeTab);
+        CustomerDetailsPage.afterRender(container, params, activeTab);
+      });
+    }
+
+    const viewBtn = container.querySelector('#btn-view-passport-doc');
+    if (viewBtn) {
+      viewBtn.addEventListener('click', async () => {
+        viewBtn.disabled = true;
+        viewBtn.textContent = 'Loading…';
+
+        const result = await CustomerService.getPassportDocument(customerId);
+
+        viewBtn.disabled = false;
+        viewBtn.innerHTML = `${icons.eye || ''} View Document`;
+
+        if (!result.success || !result.data?.url) {
+          showToast(result.error?.message || 'Could not load document', 'error');
+          return;
+        }
+
+        window.open(result.data.url, '_blank', 'noopener,noreferrer');
+      });
+    }
+
+    const deleteBtn = container.querySelector('#btn-delete-passport-doc');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async () => {
+        if (!confirm('Are you sure you want to permanently delete this passport document?')) return;
+
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = 'Deleting…';
+
+        const result = await CustomerService.deletePassportDocument(customerId);
+
+        if (!result.success) {
+          deleteBtn.disabled = false;
+          deleteBtn.innerHTML = `${icons.trash || ''} Delete`;
+          showToast(result.error?.message || 'Delete failed', 'error');
+          return;
+        }
+
+        showToast('Passport document deleted.', 'success');
+        container.innerHTML = CustomerDetailsPage.render(params, activeTab);
+        CustomerDetailsPage.afterRender(container, params, activeTab);
       });
     }
   }

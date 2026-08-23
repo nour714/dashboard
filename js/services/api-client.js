@@ -112,7 +112,11 @@ function buildQueryString(params = {}) {
 }
 
 async function request(method, path, { body, auth = true, retry = true } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+  const headers = {};
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
   if (auth) {
     const token = getAccessToken();
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -124,13 +128,18 @@ async function request(method, path, { body, auth = true, retry = true } = {}) {
       method,
       headers,
       credentials: 'include',
-      body: body !== undefined ? JSON.stringify(body) : undefined
+      body: isFormData ? body : (body !== undefined ? JSON.stringify(body) : undefined)
     });
   } catch (networkErr) {
     return {
       success: false,
       error: { message: 'Network error — please check your connection and try again.', code: 'NETWORK_ERROR' }
     };
+  }
+
+  // Handle 204 No Content (e.g. DELETE responses)
+  if (res.status === 204) {
+    return { success: true, data: null };
   }
 
   let json;
@@ -174,5 +183,9 @@ export const apiClient = {
   },
   patch(path, body, opts) {
     return request('PATCH', path, { ...opts, body });
+  },
+  delete(path, opts) {
+    return request('DELETE', path, opts);
   }
 };
+

@@ -6,6 +6,7 @@
  */
 
 import { store } from '../state/store.js';
+import { apiClient } from './api-client.js';
 import { calculateTotalPaid, calculateRemaining, calculateTotalRefunded } from '../domain/ticket-rules.js';
 
 export const CustomerService = {
@@ -107,5 +108,57 @@ export const CustomerService = {
         error: { message: err.message || 'Failed to add customer note', code: err.code || 'ADD_NOTE_ERROR' }
       };
     }
+  },
+
+  /**
+   * Upload a passport document for a customer
+   * @param {string} customerId
+   * @param {File} file
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
+   */
+  async uploadPassportDocument(customerId, file) {
+    try {
+      const formData = new FormData();
+      formData.append('passportDocument', file);
+      return await apiClient.post(`/customers/${customerId}/passport-document`, formData);
+    } catch (err) {
+      return {
+        success: false,
+        error: { message: err.message || 'Failed to upload passport document', code: 'UPLOAD_ERROR' }
+      };
+    }
+  },
+
+  /**
+   * Get a signed URL for a customer's passport document
+   * @param {string} customerId
+   * @returns {Promise<{success: boolean, data?: {url: string, expiresAt: string}, error?: object}>}
+   */
+  async getPassportDocument(customerId) {
+    try {
+      return await apiClient.get(`/customers/${customerId}/passport-document`);
+    } catch (err) {
+      return {
+        success: false,
+        error: { message: err.message || 'Failed to get passport document', code: 'GET_DOC_ERROR' }
+      };
+    }
+  },
+
+  /**
+   * Delete a customer's passport document (ADMIN only)
+   * @param {string} customerId
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
+   */
+  async deletePassportDocument(customerId) {
+    try {
+      return await apiClient.delete(`/customers/${customerId}/passport-document`);
+    } catch (err) {
+      return {
+        success: false,
+        error: { message: err.message || 'Failed to delete passport document', code: 'DELETE_DOC_ERROR' }
+      };
+    }
   }
 };
+

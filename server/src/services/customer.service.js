@@ -218,5 +218,145 @@ export const CustomerService = {
     });
 
     return note;
+  },
+
+  /**
+   * Upload or replace a passport document for a customer
+   * @param {string} customerId
+   * @param {Buffer} buffer - file buffer from multer
+   * @param {string} reportedMimeType - client-reported mimetype
+   * @param {object} currentUser
+   * @returns {Promise<{uploadedAt: Date}>}
+   */
+  async uploadPassportDocument(customerId, buffer, reportedMimeType, currentUser = {}) {
+    const prisma = getPrismaClient();
+    const customer = await prisma.customer.findUnique({ where: { id: customerId } });
+    if (!customer) {
+      throw new NotFoundError('Customer', customerId);
+    }
+
+    // Defensive size check (multer already caps at 5MB)
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (!buffer || buffer.length === 0) {
+      throw new ValidationError('File is empty', 'passportDocument');
+    }
+    if (buffer.length > MAX_SIZE) {
+      throw new ValidationError('File size exceeds the 5MB limit', 'passportDocument');
+    }
+
+    // Magic-byte sniffing — do not trust client-reported mimetype alone
+    const { fileTypeFromBuffer } = await import('file-type');
+    const detectedType = await fileTypeFromBuffer(buffer);
+
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+
+    if (!detectedType || !ALLOWED_TYPES.includes(detectedType.mime)) {
+      throw new ValidationError(
+        'Invalid file content. Only JPEG, PNG, and PDF files are allowed.',
+        'passportDocument'
+      );
+    }
+
+    // Determine extension from the real (sniffed) MIME type
+    const { randomUUID } = await import('crypto');
+    const ext = detectedType.mime === 'application/pdf' ? 'pdf'
+      : (detectedType.mime === 'image/png' ? 'png' : 'jpg');
+    const storagePath = `customers/${customerId}/passport-${randomUUID()}.${ext}`;
+
+    // If replacing an existing document, delete the old one from storage first
+    if (customer.passportDocPath) {
+      const { deleteFromStorage } = await import('../config/storage.js');
+      await deleteFromStorage(customer.passportDocPath);
+    }
+
+    // Upload to Supabase Storage (private bucket)
+    const { uploadToStorage } = await import('../config/storage.js');
+    const { error: uploadError } = await uploadToStorage(storagePath, buffer, detectedType.mime);
+    if (uploadError) {
+      throw new ValidationError(
+        `Storage upload failed: ${uploadError.message}`,
+        'passportDocument'
+      );
+    }
+
+    // Update customer record with storage path (never a URL)
+    const uploadedAt = new Date();
+    await prisma.customer.update({
+      where: { id: customerId },
+      data: {
+        passportDocPath: storagePath,
+        passportDocUploadedAt: uploadedAt
+      }
+    });
+
+    await AuditService.recordLog({
+      user: currentUser.name || 'Agent',
+      userId: currentUser.id,
+      action: 'UPLOAD_CUSTOMER_PASSPORT_DOC',
+      customerId,
+      description: `Uploaded passport document for customer ${customer.name} (${customerId}).`
+    });
+
+    return { uploadedAt };
+  },
+
+  /**
+   * Get a short-lived signed URL for the customer's passport document
+   * @param {string} customerId
+   * @returns {Promise<{url: string, expiresAt: string}>}
+   */
+  async getPassportDocumentUrl(customerId) {
+    const prisma = getPrismaClient();
+    const customer = await prisma.customer.findUnique({ where: { id: customerId } });
+    if (!customer || !customer.passportDocPath) {
+      throw new NotFoundError('Passport document', customerId);
+    }
+
+    const { createSignedUrl } = await import('../config/storage.js');
+    const { data, error } = await createSignedUrl(customer.passportDocPath, 300);
+    if (error || !data?.signedUrl) {
+      throw new ValidationError(
+        `Failed to generate signed URL: ${error?.message || 'Unknown error'}`,
+        'passportDocument'
+      );
+    }
+
+    const expiresAt = new Date(Date.now() + 300 * 1000).toISOString();
+    return { url: data.signedUrl, expiresAt };
+  },
+
+  /**
+   * Delete a customer's passport document (ADMIN only — enforced at route level)
+   * @param {string} customerId
+   * @param {object} currentUser
+   */
+  async deletePassportDocument(customerId, currentUser = {}) {
+    const prisma = getPrismaClient();
+    const customer = await prisma.customer.findUnique({ where: { id: customerId } });
+    if (!customer || !customer.passportDocPath) {
+      throw new NotFoundError('Passport document', customerId);
+    }
+
+    // Delete from Supabase Storage
+    const { deleteFromStorage } = await import('../config/storage.js');
+    await deleteFromStorage(customer.passportDocPath);
+
+    // Clear the database fields
+    await prisma.customer.update({
+      where: { id: customerId },
+      data: {
+        passportDocPath: null,
+        passportDocUploadedAt: null
+      }
+    });
+
+    await AuditService.recordLog({
+      user: currentUser.name || 'Agent',
+      userId: currentUser.id,
+      action: 'DELETE_CUSTOMER_PASSPORT_DOC',
+      customerId,
+      description: `Deleted passport document for customer ${customer.name} (${customerId}).`
+    });
   }
 };
+

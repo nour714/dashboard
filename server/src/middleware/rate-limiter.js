@@ -34,3 +34,18 @@ export const apiRateLimiter = rateLimit({
     }
   }
 });
+
+export const uploadRateLimiter = rateLimit({
+  windowMs: env.RATE_LIMIT_WINDOW_MS, // 15 minutes
+  max: env.RATE_LIMIT_MAX_AUTH, // default 10 — same strict limit as auth routes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      message: 'Too many file uploads. Please try again later.',
+      code: 'RATE_LIMIT_EXCEEDED'
+    }
+  }
+});
+

@@ -20,7 +20,10 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000),
   RATE_LIMIT_MAX_AUTH: z.coerce.number().default(10),
   RATE_LIMIT_MAX_API: z.coerce.number().default(500),
-  DEFAULT_ADMIN_PASSWORD: z.string().default('password123')
+  DEFAULT_ADMIN_PASSWORD: z.string().default('password123'),
+  SUPABASE_URL: z.string().default(''),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().default(''),
+  SUPABASE_STORAGE_BUCKET: z.string().default('customer-documents')
 });
 
 function resolveDatabaseUrl() {
@@ -99,6 +102,16 @@ if (envData.NODE_ENV === 'production' && envData.DEFAULT_ADMIN_PASSWORD === 'pas
   } else {
     console.error('❌ FATAL: DEFAULT_ADMIN_PASSWORD is using insecure default "password123" in production. Set a strong password in your .env file.');
     process.exit(1);
+  }
+}
+
+if (
+  envData.NODE_ENV === 'production' &&
+  (!envData.SUPABASE_URL || !envData.SUPABASE_SERVICE_ROLE_KEY)
+) {
+  if (process.env.VERCEL || process.env.RENDER || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    console.error('❌ FATAL: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured in production deployment environment variables.');
+    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not configured. Set them in your deployment environment variables.');
   }
 }
 

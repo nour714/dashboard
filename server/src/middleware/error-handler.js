@@ -38,6 +38,33 @@ export function errorHandler(err, req, res, next) {
     });
   }
 
+  // Handle Multer file upload errors
+  if (err.name === 'MulterError' || err.code === 'LIMIT_FILE_SIZE') {
+    const messages = {
+      LIMIT_FILE_SIZE: 'File size exceeds the 5MB limit.',
+      LIMIT_FILE_COUNT: 'Too many files uploaded.',
+      LIMIT_UNEXPECTED_FILE: 'Unexpected file field name.'
+    };
+    return res.status(400).json({
+      success: false,
+      error: {
+        message: messages[err.code] || 'File upload error.',
+        code: 'FILE_UPLOAD_ERROR'
+      }
+    });
+  }
+
+  // Handle custom file validation errors (INVALID_FILE_TYPE from multer fileFilter)
+  if (err.code === 'INVALID_FILE_TYPE' || err.message === 'INVALID_FILE_TYPE') {
+    return res.status(400).json({
+      success: false,
+      error: {
+        message: 'Invalid file type. Only JPEG, PNG, and PDF files are allowed.',
+        code: 'INVALID_FILE_TYPE'
+      }
+    });
+  }
+
   // Handle Prisma Known Request Errors (e.g. Unique constraint violation P2002)
   if (err.code === 'P2002') {
     const target = Array.isArray(err.meta?.target) ? err.meta.target.join(', ') : 'field';
