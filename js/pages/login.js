@@ -65,7 +65,7 @@ export const LoginPage = {
                     id="login-email"
                     class="form-control ltr-field"
                     placeholder="agent@africatravel.com"
-                    value="admin@africatravel.com"
+                    autocomplete="username"
                     required
                   />
                 </div>
@@ -82,7 +82,7 @@ export const LoginPage = {
                     id="login-password"
                     class="form-control"
                     placeholder="••••••••"
-                    value="password123"
+                    autocomplete="current-password"
                     required
                   />
                 </div>
