@@ -77,10 +77,15 @@ export const AuthService = {
    */
   async login(email, password, meta = {}) {
     const prisma = getPrismaClient();
-    const cleanEmail = email.toLowerCase().trim();
+    const cleanEmail = email.trim();
 
-    const user = await prisma.user.findUnique({
-      where: { email: cleanEmail }
+    const user = await prisma.user.findFirst({
+      where: {
+        email: {
+          equals: cleanEmail,
+          mode: 'insensitive'
+        }
+      }
     });
 
     if (!user) {
@@ -113,13 +118,13 @@ export const AuthService = {
       }
     });
 
-    // Update user's lastActive timestamp
+    // Update user's lastActive timestamp safely
     await prisma.user.update({
       where: { id: user.id },
       data: { lastActive: 'Just now' }
-    });
+    }).catch(e => console.warn('Could not update lastActive:', e.message));
 
-    // Record audit event
+    // Record audit event safely
     await AuditService.recordLog({
       user: user.name,
       userId: user.id,
@@ -127,7 +132,7 @@ export const AuthService = {
       description: `User ${user.name} (${user.email}) logged in successfully.`,
       ip: meta.ip,
       userAgent: meta.userAgent
-    });
+    }).catch(e => console.warn('Could not record login audit log:', e.message));
 
     const safeUser = {
       id: user.id,
