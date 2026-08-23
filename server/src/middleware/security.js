@@ -19,15 +19,18 @@ export const corsMiddleware = cors({
     // Allow requests with no origin (e.g. mobile apps, curl, same-origin, server-to-server)
     if (!origin) return callback(null, true);
 
-    const allowedOrigins = env.CORS_ORIGIN ? env.CORS_ORIGIN.split(',').map(s => s.trim()) : [];
+    const normalizedOrigin = origin.replace(/\/+$/, '');
+    const allowedOrigins = env.CORS_ORIGIN 
+      ? env.CORS_ORIGIN.split(',').map(s => s.trim().replace(/\/+$/, '')) 
+      : [];
     
     // Allow configured origins, wildcard, Vercel deployments, or localhost
-    const isVercelOrigin = origin.endsWith('.vercel.app') || origin.includes('vercel.app');
-    const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
+    const isVercelOrigin = normalizedOrigin.endsWith('.vercel.app') || normalizedOrigin.includes('vercel.app');
+    const isLocalhost = normalizedOrigin.includes('localhost') || normalizedOrigin.includes('127.0.0.1');
 
     if (
       allowedOrigins.includes('*') ||
-      allowedOrigins.includes(origin) ||
+      allowedOrigins.includes(normalizedOrigin) ||
       isVercelOrigin ||
       isLocalhost
     ) {
