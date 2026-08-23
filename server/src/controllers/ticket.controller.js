@@ -3,7 +3,7 @@
  */
 
 import { TicketService } from '../services/ticket.service.js';
-import { NotFoundError } from '../domain/errors.js';
+import { NotFoundError, ForbiddenError } from '../domain/errors.js';
 
 export const TicketController = {
   async getTickets(req, res, next) {
@@ -23,6 +23,11 @@ export const TicketController = {
       const ticket = await TicketService.getTicketById(req.params.id);
       if (!ticket) {
         throw new NotFoundError('Ticket', req.params.id);
+      }
+      if (req.user && req.user.role === 'TICKET_ONLY') {
+        if (ticket.createdById && ticket.createdById !== req.user.id) {
+          throw new ForbiddenError('Access restricted to your own tickets');
+        }
       }
       return res.status(200).json({
         success: true,

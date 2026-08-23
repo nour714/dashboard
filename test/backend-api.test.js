@@ -114,6 +114,7 @@ async function runApiTests() {
     const restrictedRequests = [
       ['GET /api/customers', { method: 'GET', path: '/api/customers', headers: ticketOnlyHeaders }],
       ['GET /api/reports/summary', { method: 'GET', path: '/api/reports/summary', headers: ticketOnlyHeaders }],
+      ['POST /api/tickets', { method: 'POST', path: '/api/tickets', headers: ticketOnlyHeaders, body: {} }],
       ['PATCH /api/tickets/:id', { method: 'PATCH', path: '/api/tickets/TKT-1', headers: ticketOnlyHeaders, body: {} }],
       ['POST /api/tickets/:id/payments', { method: 'POST', path: '/api/tickets/TKT-1/payments', headers: ticketOnlyHeaders, body: {} }]
     ];
