@@ -23,9 +23,20 @@ const envSchema = z.object({
   DEFAULT_ADMIN_PASSWORD: z.string().default('password123')
 });
 
-// Support Vercel + Supabase integration env variable names
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = process.env.POSTGRES_PRISMA_URL || process.env.POSTGRES_URL || process.env.SUPABASE_DATABASE_URL;
+// Prioritize remote Supabase integration URLs over local defaults
+const candidateUrls = [
+  process.env.DATABASE_URL,
+  process.env.POSTGRES_PRISMA_URL,
+  process.env.POSTGRES_URL,
+  process.env.POSTGRES_URL_NON_POOLING,
+  process.env.SUPABASE_DATABASE_URL
+].filter(Boolean);
+
+const remoteDbUrl = candidateUrls.find(u => !u.includes('localhost') && !u.includes('127.0.0.1'));
+if (remoteDbUrl) {
+  process.env.DATABASE_URL = remoteDbUrl;
+} else if (candidateUrls.length > 0) {
+  process.env.DATABASE_URL = candidateUrls[0];
 }
 
 const parsedEnv = envSchema.safeParse(process.env);
