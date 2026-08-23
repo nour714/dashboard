@@ -6,8 +6,14 @@ let sql = '-- AfricaTravel - Master Seed Data for Supabase PostgreSQL\n\n';
 // 1. Settings
 sql += 'INSERT INTO "system_settings" ("id", "data", "updatedAt") VALUES (\'default\', ' + JSON.stringify(JSON.stringify(INITIAL_SETTINGS)) + '::jsonb, NOW()) ON CONFLICT ("id") DO UPDATE SET "data" = EXCLUDED."data";\n\n';
 
-// 2. Users (Password: password123)
-const hash = '$2b$10$j5DvY5WlZcJ5dUjcngZ04OgxvrZUxtERaHWTpnR9N/Ay84ToVC1em';
+// 2. Users (Require BOOTSTRAP_ADMIN_PASSWORD env variable)
+const bootstrapPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD || process.env.INITIAL_ADMIN_PASSWORD;
+if (!bootstrapPassword || bootstrapPassword === 'password123' || bootstrapPassword.trim().length < 8) {
+  console.error('❌ FATAL: BOOTSTRAP_ADMIN_PASSWORD environment variable is required to generate seed SQL, cannot be "password123", and must be at least 8 characters.');
+  process.exit(1);
+}
+import bcrypt from 'bcryptjs';
+const hash = await bcrypt.hash(bootstrapPassword.trim(), 10);
 for (const emp of INITIAL_EMPLOYEES) {
   sql += `INSERT INTO "users" ("id", "name", "email", "role", "title", "passwordHash", "status", "lastActive", "createdAt", "updatedAt") VALUES ('${emp.id}', '${emp.name.replace(/'/g, "''")}', '${emp.email.toLowerCase()}', '${emp.role}', '${emp.title.replace(/'/g, "''")}', '${hash}', 'ACTIVE', 'Just now', NOW(), NOW()) ON CONFLICT ("id") DO UPDATE SET "name" = EXCLUDED."name", "email" = EXCLUDED."email", "passwordHash" = EXCLUDED."passwordHash";\n`;
 }

@@ -96,13 +96,12 @@ if (
   }
 }
 
-if (envData.NODE_ENV === 'production' && envData.DEFAULT_ADMIN_PASSWORD === 'password123') {
-  if (process.env.VERCEL || process.env.RENDER || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    console.warn('⚠️ WARNING: DEFAULT_ADMIN_PASSWORD is set to default "password123" in production cloud environment.');
-  } else {
-    console.error('❌ FATAL: DEFAULT_ADMIN_PASSWORD is using insecure default "password123" in production. Set a strong password in your .env file.');
+if (envData.NODE_ENV === 'production' && (!envData.DEFAULT_ADMIN_PASSWORD || envData.DEFAULT_ADMIN_PASSWORD === 'password123')) {
+  console.error('❌ FATAL: DEFAULT_ADMIN_PASSWORD is using insecure default "password123" in production. Set a strong password in your .env file.');
+  if (typeof process.exit === 'function' && !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
     process.exit(1);
   }
+  throw new Error('FATAL: DEFAULT_ADMIN_PASSWORD is using insecure default "password123" in production.');
 }
 
 if (
