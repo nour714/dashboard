@@ -228,11 +228,20 @@ export const en = {
       origin: 'Origin Airport',
       destination: 'Destination Airport',
       departureDate: 'Departure Date & Time',
+      arrivalDate: 'Arrival Date & Time',
       returnDate: 'Return Date & Time',
       seatClass: 'Cabin Class',
       economy: 'Economy Class',
       business: 'Business Class',
       first: 'First Class'
+    },
+    returnFlight: {
+      title: 'Return Flight',
+      subtitle: 'Return flight schedule and routing.',
+      flightNumber: 'Return Flight Number',
+      flightNumberPlaceholder: 'e.g. MS 987',
+      departureDate: 'Return Departure Date & Time',
+      arrivalDate: 'Return Arrival Date & Time'
     },
     financials: {
       title: 'Pricing & Initial Payment',
@@ -605,7 +614,9 @@ export const en = {
     ticketNotFound: 'Ticket not found.',
     customerNotFound: 'Customer not found.',
     invalidEmail: 'Please enter a valid email address.',
-    invalidPhone: 'Please enter a valid phone number.'
+    invalidPhone: 'Please enter a valid phone number.',
+    returnFlightRequired: 'Please fill in all return flight details for a Round Trip ticket.',
+    flightNumberRequired: 'Flight number is required.'
   },
 
   // Toast Notification Messages

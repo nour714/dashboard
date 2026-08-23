@@ -98,6 +98,14 @@ export const TicketCreatePage = {
                 </div>
               </div>
               <div class="card-body">
+                <div class="form-group mb-md">
+                  <label class="form-label" for="trip-type">${escapeHtml(t('ticketCreate.flightInfo.tripType'))}</label>
+                  <select id="trip-type" class="form-control">
+                    <option value="One Way">${escapeHtml(t('ticketCreate.flightInfo.oneWay'))}</option>
+                    <option value="Round Trip">${escapeHtml(t('ticketCreate.flightInfo.roundTrip'))}</option>
+                  </select>
+                </div>
+
                 <div class="form-grid-3">
                   <div class="form-group">
                     <label class="form-label" for="flight-airline">${escapeHtml(t('ticketCreate.flightInfo.airline'))} *</label>
@@ -113,17 +121,30 @@ export const TicketCreatePage = {
                     </select>
                   </div>
                   <div class="form-group">
+                    <label class="form-label" for="flight-number">${escapeHtml(t('ticketCreate.flightInfo.flightNumber'))} *</label>
+                    <input
+                      type="text"
+                      id="flight-number"
+                      class="form-control ltr-field"
+                      placeholder="e.g. MS 986"
+                      required
+                    />
+                  </div>
+                  <div class="form-group">
                     <label class="form-label" for="flight-pnr">${escapeHtml(t('ticketCreate.flightInfo.pnr'))} *</label>
                     <input
                       type="text"
                       id="flight-pnr"
                       class="form-control font-semibold ltr-field"
                       placeholder="${escapeHtml(t('ticketCreate.flightInfo.pnrPlaceholder'))}"
-                      maxlength="6"
+                      maxlength="10"
                       style="text-transform: uppercase;"
                       required
                     />
                   </div>
+                </div>
+
+                <div class="form-grid-3">
                   <div class="form-group">
                     <label class="form-label" for="flight-ticket-num">${escapeHtml(t('ticketCreate.flightInfo.ticketNumber'))}</label>
                     <input
@@ -133,9 +154,6 @@ export const TicketCreatePage = {
                       placeholder="${escapeHtml(t('ticketCreate.flightInfo.ticketNumberPlaceholder'))}"
                     />
                   </div>
-                </div>
-
-                <div class="form-grid-2">
                   <div class="form-group">
                     <label class="form-label" for="flight-origin">${escapeHtml(t('ticketCreate.flightInfo.origin'))} *</label>
                     <input
@@ -169,7 +187,7 @@ export const TicketCreatePage = {
                     />
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="flight-arr-date">${escapeHtml(t('ticketCreate.flightInfo.returnDate'))} *</label>
+                    <label class="form-label" for="flight-arr-date">${escapeHtml(t('ticketCreate.flightInfo.arrivalDate'))} *</label>
                     <input
                       type="datetime-local"
                       id="flight-arr-date"
@@ -197,6 +215,32 @@ export const TicketCreatePage = {
                       <option value="2x 32kg Business">2x 32kg Business</option>
                       <option value="Hand Luggage Only (7kg)">Hand Luggage Only (7kg)</option>
                     </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Return Flight Section (Conditionally Visible) -->
+            <div class="card" id="return-flight-section" style="display: none;">
+              <div class="card-header">
+                <div class="d-flex items-center gap-xs">
+                  ${icons.airplane('w-5 h-5')}
+                  <h3 class="card-title">${escapeHtml(t('ticketCreate.returnFlight.title'))}</h3>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label" for="return-flight-number">${escapeHtml(t('ticketCreate.returnFlight.flightNumber'))} *</label>
+                  <input type="text" id="return-flight-number" class="form-control ltr-field" placeholder="e.g. MS 987" />
+                </div>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label class="form-label" for="return-dep-date">${escapeHtml(t('ticketCreate.returnFlight.departureDate'))} *</label>
+                    <input type="datetime-local" id="return-dep-date" class="form-control" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="return-arr-date">${escapeHtml(t('ticketCreate.returnFlight.arrivalDate'))} *</label>
+                    <input type="datetime-local" id="return-arr-date" class="form-control" />
                   </div>
                 </div>
               </div>
@@ -370,6 +414,15 @@ export const TicketCreatePage = {
       }
     });
 
+    const tripTypeSelect = container.querySelector('#trip-type');
+    const returnFlightSection = container.querySelector('#return-flight-section');
+    if (tripTypeSelect && returnFlightSection) {
+      tripTypeSelect.addEventListener('change', () => {
+        const isRoundTrip = tripTypeSelect.value === 'Round Trip';
+        returnFlightSection.style.display = isRoundTrip ? 'block' : 'none';
+      });
+    }
+
     if (form) {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -380,6 +433,25 @@ export const TicketCreatePage = {
         const originCode = (originInput.value.split('-')[0] || originInput.value).trim().toUpperCase();
         const destCode = (destInput.value.split('-')[0] || destInput.value).trim().toUpperCase();
 
+        const flightNumberInput = container.querySelector('#flight-number');
+        const flightNumber = flightNumberInput ? flightNumberInput.value.trim().toUpperCase() : '';
+        if (!flightNumber) {
+          showToast(t('validation.flightNumberRequired') || 'Flight number is required', 'error');
+          if (flightNumberInput) flightNumberInput.focus();
+          return;
+        }
+
+        const tripTypeValue = tripTypeSelect ? tripTypeSelect.value : 'One Way';
+        if (tripTypeValue === 'Round Trip') {
+          const returnFlightNumber = container.querySelector('#return-flight-number').value.trim();
+          const returnDepDate = container.querySelector('#return-dep-date').value;
+          const returnArrDate = container.querySelector('#return-arr-date').value;
+          if (!returnFlightNumber || !returnDepDate || !returnArrDate) {
+            showToast(t('validation.returnFlightRequired'), 'error');
+            return;
+          }
+        }
+
         const ticketData = {
           passengerName: custNameInput.value.trim(),
           passport: container.querySelector('#cust-passport').value.trim(),
@@ -387,6 +459,17 @@ export const TicketCreatePage = {
           nationality: container.querySelector('#cust-nationality').value,
           airline: airlineSelect.value,
           airlineCode: airlineCode,
+          flightNumber: flightNumber,
+          tripType: tripTypeValue,
+          returnFlightNumber: tripTypeValue === 'Round Trip'
+            ? container.querySelector('#return-flight-number').value.trim().toUpperCase()
+            : undefined,
+          returnDepartureDate: tripTypeValue === 'Round Trip'
+            ? container.querySelector('#return-dep-date').value
+            : undefined,
+          returnArrivalDate: tripTypeValue === 'Round Trip'
+            ? container.querySelector('#return-arr-date').value
+            : undefined,
           pnr: container.querySelector('#flight-pnr').value.trim().toUpperCase(),
           ticketNumber: container.querySelector('#flight-ticket-num').value.trim(),
           origin: originCode,

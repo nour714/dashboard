@@ -228,11 +228,20 @@ export const ar = {
       origin: 'مطار الإقلاع (المصدر)',
       destination: 'مطار الوصول (الوجهة)',
       departureDate: 'تاريخ ووقت المغادرة',
+      arrivalDate: 'تاريخ ووقت الوصول',
       returnDate: 'تاريخ ووقت العودة',
       seatClass: 'درجة السفر',
       economy: 'الدرجة السياحية (Economy)',
       business: 'درجة رجال الأعمال (Business)',
       first: 'الدرجة الأولى (First)'
+    },
+    returnFlight: {
+      title: 'رحلة العودة',
+      subtitle: 'جدول ومسار رحلة العودة.',
+      flightNumber: 'رقم رحلة العودة',
+      flightNumberPlaceholder: 'مثال: MS 987',
+      departureDate: 'تاريخ ووقت المغادرة للعودة',
+      arrivalDate: 'تاريخ ووقت الوصول للعودة'
     },
     financials: {
       title: 'التسعير والدفعة المقدمة',
@@ -605,7 +614,9 @@ export const ar = {
     ticketNotFound: 'التذكرة غير موجودة.',
     customerNotFound: 'العميل غير موجود.',
     invalidEmail: 'يرجى إدخال بريد إلكتروني صحيح.',
-    invalidPhone: 'يرجى إدخال رقم هاتف صحيح.'
+    invalidPhone: 'يرجى إدخال رقم هاتف صحيح.',
+    returnFlightRequired: 'يرجى ملء جميع تفاصيل رحلة العودة لتذكرة الذهاب والعودة.',
+    flightNumberRequired: 'رقم الرحلة مطلوب.'
   },
 
   // Toast Notification Messages

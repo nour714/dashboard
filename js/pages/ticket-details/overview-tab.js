@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel - Ticket Details: Overview Tab Component
  */
 
@@ -48,16 +48,16 @@ export function renderOverviewTab(ticket) {
                   </div>
                 </div>
 
-                ${ticket.returnDepartureDate ? `
+                ${ticket.tripType === 'Round Trip' ? `
                   <!-- Return Leg -->
                   <div>
                     <div class="d-flex items-center gap-xs mb-sm">
-                      <span class="badge badge-neutral">${escapeHtml(t('ticketCreate.flightInfo.returnDate'))}</span>
-                      <span class="font-semibold text-sm">${formatDate(ticket.returnDepartureDate)}</span>
+                      <span class="badge badge-neutral">${escapeHtml(t('ticketCreate.returnFlight.title'))}</span>
+                      <span class="font-semibold text-sm">${ticket.returnDepartureDate ? formatDate(ticket.returnDepartureDate) : '--'}</span>
                     </div>
                     <div class="d-flex justify-between items-start p-md" style="background-color: var(--color-surface); border-radius: var(--radius-lg);">
                       <div>
-                        <div class="font-bold text-lg tabular-nums">${new Date(ticket.returnDepartureDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</div>
+                        <div class="font-bold text-lg tabular-nums">${ticket.returnDepartureDate ? new Date(ticket.returnDepartureDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}</div>
                         <div class="text-sm font-semibold ltr-data">${escapeHtml(ticket.destination)} (${escapeHtml(ticket.destinationTerminal || 'Main Terminal')})</div>
                       </div>
                       <div class="text-center d-flex flex-column items-center">

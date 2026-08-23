@@ -19,9 +19,10 @@
     "test:api": "node test/backend-api.test.js",
     "test:tickets": "node test/ticket-customer-link.test.js",
     "test:passport": "node test/passport-document.test.js",
+    "test:roundtrip": "node test/round-trip-flight.test.js",
     "test:rbac": "node test/rbac-ui.test.js",
     "test:security": "node test/security-fixes.test.js",
-    "test": "node test/i18n-bilingual.test.js && node test/backend-domain.test.js && node test/backend-auth.test.js && node test/ticket-customer-link.test.js && node test/passport-document.test.js && node test/rbac-ui.test.js && node test/security-fixes.test.js && node test/backend-api.test.js"
+    "test": "node test/i18n-bilingual.test.js && node test/backend-domain.test.js && node test/backend-auth.test.js && node test/ticket-customer-link.test.js && node test/passport-document.test.js && node test/round-trip-flight.test.js && node test/rbac-ui.test.js && node test/security-fixes.test.js && node test/backend-api.test.js"
   },
   "keywords": [
     "travel",

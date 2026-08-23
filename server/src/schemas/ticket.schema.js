@@ -7,6 +7,8 @@ import { z } from 'zod';
 export const createTicketSchema = z.object({
   customerId: z.string().optional(),
   passengerName: z.string().min(1, 'Passenger name is required').trim(),
+  pnr: z.string().min(1, 'PNR is required').max(10),
+  ticketNumber: z.string().optional(),
   phone: z.string().optional(),
   passport: z.string().optional(),
   nationality: z.string().optional(),
@@ -37,10 +39,24 @@ export const createTicketSchema = z.object({
   paymentMethod: z.string().optional(),
   paymentReference: z.string().optional(),
   paymentDate: z.string().optional()
+}).superRefine((data, ctx) => {
+  if (data.tripType === 'Round Trip') {
+    if (!data.returnFlightNumber) {
+      ctx.addIssue({ code: 'custom', path: ['returnFlightNumber'], message: 'Return flight number is required for round trip tickets' });
+    }
+    if (!data.returnDepartureDate) {
+      ctx.addIssue({ code: 'custom', path: ['returnDepartureDate'], message: 'Return departure date is required for round trip tickets' });
+    }
+    if (!data.returnArrivalDate) {
+      ctx.addIssue({ code: 'custom', path: ['returnArrivalDate'], message: 'Return arrival date is required for round trip tickets' });
+    }
+  }
 });
 
 export const updateTicketSchema = z.object({
   passengerName: z.string().min(1).optional(),
+  pnr: z.string().min(1).max(10).optional(),
+  ticketNumber: z.string().optional(),
   phone: z.string().optional(),
   passport: z.string().optional(),
   nationality: z.string().optional(),
