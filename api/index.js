@@ -15,6 +15,25 @@ app.use(corsMiddleware);
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
+// Cookie Parser Middleware
+app.use((req, res, next) => {
+  const rawCookie = req.headers.cookie;
+  req.cookies = {};
+  if (rawCookie) {
+    rawCookie.split(';').forEach(c => {
+      const [key, ...val] = c.trim().split('=');
+      if (key) {
+        try {
+          req.cookies[key] = decodeURIComponent(val.join('='));
+        } catch {
+          req.cookies[key] = val.join('=');
+        }
+      }
+    });
+  }
+  next();
+});
+
 // Handle API requests with or without /api prefix
 app.use('/api', apiRouter);
 app.use('/', (req, res, next) => {

@@ -108,8 +108,8 @@ class Store {
       return { success: false, error: res.error };
     }
 
-    const { user, accessToken, refreshToken } = res.data;
-    setSession({ accessToken, refreshToken, user });
+    const { user, accessToken } = res.data;
+    setSession({ accessToken, user });
 
     this.state.currentUser = { ...INITIAL_SETTINGS.profile, ...user };
     this.state.isAuthenticated = true;
@@ -121,9 +121,8 @@ class Store {
   }
 
   async logout() {
-    const refreshToken = (typeof localStorage !== 'undefined' && localStorage.getItem('AfricaTravel_REFRESH_TOKEN')) || null;
     try {
-      await apiClient.post('/auth/logout', { refreshToken });
+      await apiClient.post('/auth/logout', {});
     } catch (e) {
       // Best-effort server-side revocation; always clear local session regardless.
     }

@@ -16,22 +16,21 @@ export const helmetMiddleware = helmet({
 
 export const corsMiddleware = cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g. mobile apps, curl, same-origin, server-to-server)
+    // Allow requests with no origin (e.g. mobile apps, curl, same-origin server-side requests)
     if (!origin) return callback(null, true);
 
     const normalizedOrigin = origin.replace(/\/+$/, '');
     const allowedOrigins = env.CORS_ORIGIN 
-      ? env.CORS_ORIGIN.split(',').map(s => s.trim().replace(/\/+$/, '')) 
+      ? env.CORS_ORIGIN.split(',').map(s => s.trim().replace(/\/+$/, '')).filter(Boolean)
       : [];
     
-    // Allow configured origins, wildcard, Vercel deployments, or localhost
-    const isVercelOrigin = normalizedOrigin.endsWith('.vercel.app') || normalizedOrigin.includes('vercel.app');
-    const isLocalhost = normalizedOrigin.includes('localhost') || normalizedOrigin.includes('127.0.0.1');
+    // In development/test, permit localhost / 127.0.0.1 origins
+    const isDevelopment = env.NODE_ENV !== 'production';
+    const isLocalhost = isDevelopment && (normalizedOrigin.includes('localhost') || normalizedOrigin.includes('127.0.0.1'));
 
     if (
       allowedOrigins.includes('*') ||
       allowedOrigins.includes(normalizedOrigin) ||
-      isVercelOrigin ||
       isLocalhost
     ) {
       return callback(null, true);

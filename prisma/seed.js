@@ -31,8 +31,15 @@ export async function seed() {
   // 2. Seed Employees / Users (with bcrypt hashed passwords)
   console.log('  -> Seeding Users & Employees...');
   const saltRounds = 10;
-  const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'password123';
-  const hashedPassword = await bcrypt.hash(defaultPassword, saltRounds);
+  const isProduction = process.env.NODE_ENV === 'production';
+  const defaultPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+
+  if (isProduction && (!defaultPassword || defaultPassword === 'password123')) {
+    throw new Error('❌ FATAL: Cannot seed database in production with default/weak password. Set a strong DEFAULT_ADMIN_PASSWORD.');
+  }
+
+  const passwordToUse = defaultPassword || 'password123';
+  const hashedPassword = await bcrypt.hash(passwordToUse, saltRounds);
 
   for (const emp of INITIAL_EMPLOYEES) {
     await prisma.user.upsert({

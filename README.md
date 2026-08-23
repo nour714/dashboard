@@ -1,60 +1,86 @@
-# AfricaTravel — Frontend/Backend Integration (Work in Progress)
+# AfricaTravel — Enterprise Agency Operations Platform
 
-هذا zip فيه الملفات اللي اتعدّلت/اتضافت لغاية دلوقتي في مهمة توصيل الفرونت اند بالباك اند.
-مش كل حاجة خلصت — التفاصيل تحت.
+AfricaTravel is a production-ready travel agency management platform built with Express 5, Prisma ORM, Supabase PostgreSQL, and Vanilla JS SPA.
 
-## طريقة التطبيق
+---
 
-انسخ الملفات دي فوق نفس المسارات في الريبو بتاعك (`dashboard/`)، مع الحفاظ على نفس البنية:
+## 🔒 Security & Architecture Overview
 
+### 1. Authentication & Token Architecture (XSS & CSRF Resilient)
+- **Access Token:** Short-lived JWT (15 minutes), stored strictly **in-memory** in the frontend client (`js/services/api-client.js`). Tokens are never stored in `localStorage` or `sessionStorage`, mitigating token theft via Cross-Site Scripting (XSS).
+- **Refresh Token:** High-entropy token (80 hex chars), set by the backend as an **`httpOnly`**, `secure` (in production), `sameSite: 'lax'`, `path: '/api/auth'` cookie with a 7-day TTL.
+- **Refresh Token Rotation (RTR):** Every token refresh automatically revokes the old refresh token and issues a brand-new token pair inside a database transaction (`$transaction`). Replay of revoked refresh tokens is immediately rejected.
+- **Frontend Fetch:** Uses `credentials: 'include'` on all API calls to automatically exchange cookies for token lifecycle management.
+
+### 2. Strict CORS Whitelist
+- Managed in `server/src/middleware/security.js`.
+- Whitelist configured strictly through `CORS_ORIGIN` environment variable.
+- Localhost development origins are restricted to `NODE_ENV !== 'production'`.
+- Production enforces exact origin matching (no wildcard `.vercel.app` domains).
+
+### 3. Safe Environment & Health Diagnostics
+- `/api/health` returns only `{ success, data: { status, database, timestamp } }` in production.
+- Internal connection error strings, hostnames, and environment variable names are strictly hidden from unauthenticated callers in production mode.
+- Production startup guard prevents execution if `JWT_SECRET`, `JWT_REFRESH_SECRET`, or `DEFAULT_ADMIN_PASSWORD` use default/insecure development values.
+
+### 4. Database Performance Indexes
+- Added foreign key performance indexes in `prisma/schema.prisma` and `prisma/supabase_setup.sql`:
+  - `audit_logs(userId)`
+  - `modifications(processedById)`
+  - `payments(addedById)`
+  - `tickets(createdById)`
+
+---
+
+## 🛠️ Environment Variables Reference
+
+| Variable | Description | Example / Default |
+| :--- | :--- | :--- |
+| `NODE_ENV` | Runtime environment | `development` / `production` |
+| `PORT` | HTTP port | `3000` |
+| `DATABASE_URL` | PostgreSQL connection pooler URL | `postgresql://postgres:[PASSWORD]@[HOST]:6543/postgres?pgbouncer=true` |
+| `JWT_SECRET` | Secret key for signing access JWTs | Generated with `openssl rand -hex 64` |
+| `JWT_EXPIRES_IN` | Access token lifespan | `15m` |
+| `JWT_REFRESH_SECRET`| Secret key for refresh token management | Generated with `openssl rand -hex 64` |
+| `JWT_REFRESH_EXPIRES_IN` | Refresh token lifespan | `7d` |
+| `CORS_ORIGIN` | Allowed CORS origins (comma-separated) | `https://africiatravel.vercel.app` |
+| `DEFAULT_ADMIN_PASSWORD` | Initial admin seed password | Strong password (required in production) |
+
+---
+
+## 🧪 Testing
+
+Run the full automated test suite (141+ tests across 7 suites):
+
+```bash
+npm test
 ```
-js/app.js
-js/pages/ticket-create.js
-js/pages/ticket-details/ticket-actions.js
-js/services/auth-service.js
-js/services/customer-service.js
-js/services/ticket-service.js
-js/state/store.js
-js/services/api-client.js   ← ملف جديد بالكامل
+
+Specific test runners:
+```bash
+npm run test:security   # Security fixes, RTR, cookie headers, CORS, env guards
+npm run test:auth       # Bcrypt, JWT verification, RBAC middleware
+npm run test:tickets    # Ticket-customer find-or-create association
+npm run test:rbac       # UI role-based filtering (Agent vs Admin)
+npm run test:domain     # Domain business rules and validation errors
+npm run test:api        # API endpoints and static security headers
+npm run test:frontend   # Bilingual i18n and frontend business flows
 ```
 
-أو استخدم `frontend-backend-integration.patch` مع:
+---
+
+## 🚀 Running Locally
+
+```bash
+# 1. Install dependencies and generate Prisma Client
+npm install
+
+# 2. Setup environment variables
+cp .env.example .env
+
+# 3. Seed database (development mode)
+npm run prisma:seed
+
+# 4. Start local development server
+npm start
 ```
-git apply frontend-backend-integration.patch
-```
-(لازم تكون واقف في نفس نقطة الـ commit اللي اشتغلنا عليها، وإلا الـ patch ممكن يفشل)
-
-## اللي اتعمل ✅
-
-1. **`js/services/api-client.js`** (جديد) — fetch wrapper مركزي بيرفق JWT، بيعمل auto-refresh للـ access token، وبيدير الـ session (access/refresh token + current user) في localStorage.
-
-2. **`js/state/store.js`** — اتحول بالكامل من localStorage/mock-data لـ **API-backed cache**:
-   - القراءة (`getState()`) sync زي الأول، من كاش في الميموري
-   - الكتابة (mutations) بقت async وبتنادي الـ backend الأول، وبعدين تحدّث الكاش المحلي بس لو السيرفر رجّع نجاح
-   - فيه `ensureHydrated()` بيجيب tickets/customers/employees/activity من الـ API مرة واحدة عند بداية الجلسة
-
-3. **`js/services/auth-service.js`** — login/logout حقيقيين على `/api/auth/*` بدل الـ mock القديم.
-
-4. **`js/services/ticket-service.js`** + **`customer-service.js`** — الـ reads فضلت sync (بتقرا من كاش الـ store)، والـ writes (createTicket, addPayment, addModification, addRefund, updateTicket, createCustomer, updateCustomer, addNote) بقت async.
-
-5. **`js/app.js`** — `setupShellForCurrentPath()` بقت async وبتستنى `store.ensureHydrated()` قبل ما تبني شل التطبيق، عشان الصفحات تلاقي بيانات حقيقية جاهزة وقت الـ render.
-
-6. **`js/pages/ticket-details/ticket-actions.js`** — الأربع submit handlers (Add Payment, Modify Flight, Process Refund, Edit Ticket) اتحولوا لـ `async` مع `await` على نداءات الـ service، وبقى فيه تعطيل مؤقت لزرار الـ submit أثناء الطلب (منع الضغط المتكرر).
-
-7. **`js/pages/ticket-create.js`** — نفس المعاملة: submit handler بقى async وبينتظر `TicketService.createTicket(...)`.
-
-كل الملفات دي اتعملها `node --check` وعدت من غير أخطاء syntax.
-
-## اللي لسه ناقص ⏳
-
-- **`js/pages/customers.js`** و **`js/pages/customer-details.js`** — أي مكان بينادي `CustomerService.createCustomer` / `updateCustomer` / `addNote` لسه محتاج يتحول لـ `async/await` بنفس الأسلوب اللي اتعمل في `ticket-actions.js`.
-- **`js/pages/employees.js`** — لو فيه UI بينادي `store.addEmployee`، يحتاج نفس المعاملة (وهو endpoint ADMIN-only في الباك اند).
-- **مفيش تجربة حقيقية على سيرفر شغال** — التعديلات دي اتعملها syntax-check بس (`node --check`)، لسه محتاجة تجربة في متصفح حقيقي بعد:
-  1. `npx prisma migrate dev` على قاعدة PostgreSQL شغالة
-  2. `npm run prisma:seed` (لو موجود سكريبت seed)
-  3. `npm start` وتجربة تسجيل الدخول والعمليات فعليًا
-- **صفحة الـ Settings/Profile**: `AuthService.updateProfile()` لسه بتحدّث محليًا بس، لأن مفيش endpoint في الباك اند لتحديث بروفايل المستخدم الحالي (`/api/employees/:id` مقصور على ADMIN فقط حسب الراوتس الحالية).
-
-## ملاحظة أمان مهمة
-
-كل عمليات الكتابة (payments, refunds, modifications) بتعتمد دلوقتي بالكامل على الـ validation اللي في الباك اند (`validatePayment`, `validateRefund`, `validateModification`) — مفيش تكرار للـ validation في الفرونت اند، ده مقصود عشان السيرفر يفضل هو مصدر الحقيقة الوحيد ومفيش فرصة لـ bypass زي المرة اللي فاتت.

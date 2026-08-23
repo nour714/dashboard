@@ -49,6 +49,25 @@ export function createApp(rootDir = ROOT_DIR) {
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
+  // Cookie Parser Middleware
+  app.use((req, res, next) => {
+    const rawCookie = req.headers.cookie;
+    req.cookies = {};
+    if (rawCookie) {
+      rawCookie.split(';').forEach(c => {
+        const [key, ...val] = c.trim().split('=');
+        if (key) {
+          try {
+            req.cookies[key] = decodeURIComponent(val.join('='));
+          } catch {
+            req.cookies[key] = val.join('=');
+          }
+        }
+      });
+    }
+    next();
+  });
+
   // Mount API Endpoints (supports both /api prefix and stripped serverless routes)
   app.use('/api', apiRouter);
   app.use((req, res, next) => {

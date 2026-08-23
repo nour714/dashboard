@@ -20,20 +20,23 @@ apiRouter.use(apiRateLimiter);
 // Health check endpoint
 apiRouter.get('/health', async (req, res) => {
   const healthResult = await checkDatabaseHealth();
-  const dbConnected = healthResult.ok;
-  const envKeys = Object.keys(process.env).filter(k => 
-    k.includes('DATABASE') || k.includes('POSTGRES') || k.includes('SUPABASE') || k.includes('URL') || k === 'NODE_ENV' || k === 'VERCEL'
-  );
+  const dbConnected = Boolean(healthResult && healthResult.ok);
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  const responseData = {
+    status: dbConnected ? 'healthy' : 'degraded',
+    database: dbConnected ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString()
+  };
+
+  // Only expose internal diagnostic details in non-production environments
+  if (!dbConnected && !isProduction && healthResult) {
+    responseData.details = healthResult;
+  }
 
   res.status(dbConnected ? 200 : 503).json({
     success: true,
-    data: {
-      status: dbConnected ? 'healthy' : 'degraded',
-      database: dbConnected ? 'connected' : 'disconnected',
-      detectedEnvVars: envKeys,
-      details: healthResult.ok ? undefined : healthResult,
-      timestamp: new Date().toISOString()
-    }
+    data: responseData
   });
 });
 

@@ -132,6 +132,35 @@ async function runSecurityFixesTests() {
   const envJsContent = fs.readFileSync('server/src/config/env.js', 'utf8');
   assert(envJsContent.includes('INSECURE_DEFAULTS'), 'server/src/config/env.js defines INSECURE_DEFAULTS');
   assert(envJsContent.includes('FATAL: JWT_SECRET/JWT_REFRESH_SECRET'), 'server/src/config/env.js enforces fatal check on production with insecure default secret');
+  assert(envJsContent.includes('FATAL: DEFAULT_ADMIN_PASSWORD is using insecure default'), 'server/src/config/env.js enforces fatal check on production with default password');
+
+  console.log('\n--- 3. CORS Policy Lockdown Verification ---');
+  const securityJsContent = fs.readFileSync('server/src/middleware/security.js', 'utf8');
+  assert(!securityJsContent.includes('isVercelOrigin'), 'server/src/middleware/security.js does not contain wildcard isVercelOrigin');
+  assert(securityJsContent.includes("env.NODE_ENV !== 'production'"), 'server/src/middleware/security.js restricts localhost to non-production');
+
+  console.log('\n--- 4. Health Endpoint Leakage Prevention ---');
+  const routesIndexContent = fs.readFileSync('server/src/routes/index.js', 'utf8');
+  assert(!routesIndexContent.includes('detectedEnvVars'), 'server/src/routes/index.js does NOT leak detectedEnvVars');
+  assert(routesIndexContent.includes("process.env.NODE_ENV === 'production'"), 'server/src/routes/index.js checks NODE_ENV for hiding diagnostics in production');
+
+  console.log('\n--- 5. httpOnly Cookies & In-Memory Tokens ---');
+  const authControllerContent = fs.readFileSync('server/src/controllers/auth.controller.js', 'utf8');
+  assert(authControllerContent.includes('res.cookie(REFRESH_COOKIE_NAME'), 'AuthController sets httpOnly cookie for refreshToken');
+  assert(authControllerContent.includes('httpOnly: true'), 'Cookie options configure httpOnly: true');
+  assert(authControllerContent.includes('res.clearCookie(REFRESH_COOKIE_NAME'), 'AuthController clears cookie on logout');
+
+  const apiClientContent = fs.readFileSync('js/services/api-client.js', 'utf8');
+  assert(apiClientContent.includes('inMemoryAccessToken'), 'api-client.js stores accessToken in-memory');
+  assert(!apiClientContent.includes('localStorage.setItem(ACCESS_TOKEN_KEY'), 'api-client.js does NOT store accessToken in localStorage');
+  assert(apiClientContent.includes("credentials: 'include'"), 'api-client.js passes credentials: include');
+
+  console.log('\n--- 6. Foreign Key Performance Indexes ---');
+  const schemaPrismaContent = fs.readFileSync('prisma/schema.prisma', 'utf8');
+  assert(schemaPrismaContent.includes('@@index([userId])'), 'schema.prisma includes @@index([userId]) on audit_logs');
+  assert(schemaPrismaContent.includes('@@index([processedById])'), 'schema.prisma includes @@index([processedById]) on modifications');
+  assert(schemaPrismaContent.includes('@@index([addedById])'), 'schema.prisma includes @@index([addedById]) on payments');
+  assert(schemaPrismaContent.includes('@@index([createdById])'), 'schema.prisma includes @@index([createdById]) on tickets');
 
   console.log('\n========================================================');
   console.log(`Security Fixes Tests: ${passed} passed, ${failed} failed`);

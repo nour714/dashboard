@@ -1,8 +1,15 @@
-/**
- * AfricaTravel - Authentication Controller
- */
-
 import { AuthService } from '../services/auth.service.js';
+import { ValidationError } from '../domain/errors.js';
+
+const REFRESH_COOKIE_NAME = 'refreshToken';
+
+const getRefreshCookieOptions = () => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  path: '/api/auth',
+  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+});
 
 export const AuthController = {
   async login(req, res, next) {
@@ -14,9 +21,17 @@ export const AuthController = {
       };
 
       const result = await AuthService.login(email, password, meta);
+
+      if (result.refreshToken) {
+        res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getRefreshCookieOptions());
+      }
+
       return res.status(200).json({
         success: true,
-        data: result
+        data: {
+          user: result.user,
+          accessToken: result.accessToken
+        }
       });
     } catch (err) {
       next(err);
@@ -25,11 +40,22 @@ export const AuthController = {
 
   async refresh(req, res, next) {
     try {
-      const { refreshToken } = req.body;
-      const result = await AuthService.refresh(refreshToken);
+      const rawToken = req.cookies?.[REFRESH_COOKIE_NAME] || req.body?.refreshToken;
+      if (!rawToken) {
+        throw new ValidationError('Refresh token is required', 'refreshToken');
+      }
+
+      const result = await AuthService.refresh(rawToken);
+
+      if (result.refreshToken) {
+        res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getRefreshCookieOptions());
+      }
+
       return res.status(200).json({
         success: true,
-        data: result
+        data: {
+          accessToken: result.accessToken
+        }
       });
     } catch (err) {
       next(err);
@@ -38,8 +64,16 @@ export const AuthController = {
 
   async logout(req, res, next) {
     try {
-      const { refreshToken } = req.body || {};
-      await AuthService.logout(refreshToken, req.user);
+      const rawToken = req.cookies?.[REFRESH_COOKIE_NAME] || req.body?.refreshToken;
+      await AuthService.logout(rawToken, req.user);
+
+      res.clearCookie(REFRESH_COOKIE_NAME, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/api/auth'
+      });
+
       return res.status(200).json({
         success: true,
         data: { message: 'Logged out successfully' }

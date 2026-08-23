@@ -8,28 +8,20 @@
 
 const API_BASE = '/api';
 
-const ACCESS_TOKEN_KEY = 'AfricaTravel_ACCESS_TOKEN';
-const REFRESH_TOKEN_KEY = 'AfricaTravel_REFRESH_TOKEN';
 const CURRENT_USER_KEY = 'AfricaTravel_CURRENT_USER';
 
+// Store short-lived access token strictly in-memory (never in localStorage to prevent XSS theft)
+let inMemoryAccessToken = null;
 let refreshInFlight = null;
 
 // --- Session persistence helpers -------------------------------------------------
 
 export function getAccessToken() {
-  try {
-    return typeof localStorage !== 'undefined' ? localStorage.getItem(ACCESS_TOKEN_KEY) : null;
-  } catch {
-    return null;
-  }
+  return inMemoryAccessToken;
 }
 
-export function getRefreshToken() {
-  try {
-    return typeof localStorage !== 'undefined' ? localStorage.getItem(REFRESH_TOKEN_KEY) : null;
-  } catch {
-    return null;
-  }
+export function setAccessToken(token) {
+  inMemoryAccessToken = token || null;
 }
 
 export function getStoredUser() {
@@ -41,12 +33,19 @@ export function getStoredUser() {
   }
 }
 
-export function setSession({ accessToken, refreshToken, user } = {}) {
+export function setSession({ accessToken, user } = {}) {
   try {
-    if (typeof localStorage === 'undefined') return;
-    if (accessToken) localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-    if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-    if (user) localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+    if (accessToken !== undefined) {
+      inMemoryAccessToken = accessToken;
+    }
+    if (user && typeof localStorage !== 'undefined') {
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+    }
+    // Clean up any legacy localStorage tokens if present
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('AfricaTravel_ACCESS_TOKEN');
+      localStorage.removeItem('AfricaTravel_REFRESH_TOKEN');
+    }
   } catch (e) {
     console.error('Failed to persist session', e);
   }
@@ -58,33 +57,30 @@ export function updateStoredUser(patch) {
 }
 
 export function clearSession() {
+  inMemoryAccessToken = null;
   try {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(CURRENT_USER_KEY);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(CURRENT_USER_KEY);
+      localStorage.removeItem('AfricaTravel_ACCESS_TOKEN');
+      localStorage.removeItem('AfricaTravel_REFRESH_TOKEN');
+    }
   } catch (e) {
     console.error('Failed to clear session', e);
   }
 }
 
 export function hasSession() {
-  return Boolean(getAccessToken());
+  return Boolean(inMemoryAccessToken || getStoredUser());
 }
 
 // --- Core request logic ------------------------------------------------------------
 
 async function refreshAccessToken() {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) {
-    throw new Error('No refresh token available');
-  }
-
   if (!refreshInFlight) {
     refreshInFlight = fetch(`${API_BASE}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken })
+      credentials: 'include' // Sends httpOnly refreshToken cookie automatically
     })
       .then(async (res) => {
         const body = await res.json().catch(() => ({}));
@@ -92,8 +88,7 @@ async function refreshAccessToken() {
           throw new Error(body?.error?.message || 'Session expired');
         }
         setSession({
-          accessToken: body.data.accessToken,
-          refreshToken: body.data.refreshToken || refreshToken
+          accessToken: body.data.accessToken
         });
         return body.data.accessToken;
       })
@@ -128,6 +123,7 @@ async function request(method, path, { body, auth = true, retry = true } = {}) {
     res = await fetch(`${API_BASE}${path}`, {
       method,
       headers,
+      credentials: 'include',
       body: body !== undefined ? JSON.stringify(body) : undefined
     });
   } catch (networkErr) {
