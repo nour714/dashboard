@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel — Main Application Entry Point
  */
 
@@ -65,6 +65,9 @@ class App {
       this.shellRendered = false;
       this.appContainer.innerHTML = '<div id="app-page-mount"></div>';
       const mount = document.getElementById('app-page-mount');
+      if (this.router) {
+        this.router.destroy();
+      }
       this.router = new Router(routes, mount);
       return;
     }
@@ -79,6 +82,9 @@ class App {
     // Render Full App Shell
     this.renderAppShell(pathname);
     const contentMount = document.getElementById('app-content-mount');
+    if (this.router) {
+      this.router.destroy();
+    }
     this.router = new Router(routes, contentMount);
   }
 

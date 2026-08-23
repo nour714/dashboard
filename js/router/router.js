@@ -47,27 +47,30 @@ export class Router {
     this.currentParams = {};
     this.queryParams = {};
 
-    this.init();
-  }
-
-  init() {
-    window.addEventListener('popstate', () => {
-      this.resolveCurrentRoute();
-    });
-
-    document.addEventListener('click', (e) => {
+    this._onPopState = () => this.resolveCurrentRoute();
+    this._onDocumentClick = (e) => {
       const link = e.target.closest('a[data-link]');
       if (link) {
         e.preventDefault();
         const href = link.getAttribute('href');
-        if (href) {
-          this.navigateTo(href);
-        }
+        if (href) this.navigateTo(href);
       }
-    });
+    };
+
+    this.init();
+  }
+
+  init() {
+    window.addEventListener('popstate', this._onPopState);
+    document.addEventListener('click', this._onDocumentClick);
 
     // Resolve initial route on startup
     this.resolveCurrentRoute();
+  }
+
+  destroy() {
+    window.removeEventListener('popstate', this._onPopState);
+    document.removeEventListener('click', this._onDocumentClick);
   }
 
   navigateTo(path) {
