@@ -106,20 +106,20 @@ export const SettingsPage = {
             <form id="password-form">
               <div class="form-group">
                 <label class="form-label" for="curr-pw">${escapeHtml(t('settings.profile.currentPassword'))}</label>
-                <input type="password" id="curr-pw" class="form-control" value="••••••••" />
+                <input type="password" id="curr-pw" class="form-control" placeholder="••••••••" autocomplete="current-password" required />
               </div>
               <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="new-pw">${escapeHtml(t('settings.profile.newPassword'))}</label>
-                  <input type="password" id="new-pw" class="form-control" placeholder="••••••••" />
+                  <input type="password" id="new-pw" class="form-control" placeholder="••••••••" autocomplete="new-password" minlength="6" required />
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="conf-pw">${escapeHtml(t('settings.profile.confirmPassword'))}</label>
-                  <input type="password" id="conf-pw" class="form-control" placeholder="••••••••" />
+                  <input type="password" id="conf-pw" class="form-control" placeholder="••••••••" autocomplete="new-password" minlength="6" required />
                 </div>
               </div>
               <div class="d-flex justify-end mt-md">
-                <button type="submit" class="btn btn-secondary">${escapeHtml(t('settings.profile.updatePassword'))}</button>
+                <button type="submit" class="btn btn-primary" id="save-pw-btn">${escapeHtml(t('settings.profile.updatePassword'))}</button>
               </div>
             </form>
           </div>
@@ -315,29 +315,94 @@ export const SettingsPage = {
 
     const profileForm = container.querySelector('#profile-form');
     if (profileForm) {
-      profileForm.addEventListener('submit', (e) => {
+      profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = container.querySelector('#setting-name').value.trim();
         const email = container.querySelector('#setting-email').value.trim();
+        const submitBtn = profileForm.querySelector('button[type="submit"]');
 
-        AuthService.updateProfile({ fullName: name, email });
-        showToast(t('toasts.profileUpdated'), 'success');
+        if (!name || !email) {
+          showToast('Please enter both name and email', 'error');
+          return;
+        }
+
+        if (submitBtn) submitBtn.disabled = true;
+        const res = await AuthService.updateProfile({ fullName: name, email });
+        if (submitBtn) submitBtn.disabled = false;
+
+        if (res.success) {
+          showToast(t('toasts.profileUpdated'), 'success');
+          // Re-render settings page so updated initials and names are reflected
+          container.innerHTML = SettingsPage.render();
+          SettingsPage.afterRender(container);
+        } else {
+          showToast(res.error || 'Failed to update profile', 'error');
+        }
       });
     }
 
     const passwordForm = container.querySelector('#password-form');
     if (passwordForm) {
-      passwordForm.addEventListener('submit', (e) => {
+      passwordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        showToast(t('toasts.passwordChanged'), 'success');
+        const currPwInput = container.querySelector('#curr-pw');
+        const newPwInput = container.querySelector('#new-pw');
+        const confPwInput = container.querySelector('#conf-pw');
+        const submitBtn = container.querySelector('#save-pw-btn');
+
+        const currentPassword = currPwInput.value;
+        const newPassword = newPwInput.value;
+        const confirmPassword = confPwInput.value;
+
+        if (!currentPassword) {
+          showToast('Please enter your current password', 'error');
+          return;
+        }
+
+        if (newPassword.length < 6) {
+          showToast('New password must be at least 6 characters', 'error');
+          return;
+        }
+
+        if (newPassword !== confirmPassword) {
+          showToast('New password and confirmation do not match', 'error');
+          return;
+        }
+
+        if (submitBtn) submitBtn.disabled = true;
+        const res = await AuthService.changePassword(currentPassword, newPassword);
+        if (submitBtn) submitBtn.disabled = false;
+
+        if (res.success) {
+          showToast(t('toasts.passwordChanged'), 'success');
+          currPwInput.value = '';
+          newPwInput.value = '';
+          confPwInput.value = '';
+        } else {
+          showToast(res.error || 'Failed to change password', 'error');
+        }
       });
     }
 
     const companyForm = container.querySelector('#company-form');
     if (companyForm) {
-      companyForm.addEventListener('submit', (e) => {
+      companyForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        showToast(t('toasts.companyUpdated'), 'success');
+        const name = container.querySelector('#co-name')?.value.trim() || '';
+        const iataNumber = container.querySelector('#co-iata')?.value.trim() || '';
+        const taxId = container.querySelector('#co-tax')?.value.trim() || '';
+        const address = container.querySelector('#co-addr')?.value.trim() || '';
+        const submitBtn = companyForm.querySelector('button[type="submit"]');
+
+        if (submitBtn) submitBtn.disabled = true;
+        const res = await store.saveSettings('company', { name, iataNumber, taxId, address });
+        if (submitBtn) submitBtn.disabled = false;
+
+        if (res.success) {
+          showToast(t('toasts.companyUpdated'), 'success');
+        } else {
+          showToast(res.error?.message || 'Failed to update company settings', 'error');
+        }
       });
     }
 

@@ -8,7 +8,7 @@
  */
 
 import { store } from '../state/store.js';
-import { getStoredUser, hasSession } from './api-client.js';
+import { apiClient, getStoredUser, hasSession } from './api-client.js';
 
 export const AuthService = {
   /**
@@ -59,12 +59,35 @@ export const AuthService = {
   },
 
   /**
-   * Updates the locally displayed profile. Note: there is currently no
-   * backend self-profile endpoint, so this only affects the local UI.
-   * @param {object} profileData
+   * Updates the user profile on the backend and in local state.
+   * @param {{ fullName?: string, name?: string, email?: string, title?: string }} profileData
+   * @returns {Promise<{success: boolean, user?: object, error?: string}>}
    */
-  updateProfile(profileData) {
-    store.updateSettings('profile', profileData);
-    return this.getCurrentUser();
+  async updateProfile(profileData) {
+    const payload = {
+      name: profileData.fullName || profileData.name,
+      email: profileData.email,
+      title: profileData.title
+    };
+    const res = await apiClient.patch('/auth/profile', payload);
+    if (res.success && res.data?.user) {
+      store.updateSettings('profile', res.data.user);
+      return { success: true, user: res.data.user };
+    }
+    return { success: false, error: res.error?.message || 'Failed to update profile' };
+  },
+
+  /**
+   * Changes user password on the backend.
+   * @param {string} currentPassword
+   * @param {string} newPassword
+   * @returns {Promise<{success: boolean, error?: string}>}
+   */
+  async changePassword(currentPassword, newPassword) {
+    const res = await apiClient.post('/auth/change-password', { currentPassword, newPassword });
+    if (res.success) {
+      return { success: true };
+    }
+    return { success: false, error: res.error?.message || 'Failed to change password' };
   }
 };

@@ -258,5 +258,101 @@ export const AuthService = {
     }
 
     return user;
+  },
+
+  /**
+   * Updates profile data for a user
+   * @param {string} userId
+   * @param {{ name?: string, email?: string, title?: string, phone?: string }} data
+   */
+  async updateProfile(userId, data) {
+    const prisma = getPrismaClient();
+    const existing = await prisma.user.findUnique({ where: { id: userId } });
+    if (!existing) {
+      throw new NotFoundError('User', userId);
+    }
+
+    const updateData = {};
+    if (data.name) updateData.name = data.name.trim();
+    if (data.title) updateData.title = data.title.trim();
+    if (data.email) {
+      const cleanEmail = data.email.toLowerCase().trim();
+      if (cleanEmail !== existing.email.toLowerCase()) {
+        const duplicate = await prisma.user.findFirst({
+          where: {
+            email: { equals: cleanEmail, mode: 'insensitive' },
+            id: { not: userId }
+          }
+        });
+        if (duplicate) {
+          throw new BusinessRuleError('A user with this email address already exists.', 'EMAIL_EXISTS');
+        }
+        updateData.email = cleanEmail;
+      }
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        title: true,
+        status: true,
+        lastActive: true
+      }
+    });
+
+    await AuditService.recordLog({
+      user: updated.name,
+      userId: updated.id,
+      action: 'UPDATE_PROFILE',
+      description: `User ${updated.name} updated profile settings.`
+    });
+
+    return updated;
+  },
+
+  /**
+   * Changes password for an authenticated user
+   * @param {string} userId
+   * @param {string} currentPassword
+   * @param {string} newPassword
+   */
+  async changePassword(userId, currentPassword, newPassword) {
+    const prisma = getPrismaClient();
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundError('User', userId);
+    }
+
+    const isMatch = await this.comparePassword(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      throw new UnauthorizedError('Current password is incorrect.', 'INVALID_CURRENT_PASSWORD');
+    }
+
+    const newHash = await this.hashPassword(newPassword);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newHash }
+    });
+
+    // Revoke all existing refresh tokens
+    await prisma.refreshToken.updateMany({
+      where: { userId },
+      data: { revoked: true }
+    });
+
+    await AuditService.recordLog({
+      user: user.name,
+      userId: user.id,
+      action: 'CHANGE_PASSWORD',
+      description: `User ${user.name} changed their password.`
+    });
+
+    return { success: true };
   }
 };

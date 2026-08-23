@@ -75,11 +75,12 @@ class Store {
   async hydrate() {
     if (!hasSession()) return;
 
-    const [ticketsRes, customersRes, employeesRes, activityRes] = await Promise.all([
+    const [ticketsRes, customersRes, employeesRes, activityRes, settingsRes] = await Promise.all([
       apiClient.get('/tickets', { limit: 100 }),
       apiClient.get('/customers'),
       apiClient.get('/employees'),
-      apiClient.get('/activity', { limit: 100 })
+      apiClient.get('/activity', { limit: 100 }),
+      apiClient.get('/settings')
     ]);
 
     if (ticketsRes.success) this.state.tickets = ticketsRes.data.tickets || [];
@@ -87,6 +88,12 @@ class Store {
     // Employees endpoint is ADMIN-only; agents simply keep an empty list.
     if (employeesRes.success) this.state.employees = employeesRes.data || [];
     if (activityRes.success) this.state.activityLogs = activityRes.data.logs || activityRes.data || [];
+    if (settingsRes.success && settingsRes.data && typeof settingsRes.data === 'object') {
+      this.state.settings = {
+        ...INITIAL_SETTINGS,
+        ...settingsRes.data
+      };
+    }
 
     this.hydrated = true;
     this.notify();
@@ -312,7 +319,7 @@ class Store {
     this.state.activityLogs.unshift(newLog);
   }
 
-  // --- Settings Actions (local-only profile display; no backend self-profile endpoint yet) ---
+  // --- Settings Actions ---
   updateSettings(section, data) {
     if (!this.state.settings[section]) {
       this.state.settings[section] = {};
@@ -329,6 +336,14 @@ class Store {
       updateStoredUser(data);
     }
     this.notify();
+  }
+
+  async saveSettings(section, data) {
+    this.updateSettings(section, data);
+    const res = await apiClient.patch('/settings', {
+      [section]: this.state.settings[section]
+    });
+    return res;
   }
 }
 
