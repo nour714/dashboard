@@ -16,21 +16,30 @@ export const helmetMiddleware = helmet({
 
 export const corsMiddleware = cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (e.g. mobile apps, curl, same-origin server-side requests)
     if (!origin) return callback(null, true);
-
     const normalizedOrigin = origin.replace(/\/+$/, '');
-    const allowedOrigins = env.CORS_ORIGIN 
-      ? env.CORS_ORIGIN.split(',').map(s => s.trim().replace(/\/+$/, '')).filter(Boolean)
+
+    const allowedOrigins = env.CORS_ORIGIN
+      ? env.CORS_ORIGIN.split(',').map(s => s.trim().replace(/\/+$/, ''))
       : [];
-    
-    // In development/test, permit localhost / 127.0.0.1 origins
+
+    // Vercel injects these automatically per-deployment; they identify
+    // THIS project's own domains only (not arbitrary *.vercel.app sites).
+    const vercelSystemDomains = [
+      process.env.VERCEL_URL,
+      process.env.VERCEL_PROJECT_PRODUCTION_URL,
+      process.env.VERCEL_BRANCH_URL
+    ]
+      .filter(Boolean)
+      .map(d => `https://${d}`.replace(/\/+$/, ''));
+
     const isDevelopment = env.NODE_ENV !== 'production';
     const isLocalhost = isDevelopment && (normalizedOrigin.includes('localhost') || normalizedOrigin.includes('127.0.0.1'));
 
     if (
       allowedOrigins.includes('*') ||
       allowedOrigins.includes(normalizedOrigin) ||
+      vercelSystemDomains.includes(normalizedOrigin) ||
       isLocalhost
     ) {
       return callback(null, true);
