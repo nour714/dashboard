@@ -34,10 +34,13 @@ function resolveDatabaseUrl() {
     url = url.replace('[YOUR-PASSWORD]', encodeURIComponent(process.env.POSTGRES_PASSWORD));
   }
 
-  // In cloud environments, a real DATABASE_URL must be configured
-  if ((!url || url.includes('localhost') || url.includes('127.0.0.1') || url.includes('[YOUR-PASSWORD]')) && (process.env.VERCEL || process.env.RENDER || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isCloud = !!(process.env.VERCEL || process.env.RENDER || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+  // In production or cloud environments, a real non-placeholder DATABASE_URL must be configured
+  if ((isProduction || isCloud) && (!url || url.includes('localhost') || url.includes('127.0.0.1') || url.includes('[YOUR-PASSWORD]'))) {
     throw new Error(
-      'DATABASE_URL is not configured. Set it in your deployment environment variables.'
+      'DATABASE_URL is not configured or uses placeholder/localhost in production. Set it in your deployment environment variables.'
     );
   }
 
@@ -75,24 +78,28 @@ const INSECURE_DEFAULTS = [
   'africatravel_super_secret_jwt_access_key_2026_dev_key',
   'africatravel_super_secret_jwt_refresh_key_2026_dev_key',
   'africatravel_production_super_secret_jwt_key_2026',
-  'africatravel_production_super_secret_refresh_key_2026'
+  'africatravel_production_super_secret_refresh_key_2026',
+  'secret',
+  'jwt_secret',
+  'change_me',
+  'default_secret'
 ];
 
-if (
-  envData.NODE_ENV === 'production' &&
-  (INSECURE_DEFAULTS.includes(envData.JWT_SECRET) || INSECURE_DEFAULTS.includes(envData.JWT_REFRESH_SECRET))
-) {
-  if (process.env.VERCEL || process.env.RENDER || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    console.warn('⚠️ WARNING: JWT_SECRET/JWT_REFRESH_SECRET were using insecure defaults. Auto-generating secure random keys.');
-    if (INSECURE_DEFAULTS.includes(envData.JWT_SECRET)) {
-      envData.JWT_SECRET = crypto.randomBytes(32).toString('hex');
+function isWeakSecret(secret) {
+  if (!secret || typeof secret !== 'string') return true;
+  if (secret.length < 32) return true;
+  if (INSECURE_DEFAULTS.includes(secret)) return true;
+  if (/^(\w)\1+$/.test(secret)) return true;
+  return false;
+}
+
+if (envData.NODE_ENV === 'production') {
+  if (isWeakSecret(envData.JWT_SECRET) || isWeakSecret(envData.JWT_REFRESH_SECRET)) {
+    console.error('❌ FATAL: JWT_SECRET/JWT_REFRESH_SECRET are using insecure default values in production. Set real secrets (min 32 chars) in your .env file.');
+    if (typeof process.exit === 'function' && !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+      process.exit(1);
     }
-    if (INSECURE_DEFAULTS.includes(envData.JWT_REFRESH_SECRET)) {
-      envData.JWT_REFRESH_SECRET = crypto.randomBytes(32).toString('hex');
-    }
-  } else {
-    console.error('❌ FATAL: JWT_SECRET/JWT_REFRESH_SECRET are using insecure default values in production. Set real secrets in your .env file.');
-    process.exit(1);
+    throw new Error('FATAL: JWT_SECRET/JWT_REFRESH_SECRET are using insecure default values in production. Set real secrets in your .env file.');
   }
 }
 
