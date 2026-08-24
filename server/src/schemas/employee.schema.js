@@ -14,10 +14,9 @@ export const createEmployeeSchema = z.object({
 });
 
 export const updateEmployeeSchema = z.object({
-  name: z.string().min(1).optional(),
-  email: z.string().email().optional(),
+  name: z.string().min(1).trim().optional(),
+  email: z.string().email().trim().optional(),
   role: z.enum(['ADMIN', 'AGENT', 'TICKET_ONLY']).optional(),
-  title: z.string().optional(),
-  status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
-  password: z.string().min(8).optional()
+  title: z.string().trim().optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE']).optional()
 });

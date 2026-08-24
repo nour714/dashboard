@@ -118,7 +118,9 @@ async function runApiTests() {
       ['PATCH /api/tickets/:id', { method: 'PATCH', path: '/api/tickets/TKT-1', headers: ticketOnlyHeaders, body: {} }],
       ['POST /api/tickets/:id/payments', { method: 'POST', path: '/api/tickets/TKT-1/payments', headers: ticketOnlyHeaders, body: {} }],
       ['DELETE /api/tickets/:id', { method: 'DELETE', path: '/api/tickets/TKT-1', headers: ticketOnlyHeaders }],
-      ['DELETE /api/customers/:id', { method: 'DELETE', path: '/api/customers/CUST-1', headers: ticketOnlyHeaders }]
+      ['DELETE /api/customers/:id', { method: 'DELETE', path: '/api/customers/CUST-1', headers: ticketOnlyHeaders }],
+      ['GET /api/employees', { method: 'GET', path: '/api/employees', headers: ticketOnlyHeaders }],
+      ['PATCH /api/employees/:id', { method: 'PATCH', path: '/api/employees/EMP-102', headers: ticketOnlyHeaders, body: { name: 'New Name' } }]
     ];
     for (const [label, request] of restrictedRequests) {
       const response = await makeRequest(server, request);
@@ -147,8 +149,8 @@ async function runApiTests() {
     assert(healthRes.headers['x-content-type-options'] === 'nosniff', 'X-Content-Type-Options: nosniff header present');
     assert(healthRes.headers['x-frame-options'] === 'SAMEORIGIN' || healthRes.headers['x-frame-options'] === 'DENY', 'X-Frame-Options header present');
 
-    // 7. RBAC: AGENT cannot process refunds, delete tickets, or delete customers (ADMIN-only)
-    console.log('\n--- 7. Refund & Delete RBAC Enforcement ---');
+    // 7. RBAC: AGENT cannot process refunds, delete tickets, delete customers, or update employees (ADMIN-only)
+    console.log('\n--- 7. Refund, Delete, & Staff Management RBAC Enforcement ---');
     const agentToken = AuthService.generateAccessToken({ id: 'EMP-103', name: 'Nour Wael', email: 'nour.w@africatravel.com', role: 'AGENT', title: 'Ticketing Officer' });
     const agentRefundRes = await makeRequest(server, {
       method: 'POST',
@@ -174,6 +176,15 @@ async function runApiTests() {
     });
     assert(agentDeleteCustomerRes.statusCode === 403, 'AGENT calling DELETE /api/customers/:id receives 403 Forbidden');
     assert(agentDeleteCustomerRes.json?.error?.code === 'FORBIDDEN', 'Customer deletion rejection returns FORBIDDEN error code');
+
+    const agentPatchEmployeeRes = await makeRequest(server, {
+      method: 'PATCH',
+      path: '/api/employees/EMP-102',
+      headers: { 'Authorization': `Bearer ${agentToken}` },
+      body: { role: 'ADMIN' }
+    });
+    assert(agentPatchEmployeeRes.statusCode === 403, 'AGENT calling PATCH /api/employees/:id receives 403 Forbidden');
+    assert(agentPatchEmployeeRes.json?.error?.code === 'FORBIDDEN', 'Employee update rejection returns FORBIDDEN error code');
 
     console.log('\n========================================================');
     console.log(`Backend API Integration Tests: ${passed} passed, ${failed} failed`);

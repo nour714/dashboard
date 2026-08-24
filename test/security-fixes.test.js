@@ -10,6 +10,7 @@
 import { AuthService } from '../server/src/services/auth.service.js';
 import { TicketService } from '../server/src/services/ticket.service.js';
 import { CustomerService } from '../server/src/services/customer.service.js';
+import { EmployeeService } from '../server/src/services/employee.service.js';
 import { setPrismaClient } from '../server/src/config/database.js';
 import { UnauthorizedError, BusinessRuleError } from '../server/src/domain/errors.js';
 import fs from 'fs';
@@ -47,12 +48,15 @@ async function runSecurityFixesTests() {
     status: 'ACTIVE'
   };
 
-  // Mock in-memory state for tickets, payments, refunds, customers
+  // Mock in-memory state for tickets, payments, refunds, customers, users
   const mockTickets = new Map();
   const mockPayments = new Map();
   const mockRefunds = new Map();
   const mockCustomers = new Map();
+  const mockUsers = new Map();
   const mockAuditLogs = [];
+
+  mockUsers.set(mockUser.id, { ...mockUser });
 
   const mockPrisma = {
     refreshToken: {
@@ -90,6 +94,29 @@ async function runSecurityFixesTests() {
         return record;
       }
     },
+    user: {
+      findUnique: async ({ where }) => {
+        const u = where.id ? mockUsers.get(where.id) : [...mockUsers.values()].find(x => x.email === where.email);
+        return u ? { ...u } : null;
+      },
+      findMany: async () => {
+        return [...mockUsers.values()].map(u => ({ ...u }));
+      },
+      count: async ({ where }) => {
+        let list = [...mockUsers.values()];
+        if (where?.role) list = list.filter(u => u.role === where.role);
+        if (where?.status) list = list.filter(u => u.status === where.status);
+        return list.length;
+      },
+      update: async ({ where, data }) => {
+        const u = mockUsers.get(where.id);
+        if (u) {
+          Object.assign(u, data);
+          return { ...u };
+        }
+        return null;
+      }
+    },
     customer: {
       findUnique: async ({ where }) => {
         const c = mockCustomers.get(where.id);
@@ -112,10 +139,11 @@ async function runSecurityFixesTests() {
       }
     },
     ticket: {
-      findFirst: async ({ where }) => {
+      findFirst: async (args = {}) => {
+        const where = args?.where || {};
         const queryId = where.id || where.ticketNumber || where.pnr || (where.OR && where.OR[0]?.id);
         const ticket = [...mockTickets.values()].find(t =>
-          (t.id === queryId || t.ticketNumber === queryId || t.pnr === queryId) &&
+          (!queryId || t.id === queryId || t.ticketNumber === queryId || t.pnr === queryId) &&
           (where.deletedAt === undefined || (where.deletedAt === null ? !t.deletedAt : t.deletedAt !== null))
         );
         if (!ticket) return null;
@@ -123,7 +151,8 @@ async function runSecurityFixesTests() {
         const refunds = [...mockRefunds.values()].filter(r => r.ticketId === ticket.id);
         return { ...ticket, payments, refunds, modifications: [] };
       },
-      findMany: async ({ where }) => {
+      findMany: async (args = {}) => {
+        const where = args?.where;
         let list = [...mockTickets.values()];
         if (where?.customerId) {
           list = list.filter(t => t.customerId === where.customerId);
@@ -134,7 +163,11 @@ async function runSecurityFixesTests() {
         if (where?.status?.notIn) {
           list = list.filter(t => !where.status.notIn.includes(t.status));
         }
-        return list;
+        return list.map(ticket => {
+          const payments = [...mockPayments.values()].filter(p => p.ticketId === ticket.id);
+          const refunds = [...mockRefunds.values()].filter(r => r.ticketId === ticket.id);
+          return { ...ticket, payments, refunds, modifications: [] };
+        });
       },
       update: async ({ where, data }) => {
         const ticket = mockTickets.get(where.id);
@@ -361,6 +394,58 @@ async function runSecurityFixesTests() {
 
   const custAuditLog = mockAuditLogs.find(l => l.action === 'DELETE_CUSTOMER' && l.customerId === testCustId);
   assert(custAuditLog && custAuditLog.metadata?.adminId === mockUser.id && custAuditLog.metadata?.passportDocPreserved === true, 'DELETE_CUSTOMER audit log recorded with adminId, document retention flags, and metadata');
+
+  // Test 5: Employee Management & Lockout Protection (PATCH /api/employees/:id)
+  // (a) Admin attempting to demote self MUST throw CANNOT_DEMOTE_SELF
+  let selfDemoteFailed = false;
+  try {
+    await EmployeeService.updateEmployee(mockUser.id, { role: 'AGENT' }, mockUser);
+  } catch (err) {
+    if (err instanceof BusinessRuleError && err.rule === 'CANNOT_DEMOTE_SELF') {
+      selfDemoteFailed = true;
+    }
+  }
+  assert(selfDemoteFailed, 'Admin attempting to demote self is rejected (CANNOT_DEMOTE_SELF)');
+
+  // (b) Create a second staff user (AGENT)
+  const agentUser = {
+    id: 'EMP-102',
+    name: 'Kareem Tarek',
+    email: 'kareem.t@africatravel.com',
+    role: 'AGENT',
+    title: 'Support Agent',
+    status: 'ACTIVE'
+  };
+  mockUsers.set(agentUser.id, { ...agentUser });
+
+  // (c) Admin attempting to deactivate the only active admin MUST throw CANNOT_DEMOTE_LAST_ADMIN
+  let lastAdminDeactivateFailed = false;
+  try {
+    await EmployeeService.updateEmployee(mockUser.id, { status: 'INACTIVE' }, { id: 'EMP-OTHER', name: 'Other' });
+  } catch (err) {
+    if (err instanceof BusinessRuleError && err.rule === 'CANNOT_DEMOTE_LAST_ADMIN') {
+      lastAdminDeactivateFailed = true;
+    }
+  }
+  assert(lastAdminDeactivateFailed, 'Deactivating the last remaining active Administrator is rejected (CANNOT_DEMOTE_LAST_ADMIN)');
+
+  // (d) Admin promotes AGENT to ADMIN -> MUST record CHANGE_EMPLOYEE_ROLE audit log
+  const promotedEmployee = await EmployeeService.updateEmployee(agentUser.id, { role: 'ADMIN' }, mockUser);
+  assert(promotedEmployee && promotedEmployee.role === 'ADMIN', 'Admin successfully updates role of another employee to ADMIN');
+
+  const roleChangeLog = mockAuditLogs.find(l => l.action === 'CHANGE_EMPLOYEE_ROLE' && l.metadata?.targetId === agentUser.id);
+  assert(
+    roleChangeLog &&
+    roleChangeLog.metadata?.oldRole === 'AGENT' &&
+    roleChangeLog.metadata?.newRole === 'ADMIN' &&
+    roleChangeLog.metadata?.adminId === mockUser.id,
+    'CHANGE_EMPLOYEE_ROLE audit log recorded with oldRole, newRole, and adminId'
+  );
+
+  // (e) Admin updates employee title and status -> records UPDATE_EMPLOYEE audit log
+  await EmployeeService.updateEmployee(agentUser.id, { title: 'Senior Operations Lead' }, mockUser);
+  const profileUpdateLog = mockAuditLogs.find(l => l.action === 'UPDATE_EMPLOYEE' && l.metadata?.targetId === agentUser.id);
+  assert(profileUpdateLog && profileUpdateLog.metadata?.adminId === mockUser.id, 'UPDATE_EMPLOYEE audit log recorded for title modification');
 
   console.log('\n========================================================');
   console.log(`Security Fixes Tests: ${passed} passed, ${failed} failed`);

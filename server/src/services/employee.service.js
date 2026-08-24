@@ -148,7 +148,7 @@ export const EmployeeService = {
   },
 
   /**
-   * Updates an existing employee profile or access status
+   * Updates an existing employee profile or access status (ADMIN only)
    * @param {string} employeeId
    * @param {object} updates
    * @param {object} currentUser
@@ -160,10 +160,33 @@ export const EmployeeService = {
       throw new NotFoundError('Employee', employeeId);
     }
 
+    // Security Guard: Prevent Administrator from demoting their own role
+    if (currentUser.id === employeeId && updates.role && updates.role !== 'ADMIN') {
+      throw new BusinessRuleError(
+        'Administrators cannot demote their own role to prevent system lockout.',
+        'CANNOT_DEMOTE_SELF'
+      );
+    }
+
+    // Security Guard: Prevent demoting or deactivating the last active Administrator
+    const isDemotingAdmin = existing.role === 'ADMIN' && updates.role && updates.role !== 'ADMIN';
+    const isDeactivatingAdmin = existing.role === 'ADMIN' && updates.status === 'INACTIVE';
+    if (isDemotingAdmin || isDeactivatingAdmin) {
+      const activeAdminCount = await prisma.user.count({
+        where: { role: 'ADMIN', status: 'ACTIVE' }
+      });
+      if (activeAdminCount <= 1) {
+        throw new BusinessRuleError(
+          'Cannot demote or deactivate the last remaining active Administrator.',
+          'CANNOT_DEMOTE_LAST_ADMIN'
+        );
+      }
+    }
+
     const data = {};
     if (updates.name) data.name = updates.name.trim();
-    if (updates.role) data.role = ['ADMIN', 'AGENT', 'TICKET_ONLY'].includes(updates.role) ? updates.role : 'AGENT';
-    if (updates.title) data.title = updates.title;
+    if (updates.role) data.role = ['ADMIN', 'AGENT', 'TICKET_ONLY'].includes(updates.role) ? updates.role : existing.role;
+    if (updates.title !== undefined) data.title = updates.title ? updates.title.trim() : '';
     if (updates.status) data.status = updates.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE';
 
     if (updates.email) {
@@ -177,9 +200,8 @@ export const EmployeeService = {
       }
     }
 
-    if (updates.password) {
-      data.passwordHash = await bcrypt.hash(updates.password, 10);
-    }
+    const oldRole = existing.role;
+    const isRoleChange = Boolean(data.role && data.role !== oldRole);
 
     const updated = await prisma.user.update({
       where: { id: employeeId },
@@ -196,12 +218,36 @@ export const EmployeeService = {
       }
     });
 
-    await AuditService.recordLog({
-      user: currentUser.name || 'Admin',
-      userId: currentUser.id,
-      action: 'UPDATE_EMPLOYEE',
-      description: `Updated employee profile for ${updated.name} (${updated.id}).`
-    });
+    if (isRoleChange) {
+      await AuditService.recordLog({
+        user: currentUser.name || 'Admin',
+        userId: currentUser.id || null,
+        action: 'CHANGE_EMPLOYEE_ROLE',
+        description: `Admin ${currentUser.name || 'Admin'} changed role for employee ${updated.name} (${updated.id}) from ${oldRole} to ${updated.role}.`,
+        metadata: {
+          adminId: currentUser.id,
+          targetId: updated.id,
+          targetType: 'EMPLOYEE',
+          employeeName: updated.name,
+          oldRole,
+          newRole: updated.role
+        }
+      });
+    } else {
+      await AuditService.recordLog({
+        user: currentUser.name || 'Admin',
+        userId: currentUser.id || null,
+        action: 'UPDATE_EMPLOYEE',
+        description: `Updated employee profile for ${updated.name} (${updated.id}).`,
+        metadata: {
+          adminId: currentUser.id,
+          targetId: updated.id,
+          targetType: 'EMPLOYEE',
+          employeeName: updated.name,
+          updatedFields: Object.keys(data)
+        }
+      });
+    }
 
     return this.getEmployeeById(employeeId);
   }
