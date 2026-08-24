@@ -273,6 +273,13 @@ async function runSecurityFixesTests() {
   }
   assert(overRefundFailed, 'Second concurrent refund exceeding available balance is rejected (REFUND_EXCEEDS_AVAILABLE)');
 
+  // Test 3: Soft delete of ticket by ADMIN
+  const deleteRes = await TicketService.deleteTicket(testTicketId, mockUser);
+  assert(deleteRes.status === 'CANCELLED' && deleteRes.deletedAt, 'Ticket is soft-deleted with CANCELLED status and deletedAt timestamp');
+
+  const deleteAuditLog = mockAuditLogs.find(l => l.action === 'DELETE_TICKET' && l.ticketId === testTicketId);
+  assert(deleteAuditLog && deleteAuditLog.metadata?.adminId === mockUser.id, 'DELETE_TICKET audit log recorded with adminId and metadata');
+
   console.log('\n========================================================');
   console.log(`Security Fixes Tests: ${passed} passed, ${failed} failed`);
   console.log('========================================================\n');

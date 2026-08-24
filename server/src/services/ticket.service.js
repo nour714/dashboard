@@ -65,6 +65,10 @@ export const TicketService = {
     const prisma = getPrismaClient();
     const where = {};
 
+    if (!filters.includeDeleted) {
+      where.deletedAt = null;
+    }
+
     if (filters.search) {
       const q = filters.search.trim();
       where.OR = [
@@ -140,19 +144,26 @@ export const TicketService = {
   /**
    * Retrieves a single ticket by ID, TicketNumber, or PNR
    * @param {string} ticketId
+   * @param {boolean} includeDeleted
    */
-  async getTicketById(ticketId) {
+  async getTicketById(ticketId, includeDeleted = false) {
     if (!ticketId) return null;
     const prisma = getPrismaClient();
 
+    const where = {
+      OR: [
+        { id: ticketId },
+        { ticketNumber: ticketId },
+        { pnr: ticketId }
+      ]
+    };
+
+    if (!includeDeleted) {
+      where.deletedAt = null;
+    }
+
     const ticket = await prisma.ticket.findFirst({
-      where: {
-        OR: [
-          { id: ticketId },
-          { ticketNumber: ticketId },
-          { pnr: ticketId }
-        ]
-      },
+      where,
       include: {
         payments: { orderBy: { date: 'asc' } },
         modifications: { orderBy: { date: 'asc' } },
@@ -660,5 +671,79 @@ export const TicketService = {
     } else {
       return await executeInTransaction(prisma);
     }
+  },
+
+  /**
+   * Soft-deletes a ticket (ADMIN only) and records audit trail
+   * @param {string} ticketId
+   * @param {object} currentUser
+   */
+  async deleteTicket(ticketId, currentUser = {}) {
+    const prisma = getPrismaClient();
+
+    const existing = await prisma.ticket.findFirst({
+      where: {
+        OR: [
+          { id: ticketId },
+          { ticketNumber: ticketId },
+          { pnr: ticketId }
+        ],
+        deletedAt: null
+      }
+    });
+
+    if (!existing) {
+      throw new NotFoundError('Ticket', ticketId);
+    }
+
+    const executeDeletion = async (tx) => {
+      const now = new Date();
+      const updated = await tx.ticket.update({
+        where: { id: existing.id },
+        data: {
+          deletedAt: now,
+          status: 'CANCELLED'
+        }
+      });
+
+      if (tx.auditLog && typeof tx.auditLog.create === 'function') {
+        try {
+          await tx.auditLog.create({
+            data: {
+              id: `ACT-${crypto.randomUUID()}`,
+              user: currentUser.name || 'Admin',
+              userId: currentUser.id || null,
+              action: 'DELETE_TICKET',
+              ticketId: existing.id,
+              customerId: existing.customerId,
+              description: `Deleted ticket ${existing.id} (${existing.ticketNumber}).`,
+              metadata: {
+                adminId: currentUser.id,
+                targetId: existing.id,
+                targetType: 'TICKET',
+                ticketNumber: existing.ticketNumber,
+                softDeleted: true
+              }
+            }
+          });
+        } catch (_) {}
+      }
+
+      return updated;
+    };
+
+    let result;
+    if (typeof prisma.$transaction === 'function') {
+      result = await prisma.$transaction(executeDeletion);
+    } else {
+      result = await executeDeletion(prisma);
+    }
+
+    return {
+      id: existing.id,
+      ticketNumber: existing.ticketNumber,
+      deletedAt: result.deletedAt,
+      status: result.status
+    };
   }
 };

@@ -116,7 +116,8 @@ async function runApiTests() {
       ['GET /api/reports/summary', { method: 'GET', path: '/api/reports/summary', headers: ticketOnlyHeaders }],
       ['POST /api/tickets', { method: 'POST', path: '/api/tickets', headers: ticketOnlyHeaders, body: {} }],
       ['PATCH /api/tickets/:id', { method: 'PATCH', path: '/api/tickets/TKT-1', headers: ticketOnlyHeaders, body: {} }],
-      ['POST /api/tickets/:id/payments', { method: 'POST', path: '/api/tickets/TKT-1/payments', headers: ticketOnlyHeaders, body: {} }]
+      ['POST /api/tickets/:id/payments', { method: 'POST', path: '/api/tickets/TKT-1/payments', headers: ticketOnlyHeaders, body: {} }],
+      ['DELETE /api/tickets/:id', { method: 'DELETE', path: '/api/tickets/TKT-1', headers: ticketOnlyHeaders }]
     ];
     for (const [label, request] of restrictedRequests) {
       const response = await makeRequest(server, request);
@@ -145,8 +146,8 @@ async function runApiTests() {
     assert(healthRes.headers['x-content-type-options'] === 'nosniff', 'X-Content-Type-Options: nosniff header present');
     assert(healthRes.headers['x-frame-options'] === 'SAMEORIGIN' || healthRes.headers['x-frame-options'] === 'DENY', 'X-Frame-Options header present');
 
-    // 7. RBAC: AGENT cannot process refunds (ADMIN-only)
-    console.log('\n--- 7. Refund RBAC Enforcement ---');
+    // 7. RBAC: AGENT cannot process refunds or delete tickets (ADMIN-only)
+    console.log('\n--- 7. Refund & Delete Ticket RBAC Enforcement ---');
     const agentToken = AuthService.generateAccessToken({ id: 'EMP-103', name: 'Nour Wael', email: 'nour.w@africatravel.com', role: 'AGENT', title: 'Ticketing Officer' });
     const agentRefundRes = await makeRequest(server, {
       method: 'POST',
@@ -156,6 +157,14 @@ async function runApiTests() {
     });
     assert(agentRefundRes.statusCode === 403, 'AGENT calling POST /api/tickets/:id/refunds receives 403 Forbidden');
     assert(agentRefundRes.json?.error?.code === 'FORBIDDEN', 'Refund rejection returns FORBIDDEN error code');
+
+    const agentDeleteTicketRes = await makeRequest(server, {
+      method: 'DELETE',
+      path: '/api/tickets/TK-10254',
+      headers: { 'Authorization': `Bearer ${agentToken}` }
+    });
+    assert(agentDeleteTicketRes.statusCode === 403, 'AGENT calling DELETE /api/tickets/:id receives 403 Forbidden');
+    assert(agentDeleteTicketRes.json?.error?.code === 'FORBIDDEN', 'Ticket deletion rejection returns FORBIDDEN error code');
 
     console.log('\n========================================================');
     console.log(`Backend API Integration Tests: ${passed} passed, ${failed} failed`);

@@ -96,5 +96,18 @@ export const TicketController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  async deleteTicket(req, res, next) {
+    try {
+      const result = await TicketService.deleteTicket(req.params.id, req.user);
+      return res.status(200).json({
+        success: true,
+        message: 'Ticket deleted successfully',
+        data: result
+      });
+    } catch (err) {
+      next(err);
+    }
   }
 };

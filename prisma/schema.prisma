@@ -55,6 +55,7 @@ model Customer {
   nationality           String         @default("Egyptian (EGY)")
   isVip                 Boolean        @default(false)
   memberSince           String         @default("2024")
+  deletedAt             DateTime?
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
 
@@ -114,6 +115,7 @@ model Ticket {
   createdBy              String
   createdById            String?
   user                   User?          @relation("TicketCreatedBy", fields: [createdById], references: [id])
+  deletedAt              DateTime?
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
 
