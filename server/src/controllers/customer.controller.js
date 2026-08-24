@@ -115,5 +115,18 @@ export const CustomerController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  async deleteCustomer(req, res, next) {
+    try {
+      const result = await CustomerService.deleteCustomer(req.params.id, req.user);
+      return res.status(200).json({
+        success: true,
+        message: 'Customer deleted successfully',
+        data: result
+      });
+    } catch (err) {
+      next(err);
+    }
   }
 };

@@ -22,6 +22,7 @@ router.get('/', requireRole('ADMIN', 'AGENT'), CustomerController.getCustomers);
 router.get('/:id', requireRole('ADMIN', 'AGENT'), CustomerController.getCustomerById);
 router.post('/', requireRole('ADMIN', 'AGENT'), validate({ body: createCustomerSchema }), CustomerController.createCustomer);
 router.patch('/:id', requireRole('ADMIN', 'AGENT'), validate({ body: updateCustomerSchema }), CustomerController.updateCustomer);
+router.delete('/:id', requireRole('ADMIN'), CustomerController.deleteCustomer);
 router.post('/:id/notes', requireRole('ADMIN', 'AGENT'), validate({ body: addCustomerNoteSchema }), CustomerController.addNote);
 
 // Passport Document endpoints

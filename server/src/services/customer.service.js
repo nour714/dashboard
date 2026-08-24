@@ -6,18 +6,24 @@
 
 import { getPrismaClient } from '../config/database.js';
 import { calculateTotalPaid, calculateRemaining, calculateTotalRefunded } from '../domain/ticket-rules.js';
-import { ValidationError, NotFoundError } from '../domain/errors.js';
+import { ValidationError, NotFoundError, BusinessRuleError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
 import { enrichTicketFinancials } from './ticket.service.js';
+import crypto from 'crypto';
 
 export const CustomerService = {
   /**
    * Retrieves all customers matching an optional search query
    * @param {string} query
+   * @param {boolean} includeDeleted
    */
-  async getCustomers(query = '') {
+  async getCustomers(query = '', includeDeleted = false) {
     const prisma = getPrismaClient();
     const where = {};
+
+    if (!includeDeleted) {
+      where.deletedAt = null;
+    }
 
     if (query && query.trim()) {
       const q = query.trim();
@@ -42,8 +48,9 @@ export const CustomerService = {
   /**
    * Retrieves customer by ID with full lifetime statistical breakdown
    * @param {string} customerId
+   * @param {boolean} includeDeleted
    */
-  async getCustomerById(customerId) {
+  async getCustomerById(customerId, includeDeleted = false) {
     if (!customerId) return null;
     const prisma = getPrismaClient();
 
@@ -63,6 +70,7 @@ export const CustomerService = {
     });
 
     if (!customer) return null;
+    if (!includeDeleted && customer.deletedAt !== null) return null;
 
     let totalSpent = 0;
     let totalPaid = 0;
@@ -357,6 +365,90 @@ export const CustomerService = {
       customerId,
       description: `Deleted passport document for customer ${customer.name} (${customerId}).`
     });
+  },
+
+  /**
+   * Soft-deletes a customer (ADMIN only), verifies no active tickets, and preserves documents for retention
+   * @param {string} customerId
+   * @param {object} currentUser
+   */
+  async deleteCustomer(customerId, currentUser = {}) {
+    const prisma = getPrismaClient();
+
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId }
+    });
+
+    if (!customer || customer.deletedAt !== null) {
+      throw new NotFoundError('Customer', customerId);
+    }
+
+    // Check for active tickets associated with this customer
+    const activeTickets = await prisma.ticket.findMany({
+      where: {
+        customerId,
+        deletedAt: null,
+        status: {
+          notIn: ['CANCELLED', 'REFUNDED']
+        }
+      }
+    });
+
+    if (activeTickets && activeTickets.length > 0) {
+      throw new BusinessRuleError(
+        'Cannot delete customer with active tickets. Please cancel or refund all active tickets before deleting the customer.',
+        'CUSTOMER_HAS_ACTIVE_TICKETS',
+        { customerId, activeTicketCount: activeTickets.length, activeTicketIds: activeTickets.map(t => t.id) }
+      );
+    }
+
+    const executeDeletion = async (tx) => {
+      const now = new Date();
+      const updated = await tx.customer.update({
+        where: { id: customerId },
+        data: {
+          deletedAt: now
+        }
+      });
+
+      if (tx.auditLog && typeof tx.auditLog.create === 'function') {
+        try {
+          await tx.auditLog.create({
+            data: {
+              id: `ACT-${crypto.randomUUID()}`,
+              user: currentUser.name || 'Admin',
+              userId: currentUser.id || null,
+              action: 'DELETE_CUSTOMER',
+              customerId: customer.id,
+              description: `Admin ${currentUser.name || 'Admin'} deleted customer ${customer.name} (${customer.id}).`,
+              metadata: {
+                adminId: currentUser.id,
+                targetId: customer.id,
+                targetType: 'CUSTOMER',
+                customerName: customer.name,
+                passportDocPreserved: !!customer.passportDocPath,
+                softDeleted: true
+              }
+            }
+          });
+        } catch (_) {}
+      }
+
+      return updated;
+    };
+
+    let result;
+    if (typeof prisma.$transaction === 'function') {
+      result = await prisma.$transaction(executeDeletion);
+    } else {
+      result = await executeDeletion(prisma);
+    }
+
+    return {
+      id: result.id,
+      name: result.name,
+      deletedAt: result.deletedAt
+    };
   }
 };
 

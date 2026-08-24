@@ -9,6 +9,7 @@
 
 import { AuthService } from '../server/src/services/auth.service.js';
 import { TicketService } from '../server/src/services/ticket.service.js';
+import { CustomerService } from '../server/src/services/customer.service.js';
 import { setPrismaClient } from '../server/src/config/database.js';
 import { UnauthorizedError, BusinessRuleError } from '../server/src/domain/errors.js';
 import fs from 'fs';
@@ -46,10 +47,11 @@ async function runSecurityFixesTests() {
     status: 'ACTIVE'
   };
 
-  // Mock in-memory state for tickets, payments, refunds
+  // Mock in-memory state for tickets, payments, refunds, customers
   const mockTickets = new Map();
   const mockPayments = new Map();
   const mockRefunds = new Map();
+  const mockCustomers = new Map();
   const mockAuditLogs = [];
 
   const mockPrisma = {
@@ -88,16 +90,51 @@ async function runSecurityFixesTests() {
         return record;
       }
     },
+    customer: {
+      findUnique: async ({ where }) => {
+        const c = mockCustomers.get(where.id);
+        if (!c) return null;
+        return { ...c, notes: [], tickets: [] };
+      },
+      findMany: async ({ where }) => {
+        let list = [...mockCustomers.values()];
+        if (where && where.deletedAt === null) {
+          list = list.filter(c => c.deletedAt === null || c.deletedAt === undefined);
+        }
+        return list.map(c => ({ ...c, notes: [] }));
+      },
+      update: async ({ where, data }) => {
+        const c = mockCustomers.get(where.id);
+        if (c) {
+          Object.assign(c, data);
+        }
+        return c;
+      }
+    },
     ticket: {
       findFirst: async ({ where }) => {
         const queryId = where.id || where.ticketNumber || where.pnr || (where.OR && where.OR[0]?.id);
         const ticket = [...mockTickets.values()].find(t =>
-          t.id === queryId || t.ticketNumber === queryId || t.pnr === queryId
+          (t.id === queryId || t.ticketNumber === queryId || t.pnr === queryId) &&
+          (where.deletedAt === undefined || (where.deletedAt === null ? !t.deletedAt : t.deletedAt !== null))
         );
         if (!ticket) return null;
         const payments = [...mockPayments.values()].filter(p => p.ticketId === ticket.id);
         const refunds = [...mockRefunds.values()].filter(r => r.ticketId === ticket.id);
         return { ...ticket, payments, refunds, modifications: [] };
+      },
+      findMany: async ({ where }) => {
+        let list = [...mockTickets.values()];
+        if (where?.customerId) {
+          list = list.filter(t => t.customerId === where.customerId);
+        }
+        if (where?.deletedAt === null) {
+          list = list.filter(t => !t.deletedAt);
+        }
+        if (where?.status?.notIn) {
+          list = list.filter(t => !where.status.notIn.includes(t.status));
+        }
+        return list;
       },
       update: async ({ where, data }) => {
         const ticket = mockTickets.get(where.id);
@@ -279,6 +316,51 @@ async function runSecurityFixesTests() {
 
   const deleteAuditLog = mockAuditLogs.find(l => l.action === 'DELETE_TICKET' && l.ticketId === testTicketId);
   assert(deleteAuditLog && deleteAuditLog.metadata?.adminId === mockUser.id, 'DELETE_TICKET audit log recorded with adminId and metadata');
+
+  // Test 4: Customer deletion with active tickets protection & soft delete
+  const testCustId = 'CUST-TEST-1';
+  mockCustomers.set(testCustId, {
+    id: testCustId,
+    name: 'Mohamed Ahmed',
+    email: 'mohamed@test.com',
+    passportDocPath: 'customers/CUST-TEST-1/passport-abc.jpg',
+    deletedAt: null
+  });
+
+  // Create an active ticket for this customer
+  mockTickets.set('TK-ACTIVE-1', {
+    id: 'TK-ACTIVE-1',
+    customerId: testCustId,
+    status: 'CONFIRMED',
+    deletedAt: null
+  });
+
+  // Attempting to delete customer with active ticket MUST throw BusinessRuleError
+  let custDeleteWithActiveFailed = false;
+  try {
+    await CustomerService.deleteCustomer(testCustId, mockUser);
+  } catch (err) {
+    if (err instanceof BusinessRuleError && err.rule === 'CUSTOMER_HAS_ACTIVE_TICKETS') {
+      custDeleteWithActiveFailed = true;
+    }
+  }
+  assert(custDeleteWithActiveFailed, 'Deleting customer with active tickets is prevented (CUSTOMER_HAS_ACTIVE_TICKETS)');
+
+  // Now cancel the ticket and retry deletion
+  mockTickets.get('TK-ACTIVE-1').status = 'CANCELLED';
+  const custDeleteRes = await CustomerService.deleteCustomer(testCustId, mockUser);
+  assert(custDeleteRes && custDeleteRes.deletedAt, 'Customer soft-delete succeeds once all tickets are cancelled');
+
+  // Verify customer is excluded from standard getCustomerById
+  const custAfterDelete = await CustomerService.getCustomerById(testCustId);
+  assert(custAfterDelete === null, 'Soft-deleted customer is excluded from standard getCustomerById');
+
+  // Verify passport document was preserved for legal retention
+  const rawCustomerRecord = mockCustomers.get(testCustId);
+  assert(rawCustomerRecord.passportDocPath === 'customers/CUST-TEST-1/passport-abc.jpg', 'Passport document storage path is preserved upon soft deletion');
+
+  const custAuditLog = mockAuditLogs.find(l => l.action === 'DELETE_CUSTOMER' && l.customerId === testCustId);
+  assert(custAuditLog && custAuditLog.metadata?.adminId === mockUser.id && custAuditLog.metadata?.passportDocPreserved === true, 'DELETE_CUSTOMER audit log recorded with adminId, document retention flags, and metadata');
 
   console.log('\n========================================================');
   console.log(`Security Fixes Tests: ${passed} passed, ${failed} failed`);
