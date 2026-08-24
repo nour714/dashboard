@@ -7,11 +7,28 @@ import express from 'express';
 import apiRouter from '../server/src/routes/index.js';
 import { helmetMiddleware, corsMiddleware } from '../server/src/middleware/security.js';
 import { errorHandler } from '../server/src/middleware/error-handler.js';
+import { env, configErrors } from '../server/src/config/env.js';
 
 const app = express();
 
 app.use(helmetMiddleware);
 app.use(corsMiddleware);
+
+// Environment Configuration Guard
+app.use((req, res, next) => {
+  if (configErrors.length > 0 && env.NODE_ENV === 'production' && req.path !== '/api/health' && req.path !== '/health') {
+    return res.status(503).json({
+      success: false,
+      error: {
+        message: 'Server environment configuration error. Required production variables are missing or insecure in Vercel environment variables.',
+        code: 'ENVIRONMENT_CONFIG_ERROR',
+        details: configErrors
+      }
+    });
+  }
+  next();
+});
+
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 

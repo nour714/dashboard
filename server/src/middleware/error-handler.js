@@ -88,13 +88,27 @@ export function errorHandler(err, req, res, next) {
     });
   }
 
-  // Handle Prisma Database Connection Errors
-  if (err.name === 'PrismaClientInitializationError' || err.code === 'P1001' || err.message?.includes('database server')) {
+  // Handle Prisma Database Connection, Initialization & Schema Errors
+  if (
+    err.name === 'PrismaClientInitializationError' ||
+    err.name === 'PrismaClientRustPanicError' ||
+    err.name === 'PrismaClientUnknownRequestError' ||
+    ['P1000', 'P1001', 'P1002', 'P1003', 'P1008', 'P1011', 'P1017', 'P2021', 'P2022'].includes(err.code) ||
+    err.message?.includes("Can't reach database server") ||
+    err.message?.includes('database server') ||
+    err.message?.includes('Connection pool') ||
+    err.message?.includes('does not exist in the current database')
+  ) {
+    const isMissingTableOrColumn = err.code === 'P2021' || err.code === 'P2022' || err.message?.includes('does not exist in the current database');
+    console.error('❌ Database error:', err.message);
     return res.status(503).json({
       success: false,
       error: {
-        message: 'Cannot connect to PostgreSQL database. Please ensure DATABASE_URL is properly configured in Vercel environment variables.',
-        code: 'DATABASE_UNAVAILABLE'
+        message: isMissingTableOrColumn
+          ? 'Database schema requires migration. A table or column does not exist in the connected database.'
+          : 'Cannot connect to PostgreSQL database. Please ensure DATABASE_URL is reachable and configured.',
+        code: isMissingTableOrColumn ? 'DATABASE_MIGRATION_REQUIRED' : 'DATABASE_UNAVAILABLE',
+        details: env.NODE_ENV === 'development' ? err.message : undefined
       }
     });
   }
@@ -108,6 +122,7 @@ export function errorHandler(err, req, res, next) {
     error: {
       message: env.NODE_ENV === 'production' ? 'An unexpected internal server error occurred' : (err.message || 'Internal Server Error'),
       code: 'INTERNAL_SERVER_ERROR',
+      details: env.NODE_ENV === 'development' ? err.message : undefined,
       stack: env.NODE_ENV === 'development' ? err.stack : undefined
     }
   });

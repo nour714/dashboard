@@ -73,7 +73,7 @@ if (!parsedEnv.success) {
   envData = parsedEnv.data;
 }
 
-// Prevent production startup with well-known insecure default secrets
+// Insecure defaults check
 const INSECURE_DEFAULTS = [
   'africatravel_super_secret_jwt_access_key_2026_dev_key',
   'africatravel_super_secret_jwt_refresh_key_2026_dev_key',
@@ -93,32 +93,34 @@ function isWeakSecret(secret) {
   return false;
 }
 
-if (envData.NODE_ENV === 'production') {
-  if (isWeakSecret(envData.JWT_SECRET) || isWeakSecret(envData.JWT_REFRESH_SECRET)) {
-    console.error('❌ FATAL: JWT_SECRET/JWT_REFRESH_SECRET are using insecure default values in production. Set real secrets (min 32 chars) in your .env file.');
-    if (typeof process.exit === 'function' && !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
-      process.exit(1);
-    }
-    throw new Error('FATAL: JWT_SECRET/JWT_REFRESH_SECRET are using insecure default values in production. Set real secrets in your .env file.');
+const configErrors = [];
+const isProduction = envData.NODE_ENV === 'production';
+const isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+if (isProduction) {
+  if (isWeakSecret(envData.JWT_SECRET)) {
+    configErrors.push('JWT_SECRET is missing or using an insecure default/short value. Provide a strong secret (min 32 chars) in environment variables.');
+  }
+  if (isWeakSecret(envData.JWT_REFRESH_SECRET)) {
+    configErrors.push('JWT_REFRESH_SECRET is missing or using an insecure default/short value. Provide a strong secret (min 32 chars) in environment variables.');
+  }
+  if (!envData.DEFAULT_ADMIN_PASSWORD || envData.DEFAULT_ADMIN_PASSWORD === 'password123') {
+    configErrors.push('DEFAULT_ADMIN_PASSWORD is using insecure default "password123". Set a strong password in environment variables.');
+  }
+  if (!envData.DATABASE_URL || envData.DATABASE_URL.includes('localhost') || envData.DATABASE_URL.includes('127.0.0.1') || envData.DATABASE_URL.includes('[YOUR-PASSWORD]')) {
+    configErrors.push('DATABASE_URL is not configured for production (points to localhost or contains placeholder). Set a valid PostgreSQL connection string in environment variables.');
   }
 }
 
-if (envData.NODE_ENV === 'production' && (!envData.DEFAULT_ADMIN_PASSWORD || envData.DEFAULT_ADMIN_PASSWORD === 'password123')) {
-  console.error('❌ FATAL: DEFAULT_ADMIN_PASSWORD is using insecure default "password123" in production. Set a strong password in your .env file.');
-  if (typeof process.exit === 'function' && !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+if (configErrors.length > 0) {
+  console.error('\n❌ ================= ENVIRONMENT CONFIGURATION ERROR =================');
+  configErrors.forEach(err => console.error(`  • ${err}`));
+  console.error('=======================================================================\n');
+
+  if (!isServerless && typeof process.exit === 'function') {
     process.exit(1);
-  }
-  throw new Error('FATAL: DEFAULT_ADMIN_PASSWORD is using insecure default "password123" in production.');
-}
-
-if (
-  envData.NODE_ENV === 'production' &&
-  (!envData.SUPABASE_URL || !envData.SUPABASE_SERVICE_ROLE_KEY)
-) {
-  if (process.env.VERCEL || process.env.RENDER || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    console.error('❌ FATAL: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured in production deployment environment variables.');
-    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not configured. Set them in your deployment environment variables.');
   }
 }
 
 export const env = envData;
+export { configErrors };

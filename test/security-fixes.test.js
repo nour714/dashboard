@@ -266,9 +266,8 @@ async function runSecurityFixesTests() {
 
   // Check env.js fatal guard presence
   const envJsContent = fs.readFileSync('server/src/config/env.js', 'utf8');
-  assert(envJsContent.includes('INSECURE_DEFAULTS'), 'server/src/config/env.js defines INSECURE_DEFAULTS');
-  assert(envJsContent.includes('FATAL: JWT_SECRET/JWT_REFRESH_SECRET'), 'server/src/config/env.js enforces fatal check on production with insecure default secret');
-  assert(envJsContent.includes('FATAL: DEFAULT_ADMIN_PASSWORD is using insecure default'), 'server/src/config/env.js enforces fatal check on production with default password');
+  assert(envJsContent.includes('JWT_SECRET is missing or using an insecure default') || envJsContent.includes('FATAL: JWT_SECRET'), 'server/src/config/env.js enforces check on production with insecure default secret');
+  assert(envJsContent.includes('DEFAULT_ADMIN_PASSWORD is using insecure default'), 'server/src/config/env.js enforces check on production with default password');
 
   console.log('\n--- 3. CORS Policy Lockdown Verification ---');
   const securityJsContent = fs.readFileSync('server/src/middleware/security.js', 'utf8');

@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 import apiRouter from './routes/index.js';
 import { helmetMiddleware, corsMiddleware, validatePath } from './middleware/security.js';
 import { errorHandler } from './middleware/error-handler.js';
-import { env } from './config/env.js';
+import { env, configErrors } from './config/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,6 +44,21 @@ export function createApp(rootDir = ROOT_DIR) {
   // Security Headers and CORS
   app.use(helmetMiddleware);
   app.use(corsMiddleware);
+
+  // Environment Configuration Guard (Early fail-closed with structured JSON error)
+  app.use((req, res, next) => {
+    if (configErrors.length > 0 && env.NODE_ENV === 'production' && req.path.startsWith('/api') && req.path !== '/api/health') {
+      return res.status(503).json({
+        success: false,
+        error: {
+          message: 'Server environment configuration error. Required production variables are missing or insecure.',
+          code: 'ENVIRONMENT_CONFIG_ERROR',
+          details: configErrors
+        }
+      });
+    }
+    next();
+  });
 
   // Body Parsers
   app.use(express.json({ limit: '2mb' }));
