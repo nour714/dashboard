@@ -69,31 +69,40 @@ export const TicketService = {
       where.deletedAt = null;
     }
 
+    const conditions = [];
+
     if (filters.search) {
       const q = filters.search.trim();
-      where.OR = [
-        { id: { contains: q, mode: 'insensitive' } },
-        { ticketNumber: { contains: q, mode: 'insensitive' } },
-        { pnr: { contains: q, mode: 'insensitive' } },
-        { passengerName: { contains: q, mode: 'insensitive' } },
-        { phone: { contains: q, mode: 'insensitive' } },
-        { passport: { contains: q, mode: 'insensitive' } },
-        { airline: { contains: q, mode: 'insensitive' } },
-        { origin: { contains: q, mode: 'insensitive' } },
-        { destination: { contains: q, mode: 'insensitive' } }
-      ];
+      conditions.push({
+        OR: [
+          { id: { contains: q, mode: 'insensitive' } },
+          { ticketNumber: { contains: q, mode: 'insensitive' } },
+          { pnr: { contains: q, mode: 'insensitive' } },
+          { passengerName: { contains: q, mode: 'insensitive' } },
+          { phone: { contains: q, mode: 'insensitive' } },
+          { passport: { contains: q, mode: 'insensitive' } },
+          { airline: { contains: q, mode: 'insensitive' } },
+          { origin: { contains: q, mode: 'insensitive' } },
+          { destination: { contains: q, mode: 'insensitive' } }
+        ]
+      });
+    }
+
+    if (filters.airline && filters.airline !== 'All' && filters.airline !== 'All Airlines') {
+      conditions.push({
+        OR: [
+          { airline: filters.airline },
+          { airlineCode: filters.airline }
+        ]
+      });
+    }
+
+    if (conditions.length > 0) {
+      where.AND = conditions;
     }
 
     if (filters.status && filters.status !== 'All' && filters.status !== 'All Statuses') {
       where.status = filters.status;
-    }
-
-    if (filters.airline && filters.airline !== 'All' && filters.airline !== 'All Airlines') {
-      where.OR = [
-        ...(where.OR || []),
-        { airline: filters.airline },
-        { airlineCode: filters.airline }
-      ];
     }
 
     if (filters.travelDate) {
@@ -271,7 +280,7 @@ export const TicketService = {
         createdById: currentUser.id || null,
         payments: initialPaymentAmount > 0 ? {
           create: {
-            id: `PAY-${Date.now()}`,
+            id: `PAY-${crypto.randomUUID().substring(0, 8).toUpperCase()}`,
             amount: initialPaymentAmount,
             currency: data.currency || 'EGP',
             method: data.paymentMethod || 'Credit Card',
@@ -445,17 +454,9 @@ export const TicketService = {
     };
 
     if (typeof prisma.$transaction === 'function') {
-      try {
-        return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
-      } catch (err) {
-        if (err.name === 'NotFoundError' || err.name === 'ValidationError' || err.name === 'BusinessRuleError') {
-          throw err;
-        }
-        return await executeInTransaction(prisma);
-      }
-    } else {
-      return await executeInTransaction(prisma);
+      return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
     }
+    return await executeInTransaction(prisma);
   },
 
   /**
@@ -515,7 +516,19 @@ export const TicketService = {
       });
 
       // 4. Update ticket status
-      const newTicketStatus = status === 'COMPLETED' ? 'REFUNDED' : 'REFUND REQUESTED';
+      const updatedRefunds = [...(ticket.refunds || []), createdRefund];
+      const newTotalRefunded = calculateTotalRefunded(updatedRefunds);
+      let newTicketStatus = ticket.status;
+      if (status === 'COMPLETED') {
+        if (newTotalRefunded >= totalPaid && totalPaid > 0) {
+          newTicketStatus = 'REFUNDED';
+        } else {
+          newTicketStatus = 'PARTIALLY_REFUNDED';
+        }
+      } else {
+        newTicketStatus = 'REFUND REQUESTED';
+      }
+
       await tx.ticket.update({
         where: { id: ticket.id },
         data: { status: newTicketStatus }
@@ -542,17 +555,9 @@ export const TicketService = {
     };
 
     if (typeof prisma.$transaction === 'function') {
-      try {
-        return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
-      } catch (err) {
-        if (err.name === 'NotFoundError' || err.name === 'ValidationError' || err.name === 'BusinessRuleError') {
-          throw err;
-        }
-        return await executeInTransaction(prisma);
-      }
-    } else {
-      return await executeInTransaction(prisma);
+      return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
     }
+    return await executeInTransaction(prisma);
   },
 
   /**
@@ -660,17 +665,9 @@ export const TicketService = {
     };
 
     if (typeof prisma.$transaction === 'function') {
-      try {
-        return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
-      } catch (err) {
-        if (err.name === 'NotFoundError' || err.name === 'ValidationError' || err.name === 'BusinessRuleError') {
-          throw err;
-        }
-        return await executeInTransaction(prisma);
-      }
-    } else {
-      return await executeInTransaction(prisma);
+      return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
     }
+    return await executeInTransaction(prisma);
   },
 
   /**

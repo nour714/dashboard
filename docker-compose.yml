@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
       POSTGRES_DB: africatravel
     ports:
       - "5432:5432"
@@ -37,7 +37,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: "postgresql://postgres:postgrespassword@postgres:5432/africatravel?schema=public"
+      DATABASE_URL: "postgresql://postgres:${POSTGRES_PASSWORD:-postgrespassword}@postgres:5432/africatravel?schema=public"
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       CORS_ORIGIN: "http://localhost:3000,http://127.0.0.1:3000"

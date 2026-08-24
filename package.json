@@ -13,6 +13,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "node prisma/seed.js",
+    "reset:passwords": "node scripts/reset-admin-passwords.js",
     "test:frontend": "node test/business-flow.test.js && node test/i18n-bilingual.test.js",
     "test:domain": "node test/backend-domain.test.js",
     "test:auth": "node test/backend-auth.test.js",
@@ -23,7 +24,8 @@
     "test:customer-payments": "node test/customer-payments-report.test.js",
     "test:rbac": "node test/rbac-ui.test.js",
     "test:security": "node test/security-fixes.test.js",
-    "test": "node test/i18n-bilingual.test.js && node test/backend-domain.test.js && node test/backend-auth.test.js && node test/ticket-customer-link.test.js && node test/passport-document.test.js && node test/round-trip-flight.test.js && node test/customer-payments-report.test.js && node test/rbac-ui.test.js && node test/security-fixes.test.js && node test/backend-api.test.js"
+    "test:audit": "node test/audit-fixes.test.js",
+    "test": "node test/i18n-bilingual.test.js && node test/backend-domain.test.js && node test/backend-auth.test.js && node test/ticket-customer-link.test.js && node test/passport-document.test.js && node test/round-trip-flight.test.js && node test/customer-payments-report.test.js && node test/rbac-ui.test.js && node test/security-fixes.test.js && node test/backend-api.test.js && node test/audit-fixes.test.js"
   },
   "keywords": [
     "travel",

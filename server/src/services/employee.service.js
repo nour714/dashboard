@@ -102,9 +102,9 @@ export const EmployeeService = {
       throw new BusinessRuleError('An employee with this email already exists', 'EMAIL_ALREADY_EXISTS', { email: cleanEmail });
     }
 
-    const saltRounds = 10;
+    const saltRounds = 12;
     const passwordHash = await bcrypt.hash(data.password, saltRounds);
-    const newId = `EMP-${Math.floor(100 + Math.random() * 900)}`;
+    const newId = `EMP-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
 
     const newUser = await prisma.user.create({
       data: {
@@ -115,7 +115,7 @@ export const EmployeeService = {
         title: data.title || (data.role === 'ADMIN' ? 'Operations Director' : data.role === 'TICKET_ONLY' ? 'Ticket Creation Officer' : 'Ticketing Officer'),
         passwordHash,
         status: data.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
-        lastActive: 'Just now'
+        lastActive: new Date().toISOString()
       },
       select: {
         id: true,

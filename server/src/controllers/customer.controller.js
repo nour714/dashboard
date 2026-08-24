@@ -9,10 +9,13 @@ export const CustomerController = {
   async getCustomers(req, res, next) {
     try {
       const query = req.query.q || req.query.search || '';
-      const customers = await CustomerService.getCustomers(query);
+      const page = req.query.page ? Number(req.query.page) : undefined;
+      const limit = req.query.limit ? Number(req.query.limit) : undefined;
+      const result = await CustomerService.getCustomers(query, { page, limit });
       return res.status(200).json({
         success: true,
-        data: customers
+        data: Array.isArray(result) ? result : result.customers,
+        pagination: result.pagination || undefined
       });
     } catch (err) {
       next(err);

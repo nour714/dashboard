@@ -10,7 +10,20 @@ import path from 'path';
 import { env } from '../config/env.js';
 
 export const helmetMiddleware = helmet({
-  contentSecurityPolicy: false, // Allows inline scripts/styles for Vanilla JS SPA components
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https://*.supabase.co'],
+      connectSrc: ["'self'", 'https://*.supabase.co', 'https://*.vercel.app'],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"]
+    }
+  },
   crossOriginEmbedderPolicy: false
 });
 

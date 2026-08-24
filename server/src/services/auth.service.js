@@ -14,12 +14,13 @@ import { AuditService } from './audit.service.js';
 
 export const AuthService = {
   /**
-   * Hashes a plaintext password using bcrypt
+   * Hashes a plaintext password using bcrypt (cost factor = 12)
    * @param {string} password
+   * @param {number} [saltRounds=12]
    * @returns {Promise<string>}
    */
-  async hashPassword(password) {
-    return bcrypt.hash(password, 10);
+  async hashPassword(password, saltRounds = 12) {
+    return bcrypt.hash(password, saltRounds);
   },
 
   /**
@@ -88,17 +89,14 @@ export const AuthService = {
       }
     });
 
-    if (!user) {
+    // Mitigate user enumeration: verify password before revealing any account status
+    const isMatch = user ? await this.comparePassword(password, user.passwordHash) : false;
+    if (!user || !isMatch) {
       throw new UnauthorizedError('Invalid email or password', 'INVALID_CREDENTIALS');
     }
 
     if (user.status !== 'ACTIVE') {
       throw new BusinessRuleError('Your account has been deactivated. Please contact an administrator.', 'ACCOUNT_INACTIVE');
-    }
-
-    const isMatch = await this.comparePassword(password, user.passwordHash);
-    if (!isMatch) {
-      throw new UnauthorizedError('Invalid email or password', 'INVALID_CREDENTIALS');
     }
 
     // Generate tokens
@@ -119,9 +117,10 @@ export const AuthService = {
     });
 
     // Update user's lastActive timestamp safely
+    const nowIso = new Date().toISOString();
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastActive: 'Just now' }
+      data: { lastActive: nowIso }
     }).catch(e => console.warn('Could not update lastActive:', e.message));
 
     // Record audit event safely

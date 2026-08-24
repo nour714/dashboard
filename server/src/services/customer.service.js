@@ -13,12 +13,13 @@ import crypto from 'crypto';
 
 export const CustomerService = {
   /**
-   * Retrieves all customers matching an optional search query
+   * Retrieves all customers matching an optional search query with optional pagination
    * @param {string} query
-   * @param {boolean} includeDeleted
+   * @param {object|boolean} [options={}]
    */
-  async getCustomers(query = '', includeDeleted = false) {
+  async getCustomers(query = '', options = {}) {
     const prisma = getPrismaClient();
+    const includeDeleted = typeof options === 'boolean' ? options : Boolean(options.includeDeleted);
     const where = {};
 
     if (!includeDeleted) {
@@ -36,11 +37,35 @@ export const CustomerService = {
       ];
     }
 
+    const isPaginated = options && typeof options === 'object' && (options.page !== undefined || options.limit !== undefined);
+    if (isPaginated) {
+      const page = Math.max(1, Number(options.page) || 1);
+      const limit = Math.min(100, Math.max(1, Number(options.limit) || 50));
+      const skip = (page - 1) * limit;
+
+      const [total, customers] = await Promise.all([
+        prisma.customer.count({ where }),
+        prisma.customer.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit
+        })
+      ]);
+
+      return {
+        customers,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit)
+        }
+      };
+    }
+
     return prisma.customer.findMany({
       where,
-      include: {
-        notes: { orderBy: { date: 'desc' } }
-      },
       orderBy: { createdAt: 'desc' }
     });
   },
@@ -115,7 +140,7 @@ export const CustomerService = {
     }
 
     const prisma = getPrismaClient();
-    const newId = `CUST-${Math.floor(8900 + Math.random() * 1000)}`;
+    const newId = `CUST-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
 
     const newCustomer = await prisma.customer.create({
       data: {

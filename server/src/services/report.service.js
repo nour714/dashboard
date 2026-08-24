@@ -14,22 +14,74 @@ import {
 } from '../domain/ticket-rules.js';
 import { EmployeeService } from './employee.service.js';
 
-export const mockReportFallback = {
-  airlines: [
-    { airline: 'Emirates', airlineCode: 'EK', ticketsSold: 185, totalRevenue: 520000, refundRate: '1.2%', isFallback: true },
-    { airline: 'Qatar Airways', airlineCode: 'QR', ticketsSold: 142, totalRevenue: 390500, refundRate: '2.4%', isFallback: true },
-    { airline: 'EgyptAir', airlineCode: 'MS', ticketsSold: 210, totalRevenue: 410000, refundRate: '3.1%', isFallback: true },
-    { airline: 'Turkish Airlines', airlineCode: 'TK', ticketsSold: 98, totalRevenue: 285000, refundRate: '1.8%', isFallback: true },
-    { airline: 'Lufthansa', airlineCode: 'LH', ticketsSold: 89, totalRevenue: 185200, refundRate: '5.8%', isFallback: true },
-    { airline: 'British Airways', airlineCode: 'BA', ticketsSold: 76, totalRevenue: 144300, refundRate: '8.1%', isFallback: true }
-  ],
-  weeklyTrends: [
-    { label: 'Oct 1-7', week: 'W1', sales: 110000, collections: 95000, refunds: 4000, outstanding: 15000 },
-    { label: 'Oct 8-14', week: 'W2', sales: 140000, collections: 125000, refunds: 6000, outstanding: 15000 },
-    { label: 'Oct 15-21', week: 'W3', sales: 160000, collections: 145000, refunds: 7000, outstanding: 15000 },
-    { label: 'Oct 22-31', week: 'W4', sales: 130000, collections: 130000, refunds: 3000, outstanding: 0 }
-  ]
-};
+/**
+ * Computes weekly revenue trends from ticket and payment records
+ * @param {Array<object>} tickets
+ * @returns {Array<object>}
+ */
+export function computeWeeklyTrends(tickets = []) {
+  if (!Array.isArray(tickets) || tickets.length === 0) {
+    return [];
+  }
+
+  // Find range of dates in tickets / payments
+  const now = new Date();
+  const weeks = [];
+
+  // Generate 4 rolling 7-day intervals ending at current time
+  for (let i = 3; i >= 0; i--) {
+    const end = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+    const start = new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const startLabel = `${start.toLocaleString('default', { month: 'short' })} ${start.getDate()}`;
+    const endLabel = `${end.toLocaleString('default', { month: 'short' })} ${end.getDate()}`;
+    const weekIndex = 4 - i;
+
+    let sales = 0;
+    let collections = 0;
+    let refunds = 0;
+
+    tickets.forEach(t => {
+      const ticketDate = new Date(t.createdAt || t.departureDate);
+      if (ticketDate >= start && ticketDate < end) {
+        sales += (Number(t.ticketPrice) || 0);
+      }
+
+      if (Array.isArray(t.payments)) {
+        t.payments.forEach(p => {
+          const pDate = new Date(p.date || p.createdAt);
+          if (pDate >= start && pDate < end) {
+            collections += (Number(p.amount) || 0);
+          }
+        });
+      }
+
+      if (Array.isArray(t.refunds)) {
+        t.refunds.forEach(r => {
+          if (r.status === 'COMPLETED' || r.status === 'Refunded' || r.status === 'APPROVED') {
+            const rDate = new Date(r.processedDate || r.requestedDate || r.createdAt);
+            if (rDate >= start && rDate < end) {
+              refunds += (Number(r.amount) || 0);
+            }
+          }
+        });
+      }
+    });
+
+    const outstanding = Math.max(0, sales - collections);
+
+    weeks.push({
+      label: `${startLabel}-${end.getDate()}`,
+      week: `W${weekIndex}`,
+      sales,
+      collections,
+      refunds,
+      outstanding
+    });
+  }
+
+  return weeks;
+}
 
 export const ReportService = {
   /**
@@ -38,6 +90,7 @@ export const ReportService = {
   async getSummaryKPIs() {
     const prisma = getPrismaClient();
     const tickets = await prisma.ticket.findMany({
+      where: { deletedAt: null },
       include: {
         payments: true,
         modifications: true,
@@ -84,13 +137,14 @@ export const ReportService = {
   async getAirlinePerformance() {
     const prisma = getPrismaClient();
     const tickets = await prisma.ticket.findMany({
+      where: { deletedAt: null },
       include: {
         refunds: true
       }
     });
 
     if (tickets.length === 0) {
-      return mockReportFallback.airlines;
+      return [];
     }
 
     const airlineMap = {};
@@ -129,10 +183,23 @@ export const ReportService = {
    * Computes revenue trends & financial distributions
    */
   async getRevenueTrends() {
-    const kpis = await this.getSummaryKPIs();
+    const prisma = getPrismaClient();
+    const [kpis, tickets] = await Promise.all([
+      this.getSummaryKPIs(),
+      prisma.ticket.findMany({
+        where: { deletedAt: null },
+        include: {
+          payments: true,
+          refunds: true
+        }
+      })
+    ]);
+
+    const weeklyTrends = computeWeeklyTrends(tickets);
+
     return {
       kpis,
-      weeklyTrends: mockReportFallback.weeklyTrends
+      weeklyTrends
     };
   },
 
@@ -140,17 +207,27 @@ export const ReportService = {
    * Builds the comprehensive operational report
    */
   async getFullReport() {
-    const [kpis, airlinePerformance, employeePerformance] = await Promise.all([
+    const prisma = getPrismaClient();
+    const [kpis, airlinePerformance, employeePerformance, tickets] = await Promise.all([
       this.getSummaryKPIs(),
       this.getAirlinePerformance(),
-      EmployeeService.getEmployees()
+      EmployeeService.getEmployees(),
+      prisma.ticket.findMany({
+        where: { deletedAt: null },
+        include: {
+          payments: true,
+          refunds: true
+        }
+      })
     ]);
+
+    const weeklyTrends = computeWeeklyTrends(tickets);
 
     return {
       kpis,
       airlinePerformance,
       employeePerformance,
-      weeklyTrends: mockReportFallback.weeklyTrends
+      weeklyTrends
     };
   },
 
@@ -161,6 +238,7 @@ export const ReportService = {
   async getCustomerPayments() {
     const prisma = getPrismaClient();
     const tickets = await prisma.ticket.findMany({
+      where: { deletedAt: null },
       include: {
         payments: true,
         customer: true

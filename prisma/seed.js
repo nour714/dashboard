@@ -30,7 +30,7 @@ export async function seed() {
 
   // 2. Seed Employees / Users (with bcrypt hashed passwords)
   console.log('  -> Seeding Users & Employees...');
-  const saltRounds = 10;
+  const saltRounds = 12;
   const defaultPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD || process.env.DEFAULT_ADMIN_PASSWORD;
 
   if (!defaultPassword || defaultPassword === 'password123' || defaultPassword.length < 8) {
@@ -38,6 +38,7 @@ export async function seed() {
   }
 
   const hashedPassword = await bcrypt.hash(defaultPassword, saltRounds);
+  const nowIso = new Date().toISOString();
 
   for (const emp of INITIAL_EMPLOYEES) {
     await prisma.user.upsert({
@@ -49,7 +50,7 @@ export async function seed() {
         title: emp.title,
         passwordHash: hashedPassword,
         status: emp.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
-        lastActive: emp.lastActive || 'Just now'
+        lastActive: nowIso
       },
       create: {
         id: emp.id,
@@ -59,7 +60,7 @@ export async function seed() {
         title: emp.title,
         passwordHash: hashedPassword,
         status: emp.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
-        lastActive: emp.lastActive || 'Just now'
+        lastActive: nowIso
       }
     });
   }

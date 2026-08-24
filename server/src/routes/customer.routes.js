@@ -9,7 +9,8 @@ import { validate } from '../middleware/validate.js';
 import {
   createCustomerSchema,
   updateCustomerSchema,
-  addCustomerNoteSchema
+  addCustomerNoteSchema,
+  queryCustomersSchema
 } from '../schemas/customer.schema.js';
 import { passportDocUpload, uploadConcurrencyBudget } from '../middleware/upload.js';
 import { uploadRateLimiter } from '../middleware/rate-limiter.js';
@@ -18,7 +19,7 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/', requireRole('ADMIN', 'AGENT'), CustomerController.getCustomers);
+router.get('/', requireRole('ADMIN', 'AGENT'), validate({ query: queryCustomersSchema }), CustomerController.getCustomers);
 router.get('/:id', requireRole('ADMIN', 'AGENT'), CustomerController.getCustomerById);
 router.post('/', requireRole('ADMIN', 'AGENT'), validate({ body: createCustomerSchema }), CustomerController.createCustomer);
 router.patch('/:id', requireRole('ADMIN', 'AGENT'), validate({ body: updateCustomerSchema }), CustomerController.updateCustomer);

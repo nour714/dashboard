@@ -5,50 +5,13 @@
 
 import express from 'express';
 import apiRouter from '../server/src/routes/index.js';
-import { helmetMiddleware, corsMiddleware } from '../server/src/middleware/security.js';
+import { applyApiMiddleware } from '../server/src/app.js';
 import { errorHandler } from '../server/src/middleware/error-handler.js';
-import { env, configErrors } from '../server/src/config/env.js';
 
 const app = express();
 
-app.use(helmetMiddleware);
-app.use(corsMiddleware);
-
-// Environment Configuration Guard (Early fail-closed with generic JSON error for clients)
-app.use((req, res, next) => {
-  if (configErrors.length > 0 && env.NODE_ENV === 'production' && req.path !== '/api/health' && req.path !== '/health') {
-    return res.status(503).json({
-      success: false,
-      error: {
-        message: 'Server environment configuration error. Please check server logs.',
-        code: 'ENVIRONMENT_CONFIG_ERROR'
-      }
-    });
-  }
-  next();
-});
-
-app.use(express.json({ limit: '2mb' }));
-app.use(express.urlencoded({ extended: true, limit: '2mb' }));
-
-// Cookie Parser Middleware
-app.use((req, res, next) => {
-  const rawCookie = req.headers.cookie;
-  req.cookies = {};
-  if (rawCookie) {
-    rawCookie.split(';').forEach(c => {
-      const [key, ...val] = c.trim().split('=');
-      if (key) {
-        try {
-          req.cookies[key] = decodeURIComponent(val.join('='));
-        } catch {
-          req.cookies[key] = val.join('=');
-        }
-      }
-    });
-  }
-  next();
-});
+// Apply centralized API middleware pipeline
+applyApiMiddleware(app);
 
 // Handle API requests with or without /api prefix
 app.use('/api', apiRouter);

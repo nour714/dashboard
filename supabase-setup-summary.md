@@ -14,7 +14,7 @@
 
 ✅ **Row Level Security (RLS) اتفعّلت وقفلت بالكامل** على كل الجداول (بناءً على طلبك) — دي طبقة حماية إضافية تمنع أي وصول عن طريق `anon key`/`supabase-js` حتى لو حصل استخدام خطأ ليهم بالغلط في المستقبل. الباك اند مش متأثر لأنه بيتصل بقاعدة البيانات مباشرة (direct Postgres connection عن طريق `DATABASE_URL`)، مش عن طريق REST API بتاع Supabase.
 
-✅ اتزرعوا **الـ 4 موظفين** (Users) بتوع المشروع من `mock-data.js`، بباسورد `password123` مشفر بـ bcrypt (10 rounds) — ده يخليك تقدر تسجل دخول فورًا:
+✅ اتزرعوا **الـ 4 موظفين** (Users) بتوع المشروع من `mock-data.js` مشفرين بـ bcrypt (cost factor = 12):
 
 | Email | Role |
 |---|---|
@@ -23,7 +23,12 @@
 | nour.w@africatravel.com | AGENT |
 | hashem.a@africatravel.com | AGENT |
 
-**الباسورد لكل الحسابات:** `password123` (غيّره فور أول تسجيل دخول في بيئة حقيقية)
+**تدوير وتعيين كلمات المرور:** استخدم سكريبت تدوير وتعيين كلمات المرور الآمن:
+```bash
+node scripts/reset-admin-passwords.js
+# أو لتعيين كلمة مرور قوية محددة:
+node scripts/reset-admin-passwords.js --new-password="YourStrongPassword2026!"
+```
 
 ---
 
@@ -47,8 +52,6 @@ DATABASE_URL="postgresql://postgres:[PASTE_PASSWORD_HERE]@db.<YOUR_PROJECT_REF>.
 
 ### 3. شغّل باقي الـ seed (العملاء والتذاكر)
 
-أنا زرعت الموظفين بس مباشرة عن طريق SQL. باقي البيانات (العملاء، التذاكر، المدفوعات...) لازم تتزرع من عندك بعد ما تحط الباسورد الصح، لأن الـ sandbox بتاعي معندهوش صلاحية الوصول لـ `supabase.co` مباشرة (شبكة مقيدة):
-
 ```bash
 npx prisma generate
 npm run prisma:seed
@@ -61,8 +64,6 @@ npm run prisma:seed
 ```bash
 npm start
 ```
-
-وجرّب تسجل دخول بـ `admin@africatravel.com` / `password123` من الموقع مباشرة.
 
 ---
 

@@ -134,13 +134,13 @@ export function buildReportFromTickets(tickets = [], employees = []) {
   // Sort airlines by tickets sold descending
   calculatedAirlines.sort((a, b) => b.ticketsSold - a.ticketsSold);
 
-  const airlinePerformance = calculatedAirlines.length > 0 ? calculatedAirlines : mockReportData.airlines;
+  const airlinePerformance = calculatedAirlines;
 
   return {
     kpis,
     employeePerformance,
     airlinePerformance,
-    dataSource: tickets.length > 0 ? 'APPLICATION_STATE' : 'DEMO_FALLBACK'
+    dataSource: 'APPLICATION_STATE'
   };
 }
 

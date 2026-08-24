@@ -98,7 +98,7 @@ export const INITIAL_EMPLOYEES = [
     refunds: 4200,
     outstanding: 0,
     status: 'ACTIVE',
-    lastActive: 'Just now'
+    lastActive: new Date(Date.now() - 2 * 60 * 1000).toISOString()
   },
   {
     id: 'EMP-102',
@@ -112,7 +112,7 @@ export const INITIAL_EMPLOYEES = [
     refunds: 12000,
     outstanding: 22000,
     status: 'ACTIVE',
-    lastActive: '5 mins ago'
+    lastActive: new Date(Date.now() - 5 * 60 * 1000).toISOString()
   },
   {
     id: 'EMP-103',
@@ -126,7 +126,7 @@ export const INITIAL_EMPLOYEES = [
     refunds: 3500,
     outstanding: 4000,
     status: 'ACTIVE',
-    lastActive: '35 mins ago'
+    lastActive: new Date(Date.now() - 35 * 60 * 1000).toISOString()
   },
   {
     id: 'EMP-104',
@@ -140,7 +140,7 @@ export const INITIAL_EMPLOYEES = [
     refunds: 5000,
     outstanding: 0,
     status: 'ACTIVE',
-    lastActive: '12 mins ago'
+    lastActive: new Date(Date.now() - 12 * 60 * 1000).toISOString()
   }
 ];
 

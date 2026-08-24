@@ -35,11 +35,16 @@ const MIME_TYPES = {
   '.ttf': 'font/ttf'
 };
 
-export function createApp(rootDir = ROOT_DIR) {
-  const app = express();
-
+/**
+ * Attaches common API middleware pipeline (security, body parsers, cookie parser, env guard)
+ * @param {import('express').Express} app
+ */
+export function applyApiMiddleware(app) {
   // Trust proxy for rate-limiter and IP extraction behind reverse proxies
-  app.set('trust proxy', 1);
+  const trustProxySetting = process.env.TRUST_PROXY
+    ? (process.env.TRUST_PROXY === 'true' ? true : (process.env.TRUST_PROXY === 'false' ? false : (!isNaN(Number(process.env.TRUST_PROXY)) ? Number(process.env.TRUST_PROXY) : process.env.TRUST_PROXY)))
+    : 1;
+  app.set('trust proxy', trustProxySetting);
 
   // Security Headers and CORS
   app.use(helmetMiddleware);
@@ -47,7 +52,7 @@ export function createApp(rootDir = ROOT_DIR) {
 
   // Environment Configuration Guard (Early fail-closed with generic JSON error for clients)
   app.use((req, res, next) => {
-    if (configErrors.length > 0 && env.NODE_ENV === 'production' && req.path.startsWith('/api') && req.path !== '/api/health') {
+    if (configErrors.length > 0 && env.NODE_ENV === 'production' && req.path !== '/api/health' && req.path !== '/health') {
       return res.status(503).json({
         success: false,
         error: {
@@ -81,6 +86,13 @@ export function createApp(rootDir = ROOT_DIR) {
     }
     next();
   });
+}
+
+export function createApp(rootDir = ROOT_DIR) {
+  const app = express();
+
+  // Apply shared API middleware pipeline
+  applyApiMiddleware(app);
 
   // Mount API Endpoints (supports both /api prefix and stripped serverless routes)
   app.use('/api', apiRouter);
@@ -144,13 +156,21 @@ export function createApp(rootDir = ROOT_DIR) {
           return;
         }
 
-        res.set({
+        const headers = {
           'Content-Type': contentType,
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-          'Pragma': 'no-cache',
-          'Expires': '0',
           'X-Content-Type-Options': 'nosniff'
-        });
+        };
+
+        if (ext === '.html') {
+          headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';
+          headers['Pragma'] = 'no-cache';
+          headers['Expires'] = '0';
+        } else {
+          // Static assets (js, css, images, fonts)
+          headers['Cache-Control'] = 'public, max-age=86400, stale-while-revalidate=604800';
+        }
+
+        res.set(headers);
         res.status(200).send(content);
       });
     });

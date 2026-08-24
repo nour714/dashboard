@@ -81,7 +81,21 @@ export const updateTicketSchema = z.object({
   cabinClass: z.string().optional(),
   seat: z.string().optional(),
   baggage: z.string().optional(),
-  status: z.string().optional()
+  status: z.enum([
+    'CONFIRMED',
+    'ISSUED',
+    'BOOKED',
+    'PAID',
+    'PAID IN FULL',
+    'PARTIALLY PAID',
+    'PENDING',
+    'PENDING PAY',
+    'MODIFIED',
+    'REFUND REQUESTED',
+    'PARTIALLY_REFUNDED',
+    'REFUNDED',
+    'CANCELLED'
+  ]).optional()
 });
 
 export const queryTicketsSchema = z.object({
