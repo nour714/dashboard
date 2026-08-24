@@ -45,15 +45,14 @@ export function createApp(rootDir = ROOT_DIR) {
   app.use(helmetMiddleware);
   app.use(corsMiddleware);
 
-  // Environment Configuration Guard (Early fail-closed with structured JSON error)
+  // Environment Configuration Guard (Early fail-closed with generic JSON error for clients)
   app.use((req, res, next) => {
     if (configErrors.length > 0 && env.NODE_ENV === 'production' && req.path.startsWith('/api') && req.path !== '/api/health') {
       return res.status(503).json({
         success: false,
         error: {
-          message: 'Server environment configuration error. Required production variables are missing or insecure.',
-          code: 'ENVIRONMENT_CONFIG_ERROR',
-          details: configErrors
+          message: 'Server environment configuration error. Please check server logs.',
+          code: 'ENVIRONMENT_CONFIG_ERROR'
         }
       });
     }

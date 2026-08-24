@@ -21,6 +21,7 @@ const envSchema = z.object({
   RATE_LIMIT_MAX_AUTH: z.coerce.number().default(10),
   RATE_LIMIT_MAX_API: z.coerce.number().default(500),
   DEFAULT_ADMIN_PASSWORD: z.string().default('password123'),
+  BOOTSTRAP_ADMIN_PASSWORD: z.string().optional(),
   SUPABASE_URL: z.string().default(''),
   SUPABASE_SERVICE_ROLE_KEY: z.string().default(''),
   SUPABASE_STORAGE_BUCKET: z.string().default('customer-documents')
@@ -32,16 +33,6 @@ function resolveDatabaseUrl() {
   // If URL contains [YOUR-PASSWORD] placeholder, replace it from env
   if (url && url.includes('[YOUR-PASSWORD]') && process.env.POSTGRES_PASSWORD) {
     url = url.replace('[YOUR-PASSWORD]', encodeURIComponent(process.env.POSTGRES_PASSWORD));
-  }
-
-  const isProduction = process.env.NODE_ENV === 'production';
-  const isCloud = !!(process.env.VERCEL || process.env.RENDER || process.env.AWS_LAMBDA_FUNCTION_NAME);
-
-  // In production or cloud environments, a real non-placeholder DATABASE_URL must be configured
-  if ((isProduction || isCloud) && (!url || url.includes('localhost') || url.includes('127.0.0.1') || url.includes('[YOUR-PASSWORD]'))) {
-    throw new Error(
-      'DATABASE_URL is not configured or uses placeholder/localhost in production. Set it in your deployment environment variables.'
-    );
   }
 
   return url || 'postgresql://postgres:postgres@localhost:5432/africatravel?schema=public';
@@ -99,22 +90,29 @@ const isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NA
 
 if (isProduction) {
   if (isWeakSecret(envData.JWT_SECRET)) {
-    configErrors.push('JWT_SECRET is missing or using an insecure default/short value. Provide a strong secret (min 32 chars) in environment variables.');
+    configErrors.push('[JWT_SECRET]: Missing or using an insecure/short default secret (minimum 32 characters required).');
   }
   if (isWeakSecret(envData.JWT_REFRESH_SECRET)) {
-    configErrors.push('JWT_REFRESH_SECRET is missing or using an insecure default/short value. Provide a strong secret (min 32 chars) in environment variables.');
+    configErrors.push('[JWT_REFRESH_SECRET]: Missing or using an insecure/short default secret (minimum 32 characters required).');
   }
-  if (!envData.DEFAULT_ADMIN_PASSWORD || envData.DEFAULT_ADMIN_PASSWORD === 'password123') {
-    configErrors.push('DEFAULT_ADMIN_PASSWORD is using insecure default "password123". Set a strong password in environment variables.');
+
+  const effectiveAdminPassword = envData.BOOTSTRAP_ADMIN_PASSWORD || envData.DEFAULT_ADMIN_PASSWORD;
+  if (!effectiveAdminPassword || effectiveAdminPassword === 'password123') {
+    configErrors.push('[BOOTSTRAP_ADMIN_PASSWORD / DEFAULT_ADMIN_PASSWORD]: Missing or using insecure default "password123". Set a strong password in environment variables.');
   }
-  if (!envData.DATABASE_URL || envData.DATABASE_URL.includes('localhost') || envData.DATABASE_URL.includes('127.0.0.1') || envData.DATABASE_URL.includes('[YOUR-PASSWORD]')) {
-    configErrors.push('DATABASE_URL is not configured for production (points to localhost or contains placeholder). Set a valid PostgreSQL connection string in environment variables.');
+
+  const rawDbUrl = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  if (!rawDbUrl || rawDbUrl.includes('localhost') || rawDbUrl.includes('127.0.0.1') || rawDbUrl.includes('[YOUR-PASSWORD]')) {
+    configErrors.push('[DATABASE_URL]: Missing or pointing to a placeholder / localhost address in production. Set a valid PostgreSQL connection string.');
   }
 }
 
 if (configErrors.length > 0) {
   console.error('\n❌ ================= ENVIRONMENT CONFIGURATION ERROR =================');
+  console.error('The server cannot start safely because required production environment variables are missing or insecure.');
+  console.error('Variables needing attention:');
   configErrors.forEach(err => console.error(`  • ${err}`));
+  console.error('Please configure these environment variables in your deployment settings (e.g. Vercel Dashboard -> Project Settings -> Environment Variables).');
   console.error('=======================================================================\n');
 
   if (!isServerless && typeof process.exit === 'function') {
