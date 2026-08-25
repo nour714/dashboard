@@ -254,39 +254,33 @@
   pointer-events: none;
 }
 
-/* Radar rings — flight operations motif */
-.login-radar {
+/* Africa continent logo watermark */
+.login-logo-watermark {
   position: absolute;
-  right: -80px;
-  bottom: -80px;
-  width: 480px;
-  height: 480px;
+  right: -60px;
+  bottom: -40px;
+  width: 620px;
+  height: 780px;
+  background-image: url("/assets/logo.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.09;
+  filter: grayscale(1) sepia(1) saturate(4) hue-rotate(-10deg) brightness(1.3);
   pointer-events: none;
   z-index: 0;
 }
 
-.login-radar-ring {
+.login-routes-svg {
   position: absolute;
   inset: 0;
-  border: 1px solid rgba(201, 161, 92, 0.14);
-  border-radius: 50%;
-}
-.login-radar-ring:nth-child(2) { inset: 60px; }
-.login-radar-ring:nth-child(3) { inset: 120px; }
-.login-radar-ring:nth-child(4) { inset: 180px; }
-
-.login-radar-spin {
-  animation: login-radar-rotate 90s linear infinite;
-  transform-origin: center;
-}
-
-@keyframes login-radar-rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .login-flight-path {
-  stroke: rgba(201, 161, 92, 0.45);
+  stroke: rgba(201, 161, 92, 0.5);
   stroke-width: 1.5;
   stroke-dasharray: 4 6;
   fill: none;
@@ -299,11 +293,11 @@
 
 .login-city-dot {
   fill: #C9A15C;
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
 .login-plane-icon {
-  offset-path: path('M 40 380 Q 220 60 440 140');
+  offset-path: path('M 480 560 Q 620 300 760 200');
   animation: login-plane-fly 14s ease-in-out infinite;
 }
 
@@ -315,7 +309,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .login-radar-spin,
   .login-flight-path,
   .login-plane-icon {
     animation: none !important;
@@ -323,7 +316,10 @@
 }
 
 @media (max-width: 768px) {
-  .login-radar { display: none; }
+  .login-logo-watermark,
+  .login-routes-svg {
+    display: none;
+  }
 }
 
 .login-brand-content {

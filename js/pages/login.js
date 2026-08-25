@@ -26,23 +26,18 @@ export const LoginPage = {
             </div>
           </div>
 
-          <div class="login-radar">
-            <svg viewBox="0 0 480 480" width="480" height="480" style="overflow: visible;">
-              <g class="login-radar-spin">
-                <circle class="login-radar-ring" cx="240" cy="240" r="240" fill="none" stroke="rgba(201,161,92,0.14)"/>
-                <circle class="login-radar-ring" cx="240" cy="240" r="180" fill="none" stroke="rgba(201,161,92,0.12)"/>
-                <circle class="login-radar-ring" cx="240" cy="240" r="120" fill="none" stroke="rgba(201,161,92,0.10)"/>
-              </g>
-              <path class="login-flight-path" d="M 40 380 Q 220 60 440 140" />
-              <path class="login-flight-path" d="M 100 460 Q 260 280 420 340" style="animation-duration: 55s;" />
-              <circle class="login-city-dot" cx="40" cy="380" r="3.5" />
-              <circle class="login-city-dot" cx="440" cy="140" r="3.5" />
-              <circle class="login-city-dot" cx="420" cy="340" r="3.5" />
-              <g class="login-plane-icon">
-                <path d="M0 0 L8 3 L0 6 L2 3 Z" fill="#C9A15C" transform="rotate(45)" />
-              </g>
-            </svg>
-          </div>
+          <div class="login-logo-watermark"></div>
+
+          <svg class="login-routes-svg" viewBox="0 0 960 900" preserveAspectRatio="xMidYMid slice">
+            <path class="login-flight-path" d="M 480 560 Q 620 300 760 200" />
+            <path class="login-flight-path" d="M 520 700 Q 660 500 780 420" style="animation-duration: 55s;" />
+            <circle class="login-city-dot" cx="480" cy="560" r="4" />
+            <circle class="login-city-dot" cx="760" cy="200" r="4" />
+            <circle class="login-city-dot" cx="780" cy="420" r="4" />
+            <g class="login-plane-icon">
+              <path d="M0 0 L9 3.5 L0 7 L2.3 3.5 Z" fill="#C9A15C" transform="rotate(45)" />
+            </g>
+          </svg>
 
           <div class="login-brand-content">
             <h1 class="login-brand-heading">${escapeHtml(t('brand.platform'))}</h1>
