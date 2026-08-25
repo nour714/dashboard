@@ -9,6 +9,7 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import cookieParser from 'cookie-parser';
 import apiRouter from './routes/index.js';
 import { helmetMiddleware, corsMiddleware, validatePath } from './middleware/security.js';
 import { errorHandler } from './middleware/error-handler.js';
@@ -49,6 +50,7 @@ export function applyApiMiddleware(app) {
   // Security Headers and CORS
   app.use(helmetMiddleware);
   app.use(corsMiddleware);
+  app.use(cookieParser());
 
   // Environment Configuration Guard (Early fail-closed with generic JSON error for clients)
   app.use((req, res, next) => {
@@ -67,25 +69,6 @@ export function applyApiMiddleware(app) {
   // Body Parsers
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
-
-  // Cookie Parser Middleware
-  app.use((req, res, next) => {
-    const rawCookie = req.headers.cookie;
-    req.cookies = {};
-    if (rawCookie) {
-      rawCookie.split(';').forEach(c => {
-        const [key, ...val] = c.trim().split('=');
-        if (key) {
-          try {
-            req.cookies[key] = decodeURIComponent(val.join('='));
-          } catch {
-            req.cookies[key] = val.join('=');
-          }
-        }
-      });
-    }
-    next();
-  });
 }
 
 export function createApp(rootDir = ROOT_DIR) {

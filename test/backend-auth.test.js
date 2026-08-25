@@ -176,8 +176,10 @@ async function runAuthTests() {
     passwordHash: testUserPasswordHash
   };
 
-  const mockTokens = [];
-  setPrismaClient({
+  const mockTokens = new Map();
+  let tokenCounter = 1;
+
+  const mockPrisma = {
     user: {
       findFirst: async ({ where }) => {
         if (where?.email?.equals?.toLowerCase() === mockAuthUser.email.toLowerCase() || where?.email === mockAuthUser.email) {
@@ -189,15 +191,44 @@ async function runAuthTests() {
     },
     refreshToken: {
       create: async ({ data }) => {
-        mockTokens.push(data);
-        return data;
+        const record = { id: `token-${tokenCounter++}`, revoked: false, ...data };
+        mockTokens.set(data.tokenHash, record);
+        return record;
+      },
+      findUnique: async ({ where }) => {
+        const record = mockTokens.get(where.tokenHash);
+        if (!record) return null;
+        return { ...record, user: mockAuthUser };
+      },
+      updateMany: async ({ where, data }) => {
+        let count = 0;
+        for (const record of mockTokens.values()) {
+          let match = true;
+          if (where.id && record.id !== where.id) match = false;
+          if (where.tokenHash && record.tokenHash !== where.tokenHash) match = false;
+          if (where.userId && record.userId !== where.userId) match = false;
+          if (where.revoked !== undefined && record.revoked !== where.revoked) match = false;
+          if (match) {
+            Object.assign(record, data);
+            count++;
+          }
+        }
+        return { count };
       }
     },
     auditLog: {
       create: async () => ({})
     },
-    $queryRaw: async () => [{ 1: 1 }]
-  });
+    $queryRaw: async () => [{ 1: 1 }],
+    $transaction: async (arg) => {
+      if (typeof arg === 'function') {
+        return await arg(mockPrisma);
+      }
+      return arg;
+    }
+  };
+
+  setPrismaClient(mockPrisma);
 
   const app = createApp();
   const server = http.createServer(app);
@@ -236,6 +267,38 @@ async function runAuthTests() {
     assert(resRememberDefault.statusCode === 200, 'POST /api/auth/login with default rememberMe returns 200');
     const setCookieDefault = resRememberDefault.headers['set-cookie']?.[0] || '';
     assert(setCookieDefault.includes('Max-Age=604800'), 'Default rememberMe cookie header contains Max-Age=604800 (7 days persistent)');
+
+    // 4. Silent Refresh using httpOnly Cookie & Cookie-Parser Middleware
+    console.log('\n--- 7. Silent Refresh via httpOnly Cookie ---');
+
+    // (a) Extract cookie from login response Set-Cookie header
+    const rawCookieHeader = setCookieTrue.split(';')[0]; // e.g. "refreshToken=..."
+    assert(rawCookieHeader.startsWith('refreshToken='), 'Login response sets refreshToken cookie in Set-Cookie header');
+
+    // (b) Send POST /api/auth/refresh with Cookie header
+    const refreshResWithCookie = await makeRequest(server, {
+      method: 'POST',
+      path: '/api/auth/refresh',
+      headers: {
+        'Cookie': rawCookieHeader
+      }
+    });
+
+    assert(refreshResWithCookie.statusCode === 200, 'POST /api/auth/refresh with Cookie header parsed by cookie-parser returns 200 OK');
+    assert(refreshResWithCookie.json?.success === true, 'Refresh response success is true');
+    assert(typeof refreshResWithCookie.json?.data?.accessToken === 'string', 'Refresh response returns fresh accessToken');
+    const newDecoded = jwt.verify(refreshResWithCookie.json.data.accessToken, env.JWT_SECRET);
+    assert(newDecoded.id === mockAuthUser.id, 'Rotated accessToken contains correct user payload');
+
+    // (c) Send POST /api/auth/refresh without any Cookie header -> MUST fail with 400
+    const refreshResWithoutCookie = await makeRequest(server, {
+      method: 'POST',
+      path: '/api/auth/refresh'
+    });
+
+    assert(refreshResWithoutCookie.statusCode === 400, 'POST /api/auth/refresh without Cookie header returns 400 Bad Request');
+    assert(refreshResWithoutCookie.json?.success === false, 'Missing cookie request success is false');
+    assert(refreshResWithoutCookie.json?.error?.message?.includes('Refresh token is required'), 'Error message states "Refresh token is required"');
   } finally {
     server.close();
   }

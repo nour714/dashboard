@@ -12,7 +12,7 @@ export const loginSchema = z.object({
 
 export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required').optional()
-});
+}).optional().default({});
 
 export const updateProfileSchema = z.object({
   name: z.string().min(1, 'Name cannot be empty').optional(),
