@@ -26,25 +26,50 @@ export function setAccessToken(token) {
 
 export function getStoredUser() {
   try {
-    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(CURRENT_USER_KEY) : null;
-    return raw ? JSON.parse(raw) : null;
+    if (typeof sessionStorage !== 'undefined') {
+      const rawSession = sessionStorage.getItem(CURRENT_USER_KEY);
+      if (rawSession) return JSON.parse(rawSession);
+    }
+    if (typeof localStorage !== 'undefined') {
+      const rawLocal = localStorage.getItem(CURRENT_USER_KEY);
+      if (rawLocal) return JSON.parse(rawLocal);
+    }
+    return null;
   } catch {
     return null;
   }
 }
 
-export function setSession({ accessToken, user } = {}) {
+export function setSession({ accessToken, user, rememberMe = true } = {}) {
   try {
     if (accessToken !== undefined) {
       inMemoryAccessToken = accessToken;
     }
-    if (user && typeof localStorage !== 'undefined') {
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+    if (user) {
+      if (rememberMe) {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+        }
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem(CURRENT_USER_KEY);
+        }
+      } else {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+        }
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem(CURRENT_USER_KEY);
+        }
+      }
     }
-    // Clean up any legacy localStorage tokens if present
+    // Clean up any legacy localStorage/sessionStorage tokens if present
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('AfricaTravel_ACCESS_TOKEN');
       localStorage.removeItem('AfricaTravel_REFRESH_TOKEN');
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('AfricaTravel_ACCESS_TOKEN');
+      sessionStorage.removeItem('AfricaTravel_REFRESH_TOKEN');
     }
   } catch (e) {
     console.error('Failed to persist session', e);
@@ -53,7 +78,12 @@ export function setSession({ accessToken, user } = {}) {
 
 export function updateStoredUser(patch) {
   const current = getStoredUser() || {};
-  setSession({ user: { ...current, ...patch } });
+  const updated = { ...current, ...patch };
+  if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(CURRENT_USER_KEY)) {
+    sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updated));
+  } else if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updated));
+  }
 }
 
 export function clearSession() {
@@ -63,6 +93,11 @@ export function clearSession() {
       localStorage.removeItem(CURRENT_USER_KEY);
       localStorage.removeItem('AfricaTravel_ACCESS_TOKEN');
       localStorage.removeItem('AfricaTravel_REFRESH_TOKEN');
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(CURRENT_USER_KEY);
+      sessionStorage.removeItem('AfricaTravel_ACCESS_TOKEN');
+      sessionStorage.removeItem('AfricaTravel_REFRESH_TOKEN');
     }
   } catch (e) {
     console.error('Failed to clear session', e);

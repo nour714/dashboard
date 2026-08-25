@@ -25,7 +25,7 @@ export const TicketController = {
         throw new NotFoundError('Ticket', req.params.id);
       }
       if (req.user && req.user.role === 'TICKET_ONLY') {
-        if (ticket.createdById && ticket.createdById !== req.user.id) {
+        if (ticket.createdById !== req.user.id) {
           throw new ForbiddenError('Access restricted to your own tickets');
         }
       }

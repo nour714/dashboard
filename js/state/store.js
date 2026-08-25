@@ -109,14 +109,14 @@ class Store {
   }
 
   // --- Auth Actions ---
-  async login(email, password) {
+  async login(email, password, rememberMe = true) {
     const res = await apiClient.post('/auth/login', { email, password }, { auth: false });
     if (!res.success) {
       return { success: false, error: res.error };
     }
 
     const { user, accessToken } = res.data;
-    setSession({ accessToken, user });
+    setSession({ accessToken, user, rememberMe });
 
     this.state.currentUser = { ...INITIAL_SETTINGS.profile, ...user };
     this.state.isAuthenticated = true;

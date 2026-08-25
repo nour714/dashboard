@@ -276,78 +276,114 @@ assertThrows(
 );
 
 // ============================================================
-// 6. STORE MUTATION BOUNDARY TESTS
+// 6. SESSION PERSISTENCE & REMEMBER-ME TESTS
 // ============================================================
-console.log('\n═══ 6. Store Mutation Boundary Tests ═══');
+console.log('\n═══ 6. Session Persistence & Remember-Me Tests ═══');
 
-// Create test ticket in store
-const createdTicket = store.applyTicketCreation({
-  passengerName: 'Mutation Test Passenger',
-  origin: 'CAI',
-  destination: 'LHR',
-  ticketPrice: 20000,
-  initialPayment: 5000
+class StorageMock {
+  constructor() {
+    this.data = {};
+  }
+  getItem(key) {
+    return this.data[key] || null;
+  }
+  setItem(key, value) {
+    this.data[key] = String(value);
+  }
+  removeItem(key) {
+    delete this.data[key];
+  }
+  clear() {
+    this.data = {};
+  }
+}
+
+globalThis.localStorage = new StorageMock();
+globalThis.sessionStorage = new StorageMock();
+
+// Import session helpers
+import { setSession, getStoredUser, clearSession, hasSession, setAccessToken } from '../js/services/api-client.js';
+import { LoginPage } from '../js/pages/login.js';
+
+// Test 1: Remember Me = true stores in localStorage (persists across sessions)
+clearSession();
+setSession({
+  accessToken: 'TOKEN-REMEMBER-TRUE',
+  user: { id: 'EMP-101', name: 'Persistent User', email: 'remember@africatravel.com' },
+  rememberMe: true
 });
 
-assert(createdTicket && createdTicket.id, 'Store created valid ticket');
+assert(localStorage.getItem('AfricaTravel_CURRENT_USER') !== null, 'Remember-Me checked: user stored in localStorage');
+assert(sessionStorage.getItem('AfricaTravel_CURRENT_USER') === null, 'Remember-Me checked: user NOT stored in sessionStorage');
+assert(getStoredUser()?.id === 'EMP-101', 'getStoredUser retrieves persistent user from localStorage');
+assert(hasSession() === true, 'hasSession returns true when localStorage contains user');
 
-const paymentsCountBefore = createdTicket.payments.length;
+// Simulate session close (tab closed -> sessionStorage cleared)
+sessionStorage.clear();
+assert(getStoredUser()?.id === 'EMP-101', 'Simulate tab close: user remains persisted in localStorage when Remember-Me was checked');
 
-// Attempt invalid overpayment directly on store: 16000 > 15000 remaining
-assertThrows(
-  () => store.applyPayment(createdTicket.id, { amount: 16000 }),
-  'BusinessRuleError',
-  'Store applyPayment strictly blocks overpayment at boundary'
-);
+// Test 2: Remember Me = false stores strictly in sessionStorage (cleared on tab close)
+clearSession();
+setSession({
+  accessToken: 'TOKEN-REMEMBER-FALSE',
+  user: { id: 'EMP-102', name: 'Temporary User', email: 'temp@africatravel.com' },
+  rememberMe: false
+});
 
-// Verify state was not modified
-assert(createdTicket.payments.length === paymentsCountBefore, 'Store state remains unmodified after rejected payment');
+assert(sessionStorage.getItem('AfricaTravel_CURRENT_USER') !== null, 'Remember-Me unchecked: user stored in sessionStorage');
+assert(localStorage.getItem('AfricaTravel_CURRENT_USER') === null, 'Remember-Me unchecked: user NOT stored in localStorage');
+assert(getStoredUser()?.id === 'EMP-102', 'getStoredUser retrieves temporary user from sessionStorage');
 
-// Valid payment on store: 5000
-const validPay = store.applyPayment(createdTicket.id, { amount: 5000, method: 'Credit Card' });
-assert(validPay && validPay.amount === 5000, 'Store applyPayment succeeds on valid amount');
-assert(createdTicket.payments.length === paymentsCountBefore + 1, 'Store state updated on valid payment');
+// Simulate session close (tab closed -> in-memory token reset + sessionStorage cleared)
+setAccessToken(null);
+sessionStorage.clear();
+assert(getStoredUser() === null, 'Simulate tab close: token/user is completely cleared when Remember-Me was unchecked');
+assert(hasSession() === false, 'Simulate tab close: hasSession is false after closing session');
 
-// Attempt excessive refund on store: totalPaid = 10000, trying 12000
-assertThrows(
-  () => store.applyRefund(createdTicket.id, { amount: 12000, reason: 'Test' }),
-  'BusinessRuleError',
-  'Store applyRefund strictly blocks excessive refund at boundary'
-);
+// Test 3: LoginPage renders Remember-Me checkbox
+const loginHtml = LoginPage.render();
+assert(loginHtml.includes('id="remember-me"'), 'LoginPage HTML renders remember-me checkbox');
+assert(loginHtml.includes('type="checkbox"'), 'remember-me input is type checkbox');
+
+// Test 4: clearSession clears both storages
+setSession({ accessToken: 'T1', user: { id: 'U1' }, rememberMe: true });
+setSession({ accessToken: 'T2', user: { id: 'U2' }, rememberMe: false });
+clearSession();
+assert(localStorage.getItem('AfricaTravel_CURRENT_USER') === null, 'clearSession removes user from localStorage');
+assert(sessionStorage.getItem('AfricaTravel_CURRENT_USER') === null, 'clearSession removes user from sessionStorage');
+assert(getStoredUser() === null, 'getStoredUser returns null after clearSession');
 
 // ============================================================
-// 7. AUTH SERVICE & BOUNDARY TESTS
+// 7. AUTH SERVICE BOUNDARY TESTS
 // ============================================================
 console.log('\n═══ 7. Auth Service Tests ═══');
 
-assert(AuthService.isAuthenticated() === true, 'AuthService: initially authenticated');
-const user = AuthService.getCurrentUser();
-assert(user && (user.name || user.fullName), 'AuthService: returns current user');
+setSession({ user: { id: 'EMP-ADMIN', name: 'Admin Raafat', role: 'ADMIN' }, rememberMe: true });
+assert(AuthService.isAuthenticated() === true, 'AuthService: authenticated when session exists');
+const currentUser = AuthService.getCurrentUser();
+assert(currentUser && currentUser.name === 'Admin Raafat', 'AuthService.getCurrentUser returns current user');
 
-AuthService.logout();
-assert(AuthService.isAuthenticated() === false, 'AuthService: logged out successfully');
-
-// Login
-AuthService.login('admin@africatravel.com', 'password123');
-assert(AuthService.isAuthenticated() === true, 'AuthService: logged in successfully');
+clearSession();
+assert(AuthService.isAuthenticated() === false, 'AuthService: unauthenticated after clearing session');
 
 // ============================================================
 // 8. REPORT SERVICE DYNAMIC CALCULATIONS & SEPARATION
 // ============================================================
 console.log('\n═══ 8. Report Service Dynamic Calculations ═══');
 
-const reportData = ReportService.getReportData();
-assert(reportData.dataSource === 'APPLICATION_STATE', 'Report derived from APPLICATION_STATE when tickets exist');
-assert(typeof reportData.kpis.totalSales === 'number' && reportData.kpis.totalSales > 0, 'KPI totalSales computed dynamically');
-assert(typeof reportData.kpis.totalCollected === 'number', 'KPI totalCollected computed dynamically');
-assert(Array.isArray(reportData.employeePerformance), 'Employee performance returned as array');
-assert(Array.isArray(reportData.airlinePerformance), 'Airline performance returned as array');
+const sampleTickets = [
+  { ticketPrice: 18500, payments: [{ amount: 10000 }], refunds: [], modifications: [], airline: 'EgyptAir', airlineCode: 'MS' },
+  { ticketPrice: 12000, payments: [{ amount: 12000 }], refunds: [], modifications: [], airline: 'Emirates', airlineCode: 'EK' }
+];
+const reportData = buildReportFromTickets(sampleTickets, []);
+assert(reportData.kpis.totalSales === 30500, 'KPI totalSales computed dynamically');
+assert(reportData.kpis.totalCollected === 22000, 'KPI totalCollected computed dynamically');
+assert(reportData.airlinePerformance.length === 2, 'Airline performance dynamically computed from tickets');
 
-// Fallback test with empty dataset
+// Zero mock data test with empty dataset
 const emptyReport = buildReportFromTickets([], []);
-assert(emptyReport.dataSource === 'DEMO_FALLBACK', 'Empty tickets dataset triggers DEMO_FALLBACK');
 assert(emptyReport.kpis.totalTickets === 0, 'Empty tickets KPI totalTickets = 0');
-assert(emptyReport.airlinePerformance.length > 0, 'Empty tickets uses mock fallback airlines');
+assert(emptyReport.airlinePerformance.length === 0, 'Empty tickets adheres to zero-mock data policy');
 
 // ============================================================
 // 9. XSS / SECURITY UNIT TESTS

@@ -5,6 +5,7 @@
 import http from 'http';
 import { createApp } from '../server/src/app.js';
 import { AuthService } from '../server/src/services/auth.service.js';
+import { setPrismaClient } from '../server/src/config/database.js';
 
 let passed = 0;
 let failed = 0;
@@ -68,6 +69,56 @@ async function runApiTests() {
   console.log('   AfricaTravel Backend API & Server Integration Tests');
   console.log('========================================================\n');
 
+  // In-memory mock database state
+  const mockCustomers = [];
+  const mockTickets = [];
+  const mockAuditLogs = [];
+
+  const mockPrisma = {
+    customer: {
+      findFirst: async ({ where }) => {
+        if (where?.passport) {
+          return mockCustomers.find(c => c.passport === where.passport) || null;
+        }
+        return mockCustomers[0] || null;
+      },
+      create: async ({ data }) => {
+        const record = { ...data, createdAt: new Date(), updatedAt: new Date() };
+        mockCustomers.push(record);
+        return record;
+      }
+    },
+    ticket: {
+      create: async ({ data }) => {
+        const record = {
+          ...data,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          payments: [],
+          modifications: [],
+          refunds: [],
+          customer: { name: data.passengerName }
+        };
+        mockTickets.push(record);
+        return record;
+      },
+      findFirst: async ({ where }) => {
+        if (where?.OR) {
+          return mockTickets.find(t => where.OR.some(cond => (cond.id && t.id === cond.id) || (cond.ticketNumber && t.ticketNumber === cond.ticketNumber) || (cond.pnr && t.pnr === cond.pnr))) || null;
+        }
+        return mockTickets.find(t => t.id === where?.id || t.ticketNumber === where?.ticketNumber || t.pnr === where?.pnr) || null;
+      }
+    },
+    auditLog: {
+      create: async ({ data }) => {
+        mockAuditLogs.push(data);
+        return data;
+      }
+    },
+    $queryRaw: async () => [{ 1: 1 }]
+  };
+  setPrismaClient(mockPrisma);
+
   const app = createApp();
   const server = http.createServer(app);
 
@@ -114,7 +165,6 @@ async function runApiTests() {
     const restrictedRequests = [
       ['GET /api/customers', { method: 'GET', path: '/api/customers', headers: ticketOnlyHeaders }],
       ['GET /api/reports/summary', { method: 'GET', path: '/api/reports/summary', headers: ticketOnlyHeaders }],
-      ['POST /api/tickets', { method: 'POST', path: '/api/tickets', headers: ticketOnlyHeaders, body: {} }],
       ['PATCH /api/tickets/:id', { method: 'PATCH', path: '/api/tickets/TKT-1', headers: ticketOnlyHeaders, body: {} }],
       ['POST /api/tickets/:id/payments', { method: 'POST', path: '/api/tickets/TKT-1/payments', headers: ticketOnlyHeaders, body: {} }],
       ['DELETE /api/tickets/:id', { method: 'DELETE', path: '/api/tickets/TKT-1', headers: ticketOnlyHeaders }],
@@ -126,6 +176,85 @@ async function runApiTests() {
       const response = await makeRequest(server, request);
       assert(response.statusCode === 403, `${label} returns 403 for TICKET_ONLY`);
     }
+
+    // TICKET_ONLY role can successfully create tickets (POST /api/tickets)
+    const createTicketRes = await makeRequest(server, {
+      method: 'POST',
+      path: '/api/tickets',
+      headers: ticketOnlyHeaders,
+      body: {
+        passengerName: 'Nour TICKET_ONLY Officer Test',
+        pnr: 'TKON12',
+        origin: 'CAI',
+        destination: 'DXB',
+        departureDate: '2026-09-01T10:00:00.000Z',
+        arrivalDate: '2026-09-01T14:00:00.000Z',
+        flightNumber: 'MS 901',
+        airline: 'EgyptAir',
+        airlineCode: 'MS',
+        tripType: 'One Way',
+        cabinClass: 'Economy (Y)',
+        ticketPrice: 15000,
+        currency: 'EGP'
+      }
+    });
+    assert(createTicketRes.statusCode === 201, 'POST /api/tickets returns 201 for TICKET_ONLY with valid body');
+    assert(createTicketRes.json?.success === true, 'POST /api/tickets returns success: true for TICKET_ONLY');
+    assert(createTicketRes.json?.data?.createdById === 'EMP-TICKET-ONLY', 'Created ticket automatically binds createdById to req.user.id');
+
+    // IDOR Protection: TICKET_ONLY cannot access tickets where createdById is null or not owned
+    // 1. Ticket with createdById = null
+    mockTickets.push({
+      id: 'TK-NULL-CREATOR',
+      ticketNumber: '077-1111111111',
+      pnr: 'NULCREAT',
+      ticketPrice: 10000,
+      currency: 'EGP',
+      status: 'CONFIRMED',
+      createdById: null,
+      payments: [],
+      modifications: [],
+      refunds: []
+    });
+
+    const getNullCreatorRes = await makeRequest(server, {
+      method: 'GET',
+      path: '/api/tickets/TK-NULL-CREATOR',
+      headers: ticketOnlyHeaders
+    });
+    assert(getNullCreatorRes.statusCode === 403, 'TICKET_ONLY receiving GET /api/tickets/:id with createdById = null returns 403 Forbidden');
+    assert(getNullCreatorRes.json?.error?.code === 'FORBIDDEN', 'IDOR rejection on createdById = null returns FORBIDDEN error code');
+
+    // 2. Ticket with createdById = 'EMP-OTHER'
+    mockTickets.push({
+      id: 'TK-OTHER-CREATOR',
+      ticketNumber: '077-2222222222',
+      pnr: 'OTHCREAT',
+      ticketPrice: 10000,
+      currency: 'EGP',
+      status: 'CONFIRMED',
+      createdById: 'EMP-OTHER-USER',
+      payments: [],
+      modifications: [],
+      refunds: []
+    });
+
+    const getOtherCreatorRes = await makeRequest(server, {
+      method: 'GET',
+      path: '/api/tickets/TK-OTHER-CREATOR',
+      headers: ticketOnlyHeaders
+    });
+    assert(getOtherCreatorRes.statusCode === 403, 'TICKET_ONLY receiving GET /api/tickets/:id created by another user returns 403 Forbidden');
+
+    // 3. Ticket with createdById = 'EMP-TICKET-ONLY' (own ticket)
+    const createdTicketId = createTicketRes.json?.data?.id;
+    const getOwnTicketRes = await makeRequest(server, {
+      method: 'GET',
+      path: `/api/tickets/${createdTicketId}`,
+      headers: ticketOnlyHeaders
+    });
+    assert(getOwnTicketRes.statusCode === 200, 'TICKET_ONLY receiving GET /api/tickets/:id for own ticket returns 200 OK');
+    assert(getOwnTicketRes.json?.data?.id === createdTicketId, 'Returned ticket data matches created ticket ID');
 
     // 4. Static Asset and SPA Fallback Serving
     console.log('\n--- 4. Static Frontend & SPA Fallback ---');

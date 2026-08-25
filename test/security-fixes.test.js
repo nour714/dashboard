@@ -269,6 +269,11 @@ async function runSecurityFixesTests() {
   assert(envJsContent.includes('[JWT_SECRET]') || envJsContent.includes('JWT_SECRET'), 'server/src/config/env.js enforces check on production with insecure default secret');
   assert(envJsContent.includes('[BOOTSTRAP_ADMIN_PASSWORD / DEFAULT_ADMIN_PASSWORD]') || envJsContent.includes('DEFAULT_ADMIN_PASSWORD'), 'server/src/config/env.js enforces check on production with default password');
 
+  // Check server.js HOST / 0.0.0.0 container binding
+  const serverJsContent = fs.readFileSync('server.js', 'utf8');
+  assert(serverJsContent.includes('0.0.0.0'), 'server.js supports binding to 0.0.0.0 for Docker container environment');
+  assert(serverJsContent.includes('process.env.HOST'), 'server.js supports HOST environment variable');
+
   console.log('\n--- 3. CORS Policy Lockdown Verification ---');
   const securityJsContent = fs.readFileSync('server/src/middleware/security.js', 'utf8');
   assert(!securityJsContent.includes('isVercelOrigin'), 'server/src/middleware/security.js does not contain wildcard isVercelOrigin');

@@ -126,6 +126,7 @@ export const LoginPage = {
       e.preventDefault();
       const email = container.querySelector('#login-email').value.trim();
       const password = container.querySelector('#login-password').value;
+      const rememberMe = container.querySelector('#remember-me')?.checked ?? true;
 
       if (!email || !password) {
         showToast('Please enter both email and password', 'error');
@@ -135,7 +136,7 @@ export const LoginPage = {
       const submitBtn = form.querySelector('#login-submit-btn');
       if (submitBtn) submitBtn.disabled = true;
 
-      const res = await AuthService.login(email, password);
+      const res = await AuthService.login(email, password, rememberMe);
       if (submitBtn) submitBtn.disabled = false;
 
       if (!res.success) {

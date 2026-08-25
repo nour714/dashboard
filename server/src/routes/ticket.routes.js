@@ -23,7 +23,7 @@ router.use(authenticate);
 // Ticket CRUD
 router.get('/', requireRole('ADMIN', 'AGENT'), validate({ query: queryTicketsSchema }), TicketController.getTickets);
 router.get('/:id', requireRole('ADMIN', 'AGENT', 'TICKET_ONLY'), TicketController.getTicketById);
-router.post('/', requireRole('ADMIN', 'AGENT'), validate({ body: createTicketSchema }), TicketController.createTicket);
+router.post('/', requireRole('ADMIN', 'AGENT', 'TICKET_ONLY'), validate({ body: createTicketSchema }), TicketController.createTicket);
 router.patch('/:id', requireRole('ADMIN', 'AGENT'), validate({ body: updateTicketSchema }), TicketController.updateTicket);
 router.delete('/:id', requireRole('ADMIN'), TicketController.deleteTicket);
 

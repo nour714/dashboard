@@ -33,11 +33,12 @@ export const server = createServer(ROOT_DIR);
 
 // Start standalone server when executed directly
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  server.listen(PORT, '127.0.0.1', async () => {
+  const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
+  server.listen(PORT, HOST, async () => {
     console.log(`\n✈️  ======================================================`);
     console.log(`   AfricaTravel Operations Platform Server`);
-    console.log(`   Running at:  http://127.0.0.1:${PORT}`);
-    console.log(`   API Base:    http://127.0.0.1:${PORT}/api`);
+    console.log(`   Running at:  http://${HOST}:${PORT}`);
+    console.log(`   API Base:    http://${HOST}:${PORT}/api`);
     console.log(`   Environment: ${env.NODE_ENV}`);
     console.log(`   Node.js:     ${process.version}`);
     console.log(`======================================================\n`);

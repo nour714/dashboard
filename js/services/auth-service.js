@@ -15,9 +15,10 @@ export const AuthService = {
    * Authenticates against the backend and hydrates application state.
    * @param {string} email
    * @param {string} password
+   * @param {boolean} rememberMe
    * @returns {Promise<{success: boolean, user?: object, error?: string}>}
    */
-  async login(email, password) {
+  async login(email, password, rememberMe = true) {
     if (!email || !email.trim()) {
       return { success: false, error: 'Work email is required' };
     }
@@ -25,7 +26,7 @@ export const AuthService = {
       return { success: false, error: 'Password is required' };
     }
 
-    const result = await store.login(email.trim(), password);
+    const result = await store.login(email.trim(), password, rememberMe);
     if (!result.success) {
       return { success: false, error: result.error?.message || 'Authentication failed' };
     }
