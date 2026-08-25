@@ -224,7 +224,7 @@
 
 .login-brand-panel {
   flex: 1;
-  background-color: #0f172a;
+  background: linear-gradient(160deg, #0A0F1E 0%, #0D1428 55%, #131B32 100%);
   color: #ffffff;
   padding: 48px;
   display: flex;
@@ -235,12 +235,95 @@
   min-height: 100vh;
 }
 
+/* Subtle grain texture for a premium, tactile feel */
 .login-brand-panel::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 80% 20%, rgba(37, 99, 235, 0.3), transparent 60%);
+  opacity: 0.035;
   pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Warm gold ambient glow replacing the flat blue radial */
+.login-brand-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 82% 15%, rgba(201, 161, 92, 0.16), transparent 55%);
+  pointer-events: none;
+}
+
+/* Radar rings — flight operations motif */
+.login-radar {
+  position: absolute;
+  right: -80px;
+  bottom: -80px;
+  width: 480px;
+  height: 480px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.login-radar-ring {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(201, 161, 92, 0.14);
+  border-radius: 50%;
+}
+.login-radar-ring:nth-child(2) { inset: 60px; }
+.login-radar-ring:nth-child(3) { inset: 120px; }
+.login-radar-ring:nth-child(4) { inset: 180px; }
+
+.login-radar-spin {
+  animation: login-radar-rotate 90s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes login-radar-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.login-flight-path {
+  stroke: rgba(201, 161, 92, 0.45);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 6;
+  fill: none;
+  animation: login-dash-flow 40s linear infinite;
+}
+
+@keyframes login-dash-flow {
+  to { stroke-dashoffset: -200; }
+}
+
+.login-city-dot {
+  fill: #C9A15C;
+  opacity: 0.7;
+}
+
+.login-plane-icon {
+  offset-path: path('M 40 380 Q 220 60 440 140');
+  animation: login-plane-fly 14s ease-in-out infinite;
+}
+
+@keyframes login-plane-fly {
+  0%   { offset-distance: 0%; opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-radar-spin,
+  .login-flight-path,
+  .login-plane-icon {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-radar { display: none; }
 }
 
 .login-brand-content {

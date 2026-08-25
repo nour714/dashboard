@@ -26,6 +26,24 @@ export const LoginPage = {
             </div>
           </div>
 
+          <div class="login-radar">
+            <svg viewBox="0 0 480 480" width="480" height="480" style="overflow: visible;">
+              <g class="login-radar-spin">
+                <circle class="login-radar-ring" cx="240" cy="240" r="240" fill="none" stroke="rgba(201,161,92,0.14)"/>
+                <circle class="login-radar-ring" cx="240" cy="240" r="180" fill="none" stroke="rgba(201,161,92,0.12)"/>
+                <circle class="login-radar-ring" cx="240" cy="240" r="120" fill="none" stroke="rgba(201,161,92,0.10)"/>
+              </g>
+              <path class="login-flight-path" d="M 40 380 Q 220 60 440 140" />
+              <path class="login-flight-path" d="M 100 460 Q 260 280 420 340" style="animation-duration: 55s;" />
+              <circle class="login-city-dot" cx="40" cy="380" r="3.5" />
+              <circle class="login-city-dot" cx="440" cy="140" r="3.5" />
+              <circle class="login-city-dot" cx="420" cy="340" r="3.5" />
+              <g class="login-plane-icon">
+                <path d="M0 0 L8 3 L0 6 L2 3 Z" fill="#C9A15C" transform="rotate(45)" />
+              </g>
+            </svg>
+          </div>
+
           <div class="login-brand-content">
             <h1 class="login-brand-heading">${escapeHtml(t('brand.platform'))}</h1>
             <p class="login-brand-subtext">
