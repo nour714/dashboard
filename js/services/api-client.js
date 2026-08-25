@@ -110,7 +110,7 @@ export function hasSession() {
 
 // --- Core request logic ------------------------------------------------------------
 
-async function refreshAccessToken() {
+export async function refreshAccessToken() {
   if (!refreshInFlight) {
     refreshInFlight = fetch(`${API_BASE}/auth/refresh`, {
       method: 'POST',

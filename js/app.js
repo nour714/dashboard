@@ -4,6 +4,7 @@
 
 import { store } from './state/store.js';
 import { AuthService } from './services/auth-service.js';
+import { refreshAccessToken } from './services/api-client.js';
 import { routes } from './router/routes.js';
 import { Router } from './router/router.js';
 import { renderSidebar } from './components/sidebar.js';
@@ -72,6 +73,15 @@ class App {
       }
       this.router = new Router(routes, mount);
       return;
+    }
+
+    // Proactively refresh the access token before firing data requests,
+    // so the initial page load doesn't fire 5 failed 401s before succeeding.
+    try {
+      await refreshAccessToken();
+    } catch (e) {
+      // If refresh fails (e.g. invalid/expired refresh token cookie),
+      // let ensureHydrated() handle it gracefully as it currently does.
     }
 
     // Ensure the API-backed cache is populated before any page reads it
