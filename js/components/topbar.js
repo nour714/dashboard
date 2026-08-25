@@ -7,7 +7,7 @@ import { AuthService } from '../services/auth-service.js';
 import { escapeHtml } from '../utils/security.js';
 import { i18n, t } from '../i18n/i18n.js';
 
-export function renderTopbar() {
+export function renderTopbar(upcomingCount = 0) {
   const currentUser = AuthService.getCurrentUser() || {};
   const isAr = i18n.getLanguage() === 'ar';
   const rawName = currentUser.name || currentUser.fullName || 'Mohamed Raafat';
@@ -57,7 +57,7 @@ export function renderTopbar() {
 
         <button type="button" class="topbar-icon-btn" id="topbar-notif-btn" title="${escapeHtml(t('modals.notifications.title'))}" aria-label="${escapeHtml(t('modals.notifications.title'))}">
           ${icons.bell('w-5 h-5')}
-          <span class="notification-badge"></span>
+          <span class="notification-badge" style="display: ${upcomingCount > 0 ? 'flex' : 'none'};">${upcomingCount > 9 ? '9+' : upcomingCount}</span>
         </button>
 
         <button type="button" class="topbar-icon-btn hide-mobile" id="topbar-help-btn" title="${escapeHtml(t('modals.help.title'))}" aria-label="${escapeHtml(t('modals.help.title'))}">

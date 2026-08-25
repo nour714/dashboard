@@ -609,7 +609,9 @@ export const en = {
     notifications: {
       title: 'Notifications & Alerts',
       subtitle: 'Recent system operations and ticketing updates',
-      viewAll: 'View Full Audit Trail'
+      viewAll: 'View Full Audit Trail',
+      departureSoon: 'Departure approaching',
+      returnSoon: 'Return approaching'
     },
     help: {
       title: 'AfricaTravel Operational Guide',
@@ -667,5 +669,11 @@ export const en = {
     minsAgo: '{n} mins ago',
     hoursAgo: '{n} hours ago',
     daysAgo: '{n} days ago'
+  },
+
+  // Flight Reminders & In-App Notifications
+  notifications: {
+    departureSoon: 'Departure approaching',
+    returnSoon: 'Return approaching'
   }
 };

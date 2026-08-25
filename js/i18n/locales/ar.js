@@ -609,7 +609,9 @@ export const ar = {
     notifications: {
       title: 'الإشعارات والتنبيهات',
       subtitle: 'أحدث العمليات التشغيلية وتحديثات التذاكر في النظام',
-      viewAll: 'عرض سجل التدقيق الكامل'
+      viewAll: 'عرض سجل التدقيق الكامل',
+      departureSoon: 'موعد السفر يقرب',
+      returnSoon: 'موعد العودة يقرب'
     },
     help: {
       title: 'دليل التشغيل لنظام AfricaTravel',
@@ -667,5 +669,11 @@ export const ar = {
     minsAgo: 'منذ {n} دقيقة',
     hoursAgo: 'منذ {n} ساعة',
     daysAgo: 'منذ {n} يوم'
+  },
+
+  // Flight Reminders & In-App Notifications
+  notifications: {
+    departureSoon: 'موعد السفر يقرب',
+    returnSoon: 'موعد العودة يقرب'
   }
 };
