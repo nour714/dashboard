@@ -1,8 +1,9 @@
-﻿/**
+/**
  * AfricaTravel — Ticket Details Page Component
  */
 
 import { TicketService } from '../../services/ticket-service.js';
+import { AuthService } from '../../services/auth-service.js';
 import { icons } from '../../components/icons.js';
 import { renderStatusBadge } from '../../components/status-badge.js';
 import { renderTabs, bindTabs } from '../../components/tabs.js';
@@ -15,7 +16,8 @@ import {
   openAddPaymentModal,
   openModifyFlightModal,
   openAddRefundModal,
-  openEditTicketModal
+  openEditTicketModal,
+  openDeleteTicketModal
 } from './ticket-actions.js';
 import { formatCurrency, formatDate } from '../../utils/calculations.js';
 import { escapeHtml } from '../../utils/security.js';
@@ -37,6 +39,8 @@ export const TicketDetailsPage = {
     }
 
     const financials = TicketService.getTicketFinancials(ticket);
+    const currentUser = AuthService.getCurrentUser();
+    const isAdmin = (currentUser?.role || '').toUpperCase() === 'ADMIN';
     const activeTab = query.tab || 'overview';
 
     const tabs = [
@@ -75,6 +79,12 @@ export const TicketDetailsPage = {
             ${icons.refunds('w-4 h-4')}
             <span>${escapeHtml(t('ticketDetails.actions.requestRefund'))}</span>
           </button>
+          ${isAdmin ? `
+            <button type="button" class="btn btn-danger-outline" id="action-delete-ticket-btn">
+              ${icons.trash('w-4 h-4')}
+              <span>${escapeHtml(t('common.delete'))}</span>
+            </button>
+          ` : ''}
         </div>
       </div>
 
@@ -199,5 +209,15 @@ export const TicketDetailsPage = {
 
     const btnEdit = container.querySelector('#edit-ticket-btn');
     if (btnEdit) btnEdit.addEventListener('click', triggerEditTicket);
+
+    const btnDeleteTicket = container.querySelector('#action-delete-ticket-btn');
+    if (btnDeleteTicket) {
+      btnDeleteTicket.addEventListener('click', () => {
+        openDeleteTicketModal(ticket, () => {
+          window.history.pushState(null, null, '/tickets');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        });
+      });
+    }
   }
 };

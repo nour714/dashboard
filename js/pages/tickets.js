@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel — Tickets Management Page
  */
 
@@ -99,6 +99,40 @@ function renderMobileCards(tickets) {
       </a>
     `;
   }).join('');
+}
+
+function exportTicketsToCsv(tickets) {
+  const headers = ['Ticket Number', 'PNR', 'Passenger', 'Airline', 'Origin', 'Destination', 'Departure Date', 'Price', 'Paid', 'Remaining', 'Status'];
+  const rows = tickets.map(t => {
+    const financials = TicketService.getTicketFinancials(t);
+    return [
+      t.ticketNumber,
+      t.pnr,
+      t.passengerName,
+      t.airline,
+      t.origin,
+      t.destination,
+      t.departureDate ? formatDate(t.departureDate) : '',
+      t.ticketPrice,
+      financials ? financials.totalPaid : 0,
+      financials ? financials.remaining : 0,
+      t.status
+    ];
+  });
+
+  const csvContent = [headers, ...rows]
+    .map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `africatravel-tickets-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 export const TicketsPage = {
@@ -302,7 +336,13 @@ export const TicketsPage = {
 
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
-        showToast(t('common.export') + '...', 'info');
+        const tickets = TicketService.getAllTickets(currentFilters);
+        if (!tickets || tickets.length === 0) {
+          showToast(t('common.noDataToExport') || 'No data to export', 'warning');
+          return;
+        }
+        exportTicketsToCsv(tickets);
+        showToast(t('common.exportSuccess') || 'Exported successfully', 'success');
       });
     }
   }

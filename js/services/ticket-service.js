@@ -8,6 +8,7 @@
  */
 
 import { store } from '../state/store.js';
+import { apiClient } from './api-client.js';
 import {
   calculateTotalPaid,
   calculateRemaining,
@@ -186,6 +187,47 @@ export const TicketService = {
       return {
         success: false,
         error: { message: err.message || 'Failed to process refund', code: err.code || 'REFUND_ERROR' }
+      };
+    }
+  },
+
+  /**
+   * Soft-deletes a ticket (ADMIN only).
+   * @param {string} ticketId
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
+   */
+  async deleteTicket(ticketId) {
+    try {
+      const res = await apiClient.delete(`/tickets/${ticketId}`);
+      if (res.success) {
+        await store.refreshTickets().catch(() => {});
+      }
+      return res;
+    } catch (err) {
+      return {
+        success: false,
+        error: { message: err.message || 'Failed to delete ticket', code: 'DELETE_TICKET_ERROR' }
+      };
+    }
+  },
+
+  /**
+   * Permanently purges a soft-deleted ticket (ADMIN only).
+   * @param {string} ticketId
+   * @param {string} confirmTicketId
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
+   */
+  async purgeTicket(ticketId, confirmTicketId) {
+    try {
+      const res = await apiClient.delete(`/tickets/${ticketId}/purge`, { body: { confirmTicketId } });
+      if (res.success) {
+        await store.refreshTickets().catch(() => {});
+      }
+      return res;
+    } catch (err) {
+      return {
+        success: false,
+        error: { message: err.message || 'Failed to purge ticket', code: 'PURGE_TICKET_ERROR' }
       };
     }
   }

@@ -180,6 +180,12 @@ export const CustomerDetailsPage = {
             ${icons.edit('w-4 h-4')}
             <span>${escapeHtml(t('customerDetails.editProfile'))}</span>
           </button>
+          ${isAdmin ? `
+            <button type="button" class="btn btn-danger-outline" id="delete-customer-btn">
+              ${icons.trash('w-4 h-4')}
+              <span>${escapeHtml(t('common.delete'))}</span>
+            </button>
+          ` : ''}
           <a href="/tickets/new" class="btn btn-primary" data-link>
             ${icons.plus('w-4 h-4')}
             <span>${escapeHtml(t('nav.newTicket'))}</span>
@@ -448,6 +454,72 @@ export const CustomerDetailsPage = {
                 showToast(t('toasts.customerUpdated'), 'success');
                 container.innerHTML = CustomerDetailsPage.render(params);
                 CustomerDetailsPage.afterRender(container, params);
+              });
+            }
+          }
+        });
+      });
+    }
+
+    const deleteCustomerBtn = container.querySelector('#delete-customer-btn');
+    if (deleteCustomerBtn) {
+      deleteCustomerBtn.addEventListener('click', () => {
+        const customer = CustomerService.getCustomerById(customerId);
+        if (!customer) return;
+
+        openModal({
+          title: `${t('common.delete') || 'Delete Customer'} #${customer.id}`,
+          subtitle: `${customer.name} (${customer.phone || customer.email || ''})`,
+          contentHtml: `
+            <div class="d-flex flex-column gap-md">
+              <div class="p-md rounded-md" style="background-color: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-md);">
+                <div class="font-semibold text-danger mb-xs" style="font-size: 14px;">
+                  ⚠️ ${escapeHtml(t('modals.deleteCustomer.warning') || 'هل أنت متأكد من رغبتك في حذف هذا العميل؟')}
+                </div>
+                <p class="text-xs text-muted" style="margin: 0; line-height: 1.5;">
+                  ${escapeHtml(t('modals.deleteCustomer.explanation') || 'سيتم وضع علامة محذوف على العميل ولن يظهر في القوائم الرئيسية. لن تتم العملية إذا كان لدى العميل أي تذاكر نشطة.')}
+                </p>
+              </div>
+
+              <div id="delete-cust-error-box" class="p-sm text-sm text-danger" style="display: none; background-color: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md); border: 1px solid rgba(239, 68, 68, 0.3);"></div>
+            </div>
+          `,
+          footerHtml: `
+            <button type="button" class="btn btn-secondary" id="cancel-delete-cust">${escapeHtml(t('common.cancel'))}</button>
+            <button type="button" class="btn btn-danger" id="confirm-delete-cust">${escapeHtml(t('common.delete'))}</button>
+          `,
+          onOpen: (modalEl) => {
+            const cancelBtn = modalEl.querySelector('#cancel-delete-cust');
+            const confirmBtn = modalEl.querySelector('#confirm-delete-cust');
+            const errorBox = modalEl.querySelector('#delete-cust-error-box');
+
+            if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+            if (confirmBtn) {
+              confirmBtn.addEventListener('click', async () => {
+                confirmBtn.disabled = true;
+                if (errorBox) {
+                  errorBox.style.display = 'none';
+                  errorBox.textContent = '';
+                }
+
+                const result = await CustomerService.deleteCustomer(customerId);
+                confirmBtn.disabled = false;
+
+                if (!result.success) {
+                  const msg = result.error?.message || 'Failed to delete customer';
+                  if (errorBox) {
+                    errorBox.textContent = msg;
+                    errorBox.style.display = 'block';
+                  }
+                  showToast(msg, 'error');
+                  return;
+                }
+
+                closeModal();
+                showToast(t('toasts.customerDeleted') || 'Customer deleted successfully', 'success');
+                window.history.pushState(null, null, '/customers');
+                window.dispatchEvent(new PopStateEvent('popstate'));
               });
             }
           }

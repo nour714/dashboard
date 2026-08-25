@@ -159,6 +159,51 @@ export const CustomerService = {
         error: { message: err.message || 'Failed to delete passport document', code: 'DELETE_DOC_ERROR' }
       };
     }
+  },
+
+  /**
+   * Soft-deletes a customer (ADMIN only).
+   * @param {string} customerId
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
+   */
+  async deleteCustomer(customerId) {
+    try {
+      const res = await apiClient.delete(`/customers/${customerId}`);
+      if (res.success) {
+        const { customers } = store.getState();
+        store.state.customers = customers.filter(c => c.id !== customerId);
+        store.notify();
+      }
+      return res;
+    } catch (err) {
+      return {
+        success: false,
+        error: { message: err.message || 'Failed to delete customer', code: 'DELETE_CUSTOMER_ERROR' }
+      };
+    }
+  },
+
+  /**
+   * Permanently purges a soft-deleted customer (ADMIN only).
+   * @param {string} customerId
+   * @param {string} confirmCustomerId
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
+   */
+  async purgeCustomer(customerId, confirmCustomerId) {
+    try {
+      const res = await apiClient.delete(`/customers/${customerId}/purge`, { body: { confirmCustomerId } });
+      if (res.success) {
+        const { customers } = store.getState();
+        store.state.customers = customers.filter(c => c.id !== customerId);
+        store.notify();
+      }
+      return res;
+    } catch (err) {
+      return {
+        success: false,
+        error: { message: err.message || 'Failed to purge customer', code: 'PURGE_CUSTOMER_ERROR' }
+      };
+    }
   }
 };
 

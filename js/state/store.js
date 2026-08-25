@@ -249,6 +249,22 @@ class Store {
     return res;
   }
 
+  async deleteTicket(ticketId) {
+    const res = await apiClient.delete(`/tickets/${ticketId}`);
+    if (!res.success) return res;
+    this.state.tickets = this.state.tickets.filter(t => t.id !== ticketId && t.ticketNumber !== ticketId && t.pnr !== ticketId);
+    this.notify();
+    return res;
+  }
+
+  async purgeTicket(ticketId, confirmTicketId) {
+    const res = await apiClient.delete(`/tickets/${ticketId}/purge`, { body: { confirmTicketId } });
+    if (!res.success) return res;
+    this.state.tickets = this.state.tickets.filter(t => t.id !== ticketId && t.ticketNumber !== ticketId && t.pnr !== ticketId);
+    this.notify();
+    return res;
+  }
+
   // --- Customer Actions ---
   async createCustomer(custData) {
     const res = await apiClient.post('/customers', custData);
@@ -278,6 +294,22 @@ class Store {
       customerId,
       description: `Updated profile for customer ${res.data.name}.`
     });
+    this.notify();
+    return res;
+  }
+
+  async deleteCustomer(customerId) {
+    const res = await apiClient.delete(`/customers/${customerId}`);
+    if (!res.success) return res;
+    this.state.customers = this.state.customers.filter(c => c.id !== customerId);
+    this.notify();
+    return res;
+  }
+
+  async purgeCustomer(customerId, confirmCustomerId) {
+    const res = await apiClient.delete(`/customers/${customerId}/purge`, { body: { confirmCustomerId } });
+    if (!res.success) return res;
+    this.state.customers = this.state.customers.filter(c => c.id !== customerId);
     this.notify();
     return res;
   }

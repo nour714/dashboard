@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel — Ticket Action Modals (Payment, Modification, Refund, Edit)
  */
 
@@ -363,6 +363,65 @@ export function openEditTicketModal(ticket, onSuccess) {
 
           closeModal();
           showToast(t('toasts.customerUpdated'), 'success');
+          if (onSuccess) onSuccess();
+        });
+      }
+    }
+  });
+}
+
+export function openDeleteTicketModal(ticket, onSuccess) {
+  openModal({
+    title: `${t('common.delete') || 'Delete Ticket'} #${ticket.id}`,
+    subtitle: `${ticket.passengerName} (${ticket.origin} ✈ ${ticket.destination})`,
+    contentHtml: `
+      <div class="d-flex flex-column gap-md">
+        <div class="p-md rounded-md" style="background-color: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-md);">
+          <div class="font-semibold text-danger mb-xs" style="font-size: 14px;">
+            ⚠️ ${escapeHtml(t('modals.deleteTicket.warning') || 'هل أنت متأكد من رغبتك في حذف هذه التذكرة؟')}
+          </div>
+          <p class="text-xs text-muted" style="margin: 0; line-height: 1.5;">
+            ${escapeHtml(t('modals.deleteTicket.explanation') || 'سيتم وضع علامة ملغاة (CANCELLED) على التذكرة ولن تظهر في القوائم الرئيسية، مع الاحتفاظ بالسجل لأغراض التدقيق المالي.')}
+          </p>
+        </div>
+
+        <div id="delete-ticket-error-box" class="p-sm text-sm text-danger" style="display: none; background-color: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md); border: 1px solid rgba(239, 68, 68, 0.3);"></div>
+      </div>
+    `,
+    footerHtml: `
+      <button type="button" class="btn btn-secondary" id="modal-cancel-delete-ticket">${escapeHtml(t('common.cancel'))}</button>
+      <button type="button" class="btn btn-danger" id="modal-confirm-delete-ticket">${escapeHtml(t('common.delete'))}</button>
+    `,
+    onOpen: (modalEl) => {
+      const cancelBtn = modalEl.querySelector('#modal-cancel-delete-ticket');
+      const confirmBtn = modalEl.querySelector('#modal-confirm-delete-ticket');
+      const errorBox = modalEl.querySelector('#delete-ticket-error-box');
+
+      if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+          confirmBtn.disabled = true;
+          if (errorBox) {
+            errorBox.style.display = 'none';
+            errorBox.textContent = '';
+          }
+
+          const result = await TicketService.deleteTicket(ticket.id);
+          confirmBtn.disabled = false;
+
+          if (!result.success) {
+            const msg = result.error?.message || 'Failed to delete ticket';
+            if (errorBox) {
+              errorBox.textContent = msg;
+              errorBox.style.display = 'block';
+            }
+            showToast(msg, 'error');
+            return;
+          }
+
+          closeModal();
+          showToast(t('toasts.ticketDeleted') || 'Ticket deleted successfully', 'success');
           if (onSuccess) onSuccess();
         });
       }

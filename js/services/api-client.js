@@ -213,6 +213,9 @@ export const apiClient = {
     return request('PATCH', path, { ...opts, body });
   },
   delete(path, opts) {
+    if (opts && typeof opts === 'object' && !('body' in opts) && !('auth' in opts) && !('retry' in opts)) {
+      return request('DELETE', path, { body: opts });
+    }
     return request('DELETE', path, opts);
   }
 };
