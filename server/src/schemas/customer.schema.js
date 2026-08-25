@@ -33,3 +33,9 @@ export const queryCustomersSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(50)
 });
+
+export const addCustomerPurgeConfirmSchema = z.object({
+  confirmCustomerId: z.string().min(1, 'confirmCustomerId is required').trim()
+});
+
+export const purgeCustomerConfirmSchema = addCustomerPurgeConfirmSchema;

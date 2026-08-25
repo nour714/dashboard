@@ -131,5 +131,19 @@ export const CustomerController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  async purgeCustomer(req, res, next) {
+    try {
+      const confirmCustomerId = req.body?.confirmCustomerId;
+      const result = await CustomerService.purgeCustomer(req.params.id, req.user, confirmCustomerId);
+      return res.status(200).json({
+        success: true,
+        message: 'Customer permanently purged',
+        data: result
+      });
+    } catch (err) {
+      next(err);
+    }
   }
 };

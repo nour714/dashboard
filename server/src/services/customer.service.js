@@ -474,6 +474,120 @@ export const CustomerService = {
       name: result.name,
       deletedAt: result.deletedAt
     };
+  },
+
+  /**
+   * Permanently purges (hard-deletes) a customer (ADMIN only) after verifying:
+   * 1. Customer has already been soft-deleted (deletedAt != null)
+   * 2. Customer has zero associated tickets in the entire system (including cancelled/soft-deleted)
+   * 3. Double confirmation matches customer ID
+   * 4. Cleans up stored passport documents and notes
+   * @param {string} customerId
+   * @param {object} currentUser
+   * @param {string} confirmCustomerId
+   */
+  async purgeCustomer(customerId, currentUser = {}, confirmCustomerId) {
+    if (!customerId) {
+      throw new ValidationError('Customer ID is required', 'customerId');
+    }
+
+    const prisma = getPrismaClient();
+
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId }
+    });
+
+    if (!customer) {
+      throw new NotFoundError('Customer', customerId);
+    }
+
+    if (!customer.deletedAt) {
+      throw new BusinessRuleError(
+        'Customer must be soft-deleted before they can be permanently purged.',
+        'CUSTOMER_NOT_SOFT_DELETED',
+        { customerId: customer.id }
+      );
+    }
+
+    // Check for any tickets referencing this customer (active, cancelled, or soft-deleted)
+    const ticketCount = await prisma.ticket.count({
+      where: { customerId: customer.id }
+    });
+
+    if (ticketCount > 0) {
+      throw new BusinessRuleError(
+        'Cannot permanently purge customer with existing ticket history. Tickets must be purged first or retained for audit compliance.',
+        'CUSTOMER_HAS_TICKET_HISTORY',
+        { customerId: customer.id, ticketCount }
+      );
+    }
+
+    if (!confirmCustomerId || confirmCustomerId.trim() !== customer.id) {
+      throw new ValidationError(
+        `Confirmation failed: confirmCustomerId must match the exact customer ID '${customer.id}'.`,
+        'confirmCustomerId',
+        { expected: customer.id, received: confirmCustomerId }
+      );
+    }
+
+    // If customer has a stored passport document, delete it from storage
+    if (customer.passportDocPath) {
+      try {
+        const { deleteFromStorage } = await import('../config/storage.js');
+        await deleteFromStorage(customer.passportDocPath);
+      } catch (err) {
+        console.warn('Could not delete passport doc from storage during purge:', err.message);
+      }
+    }
+
+    const executePurge = async (tx) => {
+      if (tx.auditLog && typeof tx.auditLog.create === 'function') {
+        try {
+          await tx.auditLog.create({
+            data: {
+              id: `ACT-${crypto.randomUUID()}`,
+              user: currentUser.name || 'Admin',
+              userId: currentUser.id || null,
+              action: 'PURGE_CUSTOMER',
+              customerId: customer.id,
+              description: `Permanently purged customer ${customer.name} (${customer.id}).`,
+              metadata: {
+                adminId: currentUser.id,
+                targetId: customer.id,
+                targetType: 'CUSTOMER',
+                customerName: customer.name,
+                passport: customer.passport,
+                email: customer.email,
+                phone: customer.phone,
+                passportDocDeleted: !!customer.passportDocPath,
+                purgedAt: new Date().toISOString()
+              }
+            }
+          });
+        } catch (_) {}
+      }
+
+      if (tx.customerNote && typeof tx.customerNote.deleteMany === 'function') {
+        await tx.customerNote.deleteMany({
+          where: { customerId: customer.id }
+        });
+      }
+
+      await tx.customer.delete({
+        where: { id: customer.id }
+      });
+
+      return { id: customer.id, purged: true };
+    };
+
+    let result;
+    if (typeof prisma.$transaction === 'function') {
+      result = await prisma.$transaction(executePurge);
+    } else {
+      result = await executePurge(prisma);
+    }
+
+    return result;
   }
 };
 

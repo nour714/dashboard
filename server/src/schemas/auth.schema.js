@@ -6,7 +6,8 @@ import { z } from 'zod';
 
 export const loginSchema = z.object({
   email: z.string().email('Valid work email is required').trim(),
-  password: z.string().min(1, 'Password is required')
+  password: z.string().min(1, 'Password is required'),
+  rememberMe: z.boolean().optional().default(true)
 });
 
 export const refreshTokenSchema = z.object({

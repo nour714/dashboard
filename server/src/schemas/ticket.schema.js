@@ -106,3 +106,9 @@ export const queryTicketsSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(50)
 });
+
+export const addPurgeConfirmSchema = z.object({
+  confirmTicketId: z.string().min(1, 'confirmTicketId is required').trim()
+});
+
+export const purgeTicketConfirmSchema = addPurgeConfirmSchema;

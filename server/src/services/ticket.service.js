@@ -20,7 +20,7 @@ import {
 import { validatePayment } from '../domain/payment-rules.js';
 import { validateRefund } from '../domain/refund-rules.js';
 import { validateModification } from '../domain/modification-rules.js';
-import { NotFoundError } from '../domain/errors.js';
+import { NotFoundError, BusinessRuleError, ValidationError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
 
 /**
@@ -693,6 +693,23 @@ export const TicketService = {
       throw new NotFoundError('Ticket', ticketId);
     }
 
+    const paymentsAndRefunds = await prisma.ticket.findUnique({
+      where: { id: existing.id },
+      include: { payments: true, refunds: true }
+    });
+
+    const totalPaid = calculateTotalPaid(paymentsAndRefunds?.payments || []);
+    const totalRefunded = calculateTotalRefunded(paymentsAndRefunds?.refunds || []);
+    const unrefundedBalance = totalPaid - totalRefunded;
+
+    if (unrefundedBalance > 0) {
+      throw new BusinessRuleError(
+        'Cannot delete a ticket with an unrefunded balance. Process a full refund before deleting.',
+        'TICKET_HAS_UNREFUNDED_BALANCE',
+        { ticketId: existing.id, totalPaid, totalRefunded, unrefundedBalance, currency: existing.currency }
+      );
+    }
+
     const executeDeletion = async (tx) => {
       const now = new Date();
       const updated = await tx.ticket.update({
@@ -742,5 +759,123 @@ export const TicketService = {
       deletedAt: result.deletedAt,
       status: result.status
     };
+  },
+
+  /**
+   * Permanently purges (hard-deletes) a ticket (ADMIN only) after verifying:
+   * 1. Ticket has already been soft-deleted (deletedAt != null)
+   * 2. Ticket has zero financial or modification history (no payments, refunds, or modifications)
+   * 3. Double confirmation token matches ticket ID
+   * @param {string} ticketId
+   * @param {object} currentUser
+   * @param {string} confirmTicketId
+   */
+  async purgeTicket(ticketId, currentUser = {}, confirmTicketId) {
+    if (!ticketId) {
+      throw new ValidationError('Ticket ID is required', 'ticketId');
+    }
+
+    const prisma = getPrismaClient();
+
+    const existing = await prisma.ticket.findFirst({
+      where: {
+        OR: [
+          { id: ticketId },
+          { ticketNumber: ticketId },
+          { pnr: ticketId }
+        ]
+      },
+      include: {
+        payments: true,
+        refunds: true,
+        modifications: true
+      }
+    });
+
+    if (!existing) {
+      throw new NotFoundError('Ticket', ticketId);
+    }
+
+    if (!existing.deletedAt) {
+      throw new BusinessRuleError(
+        'Ticket must be soft-deleted before it can be permanently purged.',
+        'TICKET_NOT_SOFT_DELETED',
+        { ticketId: existing.id }
+      );
+    }
+
+    const hasFinancialHistory =
+      (existing.payments && existing.payments.length > 0) ||
+      (existing.refunds && existing.refunds.length > 0) ||
+      (existing.modifications && existing.modifications.length > 0);
+
+    if (hasFinancialHistory) {
+      throw new BusinessRuleError(
+        'Cannot permanently purge a ticket with associated financial records (payments, refunds, or modifications).',
+        'TICKET_HAS_FINANCIAL_HISTORY',
+        {
+          ticketId: existing.id,
+          paymentsCount: existing.payments?.length || 0,
+          refundsCount: existing.refunds?.length || 0,
+          modificationsCount: existing.modifications?.length || 0
+        }
+      );
+    }
+
+    if (!confirmTicketId || confirmTicketId.trim() !== existing.id) {
+      throw new ValidationError(
+        `Confirmation failed: confirmTicketId must match the exact ticket ID '${existing.id}'.`,
+        'confirmTicketId',
+        { expected: existing.id, received: confirmTicketId }
+      );
+    }
+
+    const executePurge = async (tx) => {
+      if (tx.auditLog && typeof tx.auditLog.create === 'function') {
+        try {
+          await tx.auditLog.create({
+            data: {
+              id: `ACT-${crypto.randomUUID()}`,
+              user: currentUser.name || 'Admin',
+              userId: currentUser.id || null,
+              action: 'PURGE_TICKET',
+              ticketId: existing.id,
+              customerId: existing.customerId,
+              description: `Permanently purged ticket ${existing.id} (${existing.ticketNumber}).`,
+              metadata: {
+                adminId: currentUser.id,
+                targetId: existing.id,
+                targetType: 'TICKET',
+                ticketNumber: existing.ticketNumber,
+                pnr: existing.pnr,
+                passengerName: existing.passengerName,
+                origin: existing.origin,
+                destination: existing.destination,
+                ticketPrice: Number(existing.ticketPrice),
+                currency: existing.currency,
+                customerId: existing.customerId,
+                createdAt: existing.createdAt,
+                purgedAt: new Date().toISOString()
+              }
+            }
+          });
+        } catch (_) {}
+      }
+
+      await tx.ticket.delete({
+        where: { id: existing.id }
+      });
+
+      return { id: existing.id, purged: true };
+    };
+
+    let result;
+    if (typeof prisma.$transaction === 'function') {
+      result = await prisma.$transaction(executePurge);
+    } else {
+      result = await executePurge(prisma);
+    }
+
+    return result;
   }
 };

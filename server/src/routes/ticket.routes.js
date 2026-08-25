@@ -9,7 +9,8 @@ import { validate } from '../middleware/validate.js';
 import {
   createTicketSchema,
   updateTicketSchema,
-  queryTicketsSchema
+  queryTicketsSchema,
+  addPurgeConfirmSchema
 } from '../schemas/ticket.schema.js';
 import { addPaymentSchema } from '../schemas/payment.schema.js';
 import { addRefundSchema } from '../schemas/refund.schema.js';
@@ -26,6 +27,7 @@ router.get('/:id', requireRole('ADMIN', 'AGENT', 'TICKET_ONLY'), TicketControlle
 router.post('/', requireRole('ADMIN', 'AGENT', 'TICKET_ONLY'), validate({ body: createTicketSchema }), TicketController.createTicket);
 router.patch('/:id', requireRole('ADMIN', 'AGENT'), validate({ body: updateTicketSchema }), TicketController.updateTicket);
 router.delete('/:id', requireRole('ADMIN'), TicketController.deleteTicket);
+router.delete('/:id/purge', requireRole('ADMIN'), validate({ body: addPurgeConfirmSchema }), TicketController.purgeTicket);
 
 // Financial & Operational Ledger Sub-resources (Enforce Domain Validation Layer)
 router.post('/:id/payments', requireRole('ADMIN', 'AGENT'), validate({ body: addPaymentSchema }), TicketController.addPayment);

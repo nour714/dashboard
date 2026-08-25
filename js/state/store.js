@@ -110,7 +110,7 @@ class Store {
 
   // --- Auth Actions ---
   async login(email, password, rememberMe = true) {
-    const res = await apiClient.post('/auth/login', { email, password }, { auth: false });
+    const res = await apiClient.post('/auth/login', { email, password, rememberMe }, { auth: false });
     if (!res.success) {
       return { success: false, error: res.error };
     }

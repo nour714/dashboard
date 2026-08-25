@@ -109,5 +109,19 @@ export const TicketController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  async purgeTicket(req, res, next) {
+    try {
+      const confirmTicketId = req.body?.confirmTicketId;
+      const result = await TicketService.purgeTicket(req.params.id, req.user, confirmTicketId);
+      return res.status(200).json({
+        success: true,
+        message: 'Ticket permanently purged',
+        data: result
+      });
+    } catch (err) {
+      next(err);
+    }
   }
 };

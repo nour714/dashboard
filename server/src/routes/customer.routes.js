@@ -10,7 +10,8 @@ import {
   createCustomerSchema,
   updateCustomerSchema,
   addCustomerNoteSchema,
-  queryCustomersSchema
+  queryCustomersSchema,
+  purgeCustomerConfirmSchema
 } from '../schemas/customer.schema.js';
 import { passportDocUpload, uploadConcurrencyBudget } from '../middleware/upload.js';
 import { uploadRateLimiter } from '../middleware/rate-limiter.js';
@@ -24,6 +25,7 @@ router.get('/:id', requireRole('ADMIN', 'AGENT'), CustomerController.getCustomer
 router.post('/', requireRole('ADMIN', 'AGENT'), validate({ body: createCustomerSchema }), CustomerController.createCustomer);
 router.patch('/:id', requireRole('ADMIN', 'AGENT'), validate({ body: updateCustomerSchema }), CustomerController.updateCustomer);
 router.delete('/:id', requireRole('ADMIN'), CustomerController.deleteCustomer);
+router.delete('/:id/purge', requireRole('ADMIN'), validate({ body: purgeCustomerConfirmSchema }), CustomerController.purgeCustomer);
 router.post('/:id/notes', requireRole('ADMIN', 'AGENT'), validate({ body: addCustomerNoteSchema }), CustomerController.addNote);
 
 // Passport Document endpoints

@@ -139,6 +139,17 @@ async function runSecurityFixesTests() {
       }
     },
     ticket: {
+      findUnique: async (args = {}) => {
+        const where = args?.where || {};
+        const queryId = where.id || where.ticketNumber;
+        const ticket = [...mockTickets.values()].find(t =>
+          (!queryId || t.id === queryId || t.ticketNumber === queryId)
+        );
+        if (!ticket) return null;
+        const payments = [...mockPayments.values()].filter(p => p.ticketId === ticket.id);
+        const refunds = [...mockRefunds.values()].filter(r => r.ticketId === ticket.id);
+        return { ...ticket, payments, refunds, modifications: [] };
+      },
       findFirst: async (args = {}) => {
         const where = args?.where || {};
         const queryId = where.id || where.ticketNumber || where.pnr || (where.OR && where.OR[0]?.id);
@@ -347,9 +358,25 @@ async function runSecurityFixesTests() {
   }
   assert(overRefundFailed, 'Second concurrent refund exceeding available balance is rejected (REFUND_EXCEEDS_AVAILABLE)');
 
-  // Test 3: Soft delete of ticket by ADMIN
+  // Test 3: Soft delete protection: Prevent deleting ticket with unrefunded balance
+  let unrefundedDeleteFailed = false;
+  try {
+    // testTicketId has 6000 paid, 4000 refunded -> 2000 unrefunded balance
+    await TicketService.deleteTicket(testTicketId, mockUser);
+  } catch (err) {
+    if (err instanceof BusinessRuleError && err.rule === 'TICKET_HAS_UNREFUNDED_BALANCE') {
+      unrefundedDeleteFailed = true;
+    }
+  }
+  assert(unrefundedDeleteFailed, 'Deleting ticket with unrefunded balance (2,000 EGP) is rejected (TICKET_HAS_UNREFUNDED_BALANCE)');
+
+  // Process remaining 2,000 refund so totalPaid === totalRefunded
+  const r2 = await TicketService.addRefund(testTicketId, { amount: 2000, reason: 'Full final refund before cancellation' }, mockUser);
+  assert(r2 && r2.amount === 2000, 'Second refund of 2,000 EGP succeeds (ticket fully refunded: 6,000 / 6,000)');
+
+  // Now soft delete should succeed
   const deleteRes = await TicketService.deleteTicket(testTicketId, mockUser);
-  assert(deleteRes.status === 'CANCELLED' && deleteRes.deletedAt, 'Ticket is soft-deleted with CANCELLED status and deletedAt timestamp');
+  assert(deleteRes.status === 'CANCELLED' && deleteRes.deletedAt, 'Ticket is soft-deleted with CANCELLED status and deletedAt timestamp once fully refunded');
 
   const deleteAuditLog = mockAuditLogs.find(l => l.action === 'DELETE_TICKET' && l.ticketId === testTicketId);
   assert(deleteAuditLog && deleteAuditLog.metadata?.adminId === mockUser.id, 'DELETE_TICKET audit log recorded with adminId and metadata');

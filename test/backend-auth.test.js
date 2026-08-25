@@ -2,9 +2,12 @@
  * AfricaTravel - Backend Authentication & Security Unit Tests
  */
 
+import http from 'http';
 import jwt from 'jsonwebtoken';
+import { createApp } from '../server/src/app.js';
 import { AuthService } from '../server/src/services/auth.service.js';
 import { authenticate, requireRole } from '../server/src/middleware/auth.js';
+import { setPrismaClient } from '../server/src/config/database.js';
 import { env } from '../server/src/config/env.js';
 import { UnauthorizedError, ForbiddenError } from '../server/src/domain/errors.js';
 
@@ -21,6 +24,48 @@ function assert(condition, message) {
     failures.push(message);
     console.error(`  ✗ ${message}`);
   }
+}
+
+function makeRequest(server, { method = 'GET', path = '/', headers = {}, body = null }) {
+  return new Promise((resolve, reject) => {
+    const address = server.address();
+    const payload = body ? JSON.stringify(body) : null;
+
+    const reqHeaders = { ...headers };
+    if (payload) {
+      reqHeaders['Content-Type'] = 'application/json';
+      reqHeaders['Content-Length'] = Buffer.byteLength(payload);
+    }
+
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port: address.port,
+      path,
+      method,
+      headers: reqHeaders
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        let json = null;
+        try {
+          json = JSON.parse(data);
+        } catch (e) {
+          json = null;
+        }
+        resolve({
+          statusCode: res.statusCode,
+          headers: res.headers,
+          data,
+          json
+        });
+      });
+    });
+
+    req.on('error', reject);
+    if (payload) req.write(payload);
+    req.end();
+  });
 }
 
 async function runAuthTests() {
@@ -116,6 +161,84 @@ async function runAuthTests() {
     if (!err) multiRolePassed = true;
   });
   assert(multiRolePassed, 'AGENT role passes requireRole("ADMIN", "AGENT")');
+
+  // 6. Remember Me & Refresh Token Cookie Policy
+  console.log('\n--- 6. Remember Me & Refresh Cookie Policy ---');
+  
+  const testUserPasswordHash = await AuthService.hashPassword('Password123!');
+  const mockAuthUser = {
+    id: 'EMP-AUTH-1',
+    name: 'Auth Tester',
+    email: 'authtest@africatravel.com',
+    role: 'ADMIN',
+    title: 'Security Director',
+    status: 'ACTIVE',
+    passwordHash: testUserPasswordHash
+  };
+
+  const mockTokens = [];
+  setPrismaClient({
+    user: {
+      findFirst: async ({ where }) => {
+        if (where?.email?.equals?.toLowerCase() === mockAuthUser.email.toLowerCase() || where?.email === mockAuthUser.email) {
+          return mockAuthUser;
+        }
+        return null;
+      },
+      update: async () => mockAuthUser
+    },
+    refreshToken: {
+      create: async ({ data }) => {
+        mockTokens.push(data);
+        return data;
+      }
+    },
+    auditLog: {
+      create: async () => ({})
+    },
+    $queryRaw: async () => [{ 1: 1 }]
+  });
+
+  const app = createApp();
+  const server = http.createServer(app);
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
+
+  try {
+    // 1. rememberMe: true -> Cookie has Max-Age (Max-Age=604800)
+    const resRememberTrue = await makeRequest(server, {
+      method: 'POST',
+      path: '/api/auth/login',
+      body: { email: 'authtest@africatravel.com', password: 'Password123!', rememberMe: true }
+    });
+    assert(resRememberTrue.statusCode === 200, 'POST /api/auth/login with rememberMe: true returns 200');
+    const setCookieTrue = resRememberTrue.headers['set-cookie']?.[0] || '';
+    assert(setCookieTrue.includes('Max-Age=604800'), 'rememberMe: true cookie header contains Max-Age=604800 (7 days persistent)');
+    assert(setCookieTrue.includes('HttpOnly'), 'rememberMe: true cookie header is HttpOnly');
+
+    // 2. rememberMe: false -> Session cookie (NO Max-Age and NO Expires)
+    const resRememberFalse = await makeRequest(server, {
+      method: 'POST',
+      path: '/api/auth/login',
+      body: { email: 'authtest@africatravel.com', password: 'Password123!', rememberMe: false }
+    });
+    assert(resRememberFalse.statusCode === 200, 'POST /api/auth/login with rememberMe: false returns 200');
+    const setCookieFalse = resRememberFalse.headers['set-cookie']?.[0] || '';
+    assert(!setCookieFalse.toLowerCase().includes('max-age'), 'rememberMe: false cookie header does NOT contain Max-Age (session cookie)');
+    assert(!setCookieFalse.toLowerCase().includes('expires='), 'rememberMe: false cookie header does NOT contain Expires (session cookie)');
+    assert(setCookieFalse.includes('HttpOnly'), 'rememberMe: false cookie header is HttpOnly');
+
+    // 3. rememberMe omitted (default) -> Behaves as rememberMe: true (backward compatible)
+    const resRememberDefault = await makeRequest(server, {
+      method: 'POST',
+      path: '/api/auth/login',
+      body: { email: 'authtest@africatravel.com', password: 'Password123!' }
+    });
+    assert(resRememberDefault.statusCode === 200, 'POST /api/auth/login with default rememberMe returns 200');
+    const setCookieDefault = resRememberDefault.headers['set-cookie']?.[0] || '';
+    assert(setCookieDefault.includes('Max-Age=604800'), 'Default rememberMe cookie header contains Max-Age=604800 (7 days persistent)');
+  } finally {
+    server.close();
+  }
 
   console.log('\n========================================================');
   console.log(`Auth & Security Tests: ${passed} passed, ${failed} failed`);
