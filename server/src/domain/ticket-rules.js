@@ -82,6 +82,18 @@ export function calculateNetValue(ticketPrice = 0, modificationFees = 0, totalRe
 }
 
 /**
+ * Calculates net profit for a ticket: selling price minus airline cost price.
+ * Returns null if costPrice hasn't been recorded (legacy tickets).
+ * @param {number|string} ticketPrice
+ * @param {number|string|null} costPrice
+ * @returns {number|null}
+ */
+export function calculateNetProfit(ticketPrice = 0, costPrice = null) {
+  if (costPrice === null || costPrice === undefined) return null;
+  return Number(ticketPrice) - Number(costPrice);
+}
+
+/**
  * Derives payment status from financial ledger
  * @param {number|string} ticketPrice
  * @param {number|string} totalPaid
@@ -116,6 +128,12 @@ export function validateTicketCreation(data = {}) {
   const price = Number(data.ticketPrice);
   if (isNaN(price) || price <= 0) {
     throw new ValidationError('Ticket price must be greater than zero', 'ticketPrice');
+  }
+  if (data.costPrice !== undefined && data.costPrice !== null && data.costPrice !== '') {
+    const cost = Number(data.costPrice);
+    if (isNaN(cost) || cost <= 0) {
+      throw new ValidationError('Cost price must be greater than zero', 'costPrice');
+    }
   }
   if (data.initialPayment !== undefined && data.initialPayment !== null && data.initialPayment !== '') {
     const initPay = Number(data.initialPayment);

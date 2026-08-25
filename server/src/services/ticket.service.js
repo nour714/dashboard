@@ -14,6 +14,7 @@ import {
   calculateTotalRefunded,
   calculateAvailableRefund,
   calculateNetValue,
+  calculateNetProfit,
   derivePaymentStatus,
   validateTicketCreation
 } from '../domain/ticket-rules.js';
@@ -38,12 +39,18 @@ export function enrichTicketFinancials(ticket) {
   const availableRefund = calculateAvailableRefund(totalPaid, totalRefunded);
   const netValue = calculateNetValue(ticket.ticketPrice, modificationFees, totalRefunded);
   const paymentStatus = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status);
+  const costPrice = ticket.costPrice !== null && ticket.costPrice !== undefined ? Number(ticket.costPrice) : null;
+  const netProfit = calculateNetProfit(ticket.ticketPrice, costPrice);
 
   return {
     ...ticket,
     ticketPrice: Number(ticket.ticketPrice),
+    costPrice,
+    netProfit,
     financials: {
       ticketPrice: Number(ticket.ticketPrice),
+      costPrice,
+      netProfit,
       totalPaid,
       remaining,
       modificationFees,
@@ -274,6 +281,7 @@ export const TicketService = {
         seat: data.seat || null,
         baggage: data.baggage || null,
         ticketPrice: price,
+        costPrice: data.costPrice !== undefined && data.costPrice !== null ? Number(data.costPrice) : null,
         currency: data.currency || 'EGP',
         status: paymentStatus,
         createdBy: currentUser.name || 'Agent',
@@ -332,12 +340,16 @@ export const TicketService = {
       'airline', 'airlineCode', 'flightNumber', 'returnFlightNumber',
       'origin', 'originTerminal', 'originAirportName',
       'destination', 'destinationTerminal', 'destinationAirportName',
-      'tripType', 'flightDuration', 'cabinClass', 'seat', 'baggage', 'status'
+      'tripType', 'flightDuration', 'cabinClass', 'seat', 'baggage', 'costPrice', 'status'
     ];
 
     allowedFields.forEach(f => {
       if (updates[f] !== undefined) {
-        data[f] = updates[f];
+        if (f === 'costPrice') {
+          data[f] = updates[f] !== null ? Number(updates[f]) : null;
+        } else {
+          data[f] = updates[f];
+        }
       }
     });
 

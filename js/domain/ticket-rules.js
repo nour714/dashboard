@@ -1,5 +1,5 @@
 /**
- * AfricaTravel — Ticket Domain Business Rules & Calculations
+ * AfricaTravel - Ticket Domain Business Rules & Calculations
  *
  * Centralized source of truth for ticket accounting, balances, and status transitions.
  */
@@ -8,7 +8,7 @@ import { ValidationError, BusinessRuleError } from './errors.js';
 
 /**
  * Calculates total sum of recorded payments
- * @param {Array<{amount: number}>} payments
+ * @param {Array<{amount: number|string}>} payments
  * @returns {number}
  */
 export function calculateTotalPaid(payments = []) {
@@ -19,8 +19,8 @@ export function calculateTotalPaid(payments = []) {
 /**
  * Calculates remaining balance
  * remaining = max(0, ticketPrice - totalPaid)
- * @param {number} ticketPrice
- * @param {number} totalPaid
+ * @param {number|string} ticketPrice
+ * @param {number|string} totalPaid
  * @returns {number}
  */
 export function calculateRemaining(ticketPrice = 0, totalPaid = 0) {
@@ -32,7 +32,7 @@ export function calculateRemaining(ticketPrice = 0, totalPaid = 0) {
 
 /**
  * Calculates total modification fees
- * @param {Array<{changeFee: number}>} modifications
+ * @param {Array<{changeFee: number|string}>} modifications
  * @returns {number}
  */
 export function calculateTotalModificationFees(modifications = []) {
@@ -42,7 +42,7 @@ export function calculateTotalModificationFees(modifications = []) {
 
 /**
  * Calculates total completed refunds
- * @param {Array<{amount: number, status: string}>} refunds
+ * @param {Array<{amount: number|string, status: string}>} refunds
  * @returns {number}
  */
 export function calculateTotalRefunded(refunds = []) {
@@ -55,8 +55,8 @@ export function calculateTotalRefunded(refunds = []) {
 /**
  * Calculates available refundable balance
  * availableRefund = max(0, totalPaid - totalRefunded)
- * @param {number} totalPaid
- * @param {number} totalRefunded
+ * @param {number|string} totalPaid
+ * @param {number|string} totalRefunded
  * @returns {number}
  */
 export function calculateAvailableRefund(totalPaid = 0, totalRefunded = 0) {
@@ -69,9 +69,9 @@ export function calculateAvailableRefund(totalPaid = 0, totalRefunded = 0) {
 /**
  * Calculates Net Ticket Value
  * netValue = max(0, ticketPrice + totalModificationFees - totalRefunded)
- * @param {number} ticketPrice
- * @param {number} modificationFees
- * @param {number} totalRefunded
+ * @param {number|string} ticketPrice
+ * @param {number|string} modificationFees
+ * @param {number|string} totalRefunded
  * @returns {number}
  */
 export function calculateNetValue(ticketPrice = 0, modificationFees = 0, totalRefunded = 0) {
@@ -82,9 +82,21 @@ export function calculateNetValue(ticketPrice = 0, modificationFees = 0, totalRe
 }
 
 /**
+ * Calculates net profit for a ticket: selling price minus airline cost price.
+ * Returns null if costPrice hasn't been recorded (legacy tickets).
+ * @param {number|string} ticketPrice
+ * @param {number|string|null} costPrice
+ * @returns {number|null}
+ */
+export function calculateNetProfit(ticketPrice = 0, costPrice = null) {
+  if (costPrice === null || costPrice === undefined) return null;
+  return Number(ticketPrice) - Number(costPrice);
+}
+
+/**
  * Derives payment status from financial ledger
- * @param {number} ticketPrice
- * @param {number} totalPaid
+ * @param {number|string} ticketPrice
+ * @param {number|string} totalPaid
  * @param {string} currentStatus
  * @returns {string} 'PAID' | 'PARTIALLY PAID' | 'CONFIRMED' | 'CANCELLED' | 'REFUNDED'
  */
@@ -101,20 +113,27 @@ export function derivePaymentStatus(ticketPrice = 0, totalPaid = 0, currentStatu
 /**
  * Validates ticket creation parameters
  * @param {object} data
+ * @returns {boolean}
  */
 export function validateTicketCreation(data = {}) {
-  if (!data.passengerName || !data.passengerName.trim()) {
+  if (!data.passengerName || !String(data.passengerName).trim()) {
     throw new ValidationError('Passenger name is required', 'passengerName');
   }
-  if (!data.origin || !data.origin.trim()) {
+  if (!data.origin || !String(data.origin).trim()) {
     throw new ValidationError('Flight origin is required', 'origin');
   }
-  if (!data.destination || !data.destination.trim()) {
+  if (!data.destination || !String(data.destination).trim()) {
     throw new ValidationError('Flight destination is required', 'destination');
   }
   const price = Number(data.ticketPrice);
   if (isNaN(price) || price <= 0) {
     throw new ValidationError('Ticket price must be greater than zero', 'ticketPrice');
+  }
+  if (data.costPrice !== undefined && data.costPrice !== null && data.costPrice !== '') {
+    const cost = Number(data.costPrice);
+    if (isNaN(cost) || cost <= 0) {
+      throw new ValidationError('Cost price must be greater than zero', 'costPrice');
+    }
   }
   if (data.initialPayment !== undefined && data.initialPayment !== null && data.initialPayment !== '') {
     const initPay = Number(data.initialPayment);
@@ -122,7 +141,11 @@ export function validateTicketCreation(data = {}) {
       throw new ValidationError('Initial payment cannot be negative', 'initialPayment');
     }
     if (initPay > price) {
-      throw new BusinessRuleError(`Initial payment (${initPay}) cannot exceed ticket price (${price})`, 'MAX_INITIAL_PAYMENT');
+      throw new BusinessRuleError(
+        `Initial payment (${initPay}) cannot exceed ticket price (${price})`,
+        'MAX_INITIAL_PAYMENT',
+        { initialPayment: initPay, ticketPrice: price }
+      );
     }
   }
   return true;

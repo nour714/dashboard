@@ -10,7 +10,8 @@ import {
   calculateRemaining,
   calculateTotalRefunded,
   calculateNetValue,
-  calculateTotalModificationFees
+  calculateTotalModificationFees,
+  calculateNetProfit
 } from '../domain/ticket-rules.js';
 import { EmployeeService } from './employee.service.js';
 
@@ -40,11 +41,16 @@ export function computeWeeklyTrends(tickets = []) {
     let sales = 0;
     let collections = 0;
     let refunds = 0;
+    let netProfit = 0;
 
     tickets.forEach(t => {
       const ticketDate = new Date(t.createdAt || t.departureDate);
       if (ticketDate >= start && ticketDate < end) {
         sales += (Number(t.ticketPrice) || 0);
+        const profit = calculateNetProfit(t.ticketPrice, t.costPrice);
+        if (profit !== null) {
+          netProfit += profit;
+        }
       }
 
       if (Array.isArray(t.payments)) {
@@ -76,7 +82,8 @@ export function computeWeeklyTrends(tickets = []) {
       sales,
       collections,
       refunds,
-      outstanding
+      outstanding,
+      netProfit
     });
   }
 
@@ -104,6 +111,7 @@ export const ReportService = {
     let totalOutstanding = 0;
     let totalRefunds = 0;
     let totalModFees = 0;
+    let totalNetProfit = 0;
 
     tickets.forEach(t => {
       const price = Number(t.ticketPrice) || 0;
@@ -113,6 +121,10 @@ export const ReportService = {
       totalOutstanding += calculateRemaining(price, paid);
       totalRefunds += calculateTotalRefunded(t.refunds || []);
       totalModFees += calculateTotalModificationFees(t.modifications || []);
+      const profit = calculateNetProfit(t.ticketPrice, t.costPrice);
+      if (profit !== null) {
+        totalNetProfit += profit;
+      }
     });
 
     const netValue = calculateNetValue(totalSales, totalModFees, totalRefunds);
@@ -125,6 +137,7 @@ export const ReportService = {
       totalOutstanding,
       totalRefunds,
       totalModFees,
+      totalNetProfit,
       netValue,
       collectionRate,
       isCalculated: true
@@ -156,12 +169,17 @@ export const ReportService = {
           airlineCode: t.airlineCode || 'XX',
           ticketsSold: 0,
           totalRevenue: 0,
-          totalRefunded: 0
+          totalRefunded: 0,
+          totalNetProfit: 0
         };
       }
       airlineMap[airline].ticketsSold += 1;
       airlineMap[airline].totalRevenue += (Number(t.ticketPrice) || 0);
       airlineMap[airline].totalRefunded += calculateTotalRefunded(t.refunds || []);
+      const profit = calculateNetProfit(t.ticketPrice, t.costPrice);
+      if (profit !== null) {
+        airlineMap[airline].totalNetProfit += profit;
+      }
     });
 
     const results = Object.values(airlineMap).map(a => {

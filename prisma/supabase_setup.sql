@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS "tickets" (
     "seat" TEXT,
     "baggage" TEXT,
     "ticketPrice" DECIMAL(12,2) NOT NULL,
+    "costPrice" DECIMAL(12,2),
     "currency" TEXT NOT NULL DEFAULT 'EGP',
     "status" TEXT NOT NULL DEFAULT 'CONFIRMED',
     "createdBy" TEXT NOT NULL,

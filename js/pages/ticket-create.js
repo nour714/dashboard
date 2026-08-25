@@ -255,12 +255,24 @@ export const TicketCreatePage = {
                 </div>
               </div>
               <div class="card-body">
-                <div class="form-grid-2">
+                <div class="form-grid-3">
                   <div class="form-group">
                     <label class="form-label" for="ticket-price">${escapeHtml(t('ticketCreate.financials.ticketPrice'))} *</label>
                     <input
                       type="number"
                       id="ticket-price"
+                      class="form-control tabular-nums"
+                      placeholder="0.00"
+                      min="1"
+                      step="any"
+                      required
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="ticket-cost-price">${escapeHtml(t('ticketCreate.financials.costPrice'))} *</label>
+                    <input
+                      type="number"
+                      id="ticket-cost-price"
                       class="form-control tabular-nums"
                       placeholder="0.00"
                       min="1"
@@ -479,6 +491,7 @@ export const TicketCreatePage = {
           seat: container.querySelector('#flight-seat').value.trim() || '12A',
           baggage: container.querySelector('#flight-baggage').value,
           ticketPrice: Number(priceInput.value) || 0,
+          costPrice: Number(container.querySelector('#ticket-cost-price')?.value) || 0,
           currency: currencySelect.value,
           initialPayment: Number(initialPaymentInput.value) || 0,
           paymentMethod: container.querySelector('#payment-method').value,

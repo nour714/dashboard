@@ -34,6 +34,7 @@ export const createTicketSchema = z.object({
   seat: z.string().optional(),
   baggage: z.string().optional(),
   ticketPrice: z.coerce.number().positive('Ticket price must be greater than zero'),
+  costPrice: z.coerce.number().positive('Cost price must be greater than zero'),
   currency: z.string().default('EGP'),
   initialPayment: z.coerce.number().nonnegative('Initial payment cannot be negative').optional(),
   paymentMethod: z.string().optional(),
@@ -81,6 +82,7 @@ export const updateTicketSchema = z.object({
   cabinClass: z.string().optional(),
   seat: z.string().optional(),
   baggage: z.string().optional(),
+  costPrice: z.coerce.number().positive('Cost price must be greater than zero').optional(),
   status: z.enum([
     'CONFIRMED',
     'ISSUED',

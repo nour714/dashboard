@@ -44,7 +44,8 @@ async function runRoundTripTests() {
     departureDate: '2026-09-15T08:00',
     arrivalDate: '2026-09-15T13:30',
     tripType: 'One Way',
-    ticketPrice: 12500
+    ticketPrice: 12500,
+    costPrice: 10000
   };
 
   const oneWayResult = createTicketSchema.safeParse(validOneWay);

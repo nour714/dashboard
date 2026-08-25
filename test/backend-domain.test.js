@@ -9,6 +9,7 @@ import {
   calculateTotalRefunded,
   calculateAvailableRefund,
   calculateNetValue,
+  calculateNetProfit,
   derivePaymentStatus,
   validateTicketCreation
 } from '../server/src/domain/ticket-rules.js';
@@ -87,6 +88,13 @@ assert(calculateAvailableRefund(18500, 8000) === 10500, 'calculateAvailableRefun
 assert(calculateAvailableRefund(5000, 8000) === 0, 'calculateAvailableRefund caps at 0');
 
 assert(calculateNetValue(18500, 1500, 8000) === 12000, 'calculateNetValue = price + modFees - refunded');
+
+// Net Profit Calculation (Single Source of Truth)
+assert(calculateNetProfit(41000, 35000) === 6000, 'calculateNetProfit(41000, 35000) returns 6000 profit');
+assert(calculateNetProfit(41000, null) === null, 'calculateNetProfit(41000, null) returns null (legacy ticket)');
+assert(calculateNetProfit(41000, undefined) === null, 'calculateNetProfit(41000, undefined) returns null');
+assert(calculateNetProfit(35000, 41000) === -6000, 'calculateNetProfit(35000, 41000) returns -6000 (negative profit/loss)');
+assert(calculateNetProfit(0, 0) === 0, 'calculateNetProfit(0, 0) returns 0');
 
 // 2. Status Derivation
 console.log('\n--- 2. Payment Status Transitions ---');

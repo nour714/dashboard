@@ -16,6 +16,7 @@ import {
   calculateTotalRefunded,
   calculateAvailableRefund,
   calculateNetValue,
+  calculateNetProfit,
   derivePaymentStatus
 } from '../domain/ticket-rules.js';
 
@@ -93,9 +94,13 @@ export const TicketService = {
     const availableRefund = calculateAvailableRefund(totalPaid, totalRefunded);
     const netValue = calculateNetValue(ticket.ticketPrice, modificationFees, totalRefunded);
     const paymentStatus = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status);
+    const costPrice = ticket.costPrice !== null && ticket.costPrice !== undefined ? Number(ticket.costPrice) : null;
+    const netProfit = calculateNetProfit(ticket.ticketPrice, costPrice);
 
     return {
       ticketPrice: ticket.ticketPrice,
+      costPrice,
+      netProfit,
       totalPaid,
       remaining,
       modificationFees,

@@ -5,10 +5,28 @@
 import { TicketService } from '../services/ticket.service.js';
 import { NotFoundError, ForbiddenError } from '../domain/errors.js';
 
+export function sanitizeTicketForRole(ticket, role) {
+  if (!ticket) return ticket;
+  if (role === 'ADMIN') return ticket;
+
+  const sanitized = { ...ticket };
+  delete sanitized.costPrice;
+  delete sanitized.netProfit;
+  if (sanitized.financials) {
+    sanitized.financials = { ...sanitized.financials };
+    delete sanitized.financials.costPrice;
+    delete sanitized.financials.netProfit;
+  }
+  return sanitized;
+}
+
 export const TicketController = {
   async getTickets(req, res, next) {
     try {
       const result = await TicketService.getTickets(req.query);
+      if (req.user?.role !== 'ADMIN' && Array.isArray(result?.tickets)) {
+        result.tickets = result.tickets.map(t => sanitizeTicketForRole(t, req.user?.role));
+      }
       return res.status(200).json({
         success: true,
         data: result
@@ -29,9 +47,10 @@ export const TicketController = {
           throw new ForbiddenError('Access restricted to your own tickets');
         }
       }
+      const responseData = sanitizeTicketForRole(ticket, req.user?.role);
       return res.status(200).json({
         success: true,
-        data: ticket
+        data: responseData
       });
     } catch (err) {
       next(err);
@@ -41,9 +60,10 @@ export const TicketController = {
   async createTicket(req, res, next) {
     try {
       const ticket = await TicketService.createTicket(req.body, req.user);
+      const responseData = sanitizeTicketForRole(ticket, req.user?.role);
       return res.status(201).json({
         success: true,
-        data: ticket
+        data: responseData
       });
     } catch (err) {
       next(err);
@@ -53,9 +73,10 @@ export const TicketController = {
   async updateTicket(req, res, next) {
     try {
       const ticket = await TicketService.updateTicket(req.params.id, req.body, req.user);
+      const responseData = sanitizeTicketForRole(ticket, req.user?.role);
       return res.status(200).json({
         success: true,
-        data: ticket
+        data: responseData
       });
     } catch (err) {
       next(err);

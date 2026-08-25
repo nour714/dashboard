@@ -195,6 +195,7 @@ async function runApiTests() {
         tripType: 'One Way',
         cabinClass: 'Economy (Y)',
         ticketPrice: 15000,
+        costPrice: 12000,
         currency: 'EGP'
       }
     });
@@ -314,6 +315,85 @@ async function runApiTests() {
     });
     assert(agentPatchEmployeeRes.statusCode === 403, 'AGENT calling PATCH /api/employees/:id receives 403 Forbidden');
     assert(agentPatchEmployeeRes.json?.error?.code === 'FORBIDDEN', 'Employee update rejection returns FORBIDDEN error code');
+
+    // 8. Airline Cost Price & Net Profit Validation & RBAC
+    console.log('\n--- 8. Airline Cost Price & Net Profit RBAC Enforcement ---');
+    const adminToken = AuthService.generateAccessToken({ id: 'EMP-ADMIN-1', name: 'Admin Master', email: 'admin@africatravel.com', role: 'ADMIN', title: 'System Administrator' });
+    const adminHeaders = { 'Authorization': `Bearer ${adminToken}` };
+
+    // A) Creating ticket without costPrice fails with ValidationError (400)
+    const missingCostRes = await makeRequest(server, {
+      method: 'POST',
+      path: '/api/tickets',
+      headers: adminHeaders,
+      body: {
+        passengerName: 'Cost Validation Test',
+        pnr: 'COST01',
+        origin: 'CAI',
+        destination: 'DXB',
+        departureDate: '2026-09-01T10:00:00.000Z',
+        arrivalDate: '2026-09-01T14:00:00.000Z',
+        flightNumber: 'MS 901',
+        airline: 'EgyptAir',
+        airlineCode: 'MS',
+        ticketPrice: 41000,
+        currency: 'EGP'
+      }
+    });
+    assert(missingCostRes.statusCode === 400, 'POST /api/tickets without costPrice returns 400 Bad Request');
+    assert(missingCostRes.json?.success === false, 'POST /api/tickets without costPrice returns success: false');
+    assert(missingCostRes.json?.error?.code === 'VALIDATION_ERROR', 'Rejection code is VALIDATION_ERROR');
+
+    // B) Creating ticket with valid costPrice succeeds and calculates netProfit
+    const validCostRes = await makeRequest(server, {
+      method: 'POST',
+      path: '/api/tickets',
+      headers: adminHeaders,
+      body: {
+        passengerName: 'Profit Calculation Test',
+        pnr: 'PROFIT1',
+        origin: 'CAI',
+        destination: 'DXB',
+        departureDate: '2026-09-01T10:00:00.000Z',
+        arrivalDate: '2026-09-01T14:00:00.000Z',
+        flightNumber: 'MS 901',
+        airline: 'EgyptAir',
+        airlineCode: 'MS',
+        ticketPrice: 41000,
+        costPrice: 35000,
+        currency: 'EGP'
+      }
+    });
+    assert(validCostRes.statusCode === 201, 'POST /api/tickets with valid costPrice returns 201 Created');
+    assert(validCostRes.json?.data?.costPrice === 35000, 'ADMIN receives costPrice (35000) upon creation');
+    assert(validCostRes.json?.data?.netProfit === 6000, 'ADMIN receives netProfit (6000 = 41000 - 35000) upon creation');
+    assert(validCostRes.json?.data?.financials?.netProfit === 6000, 'ADMIN receives financials.netProfit (6000) upon creation');
+
+    const profitTicketId = validCostRes.json?.data?.id;
+
+    // C) AGENT fetching same ticket -> costPrice & netProfit are stripped from response
+    const agentGetTicketRes = await makeRequest(server, {
+      method: 'GET',
+      path: `/api/tickets/${profitTicketId}`,
+      headers: { 'Authorization': `Bearer ${agentToken}` }
+    });
+    assert(agentGetTicketRes.statusCode === 200, 'AGENT can fetch ticket by ID');
+    assert(agentGetTicketRes.json?.data?.costPrice === undefined, 'AGENT response strips costPrice');
+    assert(agentGetTicketRes.json?.data?.netProfit === undefined, 'AGENT response strips netProfit');
+    assert(agentGetTicketRes.json?.data?.financials?.costPrice === undefined, 'AGENT financials strips costPrice');
+    assert(agentGetTicketRes.json?.data?.financials?.netProfit === undefined, 'AGENT financials strips netProfit');
+
+    // D) ADMIN fetching same ticket -> costPrice & netProfit are present and correct
+    const adminGetTicketRes = await makeRequest(server, {
+      method: 'GET',
+      path: `/api/tickets/${profitTicketId}`,
+      headers: adminHeaders
+    });
+    assert(adminGetTicketRes.statusCode === 200, 'ADMIN can fetch ticket by ID');
+    assert(adminGetTicketRes.json?.data?.costPrice === 35000, 'ADMIN response includes correct costPrice (35000)');
+    assert(adminGetTicketRes.json?.data?.netProfit === 6000, 'ADMIN response includes correct netProfit (6000)');
+    assert(adminGetTicketRes.json?.data?.financials?.costPrice === 35000, 'ADMIN financials includes costPrice (35000)');
+    assert(adminGetTicketRes.json?.data?.financials?.netProfit === 6000, 'ADMIN financials includes netProfit (6000)');
 
     console.log('\n========================================================');
     console.log(`Backend API Integration Tests: ${passed} passed, ${failed} failed`);

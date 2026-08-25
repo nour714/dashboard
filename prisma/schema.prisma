@@ -110,6 +110,7 @@ model Ticket {
   seat                   String?
   baggage                String?
   ticketPrice            Decimal        @db.Decimal(12, 2)
+  costPrice              Decimal?       @db.Decimal(12, 2)
   currency               String         @default("EGP")
   status                 String         @default("CONFIRMED")
   createdBy              String

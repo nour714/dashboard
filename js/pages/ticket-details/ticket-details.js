@@ -129,6 +129,18 @@ export const TicketDetailsPage = {
             <span class="financial-item-label">${escapeHtml(t('ticketDetails.overview.ticketPrice'))}</span>
             <span class="financial-item-value tabular-nums">${formatCurrency(financials.ticketPrice, financials.currency)}</span>
           </div>
+          ${isAdmin ? `
+            <div class="financial-item">
+              <span class="financial-item-label">${escapeHtml(t('ticketDetails.overview.costPrice'))}</span>
+              <span class="financial-item-value tabular-nums">${financials.costPrice != null ? formatCurrency(financials.costPrice, financials.currency) : '—'}</span>
+            </div>
+            <div class="financial-item">
+              <span class="financial-item-label">${escapeHtml(t('ticketDetails.overview.netProfit'))}</span>
+              <span class="financial-item-value tabular-nums" style="color: ${financials.netProfit >= 0 ? 'var(--color-success)' : 'var(--color-danger)'};">
+                ${financials.netProfit != null ? formatCurrency(financials.netProfit, financials.currency) : '—'}
+              </span>
+            </div>
+          ` : ''}
           <div class="financial-item">
             <span class="financial-item-label">${escapeHtml(t('ticketDetails.overview.totalPaid'))}</span>
             <span class="financial-item-value paid tabular-nums">${formatCurrency(financials.totalPaid, financials.currency)}</span>

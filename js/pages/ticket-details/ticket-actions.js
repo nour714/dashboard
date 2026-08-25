@@ -3,6 +3,7 @@
  */
 
 import { TicketService } from '../../services/ticket-service.js';
+import { AuthService } from '../../services/auth-service.js';
 import { openModal, closeModal } from '../../components/modal.js';
 import { showToast } from '../../components/toast.js';
 import { formatCurrency } from '../../utils/calculations.js';
@@ -284,6 +285,9 @@ export function openAddRefundModal(ticket, onSuccess) {
 }
 
 export function openEditTicketModal(ticket, onSuccess) {
+  const currentUser = AuthService.getCurrentUser();
+  const isAdmin = (currentUser?.role || '').toUpperCase() === 'ADMIN';
+
   openModal({
     title: `${t('common.edit')} #${ticket.id}`,
     subtitle: t('ticketDetails.overview.passengerCard'),
@@ -326,6 +330,13 @@ export function openEditTicketModal(ticket, onSuccess) {
             </select>
           </div>
         </div>
+
+        ${isAdmin ? `
+          <div class="form-group">
+            <label class="form-label" for="edit-cost-price">${escapeHtml(t('ticketDetails.overview.costPrice'))}</label>
+            <input type="number" id="edit-cost-price" class="form-control tabular-nums" value="${ticket.costPrice != null ? ticket.costPrice : ''}" min="1" step="any" placeholder="0.00" />
+          </div>
+        ` : ''}
       </div>
     `,
     footerHtml: `
@@ -345,15 +356,22 @@ export function openEditTicketModal(ticket, onSuccess) {
             return;
           }
 
-          saveBtn.disabled = true;
-          const result = await TicketService.updateTicket(ticket.id, {
+          const updatePayload = {
             passengerName: name,
             phone: modalEl.querySelector('#edit-pax-phone').value.trim(),
             seat: modalEl.querySelector('#edit-seat').value.trim(),
             baggage: modalEl.querySelector('#edit-baggage').value.trim(),
             departureDate: modalEl.querySelector('#edit-dep-date').value || ticket.departureDate,
             status: modalEl.querySelector('#edit-status').value
-          });
+          };
+
+          const costPriceEl = modalEl.querySelector('#edit-cost-price');
+          if (costPriceEl && costPriceEl.value !== '') {
+            updatePayload.costPrice = Number(costPriceEl.value);
+          }
+
+          saveBtn.disabled = true;
+          const result = await TicketService.updateTicket(ticket.id, updatePayload);
           saveBtn.disabled = false;
 
           if (!result.success) {
