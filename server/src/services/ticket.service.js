@@ -671,7 +671,8 @@ export const TicketService = {
   },
 
   /**
-   * Soft-deletes a ticket (ADMIN only) and records audit trail
+   * Permanently deletes a ticket and all associated financial records (ADMIN only)
+   * while recording a full financial audit log prior to deletion.
    * @param {string} ticketId
    * @param {object} currentUser
    */
@@ -680,85 +681,58 @@ export const TicketService = {
 
     const existing = await prisma.ticket.findFirst({
       where: {
-        OR: [
-          { id: ticketId },
-          { ticketNumber: ticketId },
-          { pnr: ticketId }
-        ],
+        OR: [{ id: ticketId }, { ticketNumber: ticketId }, { pnr: ticketId }],
         deletedAt: null
-      }
+      },
+      include: { payments: true, refunds: true, modifications: true }
     });
 
     if (!existing) {
       throw new NotFoundError('Ticket', ticketId);
     }
 
-    const paymentsAndRefunds = await prisma.ticket.findUnique({
-      where: { id: existing.id },
-      include: { payments: true, refunds: true }
-    });
+    const totalPaid = calculateTotalPaid(existing.payments || []);
+    const totalRefunded = calculateTotalRefunded(existing.refunds || []);
 
-    const totalPaid = calculateTotalPaid(paymentsAndRefunds?.payments || []);
-    const totalRefunded = calculateTotalRefunded(paymentsAndRefunds?.refunds || []);
-    const unrefundedBalance = totalPaid - totalRefunded;
-
-    if (unrefundedBalance > 0) {
-      throw new BusinessRuleError(
-        'Cannot delete a ticket with an unrefunded balance. Process a full refund before deleting.',
-        'TICKET_HAS_UNREFUNDED_BALANCE',
-        { ticketId: existing.id, totalPaid, totalRefunded, unrefundedBalance, currency: existing.currency }
-      );
-    }
-
-    const executeDeletion = async (tx) => {
-      const now = new Date();
-      const updated = await tx.ticket.update({
-        where: { id: existing.id },
+    const result = await prisma.$transaction(async (tx) => {
+      // سجّل كل التفاصيل المالية قبل الحذف — ده الأثر الوحيد اللي هيفضل موجود
+      await tx.auditLog.create({
         data: {
-          deletedAt: now,
-          status: 'CANCELLED'
+          user: currentUser.name || currentUser.email || 'System',
+          userId: currentUser.id || null,
+          action: 'DELETE_TICKET_WITH_FINANCIALS',
+          ticketId: existing.id,
+          customerId: existing.customerId,
+          description: `Permanently deleted ticket ${existing.ticketNumber} (${existing.passengerName}) along with ${existing.payments.length} payment(s) and ${existing.refunds.length} refund(s). Total paid: ${totalPaid} ${existing.currency}, total refunded: ${totalRefunded} ${existing.currency}.`,
+          metadata: {
+            adminId: currentUser.id,
+            ticketId: existing.id,
+            ticketNumber: existing.ticketNumber,
+            pnr: existing.pnr,
+            passengerName: existing.passengerName,
+            customerId: existing.customerId,
+            origin: existing.origin,
+            destination: existing.destination,
+            totalPaid,
+            totalRefunded,
+            unrefundedBalance: totalPaid - totalRefunded,
+            currency: existing.currency,
+            payments: (existing.payments || []).map(p => ({ id: p.id, amount: Number(p.amount), method: p.method, createdAt: p.createdAt })),
+            refunds: (existing.refunds || []).map(r => ({ id: r.id, amount: Number(r.amount), reason: r.reason, createdAt: r.createdAt })),
+            modificationsCount: (existing.modifications || []).length,
+            deletedAt: new Date().toISOString()
+          }
         }
       });
 
-      if (tx.auditLog && typeof tx.auditLog.create === 'function') {
-        try {
-          await tx.auditLog.create({
-            data: {
-              id: `ACT-${crypto.randomUUID()}`,
-              user: currentUser.name || 'Admin',
-              userId: currentUser.id || null,
-              action: 'DELETE_TICKET',
-              ticketId: existing.id,
-              customerId: existing.customerId,
-              description: `Deleted ticket ${existing.id} (${existing.ticketNumber}).`,
-              metadata: {
-                adminId: currentUser.id,
-                targetId: existing.id,
-                targetType: 'TICKET',
-                ticketNumber: existing.ticketNumber,
-                softDeleted: true
-              }
-            }
-          });
-        } catch (_) {}
-      }
+      // Payment/Refund/Modification عليهم onDelete: Cascade في الـ schema بالفعل
+      // فالحذف ده هيمسحهم تلقائيًا مع التذكرة
+      await tx.ticket.delete({ where: { id: existing.id } });
 
-      return updated;
-    };
+      return { deleted: true, ticketId: existing.id, ticketNumber: existing.ticketNumber };
+    });
 
-    let result;
-    if (typeof prisma.$transaction === 'function') {
-      result = await prisma.$transaction(executeDeletion);
-    } else {
-      result = await executeDeletion(prisma);
-    }
-
-    return {
-      id: existing.id,
-      ticketNumber: existing.ticketNumber,
-      deletedAt: result.deletedAt,
-      status: result.status
-    };
+    return result;
   },
 
   /**

@@ -606,6 +606,12 @@ export const en = {
       reason: 'Refund Reason',
       submit: 'Process Refund'
     },
+    deleteTicket: {
+      title: 'Delete Ticket',
+      warningPermanent: 'Warning: Permanent deletion cannot be undone',
+      explanationPermanent: 'The ticket along with all associated payments and refunds will be permanently deleted. This cannot be recovered, and only a summary record will be retained in the audit log.',
+      typeToConfirm: 'Type the ticket number to confirm'
+    },
     notifications: {
       title: 'Notifications & Alerts',
       subtitle: 'Recent system operations and ticketing updates',

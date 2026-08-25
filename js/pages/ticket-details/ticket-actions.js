@@ -372,17 +372,22 @@ export function openEditTicketModal(ticket, onSuccess) {
 
 export function openDeleteTicketModal(ticket, onSuccess) {
   openModal({
-    title: `${t('common.delete') || 'Delete Ticket'} #${ticket.id}`,
+    title: `${t('modals.deleteTicket.title') || t('common.delete') || 'Delete Ticket'} #${ticket.ticketNumber || ticket.id}`,
     subtitle: `${ticket.passengerName} (${ticket.origin} ✈ ${ticket.destination})`,
     contentHtml: `
       <div class="d-flex flex-column gap-md">
         <div class="p-md rounded-md" style="background-color: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-md);">
           <div class="font-semibold text-danger mb-xs" style="font-size: 14px;">
-            ⚠️ ${escapeHtml(t('modals.deleteTicket.warning') || 'هل أنت متأكد من رغبتك في حذف هذه التذكرة؟')}
+            ⚠️ ${escapeHtml(t('modals.deleteTicket.warningPermanent') || 'تحذير: حذف نهائي لا يمكن التراجع عنه')}
           </div>
           <p class="text-xs text-muted" style="margin: 0; line-height: 1.5;">
-            ${escapeHtml(t('modals.deleteTicket.explanation') || 'سيتم وضع علامة ملغاة (CANCELLED) على التذكرة ولن تظهر في القوائم الرئيسية، مع الاحتفاظ بالسجل لأغراض التدقيق المالي.')}
+            ${escapeHtml(t('modals.deleteTicket.explanationPermanent') || 'سيتم حذف التذكرة نهائيًا بالإضافة إلى جميع المدفوعات والاستردادات المرتبطة بها. لن يمكن استرجاعها بعد ذلك، وسيتم الاحتفاظ فقط بسجل مختصر في سجل النشاط.')}
           </p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">${escapeHtml(t('modals.deleteTicket.typeToConfirm') || `اكتب رقم التذكرة (${ticket.ticketNumber}) للتأكيد`)} (${escapeHtml(ticket.ticketNumber)})</label>
+          <input type="text" id="delete-ticket-confirm-input" class="form-control ltr-field" autocomplete="off" placeholder="${escapeHtml(ticket.ticketNumber)}" />
         </div>
 
         <div id="delete-ticket-error-box" class="p-sm text-sm text-danger" style="display: none; background-color: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md); border: 1px solid rgba(239, 68, 68, 0.3);"></div>
@@ -390,14 +395,21 @@ export function openDeleteTicketModal(ticket, onSuccess) {
     `,
     footerHtml: `
       <button type="button" class="btn btn-secondary" id="modal-cancel-delete-ticket">${escapeHtml(t('common.cancel'))}</button>
-      <button type="button" class="btn btn-danger" id="modal-confirm-delete-ticket">${escapeHtml(t('common.delete'))}</button>
+      <button type="button" class="btn btn-danger" id="modal-confirm-delete-ticket" disabled>${escapeHtml(t('common.delete'))}</button>
     `,
     onOpen: (modalEl) => {
       const cancelBtn = modalEl.querySelector('#modal-cancel-delete-ticket');
       const confirmBtn = modalEl.querySelector('#modal-confirm-delete-ticket');
+      const confirmInput = modalEl.querySelector('#delete-ticket-confirm-input');
       const errorBox = modalEl.querySelector('#delete-ticket-error-box');
 
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+      if (confirmInput && confirmBtn) {
+        confirmInput.addEventListener('input', () => {
+          confirmBtn.disabled = confirmInput.value.trim() !== ticket.ticketNumber;
+        });
+      }
 
       if (confirmBtn) {
         confirmBtn.addEventListener('click', async () => {

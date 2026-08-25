@@ -186,18 +186,47 @@ async function runSecurityFixesTests() {
           Object.assign(ticket, data);
         }
         return ticket;
+      },
+      delete: async ({ where }) => {
+        const ticket = mockTickets.get(where.id);
+        if (ticket) {
+          mockTickets.delete(where.id);
+          for (const [pid, p] of mockPayments.entries()) {
+            if (p.ticketId === where.id) mockPayments.delete(pid);
+          }
+          for (const [rid, r] of mockRefunds.entries()) {
+            if (r.ticketId === where.id) mockRefunds.delete(rid);
+          }
+        }
+        return ticket || null;
       }
     },
     payment: {
       create: async ({ data }) => {
         mockPayments.set(data.id, { ...data });
         return { ...data };
+      },
+      findMany: async (args = {}) => {
+        const where = args?.where;
+        let list = [...mockPayments.values()];
+        if (where?.ticketId) {
+          list = list.filter(p => p.ticketId === where.ticketId);
+        }
+        return list.map(p => ({ ...p }));
       }
     },
     refund: {
       create: async ({ data }) => {
         mockRefunds.set(data.id, { ...data });
         return { ...data };
+      },
+      findMany: async (args = {}) => {
+        const where = args?.where;
+        let list = [...mockRefunds.values()];
+        if (where?.ticketId) {
+          list = list.filter(r => r.ticketId === where.ticketId);
+        }
+        return list.map(r => ({ ...r }));
       }
     },
     auditLog: {
@@ -358,28 +387,37 @@ async function runSecurityFixesTests() {
   }
   assert(overRefundFailed, 'Second concurrent refund exceeding available balance is rejected (REFUND_EXCEEDS_AVAILABLE)');
 
-  // Test 3: Soft delete protection: Prevent deleting ticket with unrefunded balance
-  let unrefundedDeleteFailed = false;
-  try {
-    // testTicketId has 6000 paid, 4000 refunded -> 2000 unrefunded balance
-    await TicketService.deleteTicket(testTicketId, mockUser);
-  } catch (err) {
-    if (err instanceof BusinessRuleError && err.rule === 'TICKET_HAS_UNREFUNDED_BALANCE') {
-      unrefundedDeleteFailed = true;
-    }
-  }
-  assert(unrefundedDeleteFailed, 'Deleting ticket with unrefunded balance (2,000 EGP) is rejected (TICKET_HAS_UNREFUNDED_BALANCE)');
-
-  // Process remaining 2,000 refund so totalPaid === totalRefunded
-  const r2 = await TicketService.addRefund(testTicketId, { amount: 2000, reason: 'Full final refund before cancellation' }, mockUser);
-  assert(r2 && r2.amount === 2000, 'Second refund of 2,000 EGP succeeds (ticket fully refunded: 6,000 / 6,000)');
-
-  // Now soft delete should succeed
+  // Test 3: Permanent deletion with cascading financial records & Audit Log
+  // testTicketId has 6,000 EGP paid, 4,000 EGP refunded (unrefunded balance = 2,000 EGP)
+  // Deleting ticket with unrefunded balance and payments succeeds permanently (not rejected)
   const deleteRes = await TicketService.deleteTicket(testTicketId, mockUser);
-  assert(deleteRes.status === 'CANCELLED' && deleteRes.deletedAt, 'Ticket is soft-deleted with CANCELLED status and deletedAt timestamp once fully refunded');
+  assert(deleteRes && deleteRes.deleted === true && deleteRes.ticketId === testTicketId, 'Deleting ticket with payments and partial refund succeeds');
 
-  const deleteAuditLog = mockAuditLogs.find(l => l.action === 'DELETE_TICKET' && l.ticketId === testTicketId);
-  assert(deleteAuditLog && deleteAuditLog.metadata?.adminId === mockUser.id, 'DELETE_TICKET audit log recorded with adminId and metadata');
+  // After deletion: prisma.ticket.findUnique returns null
+  const ticketInDb = await mockPrisma.ticket.findUnique({ where: { id: testTicketId } });
+  assert(ticketInDb === null, 'After deletion: prisma.ticket.findUnique returns null');
+
+  // After deletion: prisma.payment.findMany returns empty array (cascade deletion)
+  const paymentsInDb = await mockPrisma.payment.findMany({ where: { ticketId: testTicketId } });
+  assert(Array.isArray(paymentsInDb) && paymentsInDb.length === 0, 'After deletion: prisma.payment.findMany returns empty array (cascade deletion)');
+
+  // After deletion: prisma.refund.findMany returns empty array (cascade deletion)
+  const refundsInDb = await mockPrisma.refund.findMany({ where: { ticketId: testTicketId } });
+  assert(Array.isArray(refundsInDb) && refundsInDb.length === 0, 'After deletion: prisma.refund.findMany returns empty array (cascade deletion)');
+
+  // After deletion: AuditLog created with DELETE_TICKET_WITH_FINANCIALS and correct financial metadata
+  const deleteAuditLog = mockAuditLogs.find(l => l.action === 'DELETE_TICKET_WITH_FINANCIALS' && l.ticketId === testTicketId);
+  assert(
+    deleteAuditLog &&
+    deleteAuditLog.metadata?.totalPaid === 6000 &&
+    deleteAuditLog.metadata?.totalRefunded === 4000 &&
+    deleteAuditLog.metadata?.unrefundedBalance === 2000 &&
+    Array.isArray(deleteAuditLog.metadata?.payments) &&
+    deleteAuditLog.metadata?.payments.length === 1 &&
+    Array.isArray(deleteAuditLog.metadata?.refunds) &&
+    deleteAuditLog.metadata?.refunds.length === 1,
+    'AuditLog created with DELETE_TICKET_WITH_FINANCIALS and correct financial metadata'
+  );
 
   // Test 4: Customer deletion with active tickets protection & soft delete
   const testCustId = 'CUST-TEST-1';
