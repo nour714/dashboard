@@ -231,13 +231,15 @@ export const en = {
       arrivalDate: 'Arrival Date & Time',
       returnDate: 'Return Date & Time',
       seatClass: 'Cabin Class',
-      economy: 'Economy Class',
-      business: 'Business Class',
-      first: 'First Class'
+      cabinClass: 'Cabin Class',
+      economy: 'Economy (Y)',
+      business: 'Business (J)',
+      first: 'First (F)'
     },
     returnFlight: {
       title: 'Return Flight',
       subtitle: 'Return flight schedule and routing.',
+      optionalHint: 'Leave blank for a one-way ticket',
       flightNumber: 'Return Flight Number',
       flightNumberPlaceholder: 'e.g. MS 987',
       departureDate: 'Return Departure Date & Time',
@@ -651,6 +653,8 @@ export const en = {
     invalidEmail: 'Please enter a valid email address.',
     invalidPhone: 'Please enter a valid phone number.',
     returnFlightRequired: 'Please fill in all return flight details for a Round Trip ticket.',
+    returnDateAfterDeparture: 'Return departure date must be after outbound departure date.',
+    returnFlightIncomplete: 'Please complete all return flight details or leave them all blank.',
     flightNumberRequired: 'Flight number is required.'
   },
 

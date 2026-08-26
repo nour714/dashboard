@@ -98,14 +98,6 @@ export const TicketCreatePage = {
                 </div>
               </div>
               <div class="card-body">
-                <div class="form-group mb-md">
-                  <label class="form-label" for="trip-type">${escapeHtml(t('ticketCreate.flightInfo.tripType'))}</label>
-                  <select id="trip-type" class="form-control">
-                    <option value="One Way">${escapeHtml(t('ticketCreate.flightInfo.oneWay'))}</option>
-                    <option value="Round Trip">${escapeHtml(t('ticketCreate.flightInfo.roundTrip'))}</option>
-                  </select>
-                </div>
-
                 <div class="form-grid-3">
                   <div class="form-group">
                     <label class="form-label" for="flight-airline">${escapeHtml(t('ticketCreate.flightInfo.airline'))} *</label>
@@ -197,14 +189,22 @@ export const TicketCreatePage = {
                   </div>
                 </div>
 
-                <div class="form-grid-2">
+                <div class="form-grid-3">
                   <div class="form-group">
-                    <label class="form-label" for="flight-seat">Seat / Class</label>
+                    <label class="form-label" for="flight-cabin-class">${escapeHtml(t('ticketCreate.flightInfo.cabinClass'))}</label>
+                    <select id="flight-cabin-class" class="form-control">
+                      <option value="Economy (Y)">${escapeHtml(t('ticketCreate.flightInfo.economy'))}</option>
+                      <option value="Business (J)">${escapeHtml(t('ticketCreate.flightInfo.business'))}</option>
+                      <option value="First (F)">${escapeHtml(t('ticketCreate.flightInfo.first'))}</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="flight-seat">Seat</label>
                     <input
                       type="text"
                       id="flight-seat"
                       class="form-control ltr-field"
-                      placeholder="e.g. 14B (Economy)"
+                      placeholder="e.g. 14B"
                     />
                   </div>
                   <div class="form-group">
@@ -220,8 +220,8 @@ export const TicketCreatePage = {
               </div>
             </div>
 
-            <!-- Return Flight Section (Conditionally Visible) -->
-            <div class="card" id="return-flight-section" style="display: none;">
+            <!-- Return Flight Section (Always Visible & Optional) -->
+            <div class="card">
               <div class="card-header">
                 <div class="d-flex items-center gap-xs">
                   ${icons.airplane('w-5 h-5')}
@@ -229,17 +229,20 @@ export const TicketCreatePage = {
                 </div>
               </div>
               <div class="card-body">
+                <p class="text-xs text-muted" style="margin: 0 0 12px;">
+                  ${escapeHtml(t('ticketCreate.returnFlight.optionalHint') || 'اتركها فارغة لتذكرة ذهاب فقط')}
+                </p>
                 <div class="form-group">
-                  <label class="form-label" for="return-flight-number">${escapeHtml(t('ticketCreate.returnFlight.flightNumber'))} *</label>
+                  <label class="form-label" for="return-flight-number">${escapeHtml(t('ticketCreate.returnFlight.flightNumber'))}</label>
                   <input type="text" id="return-flight-number" class="form-control ltr-field" placeholder="e.g. MS 987" />
                 </div>
                 <div class="form-grid-2">
                   <div class="form-group">
-                    <label class="form-label" for="return-dep-date">${escapeHtml(t('ticketCreate.returnFlight.departureDate'))} *</label>
+                    <label class="form-label" for="return-dep-date">${escapeHtml(t('ticketCreate.returnFlight.departureDate'))}</label>
                     <input type="datetime-local" id="return-dep-date" class="form-control" />
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="return-arr-date">${escapeHtml(t('ticketCreate.returnFlight.arrivalDate'))} *</label>
+                    <label class="form-label" for="return-arr-date">${escapeHtml(t('ticketCreate.returnFlight.arrivalDate'))}</label>
                     <input type="datetime-local" id="return-arr-date" class="form-control" />
                   </div>
                 </div>
@@ -426,15 +429,6 @@ export const TicketCreatePage = {
       }
     });
 
-    const tripTypeSelect = container.querySelector('#trip-type');
-    const returnFlightSection = container.querySelector('#return-flight-section');
-    if (tripTypeSelect && returnFlightSection) {
-      tripTypeSelect.addEventListener('change', () => {
-        const isRoundTrip = tripTypeSelect.value === 'Round Trip';
-        returnFlightSection.style.display = isRoundTrip ? 'block' : 'none';
-      });
-    }
-
     if (form) {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -453,15 +447,31 @@ export const TicketCreatePage = {
           return;
         }
 
-        const tripTypeValue = tripTypeSelect ? tripTypeSelect.value : 'One Way';
-        if (tripTypeValue === 'Round Trip') {
-          const returnFlightNumber = container.querySelector('#return-flight-number').value.trim();
-          const returnDepDate = container.querySelector('#return-dep-date').value;
-          const returnArrDate = container.querySelector('#return-arr-date').value;
-          if (!returnFlightNumber || !returnDepDate || !returnArrDate) {
-            showToast(t('validation.returnFlightRequired'), 'error');
-            return;
-          }
+        const returnDepDateInput = container.querySelector('#return-dep-date');
+        const returnArrDateInput = container.querySelector('#return-arr-date');
+        const returnFlightNumberInput = container.querySelector('#return-flight-number');
+
+        const returnDepDate = returnDepDateInput ? returnDepDateInput.value : '';
+        const returnArrDate = returnArrDateInput ? returnArrDateInput.value : '';
+        const returnFlightNumber = returnFlightNumberInput ? returnFlightNumberInput.value.trim() : '';
+
+        // النوع بيتحدد تلقائيًا حسب امتلاء تاريخ العودة
+        const isRoundTrip = Boolean(returnDepDate);
+        const tripTypeValue = isRoundTrip ? 'Round Trip' : 'One Way';
+
+        const departureDateValue = container.querySelector('#flight-dep-date').value;
+
+        // تحقق مرن: العودة لازم تكون بعد الذهاب بس، من غير أي قيد على السنة
+        if (isRoundTrip && departureDateValue && new Date(returnDepDate) <= new Date(departureDateValue)) {
+          showToast(t('validation.returnDateAfterDeparture') || 'تاريخ العودة يجب أن يكون بعد تاريخ الذهاب', 'error');
+          if (returnDepDateInput) returnDepDateInput.focus();
+          return;
+        }
+
+        // لو المستخدم بدأ يملأ حقول العودة جزئيًا بس مش كلها، امنعه ونبهه
+        if (isRoundTrip && (!returnFlightNumber || !returnArrDate)) {
+          showToast(t('validation.returnFlightIncomplete') || 'أكمل كل بيانات رحلة العودة أو اتركها فارغة بالكامل', 'error');
+          return;
         }
 
         const ticketData = {
@@ -472,16 +482,11 @@ export const TicketCreatePage = {
           airline: airlineSelect.value,
           airlineCode: airlineCode,
           flightNumber: flightNumber,
+          cabinClass: container.querySelector('#flight-cabin-class')?.value || 'Economy (Y)',
           tripType: tripTypeValue,
-          returnFlightNumber: tripTypeValue === 'Round Trip'
-            ? container.querySelector('#return-flight-number').value.trim().toUpperCase()
-            : undefined,
-          returnDepartureDate: tripTypeValue === 'Round Trip'
-            ? container.querySelector('#return-dep-date').value
-            : undefined,
-          returnArrivalDate: tripTypeValue === 'Round Trip'
-            ? container.querySelector('#return-arr-date').value
-            : undefined,
+          returnFlightNumber: isRoundTrip ? returnFlightNumber.toUpperCase() : undefined,
+          returnDepartureDate: isRoundTrip ? returnDepDate : undefined,
+          returnArrivalDate: isRoundTrip ? returnArrDate : undefined,
           pnr: container.querySelector('#flight-pnr').value.trim().toUpperCase(),
           ticketNumber: container.querySelector('#flight-ticket-num').value.trim(),
           origin: originCode,

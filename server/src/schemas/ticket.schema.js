@@ -41,15 +41,19 @@ export const createTicketSchema = z.object({
   paymentReference: z.string().optional(),
   paymentDate: z.string().optional()
 }).superRefine((data, ctx) => {
-  if (data.tripType === 'Round Trip') {
+  // Round trip is now inferred: if returnDepartureDate is provided, treat as round trip
+  const isRoundTrip = Boolean(data.returnDepartureDate);
+
+  if (isRoundTrip) {
     if (!data.returnFlightNumber) {
-      ctx.addIssue({ code: 'custom', path: ['returnFlightNumber'], message: 'Return flight number is required for round trip tickets' });
-    }
-    if (!data.returnDepartureDate) {
-      ctx.addIssue({ code: 'custom', path: ['returnDepartureDate'], message: 'Return departure date is required for round trip tickets' });
+      ctx.addIssue({ code: 'custom', path: ['returnFlightNumber'], message: 'Return flight number is required when a return date is provided' });
     }
     if (!data.returnArrivalDate) {
-      ctx.addIssue({ code: 'custom', path: ['returnArrivalDate'], message: 'Return arrival date is required for round trip tickets' });
+      ctx.addIssue({ code: 'custom', path: ['returnArrivalDate'], message: 'Return arrival date is required when a return date is provided' });
+    }
+    // Flexible validation: only checks return is after departure, no year restriction
+    if (data.departureDate && new Date(data.returnDepartureDate) <= new Date(data.departureDate)) {
+      ctx.addIssue({ code: 'custom', path: ['returnDepartureDate'], message: 'Return departure date must be after the outbound departure date' });
     }
   }
 });

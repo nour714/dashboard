@@ -231,6 +231,7 @@ export const ar = {
       arrivalDate: 'تاريخ ووقت الوصول',
       returnDate: 'تاريخ ووقت العودة',
       seatClass: 'درجة السفر',
+      cabinClass: 'درجة السفر',
       economy: 'الدرجة السياحية (Economy)',
       business: 'درجة رجال الأعمال (Business)',
       first: 'الدرجة الأولى (First)'
@@ -238,6 +239,7 @@ export const ar = {
     returnFlight: {
       title: 'رحلة العودة',
       subtitle: 'جدول ومسار رحلة العودة.',
+      optionalHint: 'اتركها فارغة لتذكرة ذهاب فقط',
       flightNumber: 'رقم رحلة العودة',
       flightNumberPlaceholder: 'مثال: MS 987',
       departureDate: 'تاريخ ووقت المغادرة للعودة',
@@ -651,6 +653,8 @@ export const ar = {
     invalidEmail: 'يرجى إدخال بريد إلكتروني صحيح.',
     invalidPhone: 'يرجى إدخال رقم هاتف صحيح.',
     returnFlightRequired: 'يرجى ملء جميع تفاصيل رحلة العودة لتذكرة الذهاب والعودة.',
+    returnDateAfterDeparture: 'تاريخ ووقت العودة يجب أن يكون بعد تاريخ ووقت الذهاب.',
+    returnFlightIncomplete: 'يرجى إكمال جميع بيانات رحلة العودة أو تركها فارغة بالكامل.',
     flightNumberRequired: 'رقم الرحلة مطلوب.'
   },
 
