@@ -192,8 +192,8 @@ async function runRoundTripTests() {
   // --- 5. i18n Bilingual Verification ---
   console.log('\n--- 5. i18n Bilingual Translations Verification ---');
 
-  assert(en.ticketCreate.flightInfo.departureDate === 'Departure Date & Time', 'EN flightInfo.departureDate is defined');
-  assert(ar.ticketCreate.flightInfo.departureDate === 'تاريخ ووقت المغادرة', 'AR flightInfo.departureDate is defined');
+  assert(en.ticketCreate.flightInfo.departureDate === 'Departure Date', 'EN flightInfo.departureDate is defined');
+  assert(ar.ticketCreate.flightInfo.departureDate === 'تاريخ المغادرة', 'AR flightInfo.departureDate is defined');
 
   assert(en.ticketCreate.returnFlight.title === 'Return Flight', 'EN returnFlight.title is defined');
   assert(ar.ticketCreate.returnFlight.title === 'رحلة العودة', 'AR returnFlight.title is defined');
@@ -204,8 +204,8 @@ async function runRoundTripTests() {
   assert(en.ticketCreate.returnFlight.flightNumber === 'Return Flight Number', 'EN returnFlight.flightNumber is defined');
   assert(ar.ticketCreate.returnFlight.flightNumber === 'رقم رحلة العودة', 'AR returnFlight.flightNumber is defined');
 
-  assert(en.ticketCreate.returnFlight.departureDate === 'Return Departure Date & Time', 'EN returnFlight.departureDate is defined');
-  assert(ar.ticketCreate.returnFlight.departureDate === 'تاريخ ووقت المغادرة للعودة', 'AR returnFlight.departureDate is defined');
+  assert(en.ticketCreate.returnFlight.departureDate === 'Return Departure Date', 'EN returnFlight.departureDate is defined');
+  assert(ar.ticketCreate.returnFlight.departureDate === 'تاريخ المغادرة للعودة', 'AR returnFlight.departureDate is defined');
 
   assert(en.validation.returnDateAfterDeparture && en.validation.returnDateAfterDeparture.length > 0, 'EN validation.returnDateAfterDeparture is defined');
   assert(ar.validation.returnDateAfterDeparture && ar.validation.returnDateAfterDeparture.length > 0, 'AR validation.returnDateAfterDeparture is defined');

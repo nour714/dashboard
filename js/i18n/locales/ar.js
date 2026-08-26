@@ -227,7 +227,7 @@ export const ar = {
       roundTrip: 'ذهاب وعودة',
       origin: 'مطار الإقلاع (المصدر)',
       destination: 'مطار الوصول (الوجهة)',
-      departureDate: 'تاريخ ووقت المغادرة',
+      departureDate: 'تاريخ المغادرة',
       arrivalDate: 'تاريخ ووقت الوصول',
       returnDate: 'تاريخ ووقت العودة',
       seatClass: 'درجة السفر',
@@ -242,7 +242,7 @@ export const ar = {
       optionalHint: 'اتركها فارغة لتذكرة ذهاب فقط',
       flightNumber: 'رقم رحلة العودة',
       flightNumberPlaceholder: 'مثال: MS 987',
-      departureDate: 'تاريخ ووقت المغادرة للعودة',
+      departureDate: 'تاريخ المغادرة للعودة',
       arrivalDate: 'تاريخ ووقت الوصول للعودة'
     },
     financials: {

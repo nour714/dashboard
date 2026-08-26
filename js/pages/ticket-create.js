@@ -171,7 +171,7 @@ export const TicketCreatePage = {
                 <div class="form-group mb-md">
                   <label class="form-label" for="flight-dep-date">${escapeHtml(t('ticketCreate.flightInfo.departureDate'))} *</label>
                   <input
-                    type="datetime-local"
+                    type="date"
                     id="flight-dep-date"
                     class="form-control"
                     required
@@ -220,7 +220,7 @@ export const TicketCreatePage = {
                   </div>
                   <div class="form-group">
                     <label class="form-label" for="return-dep-date">${escapeHtml(t('ticketCreate.returnFlight.departureDate'))}</label>
-                    <input type="datetime-local" id="return-dep-date" class="form-control" />
+                    <input type="date" id="return-dep-date" class="form-control" />
                   </div>
                 </div>
               </div>

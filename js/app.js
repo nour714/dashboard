@@ -338,7 +338,7 @@ class App {
                     <a href="/tickets/${r.ticketId}" data-link class="p-sm notif-reminder-item" style="display:block; background-color: var(--color-warning-soft, #fff8e6); border-radius: var(--radius-md); border: 1px solid var(--color-warning, #f0b429); text-decoration: none; color: inherit;">
                       <div class="d-flex justify-between text-xs text-muted mb-xxs">
                         <strong style="color: #b45309;">${r.type === 'DEPARTURE' ? escapeHtml(t('notifications.departureSoon')) : escapeHtml(t('notifications.returnSoon'))}</strong>
-                        <span>${r.date.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>${r.date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       </div>
                       <div class="text-sm font-medium">${escapeHtml(r.passengerName)} — ${escapeHtml(r.route)}</div>
                       <div class="text-xs text-muted">${escapeHtml(r.ticketNumber)}</div>

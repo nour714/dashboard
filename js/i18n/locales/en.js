@@ -227,7 +227,7 @@ export const en = {
       roundTrip: 'Round Trip',
       origin: 'Origin Airport',
       destination: 'Destination Airport',
-      departureDate: 'Departure Date & Time',
+      departureDate: 'Departure Date',
       arrivalDate: 'Arrival Date & Time',
       returnDate: 'Return Date & Time',
       seatClass: 'Cabin Class',
@@ -242,7 +242,7 @@ export const en = {
       optionalHint: 'Leave blank for a one-way ticket',
       flightNumber: 'Return Flight Number',
       flightNumberPlaceholder: 'e.g. MS 987',
-      departureDate: 'Return Departure Date & Time',
+      departureDate: 'Return Departure Date',
       arrivalDate: 'Return Arrival Date & Time'
     },
     financials: {

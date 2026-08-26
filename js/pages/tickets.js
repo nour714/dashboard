@@ -50,7 +50,6 @@ function renderTicketRows(tickets) {
         </td>
         <td>
           <div class="tabular-nums font-medium">${formatDate(tData.departureDate)}</div>
-          <div class="cell-sub">${tData.departureDate ? new Date(tData.departureDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}</div>
         </td>
         <td>
           <div class="tabular-nums font-semibold">${formatCurrency(tData.ticketPrice, tData.currency)}</div>
