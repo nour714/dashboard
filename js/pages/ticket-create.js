@@ -168,36 +168,17 @@ export const TicketCreatePage = {
                   </div>
                 </div>
 
-                <div class="form-grid-2">
-                  <div class="form-group">
-                    <label class="form-label" for="flight-dep-date">${escapeHtml(t('ticketCreate.flightInfo.departureDate'))} *</label>
-                    <input
-                      type="datetime-local"
-                      id="flight-dep-date"
-                      class="form-control"
-                      required
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="flight-arr-date">${escapeHtml(t('ticketCreate.flightInfo.arrivalDate'))} *</label>
-                    <input
-                      type="datetime-local"
-                      id="flight-arr-date"
-                      class="form-control"
-                      required
-                    />
-                  </div>
+                <div class="form-group mb-md">
+                  <label class="form-label" for="flight-dep-date">${escapeHtml(t('ticketCreate.flightInfo.departureDate'))} *</label>
+                  <input
+                    type="datetime-local"
+                    id="flight-dep-date"
+                    class="form-control"
+                    required
+                  />
                 </div>
 
-                <div class="form-grid-3">
-                  <div class="form-group">
-                    <label class="form-label" for="flight-cabin-class">${escapeHtml(t('ticketCreate.flightInfo.cabinClass'))}</label>
-                    <select id="flight-cabin-class" class="form-control">
-                      <option value="Economy (Y)">${escapeHtml(t('ticketCreate.flightInfo.economy'))}</option>
-                      <option value="Business (J)">${escapeHtml(t('ticketCreate.flightInfo.business'))}</option>
-                      <option value="First (F)">${escapeHtml(t('ticketCreate.flightInfo.first'))}</option>
-                    </select>
-                  </div>
+                <div class="form-grid-2">
                   <div class="form-group">
                     <label class="form-label" for="flight-seat">Seat</label>
                     <input
@@ -232,18 +213,14 @@ export const TicketCreatePage = {
                 <p class="text-xs text-muted" style="margin: 0 0 12px;">
                   ${escapeHtml(t('ticketCreate.returnFlight.optionalHint') || 'اتركها فارغة لتذكرة ذهاب فقط')}
                 </p>
-                <div class="form-group">
-                  <label class="form-label" for="return-flight-number">${escapeHtml(t('ticketCreate.returnFlight.flightNumber'))}</label>
-                  <input type="text" id="return-flight-number" class="form-control ltr-field" placeholder="e.g. MS 987" />
-                </div>
                 <div class="form-grid-2">
+                  <div class="form-group">
+                    <label class="form-label" for="return-flight-number">${escapeHtml(t('ticketCreate.returnFlight.flightNumber'))}</label>
+                    <input type="text" id="return-flight-number" class="form-control ltr-field" placeholder="e.g. MS 987" />
+                  </div>
                   <div class="form-group">
                     <label class="form-label" for="return-dep-date">${escapeHtml(t('ticketCreate.returnFlight.departureDate'))}</label>
                     <input type="datetime-local" id="return-dep-date" class="form-control" />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="return-arr-date">${escapeHtml(t('ticketCreate.returnFlight.arrivalDate'))}</label>
-                    <input type="datetime-local" id="return-arr-date" class="form-control" />
                   </div>
                 </div>
               </div>
@@ -448,11 +425,9 @@ export const TicketCreatePage = {
         }
 
         const returnDepDateInput = container.querySelector('#return-dep-date');
-        const returnArrDateInput = container.querySelector('#return-arr-date');
         const returnFlightNumberInput = container.querySelector('#return-flight-number');
 
         const returnDepDate = returnDepDateInput ? returnDepDateInput.value : '';
-        const returnArrDate = returnArrDateInput ? returnArrDateInput.value : '';
         const returnFlightNumber = returnFlightNumberInput ? returnFlightNumberInput.value.trim() : '';
 
         // النوع بيتحدد تلقائيًا حسب امتلاء تاريخ العودة
@@ -469,8 +444,8 @@ export const TicketCreatePage = {
         }
 
         // لو المستخدم بدأ يملأ حقول العودة جزئيًا بس مش كلها، امنعه ونبهه
-        if (isRoundTrip && (!returnFlightNumber || !returnArrDate)) {
-          showToast(t('validation.returnFlightIncomplete') || 'أكمل كل بيانات رحلة العودة أو اتركها فارغة بالكامل', 'error');
+        if (isRoundTrip && !returnFlightNumber) {
+          showToast(t('validation.returnFlightIncomplete') || 'أكمل رقم رحلة العودة أو اترك التاريخ فارغًا بالكامل', 'error');
           return;
         }
 
@@ -482,17 +457,14 @@ export const TicketCreatePage = {
           airline: airlineSelect.value,
           airlineCode: airlineCode,
           flightNumber: flightNumber,
-          cabinClass: container.querySelector('#flight-cabin-class')?.value || 'Economy (Y)',
           tripType: tripTypeValue,
           returnFlightNumber: isRoundTrip ? returnFlightNumber.toUpperCase() : undefined,
           returnDepartureDate: isRoundTrip ? returnDepDate : undefined,
-          returnArrivalDate: isRoundTrip ? returnArrDate : undefined,
           pnr: container.querySelector('#flight-pnr').value.trim().toUpperCase(),
           ticketNumber: container.querySelector('#flight-ticket-num').value.trim(),
           origin: originCode,
           destination: destCode,
           departureDate: container.querySelector('#flight-dep-date').value,
-          arrivalDate: container.querySelector('#flight-arr-date').value,
           seat: container.querySelector('#flight-seat').value.trim() || '12A',
           baggage: container.querySelector('#flight-baggage').value,
           ticketPrice: Number(priceInput.value) || 0,

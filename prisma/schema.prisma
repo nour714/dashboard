@@ -101,7 +101,7 @@ model Ticket {
   destinationTerminal    String?
   destinationAirportName String?
   departureDate          DateTime
-  arrivalDate            DateTime
+  arrivalDate            DateTime?
   returnDepartureDate    DateTime?
   returnArrivalDate      DateTime?
   tripType               String         @default("One Way")

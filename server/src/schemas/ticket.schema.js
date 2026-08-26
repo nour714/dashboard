@@ -25,7 +25,7 @@ export const createTicketSchema = z.object({
   destinationTerminal: z.string().optional(),
   destinationAirportName: z.string().optional(),
   departureDate: z.string().min(1, 'Departure date is required'),
-  arrivalDate: z.string().min(1, 'Arrival date is required'),
+  arrivalDate: z.string().optional(),
   returnDepartureDate: z.string().optional(),
   returnArrivalDate: z.string().optional(),
   tripType: z.enum(['One Way', 'Round Trip', 'Multi City']).default('One Way'),
@@ -47,9 +47,6 @@ export const createTicketSchema = z.object({
   if (isRoundTrip) {
     if (!data.returnFlightNumber) {
       ctx.addIssue({ code: 'custom', path: ['returnFlightNumber'], message: 'Return flight number is required when a return date is provided' });
-    }
-    if (!data.returnArrivalDate) {
-      ctx.addIssue({ code: 'custom', path: ['returnArrivalDate'], message: 'Return arrival date is required when a return date is provided' });
     }
     // Flexible validation: only checks return is after departure, no year restriction
     if (data.departureDate && new Date(data.returnDepartureDate) <= new Date(data.departureDate)) {

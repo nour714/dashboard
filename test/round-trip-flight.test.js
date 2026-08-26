@@ -1,5 +1,5 @@
 /**
- * AfricaTravel - Flight Number, Arrival Date Label, Cabin Class, and Round Trip Integration Tests
+ * AfricaTravel - Flight Departure-Only, Automatic Round Trip & Simplified Fields Tests
  */
 
 import { createTicketSchema, updateTicketSchema } from '../server/src/schemas/ticket.schema.js';
@@ -27,13 +27,13 @@ function assert(condition, message) {
 
 async function runRoundTripTests() {
   console.log('\n✈️ ========================================================');
-  console.log('   Flight Number, Cabin Class & Round Trip Tests');
+  console.log('   Simplified Flight Fields & Automatic Round Trip Tests');
   console.log('========================================================\n');
 
-  // --- 1. Zod Schema Validation: Flight Number & PNR ---
-  console.log('--- 1. Backend Schema Validation: Flight Number & PNR ---');
+  // --- 1. Backend Schema Validation: Flight Number & PNR ---
+  console.log('--- 1. Backend Schema Validation: Flight Number & Departure Only ---');
 
-  const validOneWay = {
+  const validOneWayWithoutArrival = {
     passengerName: 'Hassan Ali',
     pnr: 'AB12CD',
     airline: 'EgyptAir',
@@ -42,18 +42,17 @@ async function runRoundTripTests() {
     origin: 'CAI',
     destination: 'DXB',
     departureDate: '2026-09-15T08:00',
-    arrivalDate: '2026-09-15T13:30',
+    // arrivalDate omitted completely
     tripType: 'One Way',
-    cabinClass: 'Economy (Y)',
     ticketPrice: 12500,
     costPrice: 10000
   };
 
-  const oneWayResult = createTicketSchema.safeParse(validOneWay);
-  assert(oneWayResult.success === true, 'One Way ticket with flightNumber and pnr passes validation');
+  const oneWayResult = createTicketSchema.safeParse(validOneWayWithoutArrival);
+  assert(oneWayResult.success === true, 'One Way ticket WITHOUT arrivalDate passes validation');
 
   // Missing flightNumber
-  const missingFlightNum = { ...validOneWay, flightNumber: undefined };
+  const missingFlightNum = { ...validOneWayWithoutArrival, flightNumber: undefined };
   const missingFlightNumResult = createTicketSchema.safeParse(missingFlightNum);
   assert(missingFlightNumResult.success === false, 'Ticket without flightNumber fails validation');
   assert(
@@ -62,54 +61,45 @@ async function runRoundTripTests() {
   );
 
   // Empty flightNumber
-  const emptyFlightNum = { ...validOneWay, flightNumber: '' };
+  const emptyFlightNum = { ...validOneWayWithoutArrival, flightNumber: '' };
   const emptyFlightNumResult = createTicketSchema.safeParse(emptyFlightNum);
   assert(emptyFlightNumResult.success === false, 'Ticket with empty flightNumber fails validation');
 
   // Missing pnr
-  const missingPnr = { ...validOneWay, pnr: undefined };
+  const missingPnr = { ...validOneWayWithoutArrival, pnr: undefined };
   const missingPnrResult = createTicketSchema.safeParse(missingPnr);
   assert(missingPnrResult.success === false, 'Ticket without pnr fails validation');
-
-  // Cabin Class Enum Validation
-  const validBusinessTicket = { ...validOneWay, cabinClass: 'Business (J)' };
-  assert(createTicketSchema.safeParse(validBusinessTicket).success === true, 'Ticket with Business (J) cabinClass passes validation');
-
-  const validFirstTicket = { ...validOneWay, cabinClass: 'First (F)' };
-  assert(createTicketSchema.safeParse(validFirstTicket).success === true, 'Ticket with First (F) cabinClass passes validation');
 
   // --- 2. Zod Schema Validation: Flexible Round Trip superRefine ---
   console.log('\n--- 2. Backend Schema: Flexible Round Trip superRefine Enforcement ---');
 
   // Test 2.1: Ticket with empty returnDepartureDate -> passes as One Way
   const oneWayEmptyReturn = {
-    ...validOneWay,
+    ...validOneWayWithoutArrival,
     returnDepartureDate: undefined,
-    returnFlightNumber: undefined,
-    returnArrivalDate: undefined
+    returnFlightNumber: undefined
   };
   const oneWayEmptyReturnResult = createTicketSchema.safeParse(oneWayEmptyReturn);
   assert(oneWayEmptyReturnResult.success === true, 'Ticket with empty returnDepartureDate passes validation as One Way');
 
-  // Test 2.2: Ticket with returnDepartureDate 1 week after departureDate (same year) -> succeeds without year rejection
-  const validRoundTripSameYear = {
-    ...validOneWay,
+  // Test 2.2: Ticket with returnDepartureDate (WITHOUT returnArrivalDate) -> succeeds
+  const validRoundTripWithoutArrivals = {
+    ...validOneWayWithoutArrival,
     tripType: 'Round Trip',
     departureDate: '2026-09-15T08:00',
     returnFlightNumber: 'MS 987',
-    returnDepartureDate: '2026-09-22T14:00',
-    returnArrivalDate: '2026-09-22T17:30'
+    returnDepartureDate: '2026-09-22T14:00'
+    // returnArrivalDate and arrivalDate both omitted
   };
-  const validRoundTripSameYearResult = createTicketSchema.safeParse(validRoundTripSameYear);
-  assert(validRoundTripSameYearResult.success === true, 'Round Trip ticket with returnDepartureDate 1 week after departureDate (same year) passes');
+  const validRoundTripResult = createTicketSchema.safeParse(validRoundTripWithoutArrivals);
+  assert(validRoundTripResult.success === true, 'Round Trip ticket without returnArrivalDate passes validation');
 
   // Test 2.3: Ticket with returnDepartureDate BEFORE departureDate -> rejected with correct error
   const invalidReturnBeforeDeparture = {
-    ...validOneWay,
+    ...validOneWayWithoutArrival,
     departureDate: '2026-09-15T08:00',
     returnFlightNumber: 'MS 987',
-    returnDepartureDate: '2026-09-10T14:00',
-    returnArrivalDate: '2026-09-10T17:30'
+    returnDepartureDate: '2026-09-10T14:00'
   };
   const invalidReturnBeforeDepartureResult = createTicketSchema.safeParse(invalidReturnBeforeDeparture);
   assert(invalidReturnBeforeDepartureResult.success === false, 'Ticket with returnDepartureDate before departureDate is rejected');
@@ -120,10 +110,9 @@ async function runRoundTripTests() {
 
   // Test 2.4: Ticket with returnDepartureDate provided but returnFlightNumber empty/missing -> rejected
   const missingReturnFlightNum = {
-    ...validOneWay,
+    ...validOneWayWithoutArrival,
     departureDate: '2026-09-15T08:00',
     returnDepartureDate: '2026-09-22T14:00',
-    returnArrivalDate: '2026-09-22T17:30',
     returnFlightNumber: ''
   };
   const missingReturnFlightNumResult = createTicketSchema.safeParse(missingReturnFlightNum);
@@ -133,21 +122,6 @@ async function runRoundTripTests() {
     'Issue reported for missing returnFlightNumber when returnDepartureDate is set'
   );
 
-  // Test 2.5: Ticket with returnDepartureDate provided but returnArrivalDate missing -> rejected
-  const missingReturnArrDate = {
-    ...validOneWay,
-    departureDate: '2026-09-15T08:00',
-    returnFlightNumber: 'MS 987',
-    returnDepartureDate: '2026-09-22T14:00',
-    returnArrivalDate: undefined
-  };
-  const missingReturnArrDateResult = createTicketSchema.safeParse(missingReturnArrDate);
-  assert(missingReturnArrDateResult.success === false, 'Ticket with returnDepartureDate but missing returnArrivalDate is rejected');
-  assert(
-    missingReturnArrDateResult.error?.issues.some(i => i.path.includes('returnArrivalDate')),
-    'Issue reported for missing returnArrivalDate when returnDepartureDate is set'
-  );
-
   // --- 3. Frontend HTML Template Verification ---
   console.log('\n--- 3. Frontend Form Structure (ticket-create.js) ---');
 
@@ -155,28 +129,21 @@ async function runRoundTripTests() {
 
   assert(formHtml.includes('id="flight-number"'), 'Form contains #flight-number input field');
   assert(!formHtml.includes('id="trip-type"'), 'Form does NOT contain #trip-type dropdown (removed)');
-  assert(!formHtml.includes('id="return-flight-section"'), 'Form does NOT have hidden #return-flight-section id');
-  assert(formHtml.includes('id="flight-cabin-class"'), 'Form contains #flight-cabin-class select dropdown');
-  assert(formHtml.includes('value="Economy (Y)"'), 'Cabin class options include Economy (Y)');
-  assert(formHtml.includes('value="Business (J)"'), 'Cabin class options include Business (J)');
-  assert(formHtml.includes('value="First (F)"'), 'Cabin class options include First (F)');
+  assert(!formHtml.includes('id="flight-cabin-class"'), 'Form does NOT contain #flight-cabin-class select (removed)');
+  assert(!formHtml.includes('id="flight-arr-date"'), 'Form does NOT contain #flight-arr-date input (removed)');
+  assert(!formHtml.includes('id="return-arr-date"'), 'Form does NOT contain #return-arr-date input (removed)');
+  assert(formHtml.includes('id="flight-dep-date"'), 'Form contains #flight-dep-date input field');
   assert(formHtml.includes('id="return-flight-number"'), 'Return flight section contains #return-flight-number input');
   assert(formHtml.includes('id="return-dep-date"'), 'Return flight section contains #return-dep-date input');
-  assert(formHtml.includes('id="return-arr-date"'), 'Return flight section contains #return-arr-date input');
-  assert(formHtml.includes('id="flight-arr-date"'), 'Form contains #flight-arr-date input');
-  assert(
-    formHtml.includes(escapeHtml(en.ticketCreate.flightInfo.arrivalDate)),
-    'Label for #flight-arr-date matches Arrival Date & Time'
-  );
   assert(
     formHtml.includes(escapeHtml(en.ticketCreate.returnFlight.optionalHint)),
     'Return flight card contains optional hint text'
   );
 
-  // --- 4. Ticket Details Overview Tab Verification ---
-  console.log('\n--- 4. Ticket Details Overview Tab Round Trip Rendering ---');
+  // --- 4. Ticket Details Overview Tab Verification & Backward Compatibility ---
+  console.log('\n--- 4. Ticket Details Overview Tab Round Trip & Backward Compatibility ---');
 
-  const roundTripTicket = {
+  const oldRoundTripTicketWithArrivalAndCabin = {
     id: 'TK-10099',
     passengerName: 'Mona Youssef',
     tripType: 'Round Trip',
@@ -188,35 +155,45 @@ async function runRoundTripTests() {
     returnFlightNumber: 'MS 778',
     returnDepartureDate: '2026-10-10T15:00:00Z',
     returnArrivalDate: '2026-10-10T19:30:00Z',
-    cabinClass: 'Economy (Y)',
+    cabinClass: 'Business (J)',
     ticketPrice: 24000,
     currency: 'EGP',
     status: 'CONFIRMED'
   };
 
-  const roundTripHtml = renderOverviewTab(roundTripTicket);
-  assert(roundTripHtml.includes('MS 778'), 'Overview tab renders returnFlightNumber for Round Trip ticket');
-  assert(roundTripHtml.includes('Return Flight'), 'Overview tab renders Return Flight section title for Round Trip ticket');
+  const oldTicketHtml = renderOverviewTab(oldRoundTripTicketWithArrivalAndCabin);
+  assert(oldTicketHtml.includes('MS 778'), 'Overview tab renders returnFlightNumber for old Round Trip ticket');
+  assert(oldTicketHtml.includes('Return Flight'), 'Overview tab renders Return Flight section title');
+  assert(oldTicketHtml.includes('Business (J)'), 'Overview tab correctly renders existing cabinClass');
 
-  const oneWayTicket = {
-    ...roundTripTicket,
+  const newTicketWithoutArrivalAndCabin = {
+    id: 'TK-10100',
+    passengerName: 'Kareem Tarek',
     tripType: 'One Way',
+    origin: 'CAI',
+    destination: 'JED',
+    flightNumber: 'MS 660',
+    departureDate: '2026-10-05T10:00:00Z',
+    arrivalDate: null,
     returnFlightNumber: null,
     returnDepartureDate: null,
-    returnArrivalDate: null
+    returnArrivalDate: null,
+    cabinClass: null,
+    ticketPrice: 8500,
+    currency: 'EGP',
+    status: 'CONFIRMED'
   };
 
-  const oneWayHtml = renderOverviewTab(oneWayTicket);
-  assert(!oneWayHtml.includes('MS 778'), 'Overview tab does NOT render return leg for One Way ticket');
+  const newTicketHtml = renderOverviewTab(newTicketWithoutArrivalAndCabin);
+  assert(newTicketHtml.includes('MS 660'), 'Overview tab renders flight number for new ticket');
+  assert(!newTicketHtml.includes('MS 778'), 'Overview tab does not render return leg for one way');
+  assert(newTicketHtml.includes('--:--'), 'Overview tab gracefully displays --:-- when arrivalDate is null');
 
   // --- 5. i18n Bilingual Verification ---
   console.log('\n--- 5. i18n Bilingual Translations Verification ---');
 
-  assert(en.ticketCreate.flightInfo.arrivalDate === 'Arrival Date & Time', 'EN flightInfo.arrivalDate is defined');
-  assert(ar.ticketCreate.flightInfo.arrivalDate === 'تاريخ ووقت الوصول', 'AR flightInfo.arrivalDate is defined');
-
-  assert(en.ticketCreate.flightInfo.cabinClass === 'Cabin Class', 'EN flightInfo.cabinClass is defined');
-  assert(ar.ticketCreate.flightInfo.cabinClass === 'درجة السفر', 'AR flightInfo.cabinClass is defined');
+  assert(en.ticketCreate.flightInfo.departureDate === 'Departure Date & Time', 'EN flightInfo.departureDate is defined');
+  assert(ar.ticketCreate.flightInfo.departureDate === 'تاريخ ووقت المغادرة', 'AR flightInfo.departureDate is defined');
 
   assert(en.ticketCreate.returnFlight.title === 'Return Flight', 'EN returnFlight.title is defined');
   assert(ar.ticketCreate.returnFlight.title === 'رحلة العودة', 'AR returnFlight.title is defined');
@@ -230,9 +207,6 @@ async function runRoundTripTests() {
   assert(en.ticketCreate.returnFlight.departureDate === 'Return Departure Date & Time', 'EN returnFlight.departureDate is defined');
   assert(ar.ticketCreate.returnFlight.departureDate === 'تاريخ ووقت المغادرة للعودة', 'AR returnFlight.departureDate is defined');
 
-  assert(en.ticketCreate.returnFlight.arrivalDate === 'Return Arrival Date & Time', 'EN returnFlight.arrivalDate is defined');
-  assert(ar.ticketCreate.returnFlight.arrivalDate === 'تاريخ ووقت الوصول للعودة', 'AR returnFlight.arrivalDate is defined');
-
   assert(en.validation.returnDateAfterDeparture && en.validation.returnDateAfterDeparture.length > 0, 'EN validation.returnDateAfterDeparture is defined');
   assert(ar.validation.returnDateAfterDeparture && ar.validation.returnDateAfterDeparture.length > 0, 'AR validation.returnDateAfterDeparture is defined');
 
@@ -240,7 +214,7 @@ async function runRoundTripTests() {
   assert(ar.validation.returnFlightIncomplete && ar.validation.returnFlightIncomplete.length > 0, 'AR validation.returnFlightIncomplete is defined');
 
   console.log('\n========================================================');
-  console.log(`Round Trip & Flight Number Tests: ${passed} passed, ${failed} failed`);
+  console.log(`Simplified Flight Fields Tests: ${passed} passed, ${failed} failed`);
   console.log('========================================================\n');
 
   if (failures.length > 0) {

@@ -272,7 +272,7 @@ export const TicketService = {
         destinationTerminal: data.destinationTerminal || null,
         destinationAirportName: data.destinationAirportName || null,
         departureDate: new Date(data.departureDate),
-        arrivalDate: new Date(data.arrivalDate),
+        arrivalDate: data.arrivalDate ? new Date(data.arrivalDate) : null,
         returnDepartureDate: data.returnDepartureDate ? new Date(data.returnDepartureDate) : null,
         returnArrivalDate: data.returnArrivalDate ? new Date(data.returnArrivalDate) : null,
         tripType: data.tripType || 'One Way',

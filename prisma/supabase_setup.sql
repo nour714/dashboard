@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS "tickets" (
     "destinationTerminal" TEXT,
     "destinationAirportName" TEXT,
     "departureDate" TIMESTAMP(3) NOT NULL,
-    "arrivalDate" TIMESTAMP(3) NOT NULL,
+    "arrivalDate" TIMESTAMP(3),
     "returnDepartureDate" TIMESTAMP(3),
     "returnArrivalDate" TIMESTAMP(3),
     "tripType" TEXT NOT NULL DEFAULT 'One Way',
@@ -238,6 +238,9 @@ EXCEPTION WHEN duplicate_object THEN null; END $$;
 DO $$ BEGIN
   ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+-- Make arrivalDate optional on existing tables
+ALTER TABLE "tickets" ALTER COLUMN "arrivalDate" DROP NOT NULL;
 
 -- ========================================================
 -- Seed Initial Demo Data
