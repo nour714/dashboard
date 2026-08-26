@@ -132,6 +132,7 @@ async function runRoundTripTests() {
   assert(!formHtml.includes('id="flight-cabin-class"'), 'Form does NOT contain #flight-cabin-class select (removed)');
   assert(!formHtml.includes('id="flight-arr-date"'), 'Form does NOT contain #flight-arr-date input (removed)');
   assert(!formHtml.includes('id="return-arr-date"'), 'Form does NOT contain #return-arr-date input (removed)');
+  assert(!formHtml.includes('id="flight-seat"'), 'Form does NOT contain #flight-seat input (removed)');
   assert(formHtml.includes('id="flight-dep-date"'), 'Form contains #flight-dep-date input field');
   assert(formHtml.includes('id="return-flight-number"'), 'Return flight section contains #return-flight-number input');
   assert(formHtml.includes('id="return-dep-date"'), 'Return flight section contains #return-dep-date input');

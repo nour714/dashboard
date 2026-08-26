@@ -178,25 +178,14 @@ export const TicketCreatePage = {
                   />
                 </div>
 
-                <div class="form-grid-2">
-                  <div class="form-group">
-                    <label class="form-label" for="flight-seat">Seat</label>
-                    <input
-                      type="text"
-                      id="flight-seat"
-                      class="form-control ltr-field"
-                      placeholder="e.g. 14B"
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label" for="flight-baggage">Baggage Allowance</label>
-                    <select id="flight-baggage" class="form-control">
-                      <option value="2x 23kg Checked">2x 23kg Checked</option>
-                      <option value="1x 23kg Checked">1x 23kg Checked</option>
-                      <option value="2x 32kg Business">2x 32kg Business</option>
-                      <option value="Hand Luggage Only (7kg)">Hand Luggage Only (7kg)</option>
-                    </select>
-                  </div>
+                <div class="form-group">
+                  <label class="form-label" for="flight-baggage">Baggage Allowance</label>
+                  <select id="flight-baggage" class="form-control">
+                    <option value="2x 23kg Checked">2x 23kg Checked</option>
+                    <option value="1x 23kg Checked">1x 23kg Checked</option>
+                    <option value="2x 32kg Business">2x 32kg Business</option>
+                    <option value="Hand Luggage Only (7kg)">Hand Luggage Only (7kg)</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -465,7 +454,6 @@ export const TicketCreatePage = {
           origin: originCode,
           destination: destCode,
           departureDate: container.querySelector('#flight-dep-date').value,
-          seat: container.querySelector('#flight-seat').value.trim() || '12A',
           baggage: container.querySelector('#flight-baggage').value,
           ticketPrice: Number(priceInput.value) || 0,
           costPrice: Number(container.querySelector('#ticket-cost-price')?.value) || 0,
