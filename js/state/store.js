@@ -337,6 +337,15 @@ class Store {
     return res;
   }
 
+  async deleteEmployee(employeeId, confirmEmployeeId) {
+    const res = await apiClient.delete(`/employees/${employeeId}`, { body: { confirmEmployeeId } });
+    if (res.success) {
+      this.state.employees = this.state.employees.filter(e => e.id !== employeeId);
+      this.notify();
+    }
+    return res;
+  }
+
   // --- Activity Log (optimistic local append; backend is authoritative) ---
   pushActivityLog(logData) {
     const newLog = {

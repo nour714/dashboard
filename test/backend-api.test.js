@@ -316,6 +316,15 @@ async function runApiTests() {
     assert(agentPatchEmployeeRes.statusCode === 403, 'AGENT calling PATCH /api/employees/:id receives 403 Forbidden');
     assert(agentPatchEmployeeRes.json?.error?.code === 'FORBIDDEN', 'Employee update rejection returns FORBIDDEN error code');
 
+    const agentDeleteEmployeeRes = await makeRequest(server, {
+      method: 'DELETE',
+      path: '/api/employees/EMP-102',
+      headers: { 'Authorization': `Bearer ${agentToken}` },
+      body: { confirmEmployeeId: 'EMP-102' }
+    });
+    assert(agentDeleteEmployeeRes.statusCode === 403, 'AGENT calling DELETE /api/employees/:id receives 403 Forbidden');
+    assert(agentDeleteEmployeeRes.json?.error?.code === 'FORBIDDEN', 'Employee delete rejection returns FORBIDDEN error code');
+
     // 8. Airline Cost Price & Net Profit Validation & RBAC
     console.log('\n--- 8. Airline Cost Price & Net Profit RBAC Enforcement ---');
     const adminToken = AuthService.generateAccessToken({ id: 'EMP-ADMIN-1', name: 'Admin Master', email: 'admin@africatravel.com', role: 'ADMIN', title: 'System Administrator' });

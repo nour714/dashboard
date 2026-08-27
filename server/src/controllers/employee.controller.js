@@ -51,5 +51,14 @@ export const EmployeeController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  async deleteEmployee(req, res, next) {
+    try {
+      const result = await EmployeeService.deleteEmployee(req.params.id, req.user, req.body?.confirmEmployeeId);
+      return res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
   }
 };

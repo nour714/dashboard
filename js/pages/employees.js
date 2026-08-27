@@ -55,6 +55,89 @@ function showEmployeeCreatedConfirmation(email, password) {
   });
 }
 
+function openDeleteEmployeeModal(employee, container) {
+  openModal({
+    title: `${escapeHtml(t('employees.deleteTitle'))} — ${escapeHtml(employee.name)}`,
+    subtitle: `${escapeHtml(employee.email)} (${escapeHtml(employee.role)})`,
+    contentHtml: `
+      <div class="d-flex flex-column gap-md">
+        <div class="p-md rounded-md" style="background-color: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-md);">
+          <div class="font-semibold text-danger mb-xs" style="font-size: 14px;">
+            ⚠️ ${escapeHtml(t('employees.deleteWarning'))}
+          </div>
+          <p class="text-xs text-muted" style="margin: 0; line-height: 1.5;">
+            ${escapeHtml(t('employees.deleteExplanation'))}
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">${escapeHtml(t('employees.deleteTypeEmail'))} (${escapeHtml(employee.email)})</label>
+          <input type="text" id="delete-employee-confirm-input" class="form-control ltr-field" autocomplete="off" placeholder="${escapeHtml(employee.email)}" />
+        </div>
+
+        <div id="delete-employee-error-box" class="p-sm text-sm text-danger" style="display: none; background-color: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md); border: 1px solid rgba(239, 68, 68, 0.3);"></div>
+      </div>
+    `,
+    footerHtml: `
+      <button type="button" class="btn btn-secondary" id="modal-cancel-delete-employee">${escapeHtml(t('common.cancel'))}</button>
+      <button type="button" class="btn btn-danger" id="modal-confirm-delete-employee" disabled>${escapeHtml(t('common.delete'))}</button>
+    `,
+    onOpen: (modalEl) => {
+      const cancelBtn = modalEl.querySelector('#modal-cancel-delete-employee');
+      const confirmBtn = modalEl.querySelector('#modal-confirm-delete-employee');
+      const confirmInput = modalEl.querySelector('#delete-employee-confirm-input');
+      const errorBox = modalEl.querySelector('#delete-employee-error-box');
+
+      if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+      if (confirmInput && confirmBtn) {
+        confirmInput.addEventListener('input', () => {
+          confirmBtn.disabled = confirmInput.value.trim().toLowerCase() !== employee.email.toLowerCase();
+        });
+      }
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+          confirmBtn.disabled = true;
+          if (errorBox) {
+            errorBox.style.display = 'none';
+            errorBox.textContent = '';
+          }
+
+          const result = await store.deleteEmployee(employee.id, employee.id);
+
+          if (!result.success) {
+            const rule = result.error?.details?.rule || result.error?.rule || result.error?.code || '';
+            let msg;
+            if (rule === 'CANNOT_DELETE_SELF') {
+              msg = t('employees.cannotDeleteSelf');
+            } else if (rule === 'CANNOT_DELETE_LAST_ADMIN') {
+              msg = t('employees.cannotDeleteLastAdmin');
+            } else {
+              msg = result.error?.message || t('employees.deleteFailed');
+            }
+
+            if (errorBox) {
+              errorBox.textContent = msg;
+              errorBox.style.display = 'block';
+            }
+            showToast(msg, 'error');
+            confirmBtn.disabled = false;
+            return;
+          }
+
+          closeModal();
+          showToast(t('employees.deleteSuccess'), 'success');
+
+          // Re-render the employees table
+          container.innerHTML = EmployeesPage.render();
+          EmployeesPage.afterRender(container);
+        });
+      }
+    }
+  });
+}
+
 export const EmployeesPage = {
   render() {
     const currentUser = AuthService.getCurrentUser();
@@ -89,7 +172,9 @@ export const EmployeesPage = {
       `
     });
 
-    const rowsHtml = filtered.map(e => `
+    const rowsHtml = filtered.map(e => {
+      const isSelf = e.id === currentUser?.id;
+      return `
       <tr>
         <td>
           <div class="d-flex items-center gap-sm">
@@ -110,8 +195,16 @@ export const EmployeesPage = {
         <td class="tabular-nums font-semibold text-success">${formatCurrency(e.collected, 'EGP')}</td>
         <td class="tabular-nums text-muted">${formatCurrency(e.refunds, 'EGP')}</td>
         <td>${renderStatusBadge(e.status)}</td>
+        <td>
+          ${isSelf ? '' : `
+            <button type="button" class="btn btn-danger btn-sm btn-delete-employee" data-employee-id="${escapeHtml(e.id)}" title="${escapeHtml(t('common.delete'))}">
+              ${icons.trash('w-4 h-4')}
+            </button>
+          `}
+        </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
     return `
       ${headerHtml}
@@ -136,10 +229,11 @@ export const EmployeesPage = {
                 <th>${escapeHtml(t('dashboard.kpi.totalCollected'))}</th>
                 <th>${escapeHtml(t('reports.kpi.refundsTotal'))}</th>
                 <th>${escapeHtml(t('employees.table.status'))}</th>
+                <th>${escapeHtml(t('employees.table.actions'))}</th>
               </tr>
             </thead>
             <tbody>
-              ${rowsHtml || `<tr><td colspan="7" class="text-center text-muted p-lg">${escapeHtml(t('common.noData'))}</td></tr>`}
+              ${rowsHtml || `<tr><td colspan="8" class="text-center text-muted p-lg">${escapeHtml(t('common.noData'))}</td></tr>`}
             </tbody>
           </table>
         </div>
@@ -231,6 +325,18 @@ export const EmployeesPage = {
             closeModal();
             showEmployeeCreatedConfirmation(email, password);
           });
+        }
+      });
+    });
+
+    // Bind delete buttons
+    const { employees } = store.getState();
+    container.querySelectorAll('.btn-delete-employee').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const employeeId = btn.dataset.employeeId;
+        const employee = employees.find(e => e.id === employeeId);
+        if (employee) {
+          openDeleteEmployeeModal(employee, container);
         }
       });
     });

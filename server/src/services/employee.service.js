@@ -250,5 +250,93 @@ export const EmployeeService = {
     }
 
     return this.getEmployeeById(employeeId);
+  },
+
+  /**
+   * Permanently deletes an employee account (ADMIN only)
+   * Historical records survive via ON DELETE SET NULL on FK columns;
+   * human-readable snapshot fields (createdBy, addedBy, processedBy) are retained.
+   * Refresh tokens are cascade-deleted, immediately revoking all sessions.
+   *
+   * @param {string} employeeId
+   * @param {object} currentUser - the admin performing the deletion
+   * @param {string} confirmEmployeeId - typed confirmation of employee ID
+   */
+  async deleteEmployee(employeeId, currentUser = {}, confirmEmployeeId) {
+    const prisma = getPrismaClient();
+
+    const existing = await prisma.user.findUnique({ where: { id: employeeId } });
+    if (!existing) {
+      throw new NotFoundError('Employee', employeeId);
+    }
+
+    // Safety Guard: Prevent administrator from deleting their own account
+    if (currentUser.id === employeeId) {
+      throw new BusinessRuleError(
+        'Administrators cannot delete their own account. Ask another administrator to do it.',
+        'CANNOT_DELETE_SELF'
+      );
+    }
+
+    // Safety Guard: Prevent deleting the last remaining active Administrator
+    if (existing.role === 'ADMIN') {
+      const activeAdminCount = await prisma.user.count({
+        where: { role: 'ADMIN', status: 'ACTIVE' }
+      });
+      if (activeAdminCount <= 1) {
+        throw new BusinessRuleError(
+          'Cannot delete the last remaining active Administrator.',
+          'CANNOT_DELETE_LAST_ADMIN'
+        );
+      }
+    }
+
+    // Confirmation check — must match exact employee ID
+    if (!confirmEmployeeId || confirmEmployeeId.trim() !== existing.id) {
+      throw new ValidationError(
+        `Confirmation failed: confirmEmployeeId must match the exact employee ID '${existing.id}'.`,
+        'confirmEmployeeId',
+        { expected: existing.id, received: confirmEmployeeId }
+      );
+    }
+
+    const executeDeletion = async (tx) => {
+      // Write audit log BEFORE deleting the employee
+      if (tx.auditLog && typeof tx.auditLog.create === 'function') {
+        try {
+          await tx.auditLog.create({
+            data: {
+              id: `ACT-${crypto.randomUUID()}`,
+              user: currentUser.name || 'Admin',
+              userId: currentUser.id || null,
+              action: 'DELETE_EMPLOYEE',
+              description: `Admin ${currentUser.name || 'Admin'} permanently deleted employee account ${existing.name} (${existing.email}, Role: ${existing.role}).`,
+              metadata: {
+                adminId: currentUser.id,
+                targetId: existing.id,
+                targetType: 'EMPLOYEE',
+                employeeName: existing.name,
+                employeeEmail: existing.email,
+                deletedRole: existing.role
+              }
+            }
+          });
+        } catch (_) {}
+      }
+
+      // Hard delete — FKs are ON DELETE SET NULL / CASCADE
+      await tx.user.delete({ where: { id: employeeId } });
+
+      return { deleted: true, id: employeeId };
+    };
+
+    let result;
+    if (typeof prisma.$transaction === 'function') {
+      result = await prisma.$transaction(executeDeletion);
+    } else {
+      result = await executeDeletion(prisma);
+    }
+
+    return result;
   }
 };

@@ -26,7 +26,8 @@
     "test:security": "node test/security-fixes.test.js",
     "test:audit": "node test/audit-fixes.test.js",
     "test:purge": "node test/purge-actions.test.js",
-    "test": "node test/i18n-bilingual.test.js && node test/backend-domain.test.js && node test/backend-auth.test.js && node test/ticket-customer-link.test.js && node test/passport-document.test.js && node test/round-trip-flight.test.js && node test/customer-payments-report.test.js && node test/rbac-ui.test.js && node test/security-fixes.test.js && node test/backend-api.test.js && node test/audit-fixes.test.js && node test/purge-actions.test.js"
+    "test:employee-delete": "node test/employee-delete.test.js",
+    "test": "node test/i18n-bilingual.test.js && node test/backend-domain.test.js && node test/backend-auth.test.js && node test/ticket-customer-link.test.js && node test/passport-document.test.js && node test/round-trip-flight.test.js && node test/customer-payments-report.test.js && node test/rbac-ui.test.js && node test/security-fixes.test.js && node test/backend-api.test.js && node test/audit-fixes.test.js && node test/purge-actions.test.js && node test/employee-delete.test.js"
   },
   "keywords": [
     "travel",

@@ -20,3 +20,7 @@ export const updateEmployeeSchema = z.object({
   title: z.string().trim().optional(),
   status: z.enum(['ACTIVE', 'INACTIVE']).optional()
 });
+
+export const deleteEmployeeSchema = z.object({
+  confirmEmployeeId: z.string().min(1, 'confirmEmployeeId is required')
+});

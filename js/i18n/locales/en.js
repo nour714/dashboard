@@ -497,7 +497,15 @@ export const en = {
       branch: 'Branch Office',
       status: 'Status',
       actions: 'Actions'
-    }
+    },
+    deleteTitle: 'Delete Employee',
+    deleteWarning: 'Warning: This action is permanent and cannot be undone.',
+    deleteExplanation: 'The employee account will be permanently deleted. All their historical records (tickets, payments, etc.) will be preserved but will no longer be linked to this account.',
+    deleteTypeEmail: 'Type the employee email to confirm',
+    deleteSuccess: 'Employee account permanently deleted.',
+    deleteFailed: 'Failed to delete employee',
+    cannotDeleteSelf: 'You cannot delete your own account. Ask another administrator.',
+    cannotDeleteLastAdmin: 'Cannot delete the last remaining active administrator.'
   },
 
   // Activity Page
