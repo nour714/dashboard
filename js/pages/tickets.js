@@ -180,7 +180,7 @@ export const TicketsPage = {
             <option value="All Statuses" ${currentFilters.status === 'All Statuses' ? 'selected' : ''}>${escapeHtml(t('common.all'))}</option>
             <option value="CONFIRMED" ${currentFilters.status === 'CONFIRMED' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('CONFIRMED'))}</option>
             <option value="PARTIALLY PAID" ${currentFilters.status === 'PARTIALLY PAID' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('PARTIALLY PAID'))}</option>
-            <option value="PAID" ${currentFilters.status === 'PAID' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('PAID'))}</option>
+            <option value="UNPAID" ${currentFilters.status === 'UNPAID' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('UNPAID'))}</option>
             <option value="CANCELLED" ${currentFilters.status === 'CANCELLED' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('CANCELLED'))}</option>
             <option value="REFUNDED" ${currentFilters.status === 'REFUNDED' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('REFUNDED'))}</option>
           </select>

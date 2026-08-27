@@ -512,7 +512,7 @@ export const INITIAL_SETTINGS = {
   },
   currencies: ['EGP', 'USD', 'EUR', 'SAR', 'AED'],
   paymentMethods: ['Cash', 'Credit Card', 'Bank Transfer', 'Vodafone Cash', 'InstaPay', 'Corporate Account'],
-  ticketStatuses: ['CONFIRMED', 'PENDING PAY', 'PARTIALLY PAID', 'PAID', 'MODIFIED', 'REFUNDED', 'CANCELLED'],
+  ticketStatuses: ['CONFIRMED', 'PARTIALLY PAID', 'UNPAID', 'PENDING PAY', 'PAID', 'MODIFIED', 'REFUNDED', 'CANCELLED'],
   notifications: {
     emailOnNewTicket: true,
     emailOnRefundRequest: true,

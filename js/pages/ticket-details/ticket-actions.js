@@ -323,10 +323,11 @@ export function openEditTicketModal(ticket, onSuccess) {
           <div class="form-group">
             <label class="form-label" for="edit-status">${escapeHtml(t('common.status'))}</label>
             <select id="edit-status" class="form-control">
-              <option value="CONFIRMED" ${ticket.status === 'CONFIRMED' ? 'selected' : ''}>CONFIRMED</option>
-              <option value="PARTIALLY PAID" ${ticket.status === 'PARTIALLY PAID' ? 'selected' : ''}>PARTIALLY PAID</option>
-              <option value="PAID" ${ticket.status === 'PAID' ? 'selected' : ''}>PAID</option>
-              <option value="CANCELLED" ${ticket.status === 'CANCELLED' ? 'selected' : ''}>CANCELLED</option>
+              <option value="CONFIRMED" ${ticket.status === 'CONFIRMED' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('CONFIRMED'))}</option>
+              <option value="PARTIALLY PAID" ${ticket.status === 'PARTIALLY PAID' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('PARTIALLY PAID'))}</option>
+              <option value="UNPAID" ${ticket.status === 'UNPAID' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('UNPAID'))}</option>
+              <option value="CANCELLED" ${ticket.status === 'CANCELLED' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('CANCELLED'))}</option>
+              <option value="REFUNDED" ${ticket.status === 'REFUNDED' ? 'selected' : ''}>${escapeHtml(i18n.translateStatus('REFUNDED'))}</option>
             </select>
           </div>
         </div>

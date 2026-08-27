@@ -239,7 +239,9 @@ class App {
             leftCol.appendChild(nameEl);
             leftCol.appendChild(metaEl);
 
-            const badgeClass = tData.status === 'CONFIRMED' || tData.status === 'PAID' ? 'badge-confirmed' : 'badge-partially-paid';
+            const badgeClass = tData.status === 'CONFIRMED' || tData.status === 'PAID'
+              ? 'badge-confirmed'
+              : (tData.status === 'PARTIALLY PAID' ? 'badge-partially-paid' : 'badge-neutral');
             const badgeEl = createElement('span', { className: `badge ${badgeClass}` }, i18n.translateStatus(tData.status));
 
             item.appendChild(leftCol);

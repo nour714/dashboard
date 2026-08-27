@@ -521,6 +521,7 @@ textarea.form-control {
   color: #0369a1;
 }
 
+.badge-unpaid,
 .badge-refunded,
 .badge-flown,
 .badge-neutral {

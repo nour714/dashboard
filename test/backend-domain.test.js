@@ -98,12 +98,13 @@ assert(calculateNetProfit(0, 0) === 0, 'calculateNetProfit(0, 0) returns 0');
 
 // 2. Status Derivation
 console.log('\n--- 2. Payment Status Transitions ---');
-assert(derivePaymentStatus(18500, 0, 'CONFIRMED') === 'CONFIRMED', 'Status is CONFIRMED with 0 payments');
-assert(derivePaymentStatus(18500, 10000, 'CONFIRMED') === 'PARTIALLY PAID', 'Status is PARTIALLY PAID with partial payment');
-assert(derivePaymentStatus(18500, 18500, 'CONFIRMED') === 'PAID', 'Status is PAID when full price reached');
-assert(derivePaymentStatus(18500, 20000, 'CONFIRMED') === 'PAID', 'Status is PAID when overpaid');
+assert(derivePaymentStatus(18500, 0, 'UNPAID') === 'UNPAID', 'Status is UNPAID with 0 payments');
+assert(derivePaymentStatus(18500, 10000, 'UNPAID') === 'PARTIALLY PAID', 'Status is PARTIALLY PAID with partial payment');
+assert(derivePaymentStatus(18500, 18500, 'UNPAID') === 'CONFIRMED', 'Status is CONFIRMED when full price reached');
+assert(derivePaymentStatus(18500, 20000, 'UNPAID') === 'CONFIRMED', 'Status is CONFIRMED when overpaid');
 assert(derivePaymentStatus(18500, 18500, 'CANCELLED') === 'CANCELLED', 'Status retains CANCELLED');
 assert(derivePaymentStatus(18500, 18500, 'REFUNDED') === 'REFUNDED', 'Status retains REFUNDED');
+assert(derivePaymentStatus(18500, 18500, 'PARTIALLY_REFUNDED') === 'PARTIALLY_REFUNDED', 'Status retains PARTIALLY_REFUNDED');
 
 // 3. Ticket Creation Validation
 console.log('\n--- 3. Ticket Creation Domain Validation ---');

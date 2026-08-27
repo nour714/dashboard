@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel - Reusable Status Badge Component
  */
 
@@ -13,24 +13,26 @@ export function renderStatusBadge(status) {
   let labelKey = s;
 
   switch (s) {
+    case 'CONFIRMED':
     case 'PAID':
     case 'PAID IN FULL':
-      badgeClass = 'badge-paid';
-      labelKey = 'PAID';
+    case 'ISSUED':
+      badgeClass = 'badge-confirmed';
+      labelKey = 'CONFIRMED';
       break;
     case 'PARTIALLY PAID':
       badgeClass = 'badge-partially-paid';
       labelKey = 'PARTIALLY PAID';
       break;
+    case 'UNPAID':
+      badgeClass = 'badge-unpaid';
+      labelKey = 'UNPAID';
+      break;
     case 'PENDING':
     case 'PENDING PAY':
+    case 'PENDING PAYMENT':
       badgeClass = 'badge-pending-pay';
       labelKey = 'PENDING';
-      break;
-    case 'CONFIRMED':
-    case 'ISSUED':
-      badgeClass = 'badge-confirmed';
-      labelKey = 'CONFIRMED';
       break;
     case 'MODIFIED':
       badgeClass = 'badge-modified';
@@ -39,6 +41,11 @@ export function renderStatusBadge(status) {
     case 'REFUND REQUESTED':
       badgeClass = 'badge-refund-requested';
       labelKey = 'REFUND REQUESTED';
+      break;
+    case 'PARTIALLY_REFUNDED':
+    case 'PARTIALLY REFUNDED':
+      badgeClass = 'badge-refund-requested';
+      labelKey = 'PARTIALLY_REFUNDED';
       break;
     case 'REFUNDED':
       badgeClass = 'badge-refunded';

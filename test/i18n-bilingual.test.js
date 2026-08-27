@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel — Bilingual LTR & RTL Unit Test Suite
  */
 
@@ -91,9 +91,10 @@ console.log('\n═══ 3. Status Translation Tests ═══');
 
 test('All core statuses translated in English', () => {
   i18n.setLanguage('en');
+  assert.strictEqual(i18n.translateStatus('CONFIRMED'), 'CONFIRMED');
   assert.strictEqual(i18n.translateStatus('PAID'), 'PAID');
   assert.strictEqual(i18n.translateStatus('PARTIALLY PAID'), 'PARTIALLY PAID');
-  assert.strictEqual(i18n.translateStatus('CONFIRMED'), 'CONFIRMED');
+  assert.strictEqual(i18n.translateStatus('UNPAID'), 'UNPAID');
   assert.strictEqual(i18n.translateStatus('MODIFIED'), 'MODIFIED');
   assert.strictEqual(i18n.translateStatus('REFUND REQUESTED'), 'REFUND REQUESTED');
   assert.strictEqual(i18n.translateStatus('REFUNDED'), 'REFUNDED');
@@ -104,9 +105,10 @@ test('All core statuses translated in English', () => {
 
 test('All core statuses translated accurately in Arabic', () => {
   i18n.setLanguage('ar');
+  assert.strictEqual(i18n.translateStatus('CONFIRMED'), 'مؤكدة');
   assert.strictEqual(i18n.translateStatus('PAID'), 'مدفوعة');
   assert.strictEqual(i18n.translateStatus('PARTIALLY PAID'), 'مدفوعة جزئيًا');
-  assert.strictEqual(i18n.translateStatus('CONFIRMED'), 'مؤكدة');
+  assert.strictEqual(i18n.translateStatus('UNPAID'), 'غير مدفوعة');
   assert.strictEqual(i18n.translateStatus('MODIFIED'), 'معدلة');
   assert.strictEqual(i18n.translateStatus('REFUND REQUESTED'), 'طلب استرداد');
   assert.strictEqual(i18n.translateStatus('REFUNDED'), 'مستردة');

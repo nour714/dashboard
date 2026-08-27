@@ -246,7 +246,7 @@ export const TicketService = {
 
     const price = Number(data.ticketPrice);
     const initialPaymentAmount = Number(data.initialPayment) || 0;
-    const paymentStatus = derivePaymentStatus(price, initialPaymentAmount, 'CONFIRMED');
+    const paymentStatus = derivePaymentStatus(price, initialPaymentAmount, 'UNPAID');
 
     // Create ticket in database
     const newTicket = await prisma.ticket.create({

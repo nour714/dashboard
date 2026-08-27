@@ -98,16 +98,17 @@ export function calculateNetProfit(ticketPrice = 0, costPrice = null) {
  * @param {number|string} ticketPrice
  * @param {number|string} totalPaid
  * @param {string} currentStatus
- * @returns {string} 'PAID' | 'PARTIALLY PAID' | 'CONFIRMED' | 'CANCELLED' | 'REFUNDED'
+ * @returns {string} 'CONFIRMED' | 'PARTIALLY PAID' | 'UNPAID' | 'CANCELLED' | 'REFUNDED' | 'PARTIALLY_REFUNDED'
  */
-export function derivePaymentStatus(ticketPrice = 0, totalPaid = 0, currentStatus = 'CONFIRMED') {
+export function derivePaymentStatus(ticketPrice = 0, totalPaid = 0, currentStatus = 'UNPAID') {
   if (currentStatus === 'CANCELLED') return 'CANCELLED';
   if (currentStatus === 'REFUNDED') return 'REFUNDED';
+  if (currentStatus === 'PARTIALLY_REFUNDED') return 'PARTIALLY_REFUNDED';
   const price = Number(ticketPrice) || 0;
   const paid = Number(totalPaid) || 0;
-  if (paid >= price && price > 0) return 'PAID';
+  if (paid >= price && price > 0) return 'CONFIRMED';
   if (paid > 0 && paid < price) return 'PARTIALLY PAID';
-  return 'CONFIRMED';
+  return 'UNPAID';
 }
 
 /**

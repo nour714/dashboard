@@ -94,9 +94,9 @@ assert(calculateAvailableRefund(5000, 10000) === 0, 'calculateAvailableRefund: n
 
 assert(calculateNetValue(18500, 1200, 7000) === 12700, 'calculateNetValue(18500, 1200, 7000) = 12700');
 
-assert(derivePaymentStatus(18500, 18500) === 'PAID', 'derivePaymentStatus: fully paid');
+assert(derivePaymentStatus(18500, 18500) === 'CONFIRMED', 'derivePaymentStatus: fully paid');
 assert(derivePaymentStatus(18500, 10000) === 'PARTIALLY PAID', 'derivePaymentStatus: partial');
-assert(derivePaymentStatus(18500, 0) === 'CONFIRMED', 'derivePaymentStatus: no payments');
+assert(derivePaymentStatus(18500, 0) === 'UNPAID', 'derivePaymentStatus: no payments');
 assert(derivePaymentStatus(18500, 0, 'CANCELLED') === 'CANCELLED', 'derivePaymentStatus: cancelled');
 
 // ============================================================
