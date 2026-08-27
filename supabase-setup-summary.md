@@ -14,6 +14,8 @@
 
 ✅ **Row Level Security (RLS) اتفعّلت وقفلت بالكامل** على كل الجداول (بناءً على طلبك) — دي طبقة حماية إضافية تمنع أي وصول عن طريق `anon key`/`supabase-js` حتى لو حصل استخدام خطأ ليهم بالغلط في المستقبل. الباك اند مش متأثر لأنه بيتصل بقاعدة البيانات مباشرة (direct Postgres connection عن طريق `DATABASE_URL`)، مش عن طريق REST API بتاع Supabase.
 
+✅ اتعمل **الـ Private Storage Bucket** باسم **`customer-documents`** لتخزين جوازات السفر والمستندات بحد أقصى 5MB وأنواع الملفات المسموحة (`image/jpeg`, `image/png`, `application/pdf`).
+
 ✅ اتزرعوا **الـ 4 موظفين** (Users) بتوع المشروع من `mock-data.js` مشفرين بـ bcrypt (cost factor = 12):
 
 | Email | Role |
@@ -70,3 +72,14 @@ npm start
 ## ملحوظة
 
 لو قررت في أي وقت إنك تستخدم `supabase-js` من الفرونت اند مباشرة (بدل ما يعدي كل حاجة عن طريق الباك اند بتاعك)، هتحتاج ترجع تكتب RLS policies فعلية (مش تسيبها فاضية) — النهارده هي مقفولة تمامًا لأن مفيش حد بيوصلها غير الباك اند.
+
+---
+
+## 🗄️ إعداد التخزين السحابي (Supabase Storage Bucket)
+
+تم تضمين إنشاء الـ Bucket المخصص لمستندات وجوازات السفر (`customer-documents`) داخل سكريبت `prisma/supabase_setup.sql`:
+
+- **اسم الـ Bucket:** `customer-documents` (خاص `public: false`).
+- **تطابق المتغيرات:** يجب أن يتطابق اسم الـ Bucket تماماً مع المتغير `SUPABASE_STORAGE_BUCKET` في ملف `.env` (القيمة الافتراضية: `customer-documents` كما هو موضح في `.env.example`). إذا اختلف الاسم أو لم يتم إنشاء الـ Bucket، ستفشل عمليات رفع المستندات بخطأ `Storage upload failed: Bucket not found`.
+- **الصلاحيات والأمان:** الباك إند هو الجهة الوحيدة التي تتعامل مع الـ Bucket عبر مفتاح `SUPABASE_SERVICE_ROLE_KEY` (`server/src/config/storage.js`) وتوليد الروابط الموقعة المؤقتة (Signed URLs)، وبالتالي يتجاوز الـ RLS تلقائياً ولا يلزم إضافة أي سياسات RLS على جدول `storage.objects`، مما يضمن بقاء الـ Bucket خاصاً بالكامل.
+- **حدود الملفات:** الحد الأقصى لحجم الملف هو 5MB (`5242880` بايت) والأنواع المسموحة هي (`image/jpeg`, `image/png`, `application/pdf`) متوافقة تماماً مع ثوابت `server/src/middleware/upload.js`.

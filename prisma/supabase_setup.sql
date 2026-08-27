@@ -243,6 +243,29 @@ EXCEPTION WHEN duplicate_object THEN null; END $$;
 ALTER TABLE "tickets" ALTER COLUMN "arrivalDate" DROP NOT NULL;
 
 -- ========================================================
+-- Storage Buckets Configuration
+-- ========================================================
+-- Provisions the private storage bucket backing passport-document uploads
+-- (server/src/config/storage.js).
+--
+-- NOTE: file_size_limit (5242880 bytes = 5MB) and allowed_mime_types
+-- MUST be kept in sync with MAX_FILE_SIZE and ALLOWED_MIME_TYPES constants
+-- in server/src/middleware/upload.js.
+--
+-- Access is strictly private (public = false) and authenticated server-side
+-- via the Supabase service-role key, which bypasses RLS by default.
+-- No storage.objects RLS policies are needed.
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'customer-documents',
+  'customer-documents',
+  false,
+  5242880,
+  ARRAY['image/jpeg', 'image/png', 'application/pdf']
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- ========================================================
 -- Seed Initial Demo Data
 -- ========================================================
 
