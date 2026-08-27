@@ -224,5 +224,10 @@ export const icons = {
     <polyline points="21 16 21 21 16 21"></polyline>
     <line x1="15" y1="15" x2="21" y2="21"></line>
     <line x1="4" y1="4" x2="9" y2="9"></line>
-  `, cls, 18)
+  `, cls, 18),
+
+  eye: (cls = '') => svgWrapper(`
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+    <circle cx="12" cy="12" r="3"></circle>
+  `, cls, 16)
 };

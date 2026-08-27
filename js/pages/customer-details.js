@@ -232,11 +232,11 @@ export const CustomerDetailsPage = {
                   </div>
                   <div class="d-flex gap-sm" style="margin-top: 4px;">
                     <button type="button" class="btn btn-primary btn-sm" id="btn-view-passport-doc" style="flex:1;">
-                      ${icons.eye || ''} View Document
+                      ${icons.eye('w-4 h-4')} View Document
                     </button>
                     ${isAdmin ? `
                       <button type="button" class="btn btn-danger btn-sm" id="btn-delete-passport-doc">
-                        ${icons.trash || ''} Delete
+                        ${icons.trash('w-4 h-4')} Delete
                       </button>
                     ` : ''}
                   </div>
@@ -631,7 +631,7 @@ export const CustomerDetailsPage = {
         const result = await CustomerService.getPassportDocument(customerId);
 
         viewBtn.disabled = false;
-        viewBtn.innerHTML = `${icons.eye || ''} View Document`;
+        viewBtn.innerHTML = `${icons.eye('w-4 h-4')} View Document`;
 
         if (!result.success || !result.data?.url) {
           showToast(result.error?.message || 'Could not load document', 'error');
@@ -654,7 +654,7 @@ export const CustomerDetailsPage = {
 
         if (!result.success) {
           deleteBtn.disabled = false;
-          deleteBtn.innerHTML = `${icons.trash || ''} Delete`;
+          deleteBtn.innerHTML = `${icons.trash('w-4 h-4')} Delete`;
           showToast(result.error?.message || 'Delete failed', 'error');
           return;
         }
