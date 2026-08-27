@@ -43,6 +43,7 @@ async function runRbacUiTests() {
   assert(agentSidebar.includes('href="/tickets"'), 'Sidebar contains /tickets link for AGENT');
   assert(agentSidebar.includes('href="/activity"'), 'Sidebar contains /activity link for AGENT');
   assert(agentSidebar.includes('href="/settings"'), 'Sidebar contains /settings link for AGENT');
+  assert(agentSidebar.includes('id="sidebar-sign-out-btn"'), 'Sidebar contains #sidebar-sign-out-btn for AGENT');
 
   const agentBottomNav = renderBottomNav('/dashboard');
   assert(!agentBottomNav.includes('href="/employees"'), 'Mobile drawer does NOT contain /employees link for AGENT');
@@ -66,6 +67,7 @@ async function runRbacUiTests() {
 
   const adminSidebar = renderSidebar('/dashboard');
   assert(adminSidebar.includes('href="/employees"'), 'Sidebar DOES contain /employees link for ADMIN');
+  assert(adminSidebar.includes('id="sidebar-sign-out-btn"'), 'Sidebar contains #sidebar-sign-out-btn for ADMIN');
 
   const adminBottomNav = renderBottomNav('/dashboard');
   assert(adminBottomNav.includes('href="/employees"'), 'Mobile drawer DOES contain /employees link for ADMIN');
@@ -84,6 +86,7 @@ async function runRbacUiTests() {
   };
   const ticketOnlySidebar = renderSidebar('/tickets/new');
   assert(ticketOnlySidebar.includes('href="/tickets/new"'), 'Sidebar retains Create Ticket link for TICKET_ONLY');
+  assert(ticketOnlySidebar.includes('id="sidebar-sign-out-btn"'), 'Sidebar retains #sidebar-sign-out-btn for TICKET_ONLY');
   assert(!ticketOnlySidebar.includes('href="/dashboard"'), 'Sidebar hides Dashboard for TICKET_ONLY');
   assert(!ticketOnlySidebar.includes('href="/customers"'), 'Sidebar hides Customers for TICKET_ONLY');
   assert(!ticketOnlySidebar.includes('href="/reports"'), 'Sidebar hides Reports for TICKET_ONLY');

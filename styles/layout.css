@@ -260,6 +260,34 @@
   overflow: hidden;
 }
 
+.sidebar-signout-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-lg);
+  background-color: transparent;
+  border: none;
+  color: var(--color-sidebar-text, #94a3b8);
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-label-md, 13px);
+  font-weight: var(--font-weight-medium, 500);
+  cursor: pointer;
+  text-align: start;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.sidebar-signout-btn:hover {
+  background-color: rgba(220, 38, 38, 0.12);
+  color: #f87171;
+}
+
+.sidebar-signout-btn svg {
+  color: currentColor;
+  flex-shrink: 0;
+}
+
 /* Main Workspace */
 .app-main-wrap {
   flex: 1;

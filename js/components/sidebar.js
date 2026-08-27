@@ -14,7 +14,9 @@ export function renderSidebar(activePath = '/dashboard') {
   const rawName = currentUser.name || currentUser.fullName || 'Mohamed Raafat';
   const userName = (rawName === 'Mohamed Raafat' && isAr) ? 'محمد رأفت' : rawName;
   const rawRole = currentUser.title || currentUser.role || 'Senior Operations Director';
-  const userRole = t(`roles.${rawRole}`) || rawRole;
+  const roleKey = `roles.${rawRole}`;
+  const translatedRole = t(roleKey);
+  const userRole = (translatedRole && translatedRole !== roleKey) ? translatedRole : rawRole;
   const initials = isAr ? 'م.ر' : (userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'MR');
 
   const mainNav = [
@@ -84,6 +86,10 @@ export function renderSidebar(activePath = '/dashboard') {
             <span class="sidebar-user-role">${escapeHtml(userRole)}</span>
           </div>
         </a>
+        <button type="button" class="sidebar-signout-btn" id="sidebar-sign-out-btn" title="${escapeHtml(t('common.signOut'))}">
+          ${icons.logOut('w-4 h-4')}
+          <span>${escapeHtml(t('common.signOut'))}</span>
+        </button>
       </div>
     </aside>
   `;

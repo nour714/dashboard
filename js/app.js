@@ -11,6 +11,7 @@ import { renderSidebar } from './components/sidebar.js';
 import { renderTopbar } from './components/topbar.js';
 import { renderBottomNav, bindBottomNavEvents } from './components/bottom-nav.js';
 import { openModal, closeModal } from './components/modal.js';
+import { showToast } from './components/toast.js';
 import { createElement, clearElement, appendChildren } from './utils/dom.js';
 import { escapeHtml } from './utils/security.js';
 import { getUpcomingFlightReminders } from './utils/flight-reminders.js';
@@ -415,6 +416,18 @@ class App {
     if (bottomNavContainer) {
       bindBottomNavEvents(bottomNavContainer);
     }
+
+    // Delegated click listener for sidebar sign out button
+    document.addEventListener('click', async (e) => {
+      const signOutBtn = e.target.closest('#sidebar-sign-out-btn');
+      if (signOutBtn) {
+        e.preventDefault();
+        await AuthService.logout();
+        showToast(t('toasts.signedOut'), 'info');
+        window.history.pushState(null, null, '/login');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }
+    });
   }
 
   updateHeaderProfile() {
