@@ -99,6 +99,8 @@ export const ar = {
     agent: 'وكيل حجز تذاكر',
     ADMIN: 'مسؤول النظام',
     AGENT: 'وكيل حجز تذاكر',
+    TICKET_ONLY: 'إنشاء تذاكر فقط',
+    ticketOnly: 'إنشاء تذاكر فقط',
     operationsDirector: 'مدير أول العمليات',
     'Senior Operations Director': 'مدير أول العمليات'
   },

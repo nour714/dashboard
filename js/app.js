@@ -15,7 +15,7 @@ import { showToast } from './components/toast.js';
 import { createElement, clearElement, appendChildren } from './utils/dom.js';
 import { escapeHtml } from './utils/security.js';
 import { getUpcomingFlightReminders } from './utils/flight-reminders.js';
-import { i18n, t } from './i18n/i18n.js';
+import { i18n, t, getUserRoleLabel } from './i18n/i18n.js';
 
 class App {
   constructor() {
@@ -438,7 +438,7 @@ class App {
     const nameEl = document.querySelector('.topbar-user-name');
     const roleEl = document.querySelector('.topbar-user-role');
     if (nameEl) nameEl.textContent = currentUser.name || currentUser.fullName || 'Mohamed Raafat';
-    if (roleEl) roleEl.textContent = currentUser.title || currentUser.role || 'Senior Operations Director';
+    if (roleEl) roleEl.textContent = getUserRoleLabel(currentUser);
   }
 
   updateTopbarBadges() {

@@ -99,6 +99,8 @@ export const en = {
     agent: 'Ticketing Agent',
     ADMIN: 'Administrator',
     AGENT: 'Ticketing Agent',
+    TICKET_ONLY: 'Ticket Creation Only',
+    ticketOnly: 'Ticket Creation Only',
     operationsDirector: 'Senior Operations Director',
     'Senior Operations Director': 'Senior Operations Director'
   },

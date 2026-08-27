@@ -8,7 +8,7 @@ import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { showToast } from '../components/toast.js';
 import { escapeHtml } from '../utils/security.js';
-import { i18n, t } from '../i18n/i18n.js';
+import { i18n, t, getUserRoleLabel } from '../i18n/i18n.js';
 
 let activeSection = 'profile';
 
@@ -50,8 +50,7 @@ export const SettingsPage = {
       const isAr = i18n.getLanguage() === 'ar';
       const rawName = currentUser.name || currentUser.fullName || 'Mohamed Raafat';
       const userName = (rawName === 'Mohamed Raafat' && isAr) ? 'محمد رأفت' : rawName;
-      const rawRole = currentUser.title || currentUser.role || 'Senior Operations Director';
-      const userRole = t(`roles.${rawRole}`) || rawRole;
+      const userRole = getUserRoleLabel(currentUser);
       const userInitials = isAr ? 'م.ر' : (userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'MR');
 
       contentHtml = `

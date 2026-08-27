@@ -3,7 +3,7 @@
  */
 
 import assert from 'node:assert';
-import { i18n, t } from '../js/i18n/i18n.js';
+import { i18n, t, has, getUserRoleLabel } from '../js/i18n/i18n.js';
 import { en } from '../js/i18n/locales/en.js';
 import { ar } from '../js/i18n/locales/ar.js';
 import {
@@ -218,8 +218,81 @@ test('Interpolation replaces placeholder tokens', () => {
   assert.strictEqual(t('time.minsAgo', { n: 10 }), 'منذ 10 دقيقة');
 });
 
-test('Fallback returns key if key is missing entirely', () => {
+test('Fallback returns key if key is missing entirely and no fallback provided', () => {
   assert.strictEqual(t('nonexistent.nested.key'), 'nonexistent.nested.key');
+});
+
+test('has() correctly identifies present and missing keys', () => {
+  i18n.setLanguage('en');
+  assert.strictEqual(has('nav.dashboard'), true);
+  assert.strictEqual(has('roles.ADMIN'), true);
+  assert.strictEqual(has('roles.Ticketing Officer'), false);
+  assert.strictEqual(has('nonexistent.key'), false);
+
+  i18n.setLanguage('ar');
+  assert.strictEqual(has('nav.dashboard'), true);
+  assert.strictEqual(has('roles.ADMIN'), true);
+  assert.strictEqual(has('roles.Ticketing Officer'), false);
+  assert.strictEqual(has('nonexistent.key'), false);
+});
+
+test('t() returns explicit fallback when key is missing', () => {
+  i18n.setLanguage('en');
+  assert.strictEqual(t('roles.Ticketing Officer', 'Ticketing Officer'), 'Ticketing Officer');
+  assert.strictEqual(t('roles.Ticketing Officer', {}, 'Fallback Title'), 'Fallback Title');
+  assert.strictEqual(t('nav.dashboard', 'Fallback'), 'Dashboard');
+
+  i18n.setLanguage('ar');
+  assert.strictEqual(t('roles.Ticketing Officer', 'Ticketing Officer'), 'Ticketing Officer');
+  assert.strictEqual(t('nav.dashboard', 'Fallback'), 'لوحة التحكم');
+});
+
+console.log('\n═══ 8. User Role & Custom Title Label Tests ═══');
+
+test('getUserRoleLabel handles enum roles in English and Arabic', () => {
+  i18n.setLanguage('en');
+  assert.strictEqual(getUserRoleLabel({ role: 'ADMIN' }), 'Administrator');
+  assert.strictEqual(getUserRoleLabel({ role: 'AGENT' }), 'Ticketing Agent');
+  assert.strictEqual(getUserRoleLabel({ role: 'TICKET_ONLY' }), 'Ticket Creation Only');
+
+  i18n.setLanguage('ar');
+  assert.strictEqual(getUserRoleLabel({ role: 'ADMIN' }), 'مسؤول النظام');
+  assert.strictEqual(getUserRoleLabel({ role: 'AGENT' }), 'وكيل حجز تذاكر');
+  assert.strictEqual(getUserRoleLabel({ role: 'TICKET_ONLY' }), 'إنشاء تذاكر فقط');
+});
+
+test('getUserRoleLabel translates known title (Senior Operations Director)', () => {
+  i18n.setLanguage('en');
+  assert.strictEqual(getUserRoleLabel({ title: 'Senior Operations Director' }), 'Senior Operations Director');
+
+  i18n.setLanguage('ar');
+  assert.strictEqual(getUserRoleLabel({ title: 'Senior Operations Director' }), 'مدير أول العمليات');
+});
+
+test('getUserRoleLabel handles free-text custom titles without leaking raw i18n keys', () => {
+  const customEmployee = {
+    name: 'Sarah Connor',
+    role: 'AGENT',
+    title: 'Ticketing Officer'
+  };
+
+  i18n.setLanguage('en');
+  const enRole = getUserRoleLabel(customEmployee);
+  assert.strictEqual(enRole, 'Ticketing Officer');
+  assert(!enRole.startsWith('roles.'), 'Should never return raw roles. prefix');
+
+  i18n.setLanguage('ar');
+  const arRole = getUserRoleLabel(customEmployee);
+  assert.strictEqual(arRole, 'Ticketing Officer');
+  assert(!arRole.startsWith('roles.'), 'Should never return raw roles. prefix in Arabic');
+
+  // Test another custom title
+  const refundsSpecialist = {
+    name: 'Ahmed Ali',
+    role: 'AGENT',
+    title: 'Refunds Specialist'
+  };
+  assert.strictEqual(getUserRoleLabel(refundsSpecialist), 'Refunds Specialist');
 });
 
 console.log('\n══════════════════════════════════════');

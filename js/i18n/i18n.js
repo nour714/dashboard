@@ -79,11 +79,42 @@ class I18nManager {
   }
 
   /**
-   * Translate a nested key path with optional replacement parameters
-   * e.g. t('nav.dashboard') or t('time.minsAgo', { n: 5 })
+   * Check if a translation key exists in current language or fallback (en) dictionary
+   * @param {string} key
+   * @returns {boolean}
    */
-  t(key, params = {}) {
-    if (!key || typeof key !== 'string') return '';
+  has(key) {
+    if (!key || typeof key !== 'string') return false;
+    const keys = key.split('.');
+    const currentVal = this.lookup(dictionaries[this.currentLanguage], keys);
+    if (currentVal !== undefined) return true;
+    if (this.currentLanguage !== 'en') {
+      return this.lookup(dictionaries.en, keys) !== undefined;
+    }
+    return false;
+  }
+
+  /**
+   * Translate a nested key path with optional replacement parameters and fallback
+   * e.g. t('nav.dashboard') or t('time.minsAgo', { n: 5 }) or t('roles.custom', 'Custom Role')
+   * @param {string} key
+   * @param {Object|string} params - Parameters object or fallback string
+   * @param {string} [fallback] - Explicit fallback if key is missing
+   */
+  t(key, params = {}, fallback = undefined) {
+    let actualParams = params;
+    let actualFallback = fallback;
+
+    if (typeof params === 'string') {
+      actualFallback = params;
+      actualParams = {};
+    } else if (!actualParams || typeof actualParams !== 'object') {
+      actualParams = {};
+    }
+
+    if (!key || typeof key !== 'string') {
+      return actualFallback !== undefined ? actualFallback : '';
+    }
 
     const keys = key.split('.');
     let value = this.lookup(dictionaries[this.currentLanguage], keys);
@@ -93,9 +124,9 @@ class I18nManager {
       value = this.lookup(dictionaries.en, keys);
     }
 
-    // Fallback to raw key string if translation not found
+    // Fallback if translation not found
     if (value === undefined) {
-      return key;
+      return actualFallback !== undefined ? actualFallback : key;
     }
 
     if (typeof value !== 'string') {
@@ -103,10 +134,38 @@ class I18nManager {
     }
 
     // Interpolate {param} placeholders
-    return Object.keys(params).reduce((str, paramKey) => {
+    return Object.keys(actualParams).reduce((str, paramKey) => {
       const regex = new RegExp(`\\{${paramKey}\\}`, 'g');
-      return str.replace(regex, params[paramKey]);
+      return str.replace(regex, actualParams[paramKey]);
     }, value);
+  }
+
+  /**
+   * Get localized or direct role label for a user object or role/title string
+   * - If custom title is provided and matches a known translation key, translates it.
+   * - If custom title is provided and not in dictionary, returns the title directly (never raw roles.Title).
+   * - If no custom title, falls back to user role translated via roles.* dictionary.
+   * @param {Object|string} userOrRole
+   * @returns {string}
+   */
+  getUserRoleLabel(userOrRole) {
+    if (!userOrRole) return 'Senior Operations Director';
+
+    if (typeof userOrRole === 'object') {
+      const title = (userOrRole.title || '').trim();
+      if (title) {
+        const titleKey = `roles.${title}`;
+        return this.has(titleKey) ? this.t(titleKey) : title;
+      }
+      const role = (userOrRole.role || '').trim() || 'Senior Operations Director';
+      const roleKey = `roles.${role}`;
+      return this.t(roleKey, role);
+    }
+
+    const raw = String(userOrRole).trim();
+    if (!raw) return 'Senior Operations Director';
+    const key = `roles.${raw}`;
+    return this.has(key) ? this.t(key) : raw;
   }
 
   lookup(obj, keys) {
@@ -254,4 +313,6 @@ class I18nManager {
 }
 
 export const i18n = new I18nManager();
-export const t = (key, params) => i18n.t(key, params);
+export const t = (key, params, fallback) => i18n.t(key, params, fallback);
+export const has = (key) => i18n.has(key);
+export const getUserRoleLabel = (userOrRole) => i18n.getUserRoleLabel(userOrRole);
