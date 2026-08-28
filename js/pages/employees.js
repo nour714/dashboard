@@ -6,7 +6,6 @@ import { store } from '../state/store.js';
 import { AuthService } from '../services/auth-service.js';
 import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
-import { renderStatusBadge } from '../components/status-badge.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
 import { formatCurrency } from '../utils/calculations.js';
@@ -199,7 +198,6 @@ export const EmployeesPage = {
         <td class="tabular-nums font-semibold">${formatCurrency(e.sales, 'EGP')}</td>
         <td class="tabular-nums font-semibold text-success">${formatCurrency(e.collected, 'EGP')}</td>
         <td class="tabular-nums text-muted">${formatCurrency(e.refunds, 'EGP')}</td>
-        <td>${renderStatusBadge(e.status)}</td>
         <td>
           <span class="online-indicator ${online ? 'online' : 'offline'}">
             <span class="online-dot"></span>
@@ -239,13 +237,12 @@ export const EmployeesPage = {
                 <th>${escapeHtml(t('dashboard.kpi.totalSales'))}</th>
                 <th>${escapeHtml(t('dashboard.kpi.totalCollected'))}</th>
                 <th>${escapeHtml(t('reports.kpi.refundsTotal'))}</th>
-                <th>${escapeHtml(t('employees.table.status'))}</th>
                 <th>${escapeHtml(t('employees.table.online'))}</th>
                 <th>${escapeHtml(t('employees.table.actions'))}</th>
               </tr>
             </thead>
             <tbody>
-              ${rowsHtml || `<tr><td colspan="9" class="text-center text-muted p-lg">${escapeHtml(t('common.noData'))}</td></tr>`}
+              ${rowsHtml || `<tr><td colspan="8" class="text-center text-muted p-lg">${escapeHtml(t('common.noData'))}</td></tr>`}
             </tbody>
           </table>
         </div>
