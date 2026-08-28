@@ -6,7 +6,10 @@
 
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
+import { getPrismaClient } from '../config/database.js';
 import { UnauthorizedError, ForbiddenError } from '../domain/errors.js';
+
+export const lastActiveTouchCache = new Map();
 
 /**
  * Authenticates request using JWT Bearer token
@@ -42,6 +45,25 @@ export function authenticate(req, res, next) {
       role: decoded.role,
       title: decoded.title
     };
+
+    // Update lastActive timestamp on ongoing API activity (fire-and-forget, throttled to max 1 update per 60s per user)
+    if (req.user?.id) {
+      const now = Date.now();
+      const lastTouch = lastActiveTouchCache.get(req.user.id) || 0;
+      if (now - lastTouch > 60_000) {
+        lastActiveTouchCache.set(req.user.id, now);
+        try {
+          const prisma = getPrismaClient();
+          if (prisma?.user?.update) {
+            prisma.user.update({
+              where: { id: req.user.id },
+              data: { lastActive: new Date().toISOString() }
+            }).catch(() => {});
+          }
+        } catch (_) {}
+      }
+    }
+
     next();
   });
 }

@@ -108,6 +108,15 @@ class Store {
     return res;
   }
 
+  async refreshEmployees() {
+    const res = await apiClient.get('/employees');
+    if (res.success) {
+      this.state.employees = res.data || [];
+      this.notify();
+    }
+    return res;
+  }
+
   // --- Auth Actions ---
   async login(email, password, rememberMe = true) {
     const res = await apiClient.post('/auth/login', { email, password, rememberMe }, { auth: false });

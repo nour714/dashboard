@@ -6,10 +6,11 @@ import http from 'http';
 import jwt from 'jsonwebtoken';
 import { createApp } from '../server/src/app.js';
 import { AuthService } from '../server/src/services/auth.service.js';
-import { authenticate, requireRole } from '../server/src/middleware/auth.js';
+import { authenticate, requireRole, lastActiveTouchCache } from '../server/src/middleware/auth.js';
 import { setPrismaClient } from '../server/src/config/database.js';
 import { env } from '../server/src/config/env.js';
 import { UnauthorizedError, ForbiddenError } from '../server/src/domain/errors.js';
+import { isEmployeeOnline, formatLastSeen } from '../js/utils/online-status.js';
 
 let passed = 0;
 let failed = 0;
@@ -176,6 +177,7 @@ async function runAuthTests() {
     passwordHash: testUserPasswordHash
   };
 
+  const userUpdateCalls = [];
   const mockTokens = new Map();
   let tokenCounter = 1;
 
@@ -187,7 +189,11 @@ async function runAuthTests() {
         }
         return null;
       },
-      update: async () => mockAuthUser
+      update: async ({ where, data }) => {
+        userUpdateCalls.push({ where, data });
+        Object.assign(mockAuthUser, data);
+        return mockAuthUser;
+      }
     },
     refreshToken: {
       create: async ({ data }) => {
@@ -218,6 +224,10 @@ async function runAuthTests() {
     },
     auditLog: {
       create: async () => ({})
+    },
+    ticket: {
+      findMany: async () => [],
+      count: async () => 0
     },
     $queryRaw: async () => [{ 1: 1 }],
     $transaction: async (arg) => {
@@ -299,6 +309,82 @@ async function runAuthTests() {
     assert(refreshResWithoutCookie.statusCode === 400, 'POST /api/auth/refresh without Cookie header returns 400 Bad Request');
     assert(refreshResWithoutCookie.json?.success === false, 'Missing cookie request success is false');
     assert(refreshResWithoutCookie.json?.error?.message?.includes('Refresh token is required'), 'Error message states "Refresh token is required"');
+
+    // 8. Online Presence Activity Tracking & Throttling
+    console.log('\n--- 8. Online Presence Tracking & 60s Throttling ---');
+    lastActiveTouchCache.clear();
+    const testAuthToken = AuthService.generateAccessToken(mockAuthUser);
+    const authHeaders = { Authorization: `Bearer ${testAuthToken}` };
+
+    // Request 1: Should trigger lastActive update
+    const prevUpdates = userUpdateCalls.length;
+    await makeRequest(server, {
+      method: 'GET',
+      path: '/api/tickets',
+      headers: authHeaders
+    });
+
+    // Wait a tiny moment for fire-and-forget update
+    await new Promise(r => setTimeout(r, 50));
+    assert(lastActiveTouchCache.has(mockAuthUser.id), '1st authenticated request sets timestamp in lastActiveTouchCache');
+    const firstTouchTime = lastActiveTouchCache.get(mockAuthUser.id);
+    const updatesAfterFirst = userUpdateCalls.length;
+    assert(updatesAfterFirst > prevUpdates, '1st authenticated request triggers prisma.user.update for lastActive');
+
+    // Request 2: Immediate second request within 60s -> MUST be throttled (no new update)
+    await makeRequest(server, {
+      method: 'GET',
+      path: '/api/tickets',
+      headers: authHeaders
+    });
+    await new Promise(r => setTimeout(r, 50));
+    assert(lastActiveTouchCache.get(mockAuthUser.id) === firstTouchTime, '2nd request within 60s does not change touch cache (throttled)');
+    assert(userUpdateCalls.length === updatesAfterFirst, '2nd request within 60s skips prisma.user.update');
+
+    // Request 3: Fast-forward touch cache past 60s -> MUST update again
+    lastActiveTouchCache.set(mockAuthUser.id, Date.now() - 61_000);
+    await makeRequest(server, {
+      method: 'GET',
+      path: '/api/tickets',
+      headers: authHeaders
+    });
+    await new Promise(r => setTimeout(r, 50));
+    assert(lastActiveTouchCache.get(mockAuthUser.id) > firstTouchTime, 'Request after > 60s updates touch cache');
+    assert(userUpdateCalls.length > updatesAfterFirst, 'Request after > 60s triggers new prisma.user.update');
+
+    // 9. Frontend Online Status & Last Seen Utilities
+    console.log('\n--- 9. Frontend Online Status Utility Tests ---');
+    // Threshold checks (< 5 mins online, >= 5 mins offline)
+    const nowIso = new Date().toISOString();
+    const threeMinAgoIso = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+    const sixMinAgoIso = new Date(Date.now() - 6 * 60 * 1000).toISOString();
+    const twoHoursAgoIso = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const threeDaysAgoIso = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+    assert(isEmployeeOnline(nowIso) === true, 'Employee active now is online');
+    assert(isEmployeeOnline(threeMinAgoIso) === true, 'Employee active 3 min ago is online');
+    assert(isEmployeeOnline(sixMinAgoIso) === false, 'Employee active 6 min ago is offline');
+    assert(isEmployeeOnline(null) === false, 'Employee with null lastActive is offline');
+    assert(isEmployeeOnline('invalid') === false, 'Employee with invalid lastActive is offline');
+
+    const mockT = (key) => {
+      const dict = {
+        'employees.neverLoggedIn': 'Never logged in',
+        'employees.onlineNow': 'Online now',
+        'employees.lastSeen': 'Last seen',
+        'common.minutesAgo': 'minutes ago',
+        'common.hoursAgo': 'hours ago',
+        'common.daysAgo': 'days ago'
+      };
+      return dict[key] || key;
+    };
+
+    assert(formatLastSeen(null, mockT) === 'Never logged in', 'formatLastSeen with null returns "Never logged in"');
+    assert(formatLastSeen(nowIso, mockT) === 'Online now', 'formatLastSeen for now returns "Online now"');
+    assert(formatLastSeen(threeMinAgoIso, mockT) === 'Online now', 'formatLastSeen for 3m ago returns "Online now"');
+    assert(formatLastSeen(sixMinAgoIso, mockT).includes('6 minutes ago'), 'formatLastSeen for 6m ago formats minutes');
+    assert(formatLastSeen(twoHoursAgoIso, mockT).includes('2 hours ago'), 'formatLastSeen for 2h ago formats hours');
+    assert(formatLastSeen(threeDaysAgoIso, mockT).includes('3 days ago'), 'formatLastSeen for 3d ago formats days');
   } finally {
     server.close();
   }

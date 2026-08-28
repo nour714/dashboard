@@ -11,10 +11,12 @@ import { openModal, closeModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
 import { formatCurrency } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
+import { isEmployeeOnline, formatLastSeen } from '../utils/online-status.js';
 import { t } from '../i18n/i18n.js';
 
 let roleFilter = 'All Roles';
 let statusFilter = 'All Statuses';
+let employeePollingTimer = null;
 
 function showEmployeeCreatedConfirmation(email, password) {
   openModal({
@@ -174,6 +176,9 @@ export const EmployeesPage = {
 
     const rowsHtml = filtered.map(e => {
       const isSelf = e.id === currentUser?.id;
+      const online = isEmployeeOnline(e.lastActive);
+      const lastSeenText = formatLastSeen(e.lastActive, t);
+
       return `
       <tr>
         <td>
@@ -195,6 +200,12 @@ export const EmployeesPage = {
         <td class="tabular-nums font-semibold text-success">${formatCurrency(e.collected, 'EGP')}</td>
         <td class="tabular-nums text-muted">${formatCurrency(e.refunds, 'EGP')}</td>
         <td>${renderStatusBadge(e.status)}</td>
+        <td>
+          <span class="online-indicator ${online ? 'online' : 'offline'}">
+            <span class="online-dot"></span>
+            <span>${escapeHtml(lastSeenText)}</span>
+          </span>
+        </td>
         <td>
           ${isSelf ? '' : `
             <button type="button" class="btn btn-danger btn-sm btn-delete-employee" data-employee-id="${escapeHtml(e.id)}" title="${escapeHtml(t('common.delete'))}">
@@ -229,11 +240,12 @@ export const EmployeesPage = {
                 <th>${escapeHtml(t('dashboard.kpi.totalCollected'))}</th>
                 <th>${escapeHtml(t('reports.kpi.refundsTotal'))}</th>
                 <th>${escapeHtml(t('employees.table.status'))}</th>
+                <th>${escapeHtml(t('employees.table.online'))}</th>
                 <th>${escapeHtml(t('employees.table.actions'))}</th>
               </tr>
             </thead>
             <tbody>
-              ${rowsHtml || `<tr><td colspan="8" class="text-center text-muted p-lg">${escapeHtml(t('common.noData'))}</td></tr>`}
+              ${rowsHtml || `<tr><td colspan="9" class="text-center text-muted p-lg">${escapeHtml(t('common.noData'))}</td></tr>`}
             </tbody>
           </table>
         </div>
@@ -242,6 +254,27 @@ export const EmployeesPage = {
   },
 
   afterRender(container) {
+    // Setup live polling every 30 seconds to refresh online status & employee list
+    if (employeePollingTimer) {
+      clearInterval(employeePollingTimer);
+      employeePollingTimer = null;
+    }
+
+    employeePollingTimer = setInterval(async () => {
+      if (!container || !container.isConnected) {
+        if (employeePollingTimer) {
+          clearInterval(employeePollingTimer);
+          employeePollingTimer = null;
+        }
+        return;
+      }
+      await store.refreshEmployees();
+      if (container && container.isConnected) {
+        container.innerHTML = EmployeesPage.render();
+        EmployeesPage.afterRender(container);
+      }
+    }, 30000);
+
     const addEmployeeBtn = container.querySelector('#add-employee-btn');
     if (!addEmployeeBtn) return;
 
