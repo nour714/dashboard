@@ -21,6 +21,11 @@ enum EmployeeStatus {
   INACTIVE
 }
 
+enum ExpenseCategory {
+  SERVICES
+  TRANSFERS
+}
+
 model User {
   id            String          @id
   name          String
@@ -40,6 +45,7 @@ model User {
   refunds       Refund[]        @relation("RefundProcessedBy")
   auditLogs     AuditLog[]      @relation("AuditUser")
   refreshTokens RefreshToken[]
+  expenses      Expense[]       @relation("ExpenseCreatedBy")
 
   @@map("users")
 }
@@ -228,3 +234,23 @@ model SystemSetting {
 
   @@map("system_settings")
 }
+
+model Expense {
+  id          String          @id @default(cuid())
+  category    ExpenseCategory
+  amount      Decimal         @db.Decimal(12, 2)
+  currency    String          @default("EGP")
+  description String
+  date        DateTime        @default(now())
+  createdBy   String
+  createdById String?
+  user        User?           @relation("ExpenseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedAt   DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([createdById])
+  @@index([date])
+  @@map("expenses")
+}
+

@@ -231,6 +231,13 @@ export const icons = {
     <circle cx="12" cy="12" r="3"></circle>
   `, cls, 16),
 
+  expenses: (cls = '') => svgWrapper(`
+    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"></path>
+    <path d="M8 7h8"></path>
+    <path d="M8 11h8"></path>
+    <path d="M8 15h5"></path>
+  `, cls, 18),
+
   logOut: (cls = '') => svgWrapper(`
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
     <polyline points="16 17 21 12 16 7"></polyline>

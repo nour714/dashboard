@@ -67,6 +67,10 @@ export function renderBottomNav(activePath = '/dashboard') {
           ${icons.reports()}
           <span>${escapeHtml(t('nav.reports'))}</span>
         </a>
+        <a href="/expenses" class="drawer-nav-item" data-link>
+          ${icons.expenses()}
+          <span>${escapeHtml(t('nav.expenses'))}</span>
+        </a>
         ${isAdmin ? `
         <a href="/employees" class="drawer-nav-item" data-link>
           ${icons.employees()}

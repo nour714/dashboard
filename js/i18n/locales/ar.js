@@ -19,6 +19,7 @@ export const ar = {
     payments: 'المدفوعات',
     refunds: 'الاستردادات',
     reports: 'التقارير',
+    expenses: 'مصروفات المكتب',
     administration: 'الإدارة',
     employees: 'الموظفون',
     activity: 'سجل النشاط',
@@ -506,6 +507,43 @@ export const ar = {
     deleteFailed: 'فشل حذف الموظف',
     cannotDeleteSelf: 'لا يمكنك حذف حسابك الخاص. اطلب من مسؤول آخر.',
     cannotDeleteLastAdmin: 'لا يمكن حذف آخر مسؤول نظام نشط.'
+  },
+
+  // Office Expenses Page
+  expenses: {
+    title: 'مصروفات المكتب',
+    subtitle: 'متابعة وتسجيل المصروفات التشغيلية للمكتب، رسوم الخدمات، والتحويلات البنكية.',
+    addExpense: 'مصروف جديد',
+    newExpenseModalTitle: 'تسجيل مصروف مكتب جديد',
+    newExpenseModalSubtitle: 'سجل مصروفات الخدمات أو التحويلات.',
+    totalServices: 'إجمالي الخدمات',
+    totalTransfers: 'إجمالي التحويلات',
+    grandTotal: 'إجمالي المصروفات',
+    filterCategory: 'جميع الفئات',
+    categories: {
+      SERVICES: 'خدمات',
+      TRANSFERS: 'تحويلات'
+    },
+    table: {
+      date: 'التاريخ والوقت',
+      category: 'الفئة',
+      amount: 'المبلغ',
+      description: 'الوصف والبيان',
+      recordedBy: 'المُسجِّل',
+      actions: 'الإجراءات'
+    },
+    form: {
+      category: 'الفئة',
+      amount: 'المبلغ (جنيه مصري)',
+      date: 'التاريخ والوقت',
+      description: 'الوصف والبيان',
+      descriptionPlaceholder: 'مثال: فاتورة كهرباء، أدوات مكتبية، تحويل لحساب...'
+    },
+    deleteConfirmTitle: 'حذف سجل المصروف',
+    deleteConfirmMessage: 'هل أنت متأكد من رغبتك في حذف هذا المصروف؟ سيتم حذفه من سجل المصروفات.',
+    createdSuccessfully: 'تم تسجيل المصروف بنجاح.',
+    deletedSuccessfully: 'تم حذف سجل المصروف بنجاح.',
+    emptyState: 'لا توجد مصروفات مسجلة تطابق معايير البحث.'
   },
 
   // Activity Page

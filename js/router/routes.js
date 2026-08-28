@@ -1,5 +1,5 @@
-/**
- * AfricaTravel � Route Definitions
+﻿/**
+ * AfricaTravel — Route Definitions
  */
 
 import { LoginPage } from '../pages/login.js';
@@ -12,6 +12,7 @@ import { CustomerDetailsPage } from '../pages/customer-details.js';
 import { PaymentsPage } from '../pages/payments.js';
 import { RefundsPage } from '../pages/refunds.js';
 import { ReportsPage } from '../pages/reports.js';
+import { ExpensesPage } from '../pages/expenses.js';
 import { EmployeesPage } from '../pages/employees.js';
 import { ActivityPage } from '../pages/activity.js';
 import { SettingsPage } from '../pages/settings.js';
@@ -30,6 +31,7 @@ export const routes = [
   { path: '/payments', ...PaymentsPage },
   { path: '/refunds', ...RefundsPage },
   { path: '/reports', ...ReportsPage },
+  { path: '/expenses', ...ExpensesPage },
   { path: '/employees', ...EmployeesPage },
   { path: '/activity', ...ActivityPage },
   { path: '/settings', ...SettingsPage }

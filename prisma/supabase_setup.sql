@@ -18,6 +18,12 @@ EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
 
+DO $$ BEGIN
+  CREATE TYPE "ExpenseCategory" AS ENUM ('SERVICES', 'TRANSFERS');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
 -- Create Tables
 CREATE TABLE IF NOT EXISTS "users" (
     "id" TEXT NOT NULL,
@@ -183,6 +189,21 @@ CREATE TABLE IF NOT EXISTS "system_settings" (
     CONSTRAINT "system_settings_pkey" PRIMARY KEY ("id")
 );
 
+CREATE TABLE IF NOT EXISTS "expenses" (
+    "id" TEXT NOT NULL,
+    "category" "ExpenseCategory" NOT NULL,
+    "amount" DECIMAL(12,2) NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'EGP',
+    "description" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdBy" TEXT NOT NULL,
+    "createdById" TEXT,
+    "deletedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "expenses_pkey" PRIMARY KEY ("id")
+);
+
 -- Unique Indexes
 CREATE UNIQUE INDEX IF NOT EXISTS "users_email_key" ON "users"("email");
 CREATE UNIQUE INDEX IF NOT EXISTS "tickets_ticketNumber_key" ON "tickets"("ticketNumber");
@@ -193,8 +214,13 @@ CREATE INDEX IF NOT EXISTS "audit_logs_userId_idx" ON "audit_logs"("userId");
 CREATE INDEX IF NOT EXISTS "modifications_processedById_idx" ON "modifications"("processedById");
 CREATE INDEX IF NOT EXISTS "payments_addedById_idx" ON "payments"("addedById");
 CREATE INDEX IF NOT EXISTS "tickets_createdById_idx" ON "tickets"("createdById");
+CREATE INDEX IF NOT EXISTS "expenses_createdById_idx" ON "expenses"("createdById");
+CREATE INDEX IF NOT EXISTS "expenses_date_idx" ON "expenses"("date");
 
 -- Foreign Keys
+DO $$ BEGIN
+  ALTER TABLE "expenses" ADD CONSTRAINT "expenses_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 DO $$ BEGIN
   ALTER TABLE "customer_notes" ADD CONSTRAINT "customer_notes_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 EXCEPTION WHEN duplicate_object THEN null; END $$;

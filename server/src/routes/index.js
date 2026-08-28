@@ -10,6 +10,7 @@ import employeeRoutes from './employee.routes.js';
 import reportRoutes from './report.routes.js';
 import auditRoutes from './audit.routes.js';
 import settingRoutes from './setting.routes.js';
+import expenseRoutes from './expense.routes.js';
 import { apiRateLimiter } from '../middleware/rate-limiter.js';
 import { checkDatabaseHealth } from '../config/database.js';
 
@@ -49,5 +50,6 @@ apiRouter.use('/employees', employeeRoutes);
 apiRouter.use('/reports', reportRoutes);
 apiRouter.use('/activity', auditRoutes);
 apiRouter.use('/settings', settingRoutes);
+apiRouter.use('/expenses', expenseRoutes);
 
 export default apiRouter;

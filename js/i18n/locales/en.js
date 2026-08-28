@@ -19,6 +19,7 @@ export const en = {
     payments: 'Payments',
     refunds: 'Refunds',
     reports: 'Reports',
+    expenses: 'Office Expenses',
     administration: 'Administration',
     employees: 'Employees',
     activity: 'Activity Log',
@@ -506,6 +507,43 @@ export const en = {
     deleteFailed: 'Failed to delete employee',
     cannotDeleteSelf: 'You cannot delete your own account. Ask another administrator.',
     cannotDeleteLastAdmin: 'Cannot delete the last remaining active administrator.'
+  },
+
+  // Office Expenses Page
+  expenses: {
+    title: 'Office Expenses',
+    subtitle: 'Track operational office expenses, service fees, and bank transfers.',
+    addExpense: 'Add Expense',
+    newExpenseModalTitle: 'Record New Office Expense',
+    newExpenseModalSubtitle: 'Log a service or transfer expenditure.',
+    totalServices: 'Services Total',
+    totalTransfers: 'Transfers Total',
+    grandTotal: 'Total Expenses',
+    filterCategory: 'All Categories',
+    categories: {
+      SERVICES: 'Services',
+      TRANSFERS: 'Transfers'
+    },
+    table: {
+      date: 'Date & Time',
+      category: 'Category',
+      amount: 'Amount',
+      description: 'Description',
+      recordedBy: 'Recorded By',
+      actions: 'Actions'
+    },
+    form: {
+      category: 'Category',
+      amount: 'Amount (EGP)',
+      date: 'Date & Time',
+      description: 'Description / Notes',
+      descriptionPlaceholder: 'e.g. Electricity bill, Office supplies, Vendor transfer...'
+    },
+    deleteConfirmTitle: 'Delete Expense Record',
+    deleteConfirmMessage: 'Are you sure you want to delete this expense record? This action will remove it from the ledger.',
+    createdSuccessfully: 'Expense record created successfully.',
+    deletedSuccessfully: 'Expense record deleted successfully.',
+    emptyState: 'No expense records found matching the criteria.'
   },
 
   // Activity Page

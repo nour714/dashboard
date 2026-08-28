@@ -22,7 +22,8 @@ export function renderSidebar(activePath = '/dashboard') {
     { path: '/customers', label: t('nav.customers'), icon: 'customers' },
     { path: '/payments', label: t('nav.payments'), icon: 'payments' },
     { path: '/refunds', label: t('nav.refunds'), icon: 'refunds' },
-    { path: '/reports', label: t('nav.reports'), icon: 'reports' }
+    { path: '/reports', label: t('nav.reports'), icon: 'reports' },
+    { path: '/expenses', label: t('nav.expenses'), icon: 'expenses' }
   ];
 
   const isAdmin = (currentUser.role || '').toUpperCase() === 'ADMIN';

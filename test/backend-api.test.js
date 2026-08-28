@@ -69,12 +69,27 @@ async function runApiTests() {
   console.log('   AfricaTravel Backend API & Server Integration Tests');
   console.log('========================================================\n');
 
-  // In-memory mock database state
   const mockCustomers = [];
   const mockTickets = [];
+  const mockExpenses = [];
   const mockAuditLogs = [];
 
   const mockPrisma = {
+    expense: {
+      create: async ({ data }) => {
+        const record = { id: `EXP-${mockExpenses.length + 1}`, ...data, deletedAt: null, createdAt: new Date() };
+        mockExpenses.push(record);
+        return record;
+      },
+      findMany: async () => mockExpenses.filter(e => !e.deletedAt),
+      count: async () => mockExpenses.filter(e => !e.deletedAt).length,
+      findFirst: async ({ where }) => mockExpenses.find(e => (!where.id || e.id === where.id) && (!where.deletedAt || e.deletedAt === where.deletedAt)) || null,
+      update: async ({ where, data }) => {
+        const record = mockExpenses.find(e => e.id === where.id);
+        if (record) Object.assign(record, data);
+        return record || null;
+      }
+    },
     customer: {
       findFirst: async ({ where }) => {
         if (where?.passport) {
@@ -170,7 +185,10 @@ async function runApiTests() {
       ['DELETE /api/tickets/:id', { method: 'DELETE', path: '/api/tickets/TKT-1', headers: ticketOnlyHeaders }],
       ['DELETE /api/customers/:id', { method: 'DELETE', path: '/api/customers/CUST-1', headers: ticketOnlyHeaders }],
       ['GET /api/employees', { method: 'GET', path: '/api/employees', headers: ticketOnlyHeaders }],
-      ['PATCH /api/employees/:id', { method: 'PATCH', path: '/api/employees/EMP-102', headers: ticketOnlyHeaders, body: { name: 'New Name' } }]
+      ['PATCH /api/employees/:id', { method: 'PATCH', path: '/api/employees/EMP-102', headers: ticketOnlyHeaders, body: { name: 'New Name' } }],
+      ['GET /api/expenses', { method: 'GET', path: '/api/expenses', headers: ticketOnlyHeaders }],
+      ['POST /api/expenses', { method: 'POST', path: '/api/expenses', headers: ticketOnlyHeaders, body: { category: 'SERVICES', amount: 100, description: 'Test', date: '2026-08-28' } }],
+      ['DELETE /api/expenses/:id', { method: 'DELETE', path: '/api/expenses/EXP-1', headers: ticketOnlyHeaders }]
     ];
     for (const [label, request] of restrictedRequests) {
       const response = await makeRequest(server, request);
@@ -324,6 +342,14 @@ async function runApiTests() {
     });
     assert(agentDeleteEmployeeRes.statusCode === 403, 'AGENT calling DELETE /api/employees/:id receives 403 Forbidden');
     assert(agentDeleteEmployeeRes.json?.error?.code === 'FORBIDDEN', 'Employee delete rejection returns FORBIDDEN error code');
+
+    const agentDeleteExpenseRes = await makeRequest(server, {
+      method: 'DELETE',
+      path: '/api/expenses/EXP-1',
+      headers: { 'Authorization': `Bearer ${agentToken}` }
+    });
+    assert(agentDeleteExpenseRes.statusCode === 403, 'AGENT calling DELETE /api/expenses/:id receives 403 Forbidden');
+    assert(agentDeleteExpenseRes.json?.error?.code === 'FORBIDDEN', 'Expense delete rejection returns FORBIDDEN error code');
 
     // 8. Airline Cost Price & Net Profit Validation & RBAC
     console.log('\n--- 8. Airline Cost Price & Net Profit RBAC Enforcement ---');
