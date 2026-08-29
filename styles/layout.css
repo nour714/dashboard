@@ -674,14 +674,6 @@
   transform: translateY(0);
 }
 
-.mobile-drawer-handle {
-  width: 36px;
-  height: 4px;
-  background-color: #cbd5e1;
-  border-radius: var(--radius-full);
-  margin: 0 auto var(--spacing-md) auto;
-}
-
 .drawer-nav-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
