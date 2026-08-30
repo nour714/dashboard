@@ -418,12 +418,6 @@ export const TicketCreatePage = {
           return;
         }
 
-        // لو المستخدم بدأ يملأ حقول العودة جزئيًا بس مش كلها، امنعه ونبهه
-        if (isRoundTrip && !returnFlightNumber) {
-          showToast(t('validation.returnFlightIncomplete') || 'أكمل رقم رحلة العودة أو اترك التاريخ فارغًا بالكامل', 'error');
-          return;
-        }
-
         const ticketData = {
           passengerName: custNameInput.value.trim(),
           passport: container.querySelector('#cust-passport').value.trim(),
@@ -433,7 +427,7 @@ export const TicketCreatePage = {
           airlineCode: airlineCode,
           flightNumber: flightNumber,
           tripType: tripTypeValue,
-          returnFlightNumber: isRoundTrip ? returnFlightNumber.toUpperCase() : undefined,
+          returnFlightNumber: isRoundTrip && returnFlightNumber ? returnFlightNumber.toUpperCase() : undefined,
           returnDepartureDate: isRoundTrip ? returnDepDate : undefined,
           pnr: container.querySelector('#flight-pnr').value.trim().toUpperCase(),
           ticketNumber: container.querySelector('#flight-ticket-num').value.trim(),

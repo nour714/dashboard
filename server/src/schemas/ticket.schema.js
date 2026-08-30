@@ -45,9 +45,6 @@ export const createTicketSchema = z.object({
   const isRoundTrip = Boolean(data.returnDepartureDate);
 
   if (isRoundTrip) {
-    if (!data.returnFlightNumber) {
-      ctx.addIssue({ code: 'custom', path: ['returnFlightNumber'], message: 'Return flight number is required when a return date is provided' });
-    }
     // Flexible validation: only checks return is after departure, no year restriction
     if (data.departureDate && new Date(data.returnDepartureDate) <= new Date(data.departureDate)) {
       ctx.addIssue({ code: 'custom', path: ['returnDepartureDate'], message: 'Return departure date must be after the outbound departure date' });

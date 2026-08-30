@@ -104,7 +104,7 @@ async function runRoundTripTests() {
     'Issue reported for returnDepartureDate before departureDate with correct message'
   );
 
-  // Test 2.4: Ticket with returnDepartureDate provided but returnFlightNumber empty/missing -> rejected
+  // Test 2.4: Ticket with returnDepartureDate provided and returnFlightNumber empty/missing -> succeeds
   const missingReturnFlightNum = {
     ...validOneWayWithoutArrival,
     departureDate: '2026-09-15T08:00',
@@ -112,11 +112,7 @@ async function runRoundTripTests() {
     returnFlightNumber: ''
   };
   const missingReturnFlightNumResult = createTicketSchema.safeParse(missingReturnFlightNum);
-  assert(missingReturnFlightNumResult.success === false, 'Ticket with returnDepartureDate but empty returnFlightNumber is rejected');
-  assert(
-    missingReturnFlightNumResult.error?.issues.some(i => i.path.includes('returnFlightNumber')),
-    'Issue reported for missing returnFlightNumber when returnDepartureDate is set'
-  );
+  assert(missingReturnFlightNumResult.success === true, 'Ticket with returnDepartureDate and empty returnFlightNumber passes validation');
 
   // --- 3. Frontend HTML Template Verification ---
   console.log('\n--- 3. Frontend Form Structure (ticket-create.js) ---');
