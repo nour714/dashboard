@@ -1,5 +1,5 @@
 /* Base Styles & CSS Reset */
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
+/* Fonts loaded via <link> in index.html with preconnect */
 
 *,
 *::before,
@@ -63,6 +63,16 @@ h1, h2, h3, h4, h5, h6 {
 [dir="rtl"] h4,
 [dir="rtl"] h5,
 [dir="rtl"] h6 {
+  letter-spacing: 0;
+}
+
+/* Zero out letter-spacing for Arabic / RTL connected scripts */
+[dir="rtl"] .stat-card-label,
+[dir="rtl"] .badge,
+[dir="rtl"] .data-table th,
+[dir="rtl"] .financial-item-label,
+[dir="rtl"] .balance-preview-title,
+[dir="rtl"] .search-dropdown-header {
   letter-spacing: 0;
 }
 

@@ -3,6 +3,9 @@
  */
 
 import assert from 'node:assert';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { i18n, t, has, getUserRoleLabel } from '../js/i18n/i18n.js';
 import { en } from '../js/i18n/locales/en.js';
 import { ar } from '../js/i18n/locales/ar.js';
@@ -293,6 +296,41 @@ test('getUserRoleLabel handles free-text custom titles without leaking raw i18n 
     title: 'Refunds Specialist'
   };
   assert.strictEqual(getUserRoleLabel(refundsSpecialist), 'Refunds Specialist');
+});
+
+console.log('\n═══ 9. Arabic Typography & Font Loading Tests ═══');
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const baseCssPath = path.resolve(__dirname, '../styles/base.css');
+const indexHtmlPath = path.resolve(__dirname, '../index.html');
+
+test('styles/base.css does not include redundant @import for Google Fonts', () => {
+  const baseCss = fs.readFileSync(baseCssPath, 'utf8');
+  assert(!baseCss.includes('@import url'), 'styles/base.css should not use render-blocking @import for fonts');
+});
+
+test('index.html contains single preconnected Google Fonts <link>', () => {
+  const indexHtml = fs.readFileSync(indexHtmlPath, 'utf8');
+  assert(indexHtml.includes('fonts.googleapis.com'), 'index.html must load fonts via <link>');
+  assert(indexHtml.includes('rel="preconnect"'), 'index.html must have preconnect hints');
+});
+
+test('styles/base.css zeroes out letter-spacing for all 6 target classes in RTL', () => {
+  const baseCss = fs.readFileSync(baseCssPath, 'utf8');
+  const targetClasses = [
+    '.stat-card-label',
+    '.badge',
+    '.data-table th',
+    '.financial-item-label',
+    '.balance-preview-title',
+    '.search-dropdown-header'
+  ];
+
+  for (const cls of targetClasses) {
+    const selector = `[dir="rtl"] ${cls}`;
+    assert(baseCss.includes(selector), `base.css should contain RTL override for ${cls}`);
+  }
 });
 
 console.log('\n══════════════════════════════════════');
