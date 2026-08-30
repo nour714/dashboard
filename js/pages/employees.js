@@ -16,6 +16,7 @@ import { t } from '../i18n/i18n.js';
 let roleFilter = 'All Roles';
 let statusFilter = 'All Statuses';
 let employeePollingTimer = null;
+let routeChangeListenerAttached = false;
 
 function showEmployeeCreatedConfirmation(email, password) {
   openModal({
@@ -271,6 +272,22 @@ export const EmployeesPage = {
         EmployeesPage.afterRender(container);
       }
     }, 30000);
+
+    // Stop polling when the user navigates away from /employees.
+    // Guard flag prevents duplicate listeners from recursive afterRender calls.
+    if (!routeChangeListenerAttached) {
+      routeChangeListenerAttached = true;
+      window.addEventListener('AfricaTravel:route-changed', function onRouteChange(e) {
+        if (e.detail?.path !== '/employees') {
+          if (employeePollingTimer) {
+            clearInterval(employeePollingTimer);
+            employeePollingTimer = null;
+          }
+          window.removeEventListener('AfricaTravel:route-changed', onRouteChange);
+          routeChangeListenerAttached = false;
+        }
+      });
+    }
 
     const addEmployeeBtn = container.querySelector('#add-employee-btn');
     if (!addEmployeeBtn) return;
