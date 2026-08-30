@@ -9,6 +9,7 @@
 
 import { getPrismaClient } from '../config/database.js';
 import { NotFoundError, ForbiddenError } from '../domain/errors.js';
+import { AuditService } from './audit.service.js';
 
 export const ExpenseService = {
   /**
@@ -16,19 +17,36 @@ export const ExpenseService = {
    * @param {object} data
    * @param {object} currentUser
    */
-  async createExpense(data, currentUser) {
+  async createExpense(data, currentUser = {}) {
     const prisma = getPrismaClient();
-    return prisma.expense.create({
+    const newExpense = await prisma.expense.create({
       data: {
         category: data.category,
         amount: data.amount,
         currency: data.currency || 'EGP',
         description: data.description.trim(),
         date: new Date(data.date),
-        createdBy: currentUser.name || currentUser.email || 'Staff',
-        createdById: currentUser.id || null
+        createdBy: currentUser?.name || currentUser?.email || 'Staff',
+        createdById: currentUser?.id || null
       }
     });
+
+    await AuditService.recordLog({
+      user: currentUser?.name || currentUser?.email || 'Staff',
+      userId: currentUser?.id || null,
+      action: 'CREATE_EXPENSE',
+      description: `Created office expense ${newExpense.id} (${newExpense.category}: ${newExpense.amount} ${newExpense.currency} - ${newExpense.description}).`,
+      metadata: {
+        expenseId: newExpense.id,
+        category: newExpense.category,
+        amount: Number(newExpense.amount),
+        currency: newExpense.currency,
+        description: newExpense.description,
+        createdById: currentUser?.id || null
+      }
+    });
+
+    return newExpense;
   },
 
   /**
@@ -92,7 +110,7 @@ export const ExpenseService = {
    * @param {string} expenseId
    * @param {object} currentUser
    */
-  async deleteExpense(expenseId, currentUser) {
+  async deleteExpense(expenseId, currentUser = {}) {
     const prisma = getPrismaClient();
     const existing = await prisma.expense.findFirst({
       where: { id: expenseId, deletedAt: null }
@@ -105,6 +123,21 @@ export const ExpenseService = {
     if (currentUser?.role !== 'ADMIN') {
       throw new ForbiddenError('Only admins can delete expense records');
     }
+
+    await AuditService.recordLog({
+      user: currentUser?.name || currentUser?.email || 'Admin',
+      userId: currentUser?.id || null,
+      action: 'DELETE_EXPENSE',
+      description: `Admin ${currentUser?.name || 'Admin'} deleted office expense ${existing.id} (${existing.category}: ${existing.amount} ${existing.currency} - ${existing.description}).`,
+      metadata: {
+        adminId: currentUser?.id || null,
+        expenseId: existing.id,
+        category: existing.category,
+        amount: Number(existing.amount),
+        currency: existing.currency,
+        description: existing.description
+      }
+    });
 
     return prisma.expense.update({
       where: { id: existing.id },

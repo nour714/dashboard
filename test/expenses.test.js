@@ -40,6 +40,7 @@ async function runExpenseTests() {
 
   // In-memory mock database state
   const mockExpenses = new Map();
+  const mockAuditLogs = [];
   let expenseIdCounter = 1;
 
   const adminUser = {
@@ -76,10 +77,23 @@ async function runExpenseTests() {
 
   function resetState() {
     mockExpenses.clear();
+    mockAuditLogs.length = 0;
     expenseIdCounter = 1;
   }
 
   const mockPrisma = {
+    auditLog: {
+      create: async ({ data }) => {
+        const log = {
+          id: `ACT-${mockAuditLogs.length + 1}`,
+          ...data,
+          timestamp: new Date()
+        };
+        mockAuditLogs.push(log);
+        return log;
+      }
+    },
+
     expense: {
       create: async ({ data }) => {
         const id = `EXP-${expenseIdCounter++}`;
@@ -325,6 +339,23 @@ async function runExpenseTests() {
   // Confirm office expenses are completely distinct from ticket profit & loss calculation
   assert(!('ticketId' in exp1), 'Expense model has no ticketId foreign key');
   assert(!('customerId' in exp1), 'Expense model has no customerId foreign key');
+
+  // --- 7. Audit Logging for Expense Actions ---
+  console.log('\n--- 7. Audit Logging for Expense Actions ---');
+  const createLogs = mockAuditLogs.filter(l => l.action === 'CREATE_EXPENSE');
+  assert(createLogs.length === 3, 'Recorded 3 CREATE_EXPENSE audit logs for created expenses');
+  assert(createLogs[0].metadata?.category === 'SERVICES', 'First create log has correct category SERVICES');
+  assert(createLogs[0].metadata?.amount === 1500, 'First create log has correct amount 1500');
+  assert(createLogs[0].metadata?.description === 'Electricity and Internet utilities', 'First create log has correct description');
+  assert(createLogs[0].metadata?.expenseId === 'EXP-1', 'First create log has correct expenseId EXP-1');
+
+  const deleteLogs = mockAuditLogs.filter(l => l.action === 'DELETE_EXPENSE');
+  assert(deleteLogs.length === 1, 'Recorded 1 DELETE_EXPENSE audit log for deleted expense');
+  assert(deleteLogs[0].metadata?.expenseId === 'EXP-2', 'Delete log references deleted expenseId EXP-2');
+  assert(deleteLogs[0].metadata?.category === 'TRANSFERS', 'Delete log records category TRANSFERS');
+  assert(deleteLogs[0].metadata?.amount === 5000, 'Delete log records amount 5000');
+  assert(deleteLogs[0].metadata?.description === 'Bank transfer for office rent', 'Delete log records description');
+  assert(deleteLogs[0].metadata?.adminId === adminUser.id, 'Delete log records adminId');
 
   // Summary
   console.log('\n========================================================');
