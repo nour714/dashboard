@@ -455,9 +455,6 @@ export const en = {
       refundsTotal: 'Total Refunded',
       margin: 'Estimated Operating Margin'
     },
-    salesByAirline: 'Sales Volume by Airline',
-    agentPerformance: 'Agent Sales Performance',
-    adminOnlyEmployees: 'Employee performance data requires administrator access.',
     monthlyTrends: 'Monthly Revenue Progression',
     customerPayments: {
       title: 'Customer Payments',
@@ -717,7 +714,6 @@ export const en = {
     invalidPhone: 'Please enter a valid phone number.',
     returnFlightRequired: 'Please fill in all return flight details for a Round Trip ticket.',
     returnDateAfterDeparture: 'Return departure date must be after outbound departure date.',
-    returnFlightIncomplete: 'Please complete all return flight details or leave them all blank.',
     flightNumberRequired: 'Flight number is required.'
   },
 

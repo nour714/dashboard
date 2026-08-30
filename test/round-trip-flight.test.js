@@ -203,9 +203,6 @@ async function runRoundTripTests() {
   assert(en.validation.returnDateAfterDeparture && en.validation.returnDateAfterDeparture.length > 0, 'EN validation.returnDateAfterDeparture is defined');
   assert(ar.validation.returnDateAfterDeparture && ar.validation.returnDateAfterDeparture.length > 0, 'AR validation.returnDateAfterDeparture is defined');
 
-  assert(en.validation.returnFlightIncomplete && en.validation.returnFlightIncomplete.length > 0, 'EN validation.returnFlightIncomplete is defined');
-  assert(ar.validation.returnFlightIncomplete && ar.validation.returnFlightIncomplete.length > 0, 'AR validation.returnFlightIncomplete is defined');
-
   console.log('\n========================================================');
   console.log(`Simplified Flight Fields Tests: ${passed} passed, ${failed} failed`);
   console.log('========================================================\n');
