@@ -221,6 +221,19 @@ async function runApiTests() {
     assert(createTicketRes.json?.success === true, 'POST /api/tickets returns success: true for TICKET_ONLY');
     assert(createTicketRes.json?.data?.createdById === 'EMP-TICKET-ONLY', 'Created ticket automatically binds createdById to req.user.id');
 
+    // Completely empty body ticket creation
+    const emptyTicketRes = await makeRequest(server, {
+      method: 'POST',
+      path: '/api/tickets',
+      headers: ticketOnlyHeaders,
+      body: {}
+    });
+    assert(emptyTicketRes.statusCode === 201, 'POST /api/tickets with empty body succeeds (201)');
+    assert(emptyTicketRes.json?.data?.passengerName === 'Guest', 'Empty ticket defaults passengerName to Guest');
+    assert(emptyTicketRes.json?.data?.ticketPrice === 0, 'Empty ticket defaults ticketPrice to 0');
+    assert(emptyTicketRes.json?.data?.status === 'UNPAID', 'Empty ticket derives UNPAID status');
+    assert(Boolean(emptyTicketRes.json?.data?.pnr), 'Empty ticket auto-generates PNR');
+
     // IDOR Protection: TICKET_ONLY cannot access tickets where createdById is null or not owned
     // 1. Ticket with createdById = null
     mockTickets.push({
@@ -356,8 +369,8 @@ async function runApiTests() {
     const adminToken = AuthService.generateAccessToken({ id: 'EMP-ADMIN-1', name: 'Admin Master', email: 'admin@africatravel.com', role: 'ADMIN', title: 'System Administrator' });
     const adminHeaders = { 'Authorization': `Bearer ${adminToken}` };
 
-    // A) Creating ticket without costPrice fails with ValidationError (400)
-    const missingCostRes = await makeRequest(server, {
+    // A) Creating ticket with negative costPrice fails with ValidationError (400)
+    const negativeCostRes = await makeRequest(server, {
       method: 'POST',
       path: '/api/tickets',
       headers: adminHeaders,
@@ -372,12 +385,28 @@ async function runApiTests() {
         airline: 'EgyptAir',
         airlineCode: 'MS',
         ticketPrice: 41000,
+        costPrice: -500,
         currency: 'EGP'
       }
     });
-    assert(missingCostRes.statusCode === 400, 'POST /api/tickets without costPrice returns 400 Bad Request');
-    assert(missingCostRes.json?.success === false, 'POST /api/tickets without costPrice returns success: false');
-    assert(missingCostRes.json?.error?.code === 'VALIDATION_ERROR', 'Rejection code is VALIDATION_ERROR');
+    assert(negativeCostRes.statusCode === 400, 'POST /api/tickets with negative costPrice returns 400 Bad Request');
+    assert(negativeCostRes.json?.success === false, 'POST /api/tickets with negative costPrice returns success: false');
+    assert(negativeCostRes.json?.error?.code === 'VALIDATION_ERROR', 'Rejection code is VALIDATION_ERROR');
+
+    // A.1) Creating ticket without costPrice succeeds (optional field defaulting to 0)
+    const omittedCostRes = await makeRequest(server, {
+      method: 'POST',
+      path: '/api/tickets',
+      headers: adminHeaders,
+      body: {
+        passengerName: 'Omitted Cost Test',
+        pnr: 'COST02',
+        ticketPrice: 10000,
+        currency: 'EGP'
+      }
+    });
+    assert(omittedCostRes.statusCode === 201, 'POST /api/tickets without costPrice succeeds (201)');
+    assert(omittedCostRes.json?.data?.costPrice === 0, 'Omitted costPrice defaults to 0');
 
     // B) Creating ticket with valid costPrice succeeds and calculates netProfit
     const validCostRes = await makeRequest(server, {

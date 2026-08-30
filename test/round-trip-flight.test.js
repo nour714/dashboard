@@ -51,24 +51,20 @@ async function runRoundTripTests() {
   const oneWayResult = createTicketSchema.safeParse(validOneWayWithoutArrival);
   assert(oneWayResult.success === true, 'One Way ticket WITHOUT arrivalDate passes validation');
 
-  // Missing flightNumber
+  // Missing flightNumber is now optional and passes validation
   const missingFlightNum = { ...validOneWayWithoutArrival, flightNumber: undefined };
   const missingFlightNumResult = createTicketSchema.safeParse(missingFlightNum);
-  assert(missingFlightNumResult.success === false, 'Ticket without flightNumber fails validation');
-  assert(
-    missingFlightNumResult.error?.issues.some(i => i.path.includes('flightNumber')),
-    'Zod error issue path includes flightNumber'
-  );
+  assert(missingFlightNumResult.success === true, 'Ticket without flightNumber passes validation');
 
-  // Empty flightNumber
+  // Empty flightNumber is permitted
   const emptyFlightNum = { ...validOneWayWithoutArrival, flightNumber: '' };
   const emptyFlightNumResult = createTicketSchema.safeParse(emptyFlightNum);
-  assert(emptyFlightNumResult.success === false, 'Ticket with empty flightNumber fails validation');
+  assert(emptyFlightNumResult.success === true, 'Ticket with empty flightNumber passes validation');
 
-  // Missing pnr
+  // Missing pnr is now optional and passes validation
   const missingPnr = { ...validOneWayWithoutArrival, pnr: undefined };
   const missingPnrResult = createTicketSchema.safeParse(missingPnr);
-  assert(missingPnrResult.success === false, 'Ticket without pnr fails validation');
+  assert(missingPnrResult.success === true, 'Ticket without pnr passes validation');
 
   // --- 2. Zod Schema Validation: Flexible Round Trip superRefine ---
   console.log('\n--- 2. Backend Schema: Flexible Round Trip superRefine Enforcement ---');

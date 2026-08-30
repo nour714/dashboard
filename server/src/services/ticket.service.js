@@ -228,10 +228,11 @@ export const TicketService = {
         customerId = matchedCustomer.id;
       } else {
         // No matching customer found — create one from the passenger details on the ticket form
+        const passengerNameSafe = (data.passengerName || 'Guest').trim() || 'Guest';
         const newCustomer = await prisma.customer.create({
           data: {
             id: `CUST-${crypto.randomUUID().substring(0, 8).toUpperCase()}`,
-            name: data.passengerName.trim(),
+            name: passengerNameSafe,
             email: data.email ? data.email.trim() : null,
             phone: data.phone ? data.phone.trim() : null,
             passport: data.passport ? data.passport.trim() : null,
@@ -244,7 +245,7 @@ export const TicketService = {
       }
     }
 
-    const price = Number(data.ticketPrice);
+    const price = Number(data.ticketPrice) || 0;
     const initialPaymentAmount = Number(data.initialPayment) || 0;
     const paymentStatus = derivePaymentStatus(price, initialPaymentAmount, 'UNPAID');
 
@@ -255,7 +256,7 @@ export const TicketService = {
         ticketNumber,
         pnr,
         customerId,
-        passengerName: data.passengerName.trim(),
+        passengerName: (data.passengerName || 'Guest').trim() || 'Guest',
         phone: data.phone || null,
         passport: data.passport || null,
         nationality: data.nationality || 'Egyptian (EGY)',
@@ -263,15 +264,15 @@ export const TicketService = {
         email: data.email || null,
         airline: data.airline || 'EgyptAir',
         airlineCode: data.airlineCode || 'MS',
-        flightNumber: data.flightNumber || 'MS 901',
+        flightNumber: (data.flightNumber || 'MS 901').trim() || 'MS 901',
         returnFlightNumber: data.returnFlightNumber || null,
-        origin: data.origin.trim(),
+        origin: (data.origin || '').trim(),
         originTerminal: data.originTerminal || null,
         originAirportName: data.originAirportName || null,
-        destination: data.destination.trim(),
+        destination: (data.destination || '').trim(),
         destinationTerminal: data.destinationTerminal || null,
         destinationAirportName: data.destinationAirportName || null,
-        departureDate: new Date(data.departureDate),
+        departureDate: data.departureDate ? new Date(data.departureDate) : null,
         arrivalDate: data.arrivalDate ? new Date(data.arrivalDate) : null,
         returnDepartureDate: data.returnDepartureDate ? new Date(data.returnDepartureDate) : null,
         returnArrivalDate: data.returnArrivalDate ? new Date(data.returnArrivalDate) : null,
@@ -281,7 +282,7 @@ export const TicketService = {
         seat: data.seat || null,
         baggage: data.baggage || null,
         ticketPrice: price,
-        costPrice: data.costPrice !== undefined && data.costPrice !== null ? Number(data.costPrice) : null,
+        costPrice: data.costPrice !== undefined && data.costPrice !== null && data.costPrice !== '' ? Number(data.costPrice) : 0,
         currency: data.currency || 'EGP',
         status: paymentStatus,
         createdBy: currentUser.name || 'Agent',

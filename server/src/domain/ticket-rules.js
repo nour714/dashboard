@@ -117,23 +117,16 @@ export function derivePaymentStatus(ticketPrice = 0, totalPaid = 0, currentStatu
  * @returns {boolean}
  */
 export function validateTicketCreation(data = {}) {
-  if (!data.passengerName || !String(data.passengerName).trim()) {
-    throw new ValidationError('Passenger name is required', 'passengerName');
-  }
-  if (!data.origin || !String(data.origin).trim()) {
-    throw new ValidationError('Flight origin is required', 'origin');
-  }
-  if (!data.destination || !String(data.destination).trim()) {
-    throw new ValidationError('Flight destination is required', 'destination');
-  }
-  const price = Number(data.ticketPrice);
-  if (isNaN(price) || price <= 0) {
-    throw new ValidationError('Ticket price must be greater than zero', 'ticketPrice');
+  const price = data.ticketPrice !== undefined && data.ticketPrice !== null && data.ticketPrice !== ''
+    ? Number(data.ticketPrice)
+    : 0;
+  if (isNaN(price) || price < 0) {
+    throw new ValidationError('Ticket price cannot be negative', 'ticketPrice');
   }
   if (data.costPrice !== undefined && data.costPrice !== null && data.costPrice !== '') {
     const cost = Number(data.costPrice);
-    if (isNaN(cost) || cost <= 0) {
-      throw new ValidationError('Cost price must be greater than zero', 'costPrice');
+    if (isNaN(cost) || cost < 0) {
+      throw new ValidationError('Cost price cannot be negative', 'costPrice');
     }
   }
   if (data.initialPayment !== undefined && data.initialPayment !== null && data.initialPayment !== '') {

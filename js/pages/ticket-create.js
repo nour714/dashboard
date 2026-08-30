@@ -44,23 +44,21 @@ export const TicketCreatePage = {
               <div class="card-body">
                 <div class="form-grid-2">
                   <div class="form-group">
-                    <label class="form-label" for="cust-name">${escapeHtml(t('ticketCreate.passengerInfo.passengerName'))} *</label>
+                    <label class="form-label" for="cust-name">${escapeHtml(t('ticketCreate.passengerInfo.passengerName'))}</label>
                     <input
                       type="text"
                       id="cust-name"
                       class="form-control"
                       placeholder="${escapeHtml(t('ticketCreate.passengerInfo.passengerNamePlaceholder'))}"
-                      required
                     />
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="cust-passport">${escapeHtml(t('ticketCreate.passengerInfo.passport'))} *</label>
+                    <label class="form-label" for="cust-passport">${escapeHtml(t('ticketCreate.passengerInfo.passport'))}</label>
                     <input
                       type="text"
                       id="cust-passport"
                       class="form-control ltr-field"
                       placeholder="${escapeHtml(t('ticketCreate.passengerInfo.passportPlaceholder'))}"
-                      required
                     />
                   </div>
                 </div>
@@ -100,8 +98,8 @@ export const TicketCreatePage = {
               <div class="card-body">
                 <div class="form-grid-3">
                   <div class="form-group">
-                    <label class="form-label" for="flight-airline">${escapeHtml(t('ticketCreate.flightInfo.airline'))} *</label>
-                    <select id="flight-airline" class="form-control" required>
+                    <label class="form-label" for="flight-airline">${escapeHtml(t('ticketCreate.flightInfo.airline'))}</label>
+                    <select id="flight-airline" class="form-control">
                       <option value="">-- ${escapeHtml(t('ticketCreate.flightInfo.airline'))} --</option>
                       <option value="EgyptAir" data-code="MS">EgyptAir (MS)</option>
                       <option value="Emirates" data-code="EK">Emirates (EK)</option>
@@ -113,17 +111,16 @@ export const TicketCreatePage = {
                     </select>
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="flight-number">${escapeHtml(t('ticketCreate.flightInfo.flightNumber'))} *</label>
+                    <label class="form-label" for="flight-number">${escapeHtml(t('ticketCreate.flightInfo.flightNumber'))}</label>
                     <input
                       type="text"
                       id="flight-number"
                       class="form-control ltr-field"
                       placeholder="e.g. MS 986"
-                      required
                     />
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="flight-pnr">${escapeHtml(t('ticketCreate.flightInfo.pnr'))} *</label>
+                    <label class="form-label" for="flight-pnr">${escapeHtml(t('ticketCreate.flightInfo.pnr'))}</label>
                     <input
                       type="text"
                       id="flight-pnr"
@@ -131,7 +128,6 @@ export const TicketCreatePage = {
                       placeholder="${escapeHtml(t('ticketCreate.flightInfo.pnrPlaceholder'))}"
                       maxlength="10"
                       style="text-transform: uppercase;"
-                      required
                     />
                   </div>
                 </div>
@@ -147,34 +143,31 @@ export const TicketCreatePage = {
                     />
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="flight-origin">${escapeHtml(t('ticketCreate.flightInfo.origin'))} *</label>
+                    <label class="form-label" for="flight-origin">${escapeHtml(t('ticketCreate.flightInfo.origin'))}</label>
                     <input
                       type="text"
                       id="flight-origin"
                       class="form-control ltr-field"
                       placeholder="CAI - Cairo"
-                      required
                     />
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="flight-dest">${escapeHtml(t('ticketCreate.flightInfo.destination'))} *</label>
+                    <label class="form-label" for="flight-dest">${escapeHtml(t('ticketCreate.flightInfo.destination'))}</label>
                     <input
                       type="text"
                       id="flight-dest"
                       class="form-control ltr-field"
                       placeholder="DXB - Dubai"
-                      required
                     />
                   </div>
                 </div>
 
                 <div class="form-group mb-md">
-                  <label class="form-label" for="flight-dep-date">${escapeHtml(t('ticketCreate.flightInfo.departureDate'))} *</label>
+                  <label class="form-label" for="flight-dep-date">${escapeHtml(t('ticketCreate.flightInfo.departureDate'))}</label>
                   <input
                     type="date"
                     id="flight-dep-date"
                     class="form-control"
-                    required
                   />
                 </div>
 
@@ -226,27 +219,25 @@ export const TicketCreatePage = {
               <div class="card-body">
                 <div class="form-grid-3">
                   <div class="form-group">
-                    <label class="form-label" for="ticket-price">${escapeHtml(t('ticketCreate.financials.ticketPrice'))} *</label>
+                    <label class="form-label" for="ticket-price">${escapeHtml(t('ticketCreate.financials.ticketPrice'))}</label>
                     <input
                       type="number"
                       id="ticket-price"
                       class="form-control tabular-nums"
                       placeholder="0.00"
-                      min="1"
+                      min="0"
                       step="any"
-                      required
                     />
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="ticket-cost-price">${escapeHtml(t('ticketCreate.financials.costPrice'))} *</label>
+                    <label class="form-label" for="ticket-cost-price">${escapeHtml(t('ticketCreate.financials.costPrice'))}</label>
                     <input
                       type="number"
                       id="ticket-cost-price"
                       class="form-control tabular-nums"
                       placeholder="0.00"
-                      min="1"
+                      min="0"
                       step="any"
-                      required
                     />
                   </div>
                   <div class="form-group">
@@ -407,11 +398,6 @@ export const TicketCreatePage = {
 
         const flightNumberInput = container.querySelector('#flight-number');
         const flightNumber = flightNumberInput ? flightNumberInput.value.trim().toUpperCase() : '';
-        if (!flightNumber) {
-          showToast(t('validation.flightNumberRequired') || 'Flight number is required', 'error');
-          if (flightNumberInput) flightNumberInput.focus();
-          return;
-        }
 
         const returnDepDateInput = container.querySelector('#return-dep-date');
         const returnFlightNumberInput = container.querySelector('#return-flight-number');

@@ -106,7 +106,7 @@ model Ticket {
   destination            String
   destinationTerminal    String?
   destinationAirportName String?
-  departureDate          DateTime
+  departureDate          DateTime?
   arrivalDate            DateTime?
   returnDepartureDate    DateTime?
   returnArrivalDate      DateTime?
