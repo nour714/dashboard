@@ -3,7 +3,6 @@
  */
 
 import { ReportService } from '../services/report-service.js';
-import { AuthService } from '../services/auth-service.js';
 import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { showToast } from '../components/toast.js';
@@ -13,12 +12,7 @@ import { t } from '../i18n/i18n.js';
 
 export const ReportsPage = {
   render() {
-    const currentUser = AuthService.getCurrentUser();
-    const isAdmin = (currentUser?.role || '').toUpperCase() === 'ADMIN';
-
     const kpis = ReportService.getKPIs();
-    const employees = ReportService.getEmployeePerformance();
-    const airlines = ReportService.getAirlinePerformance();
     const customerPayments = ReportService.getCustomerPayments();
 
     const headerHtml = renderPageHeader({
@@ -33,41 +27,6 @@ export const ReportsPage = {
         </div>
       `
     });
-
-    const employeeRows = employees.map(e => `
-      <tr>
-        <td>
-          <div class="d-flex items-center gap-sm">
-            <div class="sidebar-user-avatar" style="width: 32px; height: 32px; font-size: 12px;">
-              ${escapeHtml(e.name.split(' ').map(n => n[0]).join(''))}
-            </div>
-            <div>
-              <strong class="cell-main">${escapeHtml(e.name)}</strong>
-              <div class="cell-sub">${escapeHtml(e.title || e.role)}</div>
-            </div>
-          </div>
-        </td>
-        <td class="tabular-nums font-semibold">${e.computedTickets}</td>
-        <td class="tabular-nums font-bold">${formatCurrency(e.computedSales, 'EGP')}</td>
-        <td class="tabular-nums font-bold text-success">${formatCurrency(e.computedCollected, 'EGP')}</td>
-      </tr>
-    `).join('');
-
-    const airlineRows = airlines.map(a => `
-      <tr>
-        <td>
-          <div class="airline-tag">
-            <span class="airline-code-badge ltr-data">${escapeHtml(a.airlineCode)}</span>
-            <strong class="cell-main">${escapeHtml(a.airline)}</strong>
-          </div>
-        </td>
-        <td class="tabular-nums font-semibold">${a.ticketsSold}</td>
-        <td class="tabular-nums font-bold">${formatCurrency(a.totalRevenue, 'EGP')}</td>
-        <td>
-          <span class="badge badge-neutral">${escapeHtml(a.refundRate)}</span>
-        </td>
-      </tr>
-    `).join('');
 
     const customerPaymentRows = customerPayments.map(row => `
       <tr>
@@ -115,57 +74,6 @@ export const ReportsPage = {
           </div>
           <div class="stat-card-value tabular-nums ${kpis.totalOutstanding > 0 ? 'highlight-danger' : ''}">${formatCompactNumber(kpis.totalOutstanding)}</div>
           <div class="text-sm text-muted">${escapeHtml(t('dashboard.kpi.remainingSubtitle'))}</div>
-        </div>
-      </div>
-
-      <!-- Performance Bento Tables (6 Col + 6 Col) -->
-      <div class="grid grid-cols-12 gap-lg">
-        <!-- Agent Performance -->
-        <div class="col-span-6">
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">${escapeHtml(t('reports.agentPerformance'))}</h3>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>${escapeHtml(t('employees.table.name'))}</th>
-                    <th>${escapeHtml(t('nav.tickets'))}</th>
-                    <th>${escapeHtml(t('reports.kpi.grossRevenue'))}</th>
-                    <th>${escapeHtml(t('reports.kpi.netCollected'))}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${!isAdmin ? `<tr><td colspan="4" class="text-center text-muted p-md">${escapeHtml(t('reports.adminOnlyEmployees'))}</td></tr>` : (employeeRows || `<tr><td colspan="4" class="text-center text-muted p-md">${escapeHtml(t('common.noData'))}</td></tr>`)}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Airline Performance -->
-        <div class="col-span-6">
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">${escapeHtml(t('reports.salesByAirline'))}</h3>
-            </div>
-            <div class="table-responsive">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>${escapeHtml(t('tickets.table.airline'))}</th>
-                    <th>${escapeHtml(t('nav.tickets'))}</th>
-                    <th>${escapeHtml(t('reports.kpi.grossRevenue'))}</th>
-                    <th>${escapeHtml(t('reports.kpi.refundsTotal'))}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${airlineRows || `<tr><td colspan="4" class="text-center text-muted p-md">${escapeHtml(t('common.noData'))}</td></tr>`}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
       </div>
 

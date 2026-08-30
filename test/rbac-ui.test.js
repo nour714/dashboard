@@ -54,7 +54,7 @@ async function runRbacUiTests() {
   assert(!agentEmployeesPage.includes('data-table'), 'Employees page does NOT render table for AGENT');
 
   const agentReportsPage = ReportsPage.render();
-  assert(agentReportsPage.includes('Employee performance data requires administrator access') || agentReportsPage.includes('بيانات أداء الموظفين تتطلب صلاحيات المسؤول'), 'Reports page indicates admin-only access for agent performance to AGENT');
+  assert(!agentReportsPage.includes('agentPerformance') && !agentReportsPage.includes('salesByAirline'), 'Reports page does NOT render removed Agent Performance / Airline Sales sections for AGENT');
 
   // 2. Test as ADMIN role
   console.log('\n--- 2. ADMIN Role Visibility ---');
