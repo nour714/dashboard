@@ -54,7 +54,7 @@ export const TicketExtractionService = {
     const base64Data = fileBuffer.toString('base64');
     const prompt = `Extract flight ticket booking details from this document. Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
 
-    const modelName = env.GEMINI_MODEL || 'gemini-2.0-flash';
+    const modelName = env.GEMINI_MODEL || 'gemini-3.6-flash';
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
 
     let response;
