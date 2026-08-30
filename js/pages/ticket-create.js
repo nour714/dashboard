@@ -33,6 +33,20 @@ export const TicketCreatePage = {
         <div class="grid grid-cols-12 gap-lg">
           <!-- Left Column: 8 Cols -->
           <div class="col-span-8 d-flex flex-column gap-lg">
+            <!-- AI Document Extraction Banner (Optional & Advisory) -->
+            <div class="card" style="border: 1px dashed var(--color-primary); background: rgba(14, 116, 144, 0.04);">
+              <div class="card-body d-flex items-center justify-between gap-md flex-wrap">
+                <div class="d-flex items-center gap-md flex-wrap">
+                  <input type="file" id="ai-extract-input" accept=".pdf,.jpg,.jpeg,.png" style="display:none;" />
+                  <button type="button" class="btn btn-secondary" id="ai-extract-btn">
+                    ${icons.upload ? icons.upload('w-4 h-4') : ''}
+                    <span>${escapeHtml(t('ticketCreate.aiExtract.button') || 'استخراج البيانات من ملف (PDF/صورة)')}</span>
+                  </button>
+                  <span class="text-xs text-muted">${escapeHtml(t('ticketCreate.aiExtract.hint') || 'راجع البيانات المستخرجة قبل الحفظ — الاستخراج قد لا يكون دقيقًا 100%')}</span>
+                </div>
+              </div>
+            </div>
+
             <!-- 1. Customer Identity -->
             <div class="card">
               <div class="card-header">
@@ -385,6 +399,98 @@ export const TicketCreatePage = {
         el.addEventListener('change', updateLiveSummary);
       }
     });
+
+    // AI Document Extraction Event Handling
+    const aiExtractBtn = container.querySelector('#ai-extract-btn');
+    const aiExtractInput = container.querySelector('#ai-extract-input');
+
+    if (aiExtractBtn && aiExtractInput) {
+      aiExtractBtn.addEventListener('click', () => aiExtractInput.click());
+
+      aiExtractInput.addEventListener('change', async () => {
+        const file = aiExtractInput.files?.[0];
+        if (!file) return;
+
+        aiExtractBtn.disabled = true;
+        const originalBtnHtml = aiExtractBtn.innerHTML;
+        aiExtractBtn.innerHTML = `<span class="spinner-sm" style="display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:rotate 0.75s linear infinite;vertical-align:middle;margin-right:6px;"></span> <span>${escapeHtml(t('ticketCreate.aiExtract.loading') || 'جاري الاستخراج...')}</span>`;
+
+        try {
+          const result = await TicketService.extractFromDocument(file);
+
+          if (!result.success) {
+            showToast(result.error?.message || 'فشل الاستخراج، أكمل البيانات يدويًا', 'error');
+            return;
+          }
+
+          const d = result.data || {};
+          const setVal = (id, val) => {
+            const el = container.querySelector(`#${id}`);
+            if (el && val !== undefined && val !== null && String(val).trim() !== '') {
+              el.value = val;
+            }
+          };
+
+          if (d.passengerName) setVal('cust-name', d.passengerName);
+          if (d.passport) setVal('cust-passport', d.passport);
+          if (d.phone) setVal('cust-phone', d.phone);
+          if (d.nationality) {
+            const natEl = container.querySelector('#cust-nationality');
+            if (natEl) {
+              const query = String(d.nationality).toLowerCase();
+              const matchedOpt = Array.from(natEl.options).find(o =>
+                o.value.toLowerCase().includes(query) || o.text.toLowerCase().includes(query)
+              );
+              if (matchedOpt) natEl.value = matchedOpt.value;
+            }
+          }
+
+          // Airline matching
+          if (d.airline || d.airlineCode) {
+            const airSelect = container.querySelector('#flight-airline');
+            if (airSelect) {
+              const airlineQuery = (d.airline || '').toLowerCase();
+              const codeQuery = (d.airlineCode || '').toLowerCase();
+              const matchedOpt = Array.from(airSelect.options).find(o =>
+                (airlineQuery && o.value.toLowerCase().includes(airlineQuery)) ||
+                (codeQuery && o.getAttribute('data-code')?.toLowerCase() === codeQuery)
+              );
+              if (matchedOpt) airSelect.value = matchedOpt.value;
+            }
+          }
+
+          if (d.flightNumber) setVal('flight-number', d.flightNumber);
+          if (d.pnr) setVal('flight-pnr', d.pnr);
+          if (d.ticketNumber) setVal('flight-ticket-num', d.ticketNumber);
+          if (d.origin) setVal('flight-origin', d.origin);
+          if (d.destination) setVal('flight-dest', d.destination);
+          if (d.departureDate) setVal('flight-dep-date', d.departureDate);
+
+          // Return flight details
+          if (d.returnFlightNumber) setVal('return-flight-number', d.returnFlightNumber);
+          if (d.returnDepartureDate) setVal('return-dep-date', d.returnDepartureDate);
+
+          // Pricing (costPrice is deliberately NOT set from AI extraction)
+          if (d.ticketPrice !== undefined && d.ticketPrice !== null && !isNaN(Number(d.ticketPrice))) {
+            setVal('ticket-price', d.ticketPrice);
+          }
+          if (d.currency) {
+            const currSelect = container.querySelector('#ticket-currency');
+            if (currSelect) {
+              const matchedCurr = Array.from(currSelect.options).find(o => o.value.toUpperCase() === String(d.currency).toUpperCase());
+              if (matchedCurr) currSelect.value = matchedCurr.value;
+            }
+          }
+
+          updateLiveSummary();
+          showToast(t('ticketCreate.aiExtract.success') || 'تم الاستخراج بنجاح — يرجى مراجعة البيانات قبل الحفظ', 'success');
+        } finally {
+          aiExtractBtn.disabled = false;
+          aiExtractBtn.innerHTML = originalBtnHtml;
+          aiExtractInput.value = '';
+        }
+      });
+    }
 
     if (form) {
       form.addEventListener('submit', async (e) => {

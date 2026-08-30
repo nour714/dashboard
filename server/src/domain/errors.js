@@ -39,10 +39,13 @@ export class BusinessRuleError extends AppError {
   /**
    * @param {string} message
    * @param {string|null} rule
+   * @param {object|number} detailsOrStatus
    * @param {object} details
    */
-  constructor(message, rule = null, details = {}) {
-    super(message, 'BUSINESS_RULE_ERROR', 400, { rule, ...details });
+  constructor(message, rule = null, detailsOrStatus = {}, details = {}) {
+    const statusCode = typeof detailsOrStatus === 'number' ? detailsOrStatus : (details?.statusCode || 400);
+    const finalDetails = typeof detailsOrStatus === 'object' && detailsOrStatus !== null ? detailsOrStatus : details;
+    super(message, rule || 'BUSINESS_RULE_ERROR', statusCode, { rule, ...finalDetails });
     this.name = 'BusinessRuleError';
     this.rule = rule;
   }

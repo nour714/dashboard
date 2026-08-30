@@ -211,6 +211,12 @@ export const en = {
     title: 'Create Ticket',
     subtitle: 'Issue a new passenger airline reservation and configure financial schedule.',
     backToTickets: 'Back to Tickets',
+    aiExtract: {
+      button: 'Extract Details from File (PDF/Image)',
+      hint: 'Review extracted details before saving — AI extraction is advisory and may not be 100% accurate.',
+      loading: 'Extracting data with AI...',
+      success: 'Data extracted successfully — please review before saving.'
+    },
     passengerInfo: {
       title: 'Passenger & Customer Information',
       subtitle: 'Select an existing customer or enter passenger travel identity.',

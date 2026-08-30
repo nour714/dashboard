@@ -90,6 +90,12 @@ export const icons = {
     <line x1="5" y1="12" x2="19" y2="12"></line>
   `, cls, 16),
 
+  upload: (cls = '') => svgWrapper(`
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+    <polyline points="17 8 12 3 7 8"></polyline>
+    <line x1="12" y1="3" x2="12" y2="15"></line>
+  `, cls, 18),
+
   airplane: (cls = '') => svgWrapper(`
     <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
   `, cls, 18, true),

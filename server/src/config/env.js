@@ -24,7 +24,9 @@ const envSchema = z.object({
   BOOTSTRAP_ADMIN_PASSWORD: z.string().optional(),
   SUPABASE_URL: z.string().default(''),
   SUPABASE_SERVICE_ROLE_KEY: z.string().default(''),
-  SUPABASE_STORAGE_BUCKET: z.string().default('customer-documents')
+  SUPABASE_STORAGE_BUCKET: z.string().default('customer-documents'),
+  GEMINI_API_KEY: z.string().default(''),
+  GEMINI_MODEL: z.string().default('gemini-2.0-flash')
 });
 
 function resolveDatabaseUrl() {
@@ -118,6 +120,10 @@ if (configErrors.length > 0) {
   if (!isServerless && typeof process.exit === 'function') {
     process.exit(1);
   }
+}
+
+if (!envData.GEMINI_API_KEY) {
+  console.warn('ℹ️  [GEMINI_API_KEY]: Not configured. AI document ticket extraction will be unavailable until GEMINI_API_KEY is provided in environment variables.');
 }
 
 export const env = envData;

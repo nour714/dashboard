@@ -235,6 +235,24 @@ export const TicketService = {
         error: { message: err.message || 'Failed to purge ticket', code: 'PURGE_TICKET_ERROR' }
       };
     }
+  },
+
+  /**
+   * Extracts ticket booking fields from an uploaded document using Gemini AI.
+   * @param {File|Blob} file
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
+   */
+  async extractFromDocument(file) {
+    try {
+      const formData = new FormData();
+      formData.append('document', file);
+      return await apiClient.post('/tickets/extract-from-document', formData);
+    } catch (err) {
+      return {
+        success: false,
+        error: { message: err.message || 'Extraction failed', code: 'EXTRACTION_ERROR' }
+      };
+    }
   }
 };
 
