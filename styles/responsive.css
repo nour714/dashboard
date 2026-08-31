@@ -274,9 +274,9 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  /* Login page mobile */
+  /* Login page mobile & tablet */
   .login-page-container {
-    padding: 28px 14px 44px;
+    padding: clamp(20px, 3vh, 32px) clamp(12px, 3vw, 20px) clamp(36px, 6vh, 52px);
   }
 
   .login-lang-switch {
@@ -285,11 +285,15 @@
   }
 
   .login-top-brand {
-    margin-bottom: 16px;
+    margin-bottom: clamp(12px, 2vh, 18px);
+  }
+
+  .login-top-logo-img {
+    width: 48px;
   }
 
   .login-top-brand-title {
-    font-size: 26px;
+    font-size: clamp(24px, 6vw, 28px);
   }
 
   .login-top-watermark-wrap {
@@ -299,30 +303,46 @@
   }
 
   .login-card {
-    flex-direction: column;
-    max-width: 440px;
-    min-height: auto;
+    width: 100%;
+    max-width: 680px;
     border-radius: 20px;
   }
 
-  .login-side-panel {
-    width: 100%;
-    flex: none;
-    padding: 24px 18px 18px;
-    border-inline-end: none;
-    border-bottom: 1px solid rgba(230, 215, 195, 0.6);
-  }
+  @media (max-width: 560px) {
+    .login-card {
+      flex-direction: column;
+      max-width: 420px;
+      min-height: auto;
+    }
 
-  .login-side-landscape {
-    display: none;
-  }
+    .login-side-panel {
+      width: 100%;
+      flex: none;
+      padding: 22px 18px 16px;
+      border-inline-end: none;
+      border-bottom: 1px solid rgba(230, 215, 195, 0.6);
+    }
 
-  .login-main-panel {
-    padding: 28px 20px 24px;
-  }
+    .login-side-logo-img {
+      width: 38px;
+    }
 
-  .login-welcome-title {
-    font-size: 22px;
+    .login-side-brand-title {
+      font-size: 20px;
+    }
+
+    .login-side-landscape {
+      height: 65px;
+      opacity: 0.45;
+    }
+
+    .login-main-panel {
+      padding: 24px 18px 22px;
+    }
+
+    .login-welcome-title {
+      font-size: 22px;
+    }
   }
 
   .toast-container {
