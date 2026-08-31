@@ -419,8 +419,25 @@ class App {
       bindBottomNavEvents(bottomNavContainer);
     }
 
-    // Delegated click listener for sidebar sign out button
+    // Delegated click listener for sidebar sign out & collapse toggle
     document.addEventListener('click', async (e) => {
+      // Sidebar collapse toggle
+      const collapseBtn = e.target.closest('#sidebar-collapse-toggle');
+      if (collapseBtn) {
+        e.preventDefault();
+        const isNowCollapsed = document.documentElement.classList.toggle('sidebar-collapsed');
+        document.body.classList.toggle('sidebar-collapsed', isNowCollapsed);
+        localStorage.setItem('africatravel.sidebarCollapsed', isNowCollapsed ? '1' : '0');
+
+        // Re-render sidebar so icon and aria-expanded update
+        const sidebarContainer = document.getElementById('app-sidebar-container');
+        if (sidebarContainer) {
+          sidebarContainer.innerHTML = renderSidebar(window.location.pathname);
+        }
+        return;
+      }
+
+      // Sign out
       const signOutBtn = e.target.closest('#sidebar-sign-out-btn');
       if (signOutBtn) {
         e.preventDefault();

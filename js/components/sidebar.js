@@ -47,6 +47,12 @@ export function renderSidebar(activePath = '/dashboard') {
     `;
   }).join('');
 
+  const isCollapsed = (typeof document !== 'undefined') &&
+    (document.documentElement.classList.contains('sidebar-collapsed') ||
+     document.body?.classList.contains('sidebar-collapsed'));
+  const collapseIcon = isCollapsed ? icons.arrowRight('w-4 h-4') : icons.arrowLeft('w-4 h-4');
+  const toggleTitle = isCollapsed ? (t('common.expandSidebar') || 'Expand sidebar') : (t('common.collapseSidebar') || 'Collapse sidebar');
+
   return `
     <aside class="app-sidebar" id="app-sidebar">
       <div class="sidebar-header">
@@ -59,6 +65,10 @@ export function renderSidebar(activePath = '/dashboard') {
             <span class="sidebar-logo-subtitle">${escapeHtml(t('brand.tagline'))}</span>
           </div>
         </a>
+        <button type="button" class="sidebar-collapse-toggle" id="sidebar-collapse-toggle"
+          aria-expanded="${!isCollapsed}" title="${escapeHtml(toggleTitle)}">
+          ${collapseIcon}
+        </button>
       </div>
 
       <div class="sidebar-action-wrap">

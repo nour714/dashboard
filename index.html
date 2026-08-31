@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#131b2e" />
   <title>AfricaTravel — Travel Operations</title>
 
-  <!-- Immediate Language & Direction Initialization to Prevent Layout Shift -->
+  <!-- Immediate Language, Direction & Sidebar State Initialization to Prevent Layout Shift -->
   <script>
     (function() {
       try {
@@ -26,6 +26,10 @@
         } else {
           document.documentElement.lang = 'en';
           document.documentElement.dir = 'ltr';
+        }
+
+        if (localStorage.getItem('africatravel.sidebarCollapsed') === '1') {
+          document.documentElement.classList.add('sidebar-collapsed');
         }
       } catch (e) {}
     })();

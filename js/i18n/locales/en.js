@@ -91,6 +91,8 @@ export const en = {
     switchLanguage: 'Switch Language',
     profile: 'Profile',
     signOut: 'Sign Out',
+    collapseSidebar: 'Collapse sidebar',
+    expandSidebar: 'Expand sidebar',
     active: 'Active',
     inactive: 'Inactive',
     enabled: 'Enabled',

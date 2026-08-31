@@ -91,6 +91,8 @@ export const ar = {
     switchLanguage: 'تغيير اللغة',
     profile: 'الملف الشخصي',
     signOut: 'تسجيل الخروج',
+    collapseSidebar: 'طي القائمة الجانبية',
+    expandSidebar: 'توسيع القائمة الجانبية',
     active: 'نشط',
     inactive: 'غير نشط',
     enabled: 'مفعّل',
