@@ -10,6 +10,7 @@
 
 import { env } from '../config/env.js';
 import { BusinessRuleError } from '../domain/errors.js';
+import { findAirline, getAirlineByCode } from '../constants/airlines.js';
 
 const EXTRACTION_SCHEMA = {
   type: 'object',
@@ -52,7 +53,7 @@ export const TicketExtractionService = {
     }
 
     const base64Data = fileBuffer.toString('base64');
-    const prompt = `Extract flight ticket booking details from this document. Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
+    const prompt = `Extract flight ticket booking details from this document. Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Standardize airline names and their 2-letter IATA codes (e.g., EgyptAir MS, Air Cairo SM, Emirates EK, Etihad Airways EY, Qatar Airways QR, Turkish Airlines TK, Saudia SV, Flynas XY, flydubai FZ, Air Arabia G9, British Airways BA, Air France AF, Lufthansa LH, KLM KL, Iberia IB, ITA Airways AZ, Aegean Airlines A3, American Airlines AA, Delta Air Lines DL, United Airlines UA, Air Canada AC, Air China CA, China Eastern MU, China Southern CZ, Singapore Airlines SQ, Ethiopian Airlines ET, Kenya Airways KQ, Royal Air Maroc AT, Tunisair TU, Air Algérie AH). Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
 
     const modelName = env.GEMINI_MODEL || 'gemini-3.6-flash';
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
@@ -102,6 +103,15 @@ export const TicketExtractionService = {
     // Security & Domain Rule: Never allow costPrice to be extracted or populated from AI
     if (parsed && typeof parsed === 'object') {
       delete parsed.costPrice;
+
+      // Standardize airline name and IATA 2-letter code if present
+      if (parsed.airline || parsed.airlineCode) {
+        const matched = findAirline(parsed.airlineCode || parsed.airline) || findAirline(parsed.airline);
+        if (matched) {
+          parsed.airline = matched.name;
+          parsed.airlineCode = matched.code;
+        }
+      }
     }
 
     return parsed;

@@ -16,6 +16,7 @@ import {
 } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
 import { t, i18n } from '../i18n/i18n.js';
+import { AIRLINES, getAirlineLabel } from '../data/airlines.js';
 
 let currentFilters = {
   search: '',
@@ -190,10 +191,11 @@ export const TicketsPage = {
           <label class="text-sm text-muted" for="ticket-airline-filter">${escapeHtml(t('tickets.filterAirline'))}</label>
           <select class="form-control" id="ticket-airline-filter" style="min-width: 150px;">
             <option value="All Airlines" ${currentFilters.airline === 'All Airlines' ? 'selected' : ''}>${escapeHtml(t('common.all'))}</option>
-            <option value="EgyptAir" ${currentFilters.airline === 'EgyptAir' ? 'selected' : ''}>EgyptAir (مصر للطيران)</option>
-            <option value="Emirates" ${currentFilters.airline === 'Emirates' ? 'selected' : ''}>Emirates (طيران الإمارات)</option>
-            <option value="Qatar Airways" ${currentFilters.airline === 'Qatar Airways' ? 'selected' : ''}>Qatar Airways (القطرية)</option>
-            <option value="British Airways" ${currentFilters.airline === 'British Airways' ? 'selected' : ''}>British Airways (البريطانية)</option>
+            ${AIRLINES.map(airline => {
+              const isSelected = currentFilters.airline === airline.name || currentFilters.airline === airline.code;
+              const label = getAirlineLabel(airline, i18n.getLanguage ? i18n.getLanguage() : 'ar');
+              return `<option value="${airline.name}" ${isSelected ? 'selected' : ''}>${label}</option>`;
+            }).join('')}
           </select>
         </div>
 

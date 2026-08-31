@@ -8,7 +8,8 @@ import { icons } from '../components/icons.js';
 import { showToast } from '../components/toast.js';
 import { formatCurrency } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
-import { t } from '../i18n/i18n.js';
+import { t, i18n } from '../i18n/i18n.js';
+import { renderAirlineOptionsHtml, findAirline } from '../data/airlines.js';
 
 export const TicketCreatePage = {
   render() {
@@ -115,13 +116,7 @@ export const TicketCreatePage = {
                     <label class="form-label" for="flight-airline">${escapeHtml(t('ticketCreate.flightInfo.airline'))}</label>
                     <select id="flight-airline" class="form-control">
                       <option value="">-- ${escapeHtml(t('ticketCreate.flightInfo.airline'))} --</option>
-                      <option value="EgyptAir" data-code="MS">EgyptAir (MS)</option>
-                      <option value="Emirates" data-code="EK">Emirates (EK)</option>
-                      <option value="Qatar Airways" data-code="QR">Qatar Airways (QR)</option>
-                      <option value="Turkish Airlines" data-code="TK">Turkish Airlines (TK)</option>
-                      <option value="Saudia" data-code="SV">Saudia (SV)</option>
-                      <option value="Etihad" data-code="EY">Etihad (EY)</option>
-                      <option value="British Airways" data-code="BA">British Airways (BA)</option>
+                      ${renderAirlineOptionsHtml('', i18n.getLanguage ? i18n.getLanguage() : 'ar')}
                     </select>
                   </div>
                   <div class="form-group">
@@ -393,6 +388,22 @@ export const TicketCreatePage = {
       if (summaryBalance) summaryBalance.textContent = formatCurrency(remaining, currency);
     };
 
+    const flightNumInput = container.querySelector('#flight-number');
+    const returnFlightNumInput = container.querySelector('#return-flight-number');
+
+    if (airlineSelect) {
+      airlineSelect.addEventListener('change', () => {
+        const selectedOpt = airlineSelect.options[airlineSelect.selectedIndex];
+        const code = selectedOpt ? selectedOpt.getAttribute('data-code') : '';
+        if (code && flightNumInput) {
+          flightNumInput.placeholder = `e.g. ${code} 101`;
+        }
+        if (code && returnFlightNumInput) {
+          returnFlightNumInput.placeholder = `e.g. ${code} 102`;
+        }
+      });
+    }
+
     [custNameInput, originInput, destInput, airlineSelect, priceInput, currencySelect, initialPaymentInput].forEach(el => {
       if (el) {
         el.addEventListener('input', updateLiveSummary);
@@ -445,17 +456,23 @@ export const TicketCreatePage = {
             }
           }
 
-          // Airline matching
+          // Airline matching (using master airlines registry and fallback)
           if (d.airline || d.airlineCode) {
             const airSelect = container.querySelector('#flight-airline');
             if (airSelect) {
-              const airlineQuery = (d.airline || '').toLowerCase();
-              const codeQuery = (d.airlineCode || '').toLowerCase();
-              const matchedOpt = Array.from(airSelect.options).find(o =>
-                (airlineQuery && o.value.toLowerCase().includes(airlineQuery)) ||
-                (codeQuery && o.getAttribute('data-code')?.toLowerCase() === codeQuery)
-              );
-              if (matchedOpt) airSelect.value = matchedOpt.value;
+              const matched = findAirline(d.airlineCode || d.airline) || findAirline(d.airline);
+              if (matched) {
+                airSelect.value = matched.name;
+                if (flightNumInput) flightNumInput.placeholder = `e.g. ${matched.code} 101`;
+              } else {
+                const airlineQuery = (d.airline || '').toLowerCase();
+                const codeQuery = (d.airlineCode || '').toLowerCase();
+                const matchedOpt = Array.from(airSelect.options).find(o =>
+                  (airlineQuery && o.value.toLowerCase().includes(airlineQuery)) ||
+                  (codeQuery && o.getAttribute('data-code')?.toLowerCase() === codeQuery)
+                );
+                if (matchedOpt) airSelect.value = matchedOpt.value;
+              }
             }
           }
 
