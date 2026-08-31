@@ -275,26 +275,54 @@
   }
 
   /* Login page mobile */
-  .login-wrapper {
-    flex-direction: column;
+  .login-page-container {
+    padding: 28px 14px 44px;
   }
 
-  .login-brand-panel {
-    padding: var(--spacing-xl) var(--spacing-md);
-    min-height: auto;
+  .login-lang-switch {
+    top: 14px;
+    inset-inline-end: 14px;
   }
 
-  .login-brand-heading {
+  .login-top-brand {
+    margin-bottom: 16px;
+  }
+
+  .login-top-brand-title {
     font-size: 26px;
   }
 
-  .login-brand-subtext {
-    font-size: 14px;
+  .login-top-watermark-wrap {
+    width: 280px;
+    height: 120px;
+    top: -20px;
   }
 
-  .login-form-panel {
-    padding: var(--spacing-xl) var(--spacing-md);
-    max-width: 100%;
+  .login-card {
+    flex-direction: column;
+    max-width: 440px;
+    min-height: auto;
+    border-radius: 20px;
+  }
+
+  .login-side-panel {
+    width: 100%;
+    flex: none;
+    padding: 24px 18px 18px;
+    border-inline-end: none;
+    border-bottom: 1px solid rgba(230, 215, 195, 0.6);
+  }
+
+  .login-side-landscape {
+    display: none;
+  }
+
+  .login-main-panel {
+    padding: 28px 20px 24px;
+  }
+
+  .login-welcome-title {
+    font-size: 22px;
   }
 
   .toast-container {

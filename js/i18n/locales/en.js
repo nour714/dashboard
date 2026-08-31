@@ -636,16 +636,21 @@ export const en = {
 
   // Login Page
   login: {
-    title: 'Sign In to AfricaTravel',
-    subtitle: 'Internal Travel Agency Operations Terminal',
-    emailLabel: 'Operational Email',
-    emailPlaceholder: 'agent@africatravel.com',
+    welcomeTitle: 'Welcome Back',
+    welcomeSubtitle: 'Sign in to access your control panel',
+    title: 'Welcome Back',
+    subtitle: 'Sign in to access your control panel',
+    systemTagline: 'TRAVEL & TOURISM MANAGEMENT SYSTEM',
+    systemPreparing: 'Initializing System...',
+    systemWait: 'Please wait a moment',
+    emailLabel: 'Email Address',
+    emailPlaceholder: 'example@mail.com',
     passwordLabel: 'Password',
     passwordPlaceholder: '••••••••',
     rememberMe: 'Remember this device',
-    signInBtn: 'Sign In to Terminal',
+    signInBtn: 'Sign In',
     signingIn: 'Authenticating...',
-    switchLanguage: 'Language / اللغة'
+    switchLanguage: 'العربية'
   },
 
   // Modals & Action Dialogs

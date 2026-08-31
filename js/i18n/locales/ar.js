@@ -636,16 +636,21 @@ export const ar = {
 
   // Login Page
   login: {
-    title: 'تسجيل الدخول إلى AfricaTravel',
-    subtitle: 'نظام إدارة وكالات السفر وحجوزات الطيران',
-    emailLabel: 'البريد الإلكتروني للعمل',
-    emailPlaceholder: 'agent@africatravel.com',
+    welcomeTitle: 'مرحبًا بك مجدداً',
+    welcomeSubtitle: 'سجّل الدخول للوصول إلى لوحة التحكم',
+    title: 'مرحبًا بك مجدداً',
+    subtitle: 'سجّل الدخول للوصول إلى لوحة التحكم',
+    systemTagline: 'TRAVEL & TOURISM MANAGEMENT SYSTEM',
+    systemPreparing: 'جاري تجهيز النظام...',
+    systemWait: 'يرجى الانتظار لحظة',
+    emailLabel: 'البريد الإلكتروني',
+    emailPlaceholder: 'example@mail.com',
     passwordLabel: 'كلمة المرور',
     passwordPlaceholder: '••••••••',
     rememberMe: 'تذكر هذا الجهاز',
-    signInBtn: 'دخول إلى النظام',
+    signInBtn: 'تسجيل الدخول',
     signingIn: 'جاري التحقق...',
-    switchLanguage: 'Language / اللغة'
+    switchLanguage: 'English'
   },
 
   // Modals & Action Dialogs

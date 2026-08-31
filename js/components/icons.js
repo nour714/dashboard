@@ -237,6 +237,16 @@ export const icons = {
     <circle cx="12" cy="12" r="3"></circle>
   `, cls, 16),
 
+  eyeOff: (cls = '') => svgWrapper(`
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+    <line x1="1" y1="1" x2="23" y2="23"></line>
+  `, cls, 16),
+
+  shieldStar: (cls = '') => svgWrapper(`
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+    <polygon points="12 8 13.09 10.26 15.5 10.61 13.75 12.32 14.16 14.74 12 13.6 9.84 14.74 10.25 12.32 8.5 10.61 10.91 10.26 12 8" fill="currentColor" stroke="none"></polygon>
+  `, cls, 18),
+
   expenses: (cls = '') => svgWrapper(`
     <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"></path>
     <path d="M8 7h8"></path>
