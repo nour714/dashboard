@@ -504,6 +504,27 @@ body.sidebar-collapsed .sidebar-signout-btn {
   color: var(--color-text-muted);
 }
 
+.topbar-search-close-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.topbar-search-close-btn:hover {
+  background-color: var(--color-surface-soft);
+  color: var(--color-text);
+}
+
 .search-dropdown {
   position: absolute;
   top: calc(100% + 6px);

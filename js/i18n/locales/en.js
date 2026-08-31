@@ -43,6 +43,7 @@ export const en = {
     saveChanges: 'Save Changes',
     cancel: 'Cancel',
     close: 'Close',
+    closeSearch: 'Close search',
     back: 'Back',
     next: 'Next',
     previous: 'Previous',

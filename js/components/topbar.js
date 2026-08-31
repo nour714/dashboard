@@ -32,11 +32,31 @@ export function renderTopbar(upcomingCount = 0) {
             aria-label="${escapeHtml(t('common.searchPlaceholder'))}"
             autocomplete="off"
           />
+          <button
+            type="button"
+            class="topbar-search-close-btn show-mobile"
+            id="topbar-search-close-btn"
+            title="${escapeHtml(t('common.closeSearch') || t('common.close'))}"
+            aria-label="${escapeHtml(t('common.closeSearch') || t('common.close'))}"
+          >
+            ${icons.close('w-4 h-4')}
+          </button>
           <div id="topbar-search-dropdown" class="search-dropdown d-none"></div>
         </form>
       </div>
 
       <div class="topbar-right">
+        <!-- Mobile Search Button -->
+        <button
+          type="button"
+          class="topbar-icon-btn topbar-mobile-search-btn show-mobile"
+          id="topbar-mobile-search-btn"
+          title="${escapeHtml(t('common.searchPlaceholder'))}"
+          aria-label="${escapeHtml(t('common.searchPlaceholder'))}"
+        >
+          ${icons.search('w-5 h-5')}
+        </button>
+
         <!-- Language Switcher Pill -->
         <button
           type="button"

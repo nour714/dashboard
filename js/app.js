@@ -304,10 +304,46 @@ class App {
         }
       });
 
+      // Mobile search overlay controls
+      const mobileSearchBtn = document.getElementById('topbar-mobile-search-btn');
+      const searchCloseBtn = document.getElementById('topbar-search-close-btn');
+      const topbarEl = document.querySelector('.app-topbar');
+
+      const closeMobileSearch = () => {
+        if (searchForm) searchForm.classList.remove('mobile-search-active');
+        if (topbarEl) topbarEl.classList.remove('mobile-search-open');
+        if (searchInput) searchInput.value = '';
+        if (searchDropdown) {
+          searchDropdown.classList.add('d-none');
+          clearElement(searchDropdown);
+        }
+      };
+
+      if (mobileSearchBtn && searchForm && topbarEl) {
+        mobileSearchBtn.addEventListener('click', () => {
+          searchForm.classList.add('mobile-search-active');
+          topbarEl.classList.add('mobile-search-open');
+          searchInput?.focus();
+        });
+      }
+
+      if (searchCloseBtn) {
+        searchCloseBtn.addEventListener('click', () => {
+          closeMobileSearch();
+        });
+      }
+
+      if (searchDropdown) {
+        searchDropdown.addEventListener('click', (e) => {
+          if (e.target.closest('.search-dropdown-item')) {
+            closeMobileSearch();
+          }
+        });
+      }
+
       searchForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const query = searchInput.value.trim();
-        if (searchDropdown) searchDropdown.classList.add('d-none');
         if (query) {
           const { tickets } = store.getState();
           const exact = tickets.find(tData => tData.id.toLowerCase() === query.toLowerCase() || tData.pnr.toLowerCase() === query.toLowerCase());
@@ -316,7 +352,9 @@ class App {
           } else {
             this.router.navigateTo(`/tickets?q=${encodeURIComponent(query)}`);
           }
-          searchInput.value = '';
+          closeMobileSearch();
+        } else {
+          if (searchDropdown) searchDropdown.classList.add('d-none');
         }
       });
     }

@@ -43,6 +43,7 @@ export const ar = {
     saveChanges: 'حفظ التغييرات',
     cancel: 'إلغاء',
     close: 'إغلاق',
+    closeSearch: 'إغلاق البحث',
     back: 'رجوع',
     next: 'التالي',
     previous: 'السابق',

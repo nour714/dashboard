@@ -124,7 +124,42 @@
 
   /* Header adjustments */
   .app-topbar {
+    position: sticky;
     padding: 0 var(--spacing-md);
+  }
+
+  .topbar-mobile-search-btn {
+    display: inline-flex !important;
+  }
+
+  .topbar-search-form {
+    display: none;
+  }
+
+  .topbar-search-form.mobile-search-active {
+    display: flex;
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: var(--topbar-height);
+    background: #ffffff;
+    align-items: center;
+    padding-inline: var(--spacing-md);
+    z-index: calc(var(--z-header) + 1);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .topbar-search-form.mobile-search-active .topbar-search-input {
+    flex: 1;
+  }
+
+  .topbar-search-form.mobile-search-active .topbar-search-close-btn {
+    display: inline-flex !important;
+  }
+
+  .app-topbar.mobile-search-open .topbar-right {
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .topbar-left {
@@ -279,9 +314,5 @@
 
   .financial-grid {
     grid-template-columns: 1fr;
-  }
-
-  .topbar-search-form {
-    display: none;
   }
 }
