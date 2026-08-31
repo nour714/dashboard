@@ -31,7 +31,8 @@
     "test:employee-delete": "node test/employee-delete.test.js",
     "test:expenses": "node test/expenses.test.js",
     "test:ai-extract": "node test/ticket-extraction.test.js",
-    "test": "node test/business-flow.test.js && node test/ticket-payment-status.test.js && node test/i18n-bilingual.test.js && node test/backend-domain.test.js && node test/backend-auth.test.js && node test/ticket-customer-link.test.js && node test/passport-document.test.js && node test/round-trip-flight.test.js && node test/customer-payments-report.test.js && node test/rbac-ui.test.js && node test/security-fixes.test.js && node test/backend-api.test.js && node test/audit-fixes.test.js && node test/purge-actions.test.js && node test/employee-delete.test.js && node test/expenses.test.js && node test/ticket-extraction.test.js"
+    "test:pwa": "node test/pwa-install.test.js",
+    "test": "node test/business-flow.test.js && node test/ticket-payment-status.test.js && node test/i18n-bilingual.test.js && node test/backend-domain.test.js && node test/backend-auth.test.js && node test/ticket-customer-link.test.js && node test/passport-document.test.js && node test/round-trip-flight.test.js && node test/customer-payments-report.test.js && node test/rbac-ui.test.js && node test/security-fixes.test.js && node test/backend-api.test.js && node test/audit-fixes.test.js && node test/purge-actions.test.js && node test/employee-delete.test.js && node test/expenses.test.js && node test/ticket-extraction.test.js && node test/pwa-install.test.js"
   },
   "keywords": [
     "travel",

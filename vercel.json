@@ -26,6 +26,14 @@
     {
       "src": "js/**",
       "use": "@vercel/static"
+    },
+    {
+      "src": "manifest.json",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "sw.js",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -44,6 +52,14 @@
     {
       "src": "/js/(.*)",
       "dest": "/js/$1"
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "/manifest.json"
+    },
+    {
+      "src": "/sw.js",
+      "dest": "/sw.js"
     },
     {
       "src": "/(.*)",

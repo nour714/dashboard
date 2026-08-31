@@ -144,10 +144,13 @@ export function createApp(rootDir = ROOT_DIR) {
           'X-Content-Type-Options': 'nosniff'
         };
 
-        if (ext === '.html') {
+        if (ext === '.html' || path.basename(filePath) === 'sw.js') {
           headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';
           headers['Pragma'] = 'no-cache';
           headers['Expires'] = '0';
+          if (path.basename(filePath) === 'sw.js') {
+            headers['Service-Worker-Allowed'] = '/';
+          }
         } else {
           // Static assets (js, css, images, fonts)
           headers['Cache-Control'] = 'public, max-age=86400, stale-while-revalidate=604800';
