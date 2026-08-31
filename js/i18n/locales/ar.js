@@ -11,6 +11,18 @@ export const ar = {
     terminal: 'نظام إدارة وكالات السفر وحجوزات الطيران'
   },
 
+  // Boot Splash Screen
+  bootSplash: {
+    settingUp: 'جاري تجهيز النظام...',
+    checkingSession: 'التحقق من الجلسة',
+    checkingSessionProgress: 'التحقق من الجلسة...',
+    loadingData: 'تحميل البيانات',
+    loadingDataProgress: 'تحميل البيانات...',
+    preparingDashboard: 'تجهيز لوحة التحكم',
+    preparingDashboardProgress: 'تجهيز لوحة التحكم...',
+    secureConnection: 'اتصال آمن ومشفّر'
+  },
+
   // Navigation
   nav: {
     dashboard: 'لوحة التحكم',

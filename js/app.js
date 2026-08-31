@@ -17,6 +17,38 @@ import { escapeHtml } from './utils/security.js';
 import { getUpcomingFlightReminders } from './utils/flight-reminders.js';
 import { i18n, t, getUserRoleLabel } from './i18n/i18n.js';
 
+function markBootStep(id, state) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.remove('active', 'done');
+    el.classList.add(state);
+  }
+}
+
+function setBootProgress(pct, statusText) {
+  const bar = document.getElementById('boot-splash-progress-bar');
+  if (bar) bar.style.width = `${pct}%`;
+  const status = document.getElementById('boot-splash-status');
+  if (status && statusText) status.textContent = statusText;
+}
+
+function localizeBootSplash() {
+  if (i18n.getLanguage() === 'ar') {
+    const taglineEl = document.getElementById('boot-splash-tagline');
+    if (taglineEl) taglineEl.textContent = t('brand.platform') || 'منصة عمليات السفر وحجوزات الطيران';
+    const statusEl = document.getElementById('boot-splash-status');
+    if (statusEl) statusEl.textContent = t('bootSplash.settingUp') || 'جاري تجهيز النظام...';
+    const stepSessionText = document.getElementById('boot-step-session-text');
+    if (stepSessionText) stepSessionText.textContent = t('bootSplash.checkingSession') || 'التحقق من الجلسة';
+    const stepDataText = document.getElementById('boot-step-data-text');
+    if (stepDataText) stepDataText.textContent = t('bootSplash.loadingData') || 'تحميل البيانات';
+    const stepShellText = document.getElementById('boot-step-shell-text');
+    if (stepShellText) stepShellText.textContent = t('bootSplash.preparingDashboard') || 'تجهيز لوحة التحكم';
+    const secureEl = document.getElementById('boot-splash-secure');
+    if (secureEl) secureEl.textContent = `🔒 ${t('bootSplash.secureConnection') || 'اتصال آمن ومشفّر'}`;
+  }
+}
+
 class App {
   constructor() {
     this.appContainer = document.getElementById('app');
@@ -76,21 +108,32 @@ class App {
       return;
     }
 
-    // Proactively refresh the access token before firing data requests,
-    // so the initial page load doesn't fire 5 failed 401s before succeeding.
+    localizeBootSplash();
+
+    // Step 1: Session check
+    markBootStep('boot-step-session', 'active');
+    setBootProgress(10, t('bootSplash.checkingSessionProgress') || 'Checking session…');
     try {
       await refreshAccessToken();
     } catch (e) {
       // If refresh fails (e.g. invalid/expired refresh token cookie),
       // let ensureHydrated() handle it gracefully as it currently does.
     }
+    markBootStep('boot-step-session', 'done');
 
-    // Ensure the API-backed cache is populated before any page reads it
+    // Step 2: Loading data
+    markBootStep('boot-step-data', 'active');
+    setBootProgress(50, t('bootSplash.loadingDataProgress') || 'Loading your data…');
     try {
       await store.ensureHydrated();
     } catch (e) {
       console.error('Failed to hydrate application state from backend', e);
     }
+    markBootStep('boot-step-data', 'done');
+
+    // Step 3: Preparing dashboard / App shell
+    markBootStep('boot-step-shell', 'active');
+    setBootProgress(90, t('bootSplash.preparingDashboardProgress') || 'Preparing your dashboard…');
 
     // Render Full App Shell
     this.renderAppShell(pathname);

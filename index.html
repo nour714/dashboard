@@ -61,7 +61,23 @@
 </head>
 <body>
   <!-- App Container -->
-  <div id="app"></div>
+  <div id="app">
+    <div id="app-boot-splash" class="boot-splash">
+      <img src="/assets/icon-512.png" alt="AfricaTravel" class="boot-splash-logo" />
+      <h1 class="boot-splash-title">AfricaTravel</h1>
+      <p class="boot-splash-tagline" id="boot-splash-tagline">Travel Operations Platform</p>
+      <p class="boot-splash-status" id="boot-splash-status">Setting things up…</p>
+      <div class="boot-splash-progress">
+        <div class="boot-splash-progress-bar" id="boot-splash-progress-bar"></div>
+      </div>
+      <ul class="boot-splash-steps">
+        <li class="boot-splash-step" id="boot-step-session"><span class="boot-step-icon"></span><span id="boot-step-session-text">Checking session</span></li>
+        <li class="boot-splash-step" id="boot-step-data"><span class="boot-step-icon"></span><span id="boot-step-data-text">Loading your data</span></li>
+        <li class="boot-splash-step" id="boot-step-shell"><span class="boot-step-icon"></span><span id="boot-step-shell-text">Preparing your dashboard</span></li>
+      </ul>
+      <p class="boot-splash-secure" id="boot-splash-secure">🔒 Secure connection</p>
+    </div>
+  </div>
 
   <!-- Entry Script -->
   <script type="module" src="/js/app.js?v=2.5.0"></script>

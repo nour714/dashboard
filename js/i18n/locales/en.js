@@ -11,6 +11,18 @@ export const en = {
     terminal: 'Internal Travel Agency Operations Terminal'
   },
 
+  // Boot Splash Screen
+  bootSplash: {
+    settingUp: 'Setting things up…',
+    checkingSession: 'Checking session',
+    checkingSessionProgress: 'Checking session…',
+    loadingData: 'Loading your data',
+    loadingDataProgress: 'Loading your data…',
+    preparingDashboard: 'Preparing your dashboard',
+    preparingDashboardProgress: 'Preparing your dashboard…',
+    secureConnection: 'Secure connection'
+  },
+
   // Navigation
   nav: {
     dashboard: 'Dashboard',

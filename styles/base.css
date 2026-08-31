@@ -272,6 +272,169 @@ svg {
   animation: shimmerProgress 1.5s linear infinite;
 }
 
+/* ============================================================
+   Boot Splash Screen (Instant Paint & Loading Progress)
+   ============================================================ */
+
+.boot-splash {
+  min-height: 100vh;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-primary-container, #131b2e);
+  color: #ffffff;
+  padding: 32px 24px;
+  text-align: center;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.boot-splash-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-xl, 16px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  margin-bottom: 16px;
+  animation: bootLogoFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes bootLogoFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.boot-splash-title {
+  font-size: 24px;
+  font-weight: var(--font-weight-bold, 700);
+  font-family: var(--font-family-heading);
+  color: #ffffff;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.01em;
+}
+
+.boot-splash-tagline {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0 0 24px 0;
+}
+
+.boot-splash-status {
+  font-size: 13px;
+  font-weight: var(--font-weight-medium, 500);
+  color: #cbd5e1;
+  min-height: 20px;
+  margin: 0 0 12px 0;
+}
+
+.boot-splash-progress {
+  width: 100%;
+  max-width: 280px;
+  height: 5px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full, 9999px);
+  overflow: hidden;
+  margin: 0 0 28px 0;
+}
+
+.boot-splash-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #d42b2b 0%, #ff5e5e 100%);
+  border-radius: var(--radius-full, 9999px);
+  transition: width 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.boot-splash-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 32px 0;
+  width: 100%;
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: start;
+}
+
+.boot-splash-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #64748b;
+  transition: color 200ms ease;
+}
+
+.boot-splash-step.active {
+  color: #f8fafc;
+  font-weight: var(--font-weight-medium, 500);
+}
+
+.boot-splash-step.done {
+  color: #cbd5e1;
+}
+
+.boot-step-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1.5px solid #475569;
+  background: transparent;
+  box-sizing: border-box;
+  position: relative;
+  transition: all 200ms ease;
+}
+
+.boot-splash-step.active .boot-step-icon {
+  border: 2px solid rgba(212, 43, 43, 0.3);
+  border-top-color: var(--color-accent, #d42b2b);
+  border-inline-end-color: var(--color-accent, #d42b2b);
+  animation: bootSpinner 0.8s linear infinite;
+}
+
+@keyframes bootSpinner {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.boot-splash-step.done .boot-step-icon {
+  background-color: var(--color-success, #059669);
+  border-color: var(--color-success, #059669);
+}
+
+.boot-splash-step.done .boot-step-icon::after {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 8px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-top: -2px;
+}
+
+.boot-splash-secure {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* Accessibility: Respect Reduced Motion Preference */
 @media (prefers-reduced-motion: reduce) {
   *,
