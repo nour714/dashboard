@@ -63,19 +63,108 @@
   <!-- App Container -->
   <div id="app">
     <div id="app-boot-splash" class="boot-splash">
-      <img src="/assets/icon-512.png" alt="AfricaTravel" class="boot-splash-logo" />
-      <h1 class="boot-splash-title">AfricaTravel</h1>
-      <p class="boot-splash-tagline" id="boot-splash-tagline">Travel Operations Platform</p>
-      <p class="boot-splash-status" id="boot-splash-status">Setting things up…</p>
-      <div class="boot-splash-progress">
-        <div class="boot-splash-progress-bar" id="boot-splash-progress-bar"></div>
+      <!-- Panoramic savannah landscape anchored at bottom -->
+      <div class="boot-splash-savannah-bg" aria-hidden="true"></div>
+
+      <!-- Upper flight arc and subtle Africa watermark -->
+      <div class="boot-splash-watermark-wrap" aria-hidden="true">
+        <svg class="boot-splash-flight-arc-svg" viewBox="0 0 380 180" fill="none">
+          <path d="M 40 145 Q 200 25 350 35" stroke="#B38D4F" stroke-dasharray="4 6" stroke-width="1.2" opacity="0.4" />
+          <g transform="translate(325, 38) rotate(-12)">
+            <path d="M0 -7 L5 6 L0 3.5 L-5 6 Z" fill="#B38D4F" opacity="0.75" />
+          </g>
+        </svg>
       </div>
-      <ul class="boot-splash-steps">
-        <li class="boot-splash-step" id="boot-step-session"><span class="boot-step-icon"></span><span id="boot-step-session-text">Checking session</span></li>
-        <li class="boot-splash-step" id="boot-step-data"><span class="boot-step-icon"></span><span id="boot-step-data-text">Loading your data</span></li>
-        <li class="boot-splash-step" id="boot-step-shell"><span class="boot-step-icon"></span><span id="boot-step-shell-text">Preparing your dashboard</span></li>
-      </ul>
-      <p class="boot-splash-secure" id="boot-splash-secure">🔒 Secure connection</p>
+
+      <div class="boot-splash-container">
+        <!-- Top Brand Header -->
+        <div class="boot-splash-brand">
+          <img src="/assets/logo.png" alt="AfricaTravel" class="boot-splash-logo-img no-flip" />
+          <h1 class="boot-splash-title">
+            <span class="brand-africa">Africa</span><span class="brand-travel">Travel</span>
+          </h1>
+          <span class="boot-splash-tagline" id="boot-splash-tagline">TRAVEL & TOURISM MANAGEMENT SYSTEM</span>
+          <div class="boot-splash-gold-ornament"><span></span>◈<span></span></div>
+        </div>
+
+        <!-- Status Title & Subtitle -->
+        <div class="boot-splash-status-wrap">
+          <h2 class="boot-splash-status" id="boot-splash-status">جاري تجهيز النظام...</h2>
+          <p class="boot-splash-substatus" id="boot-splash-substatus">يرجي الانتظار لحظة</p>
+        </div>
+
+        <!-- Progress Bar & Percentage -->
+        <div class="boot-splash-progress-container">
+          <div class="boot-splash-progress">
+            <div class="boot-splash-progress-bar" id="boot-splash-progress-bar" style="width: 25%;"></div>
+          </div>
+          <div class="boot-splash-percentage" id="boot-splash-percentage">25%</div>
+        </div>
+
+        <!-- Centered 4-Step Checklist Card -->
+        <div class="boot-splash-card">
+          <!-- Step 1: Session Check -->
+          <div class="boot-splash-step active" id="boot-step-session">
+            <div class="boot-step-icon-wrap">
+              <span class="boot-step-icon"></span>
+            </div>
+            <div class="boot-step-text-wrap">
+              <div class="boot-step-title" id="boot-step-session-title">جاري التحقق من الجلسة</div>
+              <div class="boot-step-sub" id="boot-step-session-sub">Checking session</div>
+            </div>
+            <div class="boot-step-end-icon"></div>
+          </div>
+
+          <!-- Step 2: User Data -->
+          <div class="boot-splash-step" id="boot-step-user">
+            <div class="boot-step-icon-wrap">
+              <span class="boot-step-icon"></span>
+            </div>
+            <div class="boot-step-text-wrap">
+              <div class="boot-step-title" id="boot-step-user-title">جاري تحميل بيانات المستخدم</div>
+              <div class="boot-step-sub" id="boot-step-user-sub">Loading user data</div>
+            </div>
+            <div class="boot-step-end-icon"></div>
+          </div>
+
+          <!-- Step 3: System Data -->
+          <div class="boot-splash-step" id="boot-step-data">
+            <div class="boot-step-icon-wrap">
+              <span class="boot-step-icon"></span>
+            </div>
+            <div class="boot-step-text-wrap">
+              <div class="boot-step-title" id="boot-step-data-title">جاري تحميل بيانات النظام</div>
+              <div class="boot-step-sub" id="boot-step-data-sub">Loading system data</div>
+            </div>
+            <div class="boot-step-end-icon"></div>
+          </div>
+
+          <!-- Step 4: Dashboard Shell -->
+          <div class="boot-splash-step" id="boot-step-shell">
+            <div class="boot-step-icon-wrap">
+              <span class="boot-step-icon"></span>
+            </div>
+            <div class="boot-step-text-wrap">
+              <div class="boot-step-title" id="boot-step-shell-title">جاري تجهيز لوحة التحكم</div>
+              <div class="boot-step-sub" id="boot-step-shell-sub">Preparing dashboard</div>
+            </div>
+            <div class="boot-step-end-icon"></div>
+          </div>
+        </div>
+
+        <!-- Bottom Trust Badge -->
+        <div class="boot-splash-secure">
+          <svg class="boot-splash-secure-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B1E1E" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <rect x="9" y="10" width="6" height="5" rx="1" fill="#8B1E1E" stroke="none"></rect>
+            <circle cx="12" cy="10" r="1.5" stroke="#8B1E1E" stroke-width="1.5" fill="none"></circle>
+          </svg>
+          <div class="boot-splash-secure-text">
+            <div class="boot-splash-secure-title" id="boot-splash-secure-title">نظام آمن ومشفّر</div>
+            <div class="boot-splash-secure-sub" id="boot-splash-secure-sub">SECURE & ENCRYPTED</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

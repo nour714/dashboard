@@ -13,14 +13,22 @@ export const ar = {
 
   // Boot Splash Screen
   bootSplash: {
-    settingUp: 'جاري تجهيز النظام...',
-    checkingSession: 'التحقق من الجلسة',
+    systemPreparing: 'جاري تجهيز النظام...',
+    systemWait: 'يرجي الانتظار لحظة',
+    systemTagline: 'TRAVEL & TOURISM MANAGEMENT SYSTEM',
+    checkingSession: 'جاري التحقق من الجلسة',
+    checkingSessionSub: 'Checking session',
     checkingSessionProgress: 'التحقق من الجلسة...',
-    loadingData: 'تحميل البيانات',
-    loadingDataProgress: 'تحميل البيانات...',
-    preparingDashboard: 'تجهيز لوحة التحكم',
+    loadingUserData: 'جاري تحميل بيانات المستخدم',
+    loadingUserDataSub: 'Loading user data',
+    loadingData: 'جاري تحميل بيانات النظام',
+    loadingDataSub: 'Loading system data',
+    loadingDataProgress: 'تحميل بيانات النظام...',
+    preparingDashboard: 'جاري تجهيز لوحة التحكم',
+    preparingDashboardSub: 'Preparing dashboard',
     preparingDashboardProgress: 'تجهيز لوحة التحكم...',
-    secureConnection: 'اتصال آمن ومشفّر'
+    secureConnection: 'نظام آمن ومشفّر',
+    secureConnectionSub: 'SECURE & ENCRYPTED'
   },
 
   // Navigation

@@ -273,7 +273,7 @@ svg {
 }
 
 /* ============================================================
-   Boot Splash Screen (Instant Paint & Loading Progress)
+   AfricaTravel — Luxury Safari & Aviation Boot Splash Screen
    ============================================================ */
 
 .boot-splash {
@@ -284,125 +284,225 @@ svg {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-primary-container, #131b2e);
-  color: #ffffff;
-  padding: 32px 24px;
-  text-align: center;
+  position: relative;
+  overflow-x: hidden;
+  background: radial-gradient(circle at 50% 12%, #FAF5EE 0%, #F5EAE0 48%, #EBDBC8 100%);
+  padding: 40px 20px 48px;
   box-sizing: border-box;
   user-select: none;
+  font-family: var(--font-family-body);
 }
 
-.boot-splash-logo {
-  width: 80px;
-  height: 80px;
-  border-radius: var(--radius-xl, 16px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  margin-bottom: 16px;
-  animation: bootLogoFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* Panoramic savannah landscape anchored at bottom */
+.boot-splash-savannah-bg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: clamp(240px, 38vh, 480px);
+  background-image: url("/assets/savannah-bg.jpg");
+  background-position: center bottom;
+  background-size: cover;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  opacity: 0.85;
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95) 55%, rgba(0, 0, 0, 0) 100%);
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95) 55%, rgba(0, 0, 0, 0) 100%);
+  z-index: 0;
 }
 
-@keyframes bootLogoFadeIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.92);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+/* Subtle flight path arc & gold airplane at top */
+.boot-splash-watermark-wrap {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 380px;
+  height: 180px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.boot-splash-flight-arc-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.boot-splash-container {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 460px;
+  text-align: center;
+}
+
+/* Top Branding */
+.boot-splash-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.boot-splash-logo-img {
+  width: 58px;
+  height: auto;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 4px 10px rgba(160, 30, 30, 0.18));
 }
 
 .boot-splash-title {
-  font-size: 24px;
-  font-weight: var(--font-weight-bold, 700);
-  font-family: var(--font-family-heading);
-  color: #ffffff;
-  margin: 0 0 4px 0;
+  font-size: 32px;
+  font-family: 'Cinzel', 'Playfair Display', Georgia, 'Amiri', serif;
+  font-weight: 700;
+  line-height: 1.15;
+  margin: 0;
   letter-spacing: -0.01em;
 }
 
+.boot-splash-title .brand-africa {
+  color: #8B1E1E;
+}
+
+.boot-splash-title .brand-travel {
+  color: #B38D4F;
+  margin-inline-start: 1px;
+}
+
 .boot-splash-tagline {
-  font-size: 13px;
-  color: #94a3b8;
-  margin: 0 0 24px 0;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #8C7765;
+  text-transform: uppercase;
+  margin-top: 5px;
+  margin-bottom: 8px;
+}
+
+.boot-splash-gold-ornament {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #C5A059;
+  font-size: 11px;
+  margin-bottom: 14px;
+}
+
+.boot-splash-gold-ornament span {
+  display: inline-block;
+  width: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #C5A059, transparent);
+}
+
+/* Status Header */
+.boot-splash-status-wrap {
+  margin-bottom: 16px;
 }
 
 .boot-splash-status {
-  font-size: 13px;
-  font-weight: var(--font-weight-medium, 500);
-  color: #cbd5e1;
-  min-height: 20px;
-  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #8B1E1E;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.boot-splash-substatus {
+  font-size: 13.5px;
+  color: #8C7765;
+  margin: 4px 0 0;
+}
+
+/* Progress Bar & Percentage */
+.boot-splash-progress-container {
+  width: 100%;
+  max-width: 440px;
+  margin-bottom: 16px;
 }
 
 .boot-splash-progress {
   width: 100%;
-  max-width: 280px;
-  height: 5px;
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-full, 9999px);
+  height: 7px;
+  background-color: rgba(215, 195, 170, 0.45);
+  border-radius: 9999px;
   overflow: hidden;
-  margin: 0 0 28px 0;
 }
 
 .boot-splash-progress-bar {
   height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, #d42b2b 0%, #ff5e5e 100%);
-  border-radius: var(--radius-full, 9999px);
-  transition: width 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  width: 25%;
+  background: linear-gradient(90deg, #991B1B 0%, #8B1E1E 85%, #B38D4F 100%);
+  border-radius: 9999px;
+  transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.boot-splash-steps {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 32px 0;
+.boot-splash-percentage {
+  font-size: 14px;
+  font-weight: 700;
+  color: #8B1E1E;
+  margin-top: 6px;
+}
+
+/* Centered Checklist Card */
+.boot-splash-card {
   width: 100%;
-  max-width: 260px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  max-width: 440px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 20px;
+  border: 1px solid rgba(225, 210, 190, 0.7);
+  box-shadow: 0 20px 45px rgba(90, 60, 30, 0.08), 0 2px 8px rgba(0, 0, 0, 0.03);
+  padding: 8px 20px;
+  box-sizing: border-box;
   text-align: start;
 }
 
 .boot-splash-step {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 13px;
-  color: #64748b;
-  transition: color 200ms ease;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 4px;
+  border-bottom: 1px solid rgba(230, 218, 204, 0.55);
+  transition: all 200ms ease;
 }
 
-.boot-splash-step.active {
-  color: #f8fafc;
-  font-weight: var(--font-weight-medium, 500);
+.boot-splash-step:last-child {
+  border-bottom: none;
 }
 
-.boot-splash-step.done {
-  color: #cbd5e1;
+.boot-step-icon-wrap {
+  flex-shrink: 0;
 }
 
 .boot-step-icon {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  border: 1.5px solid #475569;
+  border: 2px solid #D8CCBF;
   background: transparent;
   box-sizing: border-box;
   position: relative;
   transition: all 200ms ease;
 }
 
+/* Active State */
 .boot-splash-step.active .boot-step-icon {
-  border: 2px solid rgba(212, 43, 43, 0.3);
-  border-top-color: var(--color-accent, #d42b2b);
-  border-inline-end-color: var(--color-accent, #d42b2b);
+  border: 2.5px solid rgba(139, 30, 30, 0.2);
+  border-top-color: #8B1E1E;
+  border-inline-end-color: #8B1E1E;
   animation: bootSpinner 0.8s linear infinite;
+  background: transparent;
 }
 
 @keyframes bootSpinner {
@@ -410,29 +510,104 @@ svg {
   100% { transform: rotate(360deg); }
 }
 
+/* Done State */
 .boot-splash-step.done .boot-step-icon {
-  background-color: var(--color-success, #059669);
-  border-color: var(--color-success, #059669);
+  background-color: #8B1E1E;
+  border-color: #8B1E1E;
 }
 
 .boot-splash-step.done .boot-step-icon::after {
   content: '';
   display: block;
-  width: 4px;
-  height: 8px;
+  width: 4.5px;
+  height: 9px;
   border: solid #ffffff;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
   margin-top: -2px;
 }
 
-.boot-splash-secure {
+.boot-step-text-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.boot-step-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #292524;
+  line-height: 1.3;
+}
+
+.boot-step-sub {
   font-size: 12px;
-  color: #64748b;
-  margin: 0;
+  color: #8C7765;
+  margin-top: 1px;
+  font-family: var(--font-family-body);
+}
+
+.boot-step-end-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.boot-splash-step.done .boot-step-end-icon::after {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 8px;
+  border: solid #8B1E1E;
+  border-width: 0 1.8px 1.8px 0;
+  transform: rotate(45deg);
+}
+
+.boot-splash-step.active .boot-step-end-icon::after {
+  content: '...';
+  font-size: 14px;
+  font-weight: 700;
+  color: #8B1E1E;
+  line-height: 1;
+  letter-spacing: 1px;
+  animation: pulseDots 1.2s ease-in-out infinite;
+}
+
+@keyframes pulseDots {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* Bottom Trust Badge */
+.boot-splash-secure {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 24px;
+  text-align: start;
+}
+
+.boot-splash-secure-icon {
+  flex-shrink: 0;
+}
+
+.boot-splash-secure-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #292524;
+  line-height: 1.2;
+}
+
+.boot-splash-secure-sub {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #8C7765;
+  text-transform: uppercase;
+  margin-top: 2px;
 }
 
 /* Accessibility: Respect Reduced Motion Preference */

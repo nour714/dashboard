@@ -25,28 +25,54 @@ function markBootStep(id, state) {
   }
 }
 
-function setBootProgress(pct, statusText) {
+function setBootProgress(pct, statusText, subText) {
   const bar = document.getElementById('boot-splash-progress-bar');
   if (bar) bar.style.width = `${pct}%`;
+  const pctEl = document.getElementById('boot-splash-percentage');
+  if (pctEl) pctEl.textContent = `${pct}%`;
   const status = document.getElementById('boot-splash-status');
   if (status && statusText) status.textContent = statusText;
+  const substatus = document.getElementById('boot-splash-substatus');
+  if (substatus && subText) substatus.textContent = subText;
 }
 
 function localizeBootSplash() {
-  if (i18n.getLanguage() === 'ar') {
-    const taglineEl = document.getElementById('boot-splash-tagline');
-    if (taglineEl) taglineEl.textContent = t('brand.platform') || 'منصة عمليات السفر وحجوزات الطيران';
-    const statusEl = document.getElementById('boot-splash-status');
-    if (statusEl) statusEl.textContent = t('bootSplash.settingUp') || 'جاري تجهيز النظام...';
-    const stepSessionText = document.getElementById('boot-step-session-text');
-    if (stepSessionText) stepSessionText.textContent = t('bootSplash.checkingSession') || 'التحقق من الجلسة';
-    const stepDataText = document.getElementById('boot-step-data-text');
-    if (stepDataText) stepDataText.textContent = t('bootSplash.loadingData') || 'تحميل البيانات';
-    const stepShellText = document.getElementById('boot-step-shell-text');
-    if (stepShellText) stepShellText.textContent = t('bootSplash.preparingDashboard') || 'تجهيز لوحة التحكم';
-    const secureEl = document.getElementById('boot-splash-secure');
-    if (secureEl) secureEl.textContent = `🔒 ${t('bootSplash.secureConnection') || 'اتصال آمن ومشفّر'}`;
-  }
+  const curLang = i18n.getLanguage();
+  const isAr = curLang === 'ar';
+
+  const taglineEl = document.getElementById('boot-splash-tagline');
+  if (taglineEl) taglineEl.textContent = t('bootSplash.systemTagline') || 'TRAVEL & TOURISM MANAGEMENT SYSTEM';
+
+  const statusEl = document.getElementById('boot-splash-status');
+  if (statusEl) statusEl.textContent = t('bootSplash.systemPreparing') || 'جاري تجهيز النظام...';
+
+  const substatusEl = document.getElementById('boot-splash-substatus');
+  if (substatusEl) substatusEl.textContent = t('bootSplash.systemWait') || 'يرجي الانتظار لحظة';
+
+  const stepSessionTitle = document.getElementById('boot-step-session-title');
+  const stepSessionSub = document.getElementById('boot-step-session-sub');
+  if (stepSessionTitle) stepSessionTitle.textContent = isAr ? 'جاري التحقق من الجلسة' : 'Checking Session';
+  if (stepSessionSub) stepSessionSub.textContent = isAr ? 'Checking session' : 'جاري التحقق من الجلسة';
+
+  const stepUserTitle = document.getElementById('boot-step-user-title');
+  const stepUserSub = document.getElementById('boot-step-user-sub');
+  if (stepUserTitle) stepUserTitle.textContent = isAr ? 'جاري تحميل بيانات المستخدم' : 'Loading User Data';
+  if (stepUserSub) stepUserSub.textContent = isAr ? 'Loading user data' : 'جاري تحميل بيانات المستخدم';
+
+  const stepDataTitle = document.getElementById('boot-step-data-title');
+  const stepDataSub = document.getElementById('boot-step-data-sub');
+  if (stepDataTitle) stepDataTitle.textContent = isAr ? 'جاري تحميل بيانات النظام' : 'Loading System Data';
+  if (stepDataSub) stepDataSub.textContent = isAr ? 'Loading system data' : 'جاري تحميل بيانات النظام';
+
+  const stepShellTitle = document.getElementById('boot-step-shell-title');
+  const stepShellSub = document.getElementById('boot-step-shell-sub');
+  if (stepShellTitle) stepShellTitle.textContent = isAr ? 'جاري تجهيز لوحة التحكم' : 'Preparing Dashboard';
+  if (stepShellSub) stepShellSub.textContent = isAr ? 'Preparing dashboard' : 'جاري تجهيز لوحة التحكم';
+
+  const secureTitle = document.getElementById('boot-splash-secure-title');
+  const secureSub = document.getElementById('boot-splash-secure-sub');
+  if (secureTitle) secureTitle.textContent = isAr ? 'نظام آمن ومشفّر' : 'Secure & Encrypted';
+  if (secureSub) secureSub.textContent = isAr ? 'SECURE & ENCRYPTED' : 'نظام آمن ومشفّر';
 }
 
 class App {
@@ -112,7 +138,7 @@ class App {
 
     // Step 1: Session check
     markBootStep('boot-step-session', 'active');
-    setBootProgress(10, t('bootSplash.checkingSessionProgress') || 'Checking session…');
+    setBootProgress(25, t('bootSplash.systemPreparing') || 'جاري تجهيز النظام...', t('bootSplash.systemWait') || 'يرجي الانتظار لحظة');
     try {
       await refreshAccessToken();
     } catch (e) {
@@ -121,9 +147,17 @@ class App {
     }
     markBootStep('boot-step-session', 'done');
 
-    // Step 2: Loading data
+    // Step 2: User profile & authentication check
+    markBootStep('boot-step-user', 'active');
+    setBootProgress(50, t('bootSplash.systemPreparing') || 'جاري تجهيز النظام...', t('bootSplash.systemWait') || 'يرجي الانتظار لحظة');
+    try {
+      AuthService.getCurrentUser();
+    } catch (e) {}
+    markBootStep('boot-step-user', 'done');
+
+    // Step 3: System Data Hydration
     markBootStep('boot-step-data', 'active');
-    setBootProgress(50, t('bootSplash.loadingDataProgress') || 'Loading your data…');
+    setBootProgress(75, t('bootSplash.systemPreparing') || 'جاري تجهيز النظام...', t('bootSplash.systemWait') || 'يرجي الانتظار لحظة');
     try {
       await store.ensureHydrated();
     } catch (e) {
@@ -131,9 +165,9 @@ class App {
     }
     markBootStep('boot-step-data', 'done');
 
-    // Step 3: Preparing dashboard / App shell
+    // Step 4: Dashboard Shell Preparation
     markBootStep('boot-step-shell', 'active');
-    setBootProgress(90, t('bootSplash.preparingDashboardProgress') || 'Preparing your dashboard…');
+    setBootProgress(100, t('bootSplash.systemPreparing') || 'جاري تجهيز النظام...', t('bootSplash.systemWait') || 'يرجي الانتظار لحظة');
 
     // Render Full App Shell
     this.renderAppShell(pathname);
