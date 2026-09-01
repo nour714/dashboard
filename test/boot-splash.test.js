@@ -32,6 +32,8 @@ describe('Boot Splash Screen Verification', () => {
   it('1. index.html contains static boot splash markup in #app for zero-blank initial paint', () => {
     assert.ok(indexHtml.includes('id="app-boot-splash"'), 'index.html must include #app-boot-splash');
     assert.ok(indexHtml.includes('class="boot-splash"'), 'index.html must include .boot-splash');
+    assert.ok(indexHtml.includes('src="/assets/logo.png"'), 'index.html must use /assets/logo.png');
+    assert.ok(indexHtml.includes('class="boot-splash-title"'), 'index.html must have .boot-splash-title');
     assert.ok(indexHtml.includes('id="boot-splash-status"'), 'index.html must have #boot-splash-status');
     assert.ok(indexHtml.includes('id="boot-splash-progress-bar"'), 'index.html must have #boot-splash-progress-bar');
     assert.ok(indexHtml.includes('id="boot-splash-percentage"'), 'index.html must have #boot-splash-percentage');
@@ -47,6 +49,7 @@ describe('Boot Splash Screen Verification', () => {
     assert.ok(baseCss.includes('.boot-splash'), 'base.css must define .boot-splash');
     assert.ok(baseCss.includes('.boot-splash-savannah-bg'), 'base.css must define .boot-splash-savannah-bg');
     assert.ok(baseCss.includes('.boot-splash-card'), 'base.css must define .boot-splash-card');
+    assert.ok(baseCss.includes('.boot-splash-logo-img'), 'base.css must define .boot-splash-logo-img');
     assert.ok(baseCss.includes('.boot-splash-progress'), 'base.css must define .boot-splash-progress');
     assert.ok(baseCss.includes('.boot-splash-progress-bar'), 'base.css must define .boot-splash-progress-bar');
     assert.ok(baseCss.includes('.boot-splash-percentage'), 'base.css must define .boot-splash-percentage');
