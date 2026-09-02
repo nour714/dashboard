@@ -55,50 +55,57 @@ export const TicketExtractionService = {
     const base64Data = fileBuffer.toString('base64');
     const prompt = `Extract flight ticket booking details from this document. Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Standardize airline names and their 2-letter IATA codes (e.g., EgyptAir MS, Air Cairo SM, Emirates EK, Etihad Airways EY, Qatar Airways QR, Turkish Airlines TK, Saudia SV, Flynas XY, flydubai FZ, Air Arabia G9, British Airways BA, Air France AF, Lufthansa LH, KLM KL, Iberia IB, ITA Airways AZ, Aegean Airlines A3, American Airlines AA, Delta Air Lines DL, United Airlines UA, Air Canada AC, Air China CA, China Eastern MU, China Southern CZ, Singapore Airlines SQ, Ethiopian Airlines ET, Kenya Airways KQ, Royal Air Maroc AT, Tunisair TU, Air Algérie AH). For "origin" and "destination", return ONLY the 3-letter IATA airport code (e.g. "CAI", "DXB") — never the city name, country name, or full airport name. Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
 
-    const modelName = env.GEMINI_MODEL || 'gemini-3.6-flash';
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
+    let primaryModel = (env.GEMINI_MODEL && env.GEMINI_MODEL !== 'gemini-3.6-flash') ? env.GEMINI_MODEL : 'gemini-2.5-flash';
+    const candidateModels = Array.from(new Set([primaryModel, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']));
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000);
+    let lastError = null;
+    let result = null;
 
-    let response;
-    try {
-      response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              { inline_data: { mime_type: mimeType, data: base64Data } }
-            ]
-          }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: EXTRACTION_SCHEMA,
-            temperature: 0.1,
-            maxOutputTokens: 800,
-            thinkingConfig: {
-              thinkingBudget: 0
+    for (const modelName of candidateModels) {
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: prompt },
+                { inline_data: { mime_type: mimeType, data: base64Data } }
+              ]
+            }],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              responseSchema: EXTRACTION_SCHEMA,
+              temperature: 0.1,
+              maxOutputTokens: 1000
             }
-          }
-        })
-      });
-    } catch (networkErr) {
-      console.error('[TicketExtraction] Network error contacting Gemini API:', networkErr.message);
-      throw new BusinessRuleError('Unable to connect to AI extraction service. Please fill the form manually.', 'AI_EXTRACTION_FAILED', 502);
-    } finally {
-      clearTimeout(timeoutId);
+          })
+        });
+
+        if (response.ok) {
+          result = await response.json();
+          break;
+        }
+
+        const errBody = await response.text().catch(() => '');
+        console.error(`[TicketExtraction] Gemini API error with model ${modelName}:`, response.status, errBody);
+        lastError = new BusinessRuleError('Failed to extract data from document. Please fill the form manually.', 'AI_EXTRACTION_FAILED', 502);
+      } catch (networkErr) {
+        console.error(`[TicketExtraction] Network error with model ${modelName}:`, networkErr.message);
+        lastError = new BusinessRuleError('Unable to connect to AI extraction service. Please fill the form manually.', 'AI_EXTRACTION_FAILED', 502);
+      } finally {
+        clearTimeout(timeoutId);
+      }
     }
 
-    if (!response.ok) {
-      const errBody = await response.text().catch(() => '');
-      console.error('[TicketExtraction] Gemini API error:', response.status, errBody);
-      throw new BusinessRuleError('Failed to extract data from document. Please fill the form manually.', 'AI_EXTRACTION_FAILED', 502);
+    if (!result) {
+      throw lastError || new BusinessRuleError('Failed to extract data from document. Please fill the form manually.', 'AI_EXTRACTION_FAILED', 502);
     }
-
-    const result = await response.json();
     const textPart = result?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!textPart) {
       throw new BusinessRuleError('AI extraction returned no readable data', 'AI_EXTRACTION_EMPTY', 502);

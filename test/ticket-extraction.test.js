@@ -94,7 +94,7 @@ async function runExtractionTests() {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url, options) => {
     assert(url.includes('generativelanguage.googleapis.com'), 'Calls official Google Generative Language endpoint');
-    assert(url.includes('gemini-3.6-flash') || url.includes(env.GEMINI_MODEL), 'Uses configured Gemini model name');
+    assert(url.includes('gemini-2.5-flash') || url.includes('gemini-2.0-flash') || url.includes('gemini-1.5-flash') || url.includes(env.GEMINI_MODEL), 'Uses configured Gemini model name');
     assert(options.method === 'POST', 'HTTP method is POST');
 
     const body = JSON.parse(options.body);
