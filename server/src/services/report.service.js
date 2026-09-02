@@ -35,7 +35,6 @@ export function computeWeeklyTrends(tickets = []) {
     const start = new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     const startLabel = `${start.toLocaleString('default', { month: 'short' })} ${start.getDate()}`;
-    const endLabel = `${end.toLocaleString('default', { month: 'short' })} ${end.getDate()}`;
     const weekIndex = 4 - i;
 
     let sales = 0;

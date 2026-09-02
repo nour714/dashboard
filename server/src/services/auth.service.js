@@ -74,11 +74,13 @@ export const AuthService = {
    * @param {string} email
    * @param {string} password
    * @param {object} meta - IP and UserAgent
-   * @returns {Promise<{user: object, accessToken: string, refreshToken: string}>}
+   * @param {{ rememberMe?: boolean }} [options={}]
+   * @returns {Promise<{user: object, accessToken: string, refreshToken: string, rememberMe: boolean}>}
    */
-  async login(email, password, meta = {}) {
+  async login(email, password, meta = {}, options = {}) {
     const prisma = getPrismaClient();
     const cleanEmail = email.trim();
+    const rememberMe = options.rememberMe !== undefined ? Boolean(options.rememberMe) : true;
 
     const user = await prisma.user.findFirst({
       where: {
@@ -112,15 +114,15 @@ export const AuthService = {
       data: {
         tokenHash,
         userId: user.id,
+        rememberMe,
         expiresAt
       }
     });
 
     // Update user's lastActive timestamp safely
-    const nowIso = new Date().toISOString();
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastActive: nowIso }
+      data: { lastActive: new Date() }
     }).catch(e => console.warn('Could not update lastActive:', e.message));
 
     // Record audit event safely
@@ -145,7 +147,8 @@ export const AuthService = {
     return {
       user: safeUser,
       accessToken,
-      refreshToken: rawRefreshToken
+      refreshToken: rawRefreshToken,
+      rememberMe
     };
   },
 
@@ -156,7 +159,7 @@ export const AuthService = {
    * 2. Uses atomic updateMany where revoked = false to claim token (guaranteeing rowCount === 1).
    * 3. Creates the replacement token within the same transaction.
    * @param {string} rawRefreshToken
-   * @returns {Promise<{accessToken: string, refreshToken: string}>}
+   * @returns {Promise<{accessToken: string, refreshToken: string, rememberMe: boolean}>}
    */
   async refresh(rawRefreshToken) {
     if (!rawRefreshToken) {
@@ -193,6 +196,8 @@ export const AuthService = {
       throw new BusinessRuleError('Account is inactive', 'ACCOUNT_INACTIVE');
     }
 
+    const rememberMe = tokenRecord.rememberMe !== undefined ? Boolean(tokenRecord.rememberMe) : true;
+
     // Atomic Claim: Ensure only 1 concurrent request can rotate this specific token
     const newRawRefreshToken = this.generateRefreshTokenString();
     const newTokenHash = this.hashToken(newRawRefreshToken);
@@ -222,6 +227,7 @@ export const AuthService = {
         data: {
           tokenHash: newTokenHash,
           userId: tokenRecord.user.id,
+          rememberMe,
           expiresAt
         }
       });
@@ -237,7 +243,8 @@ export const AuthService = {
 
     return {
       accessToken: newAccessToken,
-      refreshToken: newRawRefreshToken
+      refreshToken: newRawRefreshToken,
+      rememberMe
     };
   },
 

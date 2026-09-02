@@ -49,8 +49,10 @@ export const corsMiddleware = cors({
     const isDevelopment = env.NODE_ENV !== 'production';
     const isLocalhost = isDevelopment && (normalizedOrigin.includes('localhost') || normalizedOrigin.includes('127.0.0.1'));
 
+    const isWildcardAllowed = isDevelopment && allowedOrigins.includes('*');
+
     if (
-      allowedOrigins.includes('*') ||
+      isWildcardAllowed ||
       allowedOrigins.includes(normalizedOrigin) ||
       vercelSystemDomains.includes(normalizedOrigin) ||
       isLocalhost

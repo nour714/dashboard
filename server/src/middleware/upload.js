@@ -44,6 +44,37 @@ export function uploadConcurrencyBudget(req, res, next) {
   next();
 }
 
+const MAX_CONCURRENT_EXTRACTIONS = 5;
+let activeExtractions = 0;
+
+/**
+ * Concurrency budget specifically for AI extraction operations to protect external LLM rate limits
+ */
+export function aiExtractionConcurrencyBudget(req, res, next) {
+  if (activeExtractions >= MAX_CONCURRENT_EXTRACTIONS) {
+    return res.status(429).json({
+      success: false,
+      error: {
+        message: 'Too many concurrent AI extraction requests in progress. Please try again shortly.',
+        code: 'AI_EXTRACTION_CONCURRENCY_LIMIT_EXCEEDED'
+      }
+    });
+  }
+
+  activeExtractions++;
+  let released = false;
+  const release = () => {
+    if (!released) {
+      released = true;
+      activeExtractions = Math.max(0, activeExtractions - 1);
+    }
+  };
+
+  res.on('finish', release);
+  res.on('close', release);
+  next();
+}
+
 /**
  * Custom Multer Storage engine that performs early magic byte validation
  * on the first incoming chunks of the file stream before accumulating into buffer.

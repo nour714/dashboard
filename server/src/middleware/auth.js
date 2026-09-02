@@ -57,7 +57,7 @@ export function authenticate(req, res, next) {
           if (prisma?.user?.update) {
             prisma.user.update({
               where: { id: req.user.id },
-              data: { lastActive: new Date().toISOString() }
+              data: { lastActive: new Date() }
             }).catch(() => {});
           }
         } catch (_) {}

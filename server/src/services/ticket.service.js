@@ -133,10 +133,10 @@ export const TicketService = {
       prisma.ticket.findMany({
         where,
         include: {
-          payments: { orderBy: { date: 'desc' } },
-          modifications: { orderBy: { date: 'desc' } },
-          refunds: { orderBy: { requestedDate: 'desc' } },
-          customer: true
+          payments: { select: { amount: true, date: true } },
+          modifications: { select: { changeFee: true, date: true } },
+          refunds: { select: { amount: true, requestedDate: true } },
+          customer: { select: { id: true, name: true, phone: true, email: true } }
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -219,8 +219,12 @@ export const TicketService = {
       // Try to match an existing customer by passport number (most reliable identifier available)
       let matchedCustomer = null;
       if (data.passport && data.passport.trim()) {
+        const cleanPassport = data.passport.trim();
         matchedCustomer = await prisma.customer.findFirst({
-          where: { passport: data.passport.trim() }
+          where: {
+            passport: { equals: cleanPassport, mode: 'insensitive' },
+            deletedAt: null
+          }
         });
       }
 
@@ -337,27 +341,49 @@ export const TicketService = {
 
     const data = {};
     const allowedFields = [
-      'passengerName', 'phone', 'passport', 'nationality', 'dob', 'email',
+      'passengerName', 'pnr', 'ticketNumber', 'phone', 'passport', 'nationality', 'dob', 'email',
       'airline', 'airlineCode', 'flightNumber', 'returnFlightNumber',
       'origin', 'originTerminal', 'originAirportName',
       'destination', 'destinationTerminal', 'destinationAirportName',
       'tripType', 'flightDuration', 'cabinClass', 'seat', 'baggage', 'costPrice', 'status'
     ];
 
+    if (updates.ticketNumber && updates.ticketNumber !== existing.ticketNumber) {
+      const duplicate = await prisma.ticket.findFirst({
+        where: {
+          ticketNumber: updates.ticketNumber,
+          id: { not: existing.id }
+        }
+      });
+      if (duplicate) {
+        throw new BusinessRuleError('A ticket with this ticket number already exists.', 'DUPLICATE_TICKET_NUMBER');
+      }
+    }
+
     allowedFields.forEach(f => {
       if (updates[f] !== undefined) {
         if (f === 'costPrice') {
-          data[f] = updates[f] !== null ? Number(updates[f]) : null;
+          data[f] = updates[f] !== null && updates[f] !== '' ? Number(updates[f]) : null;
+        } else if (f === 'pnr' || f === 'ticketNumber') {
+          data[f] = String(updates[f]).trim();
         } else {
           data[f] = updates[f];
         }
       }
     });
 
-    if (updates.departureDate) data.departureDate = new Date(updates.departureDate);
-    if (updates.arrivalDate) data.arrivalDate = new Date(updates.arrivalDate);
-    if (updates.returnDepartureDate) data.returnDepartureDate = new Date(updates.returnDepartureDate);
-    if (updates.returnArrivalDate) data.returnArrivalDate = new Date(updates.returnArrivalDate);
+    if (updates.departureDate !== undefined) {
+      data.departureDate = updates.departureDate ? new Date(updates.departureDate) : null;
+    }
+    if (updates.arrivalDate !== undefined) {
+      data.arrivalDate = updates.arrivalDate ? new Date(updates.arrivalDate) : null;
+    }
+    if (updates.returnDepartureDate !== undefined) {
+      data.returnDepartureDate = updates.returnDepartureDate ? new Date(updates.returnDepartureDate) : null;
+    }
+    if (updates.returnArrivalDate !== undefined) {
+      data.returnArrivalDate = updates.returnArrivalDate ? new Date(updates.returnArrivalDate) : null;
+    }
 
     const updated = await prisma.ticket.update({
       where: { id: existing.id },

@@ -115,7 +115,7 @@ export const EmployeeService = {
         title: data.title || (data.role === 'ADMIN' ? 'Operations Director' : data.role === 'TICKET_ONLY' ? 'Ticket Creation Officer' : 'Ticketing Officer'),
         passwordHash,
         status: data.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
-        lastActive: new Date().toISOString()
+        lastActive: new Date()
       },
       select: {
         id: true,

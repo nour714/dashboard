@@ -25,10 +25,10 @@ export const AuthController = {
         userAgent: req.headers['user-agent']
       };
 
-      const result = await AuthService.login(email, password, meta);
+      const result = await AuthService.login(email, password, meta, { rememberMe });
 
       if (result.refreshToken) {
-        res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getRefreshCookieOptions(rememberMe));
+        res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getRefreshCookieOptions(result.rememberMe));
       }
 
       return res.status(200).json({
@@ -45,15 +45,15 @@ export const AuthController = {
 
   async refresh(req, res, next) {
     try {
-      const rawToken = req.cookies?.[REFRESH_COOKIE_NAME] || req.body?.refreshToken;
+      const rawToken = req.cookies?.[REFRESH_COOKIE_NAME];
       if (!rawToken) {
-        throw new ValidationError('Refresh token is required', 'refreshToken');
+        throw new ValidationError('Refresh token is required in httpOnly cookie', 'refreshToken');
       }
 
       const result = await AuthService.refresh(rawToken);
 
       if (result.refreshToken) {
-        res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getRefreshCookieOptions());
+        res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getRefreshCookieOptions(result.rememberMe));
       }
 
       return res.status(200).json({
@@ -69,8 +69,10 @@ export const AuthController = {
 
   async logout(req, res, next) {
     try {
-      const rawToken = req.cookies?.[REFRESH_COOKIE_NAME] || req.body?.refreshToken;
-      await AuthService.logout(rawToken, req.user);
+      const rawToken = req.cookies?.[REFRESH_COOKIE_NAME];
+      if (rawToken) {
+        await AuthService.logout(rawToken, req.user);
+      }
 
       res.clearCookie(REFRESH_COOKIE_NAME, {
         httpOnly: true,
@@ -115,7 +117,7 @@ export const AuthController = {
   async changePassword(req, res, next) {
     try {
       const { currentPassword, newPassword } = req.body;
-      const result = await AuthService.changePassword(req.user.id, currentPassword, newPassword);
+      await AuthService.changePassword(req.user.id, currentPassword, newPassword);
       return res.status(200).json({
         success: true,
         data: { message: 'Password updated successfully' }

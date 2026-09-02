@@ -50,7 +50,7 @@ AfricaTravel is a production-ready travel agency management platform built with 
 
 ## 🧪 Testing
 
-Run the full automated test suite (141+ tests across 7 suites):
+Run the full automated test suite (21 test files covering security, auth, domain, RBAC, i18n, API, AI extraction, and more):
 
 ```bash
 npm test

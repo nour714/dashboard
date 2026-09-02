@@ -34,8 +34,15 @@ async function runTicketCustomerTests() {
   const mockPrisma = {
     customer: {
       findFirst: async ({ where }) => {
-        if (where?.passport) {
-          return mockCustomers.find(c => c.passport === where.passport) || null;
+        // Support both direct string and Prisma case-insensitive object filter
+        const passportFilter = where?.passport;
+        if (passportFilter) {
+          const passportValue = typeof passportFilter === 'object' && passportFilter.equals
+            ? passportFilter.equals
+            : passportFilter;
+          return mockCustomers.find(c =>
+            c.passport && c.passport.toLowerCase() === String(passportValue).toLowerCase() && !c.deletedAt
+          ) || null;
         }
         return mockCustomers[0] || null;
       },

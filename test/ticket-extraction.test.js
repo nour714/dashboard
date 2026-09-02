@@ -94,13 +94,15 @@ async function runExtractionTests() {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url, options) => {
     assert(url.includes('generativelanguage.googleapis.com'), 'Calls official Google Generative Language endpoint');
-    assert(url.includes('gemini-3.7-flash') || url.includes('gemini-2.5-flash') || url.includes('gemini-2.0-flash') || url.includes('gemini-1.5-flash') || url.includes(env.GEMINI_MODEL), 'Uses configured Gemini model name');
+    assert(url.includes('gemini-2.5-flash') || url.includes('gemini-3.7-flash') || url.includes(env.GEMINI_MODEL), 'Uses configured Gemini model name');
     assert(options.method === 'POST', 'HTTP method is POST');
+    assert(options.headers?.['x-goog-api-key'] === env.GEMINI_API_KEY, 'Passes API key securely via x-goog-api-key header');
 
     const body = JSON.parse(options.body);
     assert(body.contents?.[0]?.parts?.[0]?.text, 'Request payload includes extraction prompt');
     assert(body.contents?.[0]?.parts?.[1]?.inline_data?.data, 'Request payload includes base64 document data');
     assert(body.generationConfig?.responseMimeType === 'application/json', 'Requests structured application/json response');
+    assert(body.generationConfig?.thinkingConfig?.thinkingLevel === 'low', 'Configures thinkingLevel low for optimal latency');
     assert(body.generationConfig?.responseSchema?.properties?.passengerName, 'Provides JSON extraction schema to Gemini');
 
     return {

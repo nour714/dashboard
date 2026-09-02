@@ -10,7 +10,7 @@
 
 import { env } from '../config/env.js';
 import { BusinessRuleError } from '../domain/errors.js';
-import { findAirline, getAirlineByCode } from '../constants/airlines.js';
+import { findAirline } from '../constants/airlines.js';
 
 const EXTRACTION_SCHEMA = {
   type: 'object',
@@ -55,21 +55,24 @@ export const TicketExtractionService = {
     const base64Data = fileBuffer.toString('base64');
     const prompt = `Extract flight ticket booking details from this document. Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Standardize airline names and their 2-letter IATA codes (e.g., EgyptAir MS, Air Cairo SM, Emirates EK, Etihad Airways EY, Qatar Airways QR, Turkish Airlines TK, Saudia SV, Flynas XY, flydubai FZ, Air Arabia G9, British Airways BA, Air France AF, Lufthansa LH, KLM KL, Iberia IB, ITA Airways AZ, Aegean Airlines A3, American Airlines AA, Delta Air Lines DL, United Airlines UA, Air Canada AC, Air China CA, China Eastern MU, China Southern CZ, Singapore Airlines SQ, Ethiopian Airlines ET, Kenya Airways KQ, Royal Air Maroc AT, Tunisair TU, Air Algérie AH). For "origin" and "destination", return ONLY the 3-letter IATA airport code (e.g. "CAI", "DXB") — never the city name, country name, or full airport name. Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
 
-    let primaryModel = (env.GEMINI_MODEL && env.GEMINI_MODEL !== 'gemini-3.6-flash') ? env.GEMINI_MODEL : 'gemini-3.7-flash';
-    const candidateModels = Array.from(new Set([primaryModel, 'gemini-3.7-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']));
+    const primaryModel = env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const candidateModels = Array.from(new Set([primaryModel, 'gemini-2.5-flash-lite']));
 
     let lastError = null;
     let result = null;
 
     for (const modelName of candidateModels) {
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent`;
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000);
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       try {
         const response = await fetch(apiUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': env.GEMINI_API_KEY
+          },
           signal: controller.signal,
           body: JSON.stringify({
             contents: [{
@@ -81,7 +84,9 @@ export const TicketExtractionService = {
             generationConfig: {
               responseMimeType: 'application/json',
               responseSchema: EXTRACTION_SCHEMA,
-              temperature: 0.1,
+              thinkingConfig: {
+                thinkingLevel: 'low'
+              },
               maxOutputTokens: 1000
             }
           })

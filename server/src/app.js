@@ -7,7 +7,7 @@
 
 import express from 'express';
 import path from 'path';
-import fs from 'fs';
+
 import { fileURLToPath } from 'url';
 import cookieParser from 'cookie-parser';
 import apiRouter from './routes/index.js';
@@ -19,22 +19,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '../../');
 
-const MIME_TYPES = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.mjs': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.woff2': 'font/woff2',
-  '.woff': 'font/woff',
-  '.ttf': 'font/ttf'
-};
+
 
 /**
  * Attaches common API middleware pipeline (security, body parsers, cookie parser, env guard)
@@ -87,8 +72,42 @@ export function createApp(rootDir = ROOT_DIR) {
     next();
   });
 
-  // Static Frontend Assets & SPA Fallback Handler
+  // Security guard for static assets & frontend: block path traversal & dotfiles
   app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    const rawPath = req.originalUrl || req.url || req.path;
+    const pathnameRaw = decodeURIComponent(rawPath.split('?')[0]);
+    const pathnameReq = decodeURIComponent(req.path);
+    const v1 = validatePath(pathnameRaw === '/' ? '/index.html' : pathnameRaw, rootDir);
+    const v2 = validatePath(pathnameReq === '/' ? '/index.html' : pathnameReq, rootDir);
+    if (!v1.isSafe || !v2.isSafe) {
+      return res.status(403).type('text/plain').send('403 Forbidden');
+    }
+    next();
+  });
+
+  // Static Frontend Assets with proper Cache-Control using express.static
+  app.use(express.static(rootDir, {
+    maxAge: '1d',
+    immutable: false,
+    dotfiles: 'deny',
+    index: false, // Handled separately for SPA fallback
+    setHeaders(res, filePath) {
+      const ext = path.extname(filePath).toLowerCase();
+      if (ext === '.html' || path.basename(filePath) === 'sw.js') {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+        if (path.basename(filePath) === 'sw.js') {
+          res.set('Service-Worker-Allowed', '/');
+        }
+      }
+      res.set('X-Content-Type-Options', 'nosniff');
+    }
+  }));
+
+  // SPA Fallback — serve index.html for unmatched non-API, non-file routes
+  app.use((req, res) => {
     // Skip API routes that weren't matched
     if (req.path.startsWith('/api')) {
       return res.status(404).json({
@@ -100,65 +119,20 @@ export function createApp(rootDir = ROOT_DIR) {
       });
     }
 
-    let pathname = decodeURIComponent(req.path);
-    if (pathname === '/') {
-      pathname = '/index.html';
+    // Only fallback for extensionless paths (client-side routes)
+    if (path.extname(req.path)) {
+      return res.status(404).type('text/plain').send('404 Not Found');
     }
 
-    // Security Check: Path Traversal & Dotfile/Dotfolder Prevention
-    const pathValidation = validatePath(pathname, rootDir);
-    if (!pathValidation.isSafe) {
-      res.status(403).type('text/plain').send('403 Forbidden');
-      return;
-    }
-
-    let filePath = pathValidation.resolvedPath;
-
-    fs.stat(filePath, (err, stats) => {
-      if (err || !stats.isFile()) {
-        // SPA Fallback for client-side routing
-        if (!path.extname(pathname)) {
-          const indexValidation = validatePath('/index.html', rootDir);
-          if (!indexValidation.isSafe) {
-            res.status(403).type('text/plain').send('403 Forbidden');
-            return;
-          }
-          filePath = indexValidation.resolvedPath;
-        } else {
-          res.status(404).type('text/plain').send('404 Not Found');
-          return;
-        }
+    const indexPath = path.join(rootDir, 'index.html');
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        res.status(404).type('text/plain').send('404 Not Found');
       }
-
-      const ext = path.extname(filePath).toLowerCase();
-      const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-
-      fs.readFile(filePath, (readErr, content) => {
-        if (readErr) {
-          res.status(500).type('text/plain').send('500 Internal Server Error');
-          return;
-        }
-
-        const headers = {
-          'Content-Type': contentType,
-          'X-Content-Type-Options': 'nosniff'
-        };
-
-        if (ext === '.html' || path.basename(filePath) === 'sw.js') {
-          headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';
-          headers['Pragma'] = 'no-cache';
-          headers['Expires'] = '0';
-          if (path.basename(filePath) === 'sw.js') {
-            headers['Service-Worker-Allowed'] = '/';
-          }
-        } else {
-          // Static assets (js, css, images, fonts)
-          headers['Cache-Control'] = 'public, max-age=86400, stale-while-revalidate=604800';
-        }
-
-        res.set(headers);
-        res.status(200).send(content);
-      });
     });
   });
 

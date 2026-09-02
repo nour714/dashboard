@@ -295,15 +295,10 @@ export const CustomerService = {
     const ext = detectedType.mime === 'application/pdf' ? 'pdf'
       : (detectedType.mime === 'image/png' ? 'png' : 'jpg');
     const storagePath = `customers/${customerId}/passport-${randomUUID()}.${ext}`;
+    const oldDocPath = customer.passportDocPath;
 
-    // If replacing an existing document, delete the old one from storage first
-    if (customer.passportDocPath) {
-      const { deleteFromStorage } = await import('../config/storage.js');
-      await deleteFromStorage(customer.passportDocPath);
-    }
-
-    // Upload to Supabase Storage (private bucket)
-    const { uploadToStorage } = await import('../config/storage.js');
+    // 1. Upload new document to Supabase Storage (private bucket)
+    const { uploadToStorage, deleteFromStorage } = await import('../config/storage.js');
     const { error: uploadError } = await uploadToStorage(storagePath, buffer, detectedType.mime);
     if (uploadError) {
       throw new ValidationError(
@@ -312,15 +307,30 @@ export const CustomerService = {
       );
     }
 
-    // Update customer record with storage path (never a URL)
+    // 2. Update customer record with new storage path (with compensating cleanup if DB update fails)
     const uploadedAt = new Date();
-    await prisma.customer.update({
-      where: { id: customerId },
-      data: {
-        passportDocPath: storagePath,
-        passportDocUploadedAt: uploadedAt
-      }
-    });
+    try {
+      await prisma.customer.update({
+        where: { id: customerId },
+        data: {
+          passportDocPath: storagePath,
+          passportDocUploadedAt: uploadedAt
+        }
+      });
+    } catch (dbErr) {
+      // Compensating action: remove newly uploaded file to avoid orphan files
+      await deleteFromStorage(storagePath).catch(cleanupErr => {
+        console.warn(`[CustomerService] Failed compensating cleanup for ${storagePath}:`, cleanupErr.message);
+      });
+      throw dbErr;
+    }
+
+    // 3. Delete old document only after new file is uploaded and DB is safely updated
+    if (oldDocPath) {
+      await deleteFromStorage(oldDocPath).catch(deleteErr => {
+        console.warn(`[CustomerService] Failed to delete old passport doc ${oldDocPath}:`, deleteErr.message);
+      });
+    }
 
     await AuditService.recordLog({
       user: currentUser.name || 'Agent',

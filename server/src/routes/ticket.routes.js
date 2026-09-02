@@ -15,7 +15,7 @@ import {
 import { addPaymentSchema } from '../schemas/payment.schema.js';
 import { addRefundSchema } from '../schemas/refund.schema.js';
 import { addModificationSchema } from '../schemas/modification.schema.js';
-import { passportDocUpload } from '../middleware/upload.js';
+import { passportDocUpload, uploadConcurrencyBudget, aiExtractionConcurrencyBudget } from '../middleware/upload.js';
 import { uploadRateLimiter } from '../middleware/rate-limiter.js';
 import { TicketExtractionService } from '../services/ticket-extraction.service.js';
 
@@ -29,6 +29,8 @@ router.post(
   '/extract-from-document',
   requireRole('ADMIN', 'AGENT', 'TICKET_ONLY'),
   uploadRateLimiter,
+  uploadConcurrencyBudget,
+  aiExtractionConcurrencyBudget,
   passportDocUpload.single('document'),
   async (req, res, next) => {
     try {

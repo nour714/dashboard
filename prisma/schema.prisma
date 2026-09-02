@@ -34,7 +34,7 @@ model User {
   title         String
   passwordHash  String
   status        EmployeeStatus  @default(ACTIVE)
-  lastActive    String?         @default("Just now")
+  lastActive    DateTime?       @default(now())
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -69,6 +69,8 @@ model Customer {
   tickets               Ticket[]
   notes                 CustomerNote[]
 
+  @@index([passport])
+  @@index([deletedAt])
   @@map("customers")
 }
 
@@ -132,6 +134,9 @@ model Ticket {
   refunds                Refund[]
 
   @@index([createdById])
+  @@index([pnr])
+  @@index([customerId])
+  @@index([deletedAt])
   @@map("tickets")
 }
 
@@ -216,14 +221,16 @@ model AuditLog {
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
-  tokenHash String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  revoked   Boolean  @default(false)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revoked    Boolean  @default(false)
+  rememberMe Boolean  @default(true)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
 
+  @@index([userId])
   @@map("refresh_tokens")
 }
 
