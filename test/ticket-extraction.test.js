@@ -127,12 +127,35 @@ async function runExtractionTests() {
   assert(extractedData.passengerName === 'Tarek Mahmoud Hassan', 'Extracted passengerName matches');
   assert(extractedData.pnr === 'AB7K92', 'Extracted PNR matches');
   assert(extractedData.flightNumber === 'MS 986', 'Extracted flightNumber matches');
-  assert(extractedData.origin === 'CAI', 'Extracted origin matches');
-  assert(extractedData.destination === 'DXB', 'Extracted destination matches');
+  assert(extractedData.origin === 'CAI', 'Extracted origin matches 3-letter IATA');
+  assert(extractedData.destination === 'DXB', 'Extracted destination matches 3-letter IATA');
   assert(extractedData.departureDate === '2026-09-15', 'Extracted departureDate matches');
   assert(extractedData.returnDepartureDate === '2026-09-25', 'Extracted returnDepartureDate matches');
+  assert(extractedData.tripType === 'Round Trip', 'Extracted tripType is Round Trip when return dates are present');
   assert(extractedData.ticketPrice === 18500, 'Extracted ticketPrice matches');
   assert(extractedData.currency === 'EGP', 'Extracted currency matches');
+
+  // Test 3.1: Airport Code Normalization (lowercase or airport name embedded)
+  const messyAirportPayload = {
+    passengerName: 'Mona Aly',
+    origin: 'cai',
+    destination: 'DXB - Dubai International Airport',
+    departureDate: '2026-10-01'
+  };
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      candidates: [{ content: { parts: [{ text: JSON.stringify(messyAirportPayload) }] } }]
+    })
+  });
+
+  const normalizedAirports = await TicketExtractionService.extractFromDocument(dummyPdfBuffer, 'application/pdf');
+  assert(normalizedAirports.origin === 'CAI', 'Origin normalized to uppercase 3-letter IATA (CAI)');
+  assert(normalizedAirports.destination === 'DXB', 'Destination normalized to uppercase 3-letter IATA (DXB)');
+  assert(normalizedAirports.tripType === 'One Way', 'tripType set to One Way when no return flight is present');
+  assert(normalizedAirports.returnDepartureDate === undefined, 'returnDepartureDate omitted for one-way ticket');
+  assert(normalizedAirports.returnFlightNumber === undefined, 'returnFlightNumber omitted for one-way ticket');
 
   // --- 4. Security Isolation: costPrice Must NEVER be Returned ---
   console.log('\n--- 4. Security Isolation (costPrice Omission) ---');
