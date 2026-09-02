@@ -58,11 +58,15 @@ export const TicketExtractionService = {
     const modelName = env.GEMINI_MODEL || 'gemini-3.6-flash';
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+
     let response;
     try {
       response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           contents: [{
             parts: [
@@ -72,13 +76,20 @@ export const TicketExtractionService = {
           }],
           generationConfig: {
             responseMimeType: 'application/json',
-            responseSchema: EXTRACTION_SCHEMA
+            responseSchema: EXTRACTION_SCHEMA,
+            temperature: 0.1,
+            maxOutputTokens: 800,
+            thinkingConfig: {
+              thinkingBudget: 0
+            }
           }
         })
       });
     } catch (networkErr) {
       console.error('[TicketExtraction] Network error contacting Gemini API:', networkErr.message);
       throw new BusinessRuleError('Unable to connect to AI extraction service. Please fill the form manually.', 'AI_EXTRACTION_FAILED', 502);
+    } finally {
+      clearTimeout(timeoutId);
     }
 
     if (!response.ok) {
