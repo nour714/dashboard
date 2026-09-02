@@ -22,8 +22,10 @@ AfricaTravel is a production-ready travel agency management platform built with 
 - Supports preflight `OPTIONS` with `204 No Content` and exact domain matching.
 
 ### 3. Database Integrity & Unique Constraints
-- **Customer Passport Uniqueness:** `Customer.passport` enforces a `@unique` constraint in PostgreSQL, preventing race condition duplicates. Safe deduplication migration preserves all historical records.
-- **Ticket PNR Uniqueness:** `Ticket.pnr` enforces a `@unique` nullable constraint. PostgreSQL allows multiple `NULL` values while guaranteeing strict uniqueness for all assigned PNRs.
+- **Customer Passport Uniqueness:** `Customer.passport` enforces a `@unique` constraint in PostgreSQL, preventing race condition duplicates.
+- **Ticket PNR Uniqueness:** `Ticket.pnr` enforces a `@unique` nullable constraint. PostgreSQL allows multiple `NULL` values while guaranteeing strict uniqueness for all assigned PNR codes.
+- **Preflight Integrity Check (Zero Data Mutation):** The database migration does NOT alter, suffix, or delete any customer or ticket data. Instead, it executes an automated PostgreSQL preflight assertion that halts execution if duplicate records exist. Administrators can run `npm run db:check-unique-integrity` to detect duplicate legacy records safely without any writes.
+- **Soft Delete & Uniqueness Semantics:** Under PostgreSQL `@unique` constraints, a passport or PNR value remains reserved in the table even after soft deletion (`deletedAt != null`). To reassign a passport or PNR, an administrator must permanently purge the soft-deleted record via the double-confirmation purge flow, protecting historical audit logs and preventing identity confusion.
 - **Foreign Key Performance Indexes:** Key relation columns (`audit_logs.userId`, `modifications.processedById`, `payments.addedById`, `tickets.createdById`, `expenses.createdById`, `expenses.date`) are indexed.
 
 ### 4. Robust Error Handling Contract
