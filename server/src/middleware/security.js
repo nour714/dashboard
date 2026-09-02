@@ -32,8 +32,11 @@ export const corsMiddleware = cors({
     if (!origin) return callback(null, true);
     const normalizedOrigin = origin.replace(/\/+$/, '');
 
+    const isDevelopment = env.NODE_ENV !== 'production';
     const allowedOrigins = env.CORS_ORIGIN
-      ? env.CORS_ORIGIN.split(',').map(s => s.trim().replace(/\/+$/, ''))
+      ? env.CORS_ORIGIN.split(',')
+          .map(s => s.trim().replace(/\/+$/, ''))
+          .filter(s => isDevelopment || s !== '*')
       : [];
 
     // Vercel injects these automatically per-deployment; they identify
@@ -46,9 +49,7 @@ export const corsMiddleware = cors({
       .filter(Boolean)
       .map(d => `https://${d}`.replace(/\/+$/, ''));
 
-    const isDevelopment = env.NODE_ENV !== 'production';
     const isLocalhost = isDevelopment && (normalizedOrigin.includes('localhost') || normalizedOrigin.includes('127.0.0.1'));
-
     const isWildcardAllowed = isDevelopment && allowedOrigins.includes('*');
 
     if (
@@ -59,11 +60,12 @@ export const corsMiddleware = cors({
     ) {
       return callback(null, true);
     }
-    return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 204
 });
 
 /**

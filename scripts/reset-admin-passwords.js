@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel - Admin & Employee Password Rotation Utility
  *
  * Usage:
@@ -57,7 +57,7 @@ async function main() {
       where: { id: user.id },
       data: {
         passwordHash: newHash,
-        lastActive: new Date().toISOString()
+        lastActive: new Date()
       }
     });
 

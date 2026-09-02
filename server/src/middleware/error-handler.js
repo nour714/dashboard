@@ -18,6 +18,7 @@ export function errorHandler(err, req, res, next) {
   if (err instanceof AppError) {
     return res.status(err.statusCode || 400).json({
       success: false,
+      message: err.message,
       error: {
         message: err.message,
         code: err.code || 'APP_ERROR',
@@ -67,11 +68,22 @@ export function errorHandler(err, req, res, next) {
 
   // Handle Prisma Known Request Errors (e.g. Unique constraint violation P2002)
   if (err.code === 'P2002') {
-    const target = Array.isArray(err.meta?.target) ? err.meta.target.join(', ') : 'field';
+    const target = Array.isArray(err.meta?.target) ? err.meta.target.join(', ') : (err.meta?.target || 'field');
+    let message = `A record with this ${target} already exists.`;
+    if (String(target).includes('passport')) {
+      message = 'Passport number already exists';
+    } else if (String(target).includes('pnr')) {
+      message = 'PNR already exists';
+    } else if (String(target).includes('ticketNumber')) {
+      message = 'Ticket number already exists';
+    } else if (String(target).includes('email')) {
+      message = 'Email address already exists';
+    }
     return res.status(409).json({
       success: false,
+      message,
       error: {
-        message: `A record with this ${target} already exists.`,
+        message,
         code: 'UNIQUE_CONSTRAINT_VIOLATION',
         field: target
       }
@@ -79,10 +91,12 @@ export function errorHandler(err, req, res, next) {
   }
 
   if (err.code === 'P2025') {
+    const message = err.meta?.cause || 'Requested record was not found in the database.';
     return res.status(404).json({
       success: false,
+      message,
       error: {
-        message: err.meta?.cause || 'Requested record was not found in the database.',
+        message,
         code: 'NOT_FOUND'
       }
     });

@@ -207,10 +207,37 @@ export const TicketService = {
 
     const prisma = getPrismaClient();
 
+    // Check proactive duplicate PNR or ticketNumber if explicitly provided
+    if (data.pnr && data.pnr.trim()) {
+      const cleanPnr = data.pnr.trim();
+      const existingTicket = await prisma.ticket.findFirst({
+        where: {
+          pnr: cleanPnr,
+          deletedAt: null
+        }
+      });
+      if (existingTicket) {
+        throw new BusinessRuleError('PNR already exists', 'DUPLICATE_PNR', 409);
+      }
+    }
+
+    if (data.ticketNumber && data.ticketNumber.trim()) {
+      const cleanTicketNumber = data.ticketNumber.trim();
+      const existingTicket = await prisma.ticket.findFirst({
+        where: {
+          ticketNumber: cleanTicketNumber,
+          deletedAt: null
+        }
+      });
+      if (existingTicket) {
+        throw new BusinessRuleError('Ticket number already exists', 'DUPLICATE_TICKET_NUMBER', 409);
+      }
+    }
+
     // Generate collision-resistant unique IDs
     const newId = `TK-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
-    const ticketNumber = data.ticketNumber || `077-${crypto.randomBytes(4).readUInt32BE(0).toString().padEnd(10, '0').slice(0, 10)}`;
-    const pnr = data.pnr || `PNR${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+    const ticketNumber = data.ticketNumber ? data.ticketNumber.trim() : `077-${crypto.randomBytes(4).readUInt32BE(0).toString().padEnd(10, '0').slice(0, 10)}`;
+    const pnr = data.pnr ? data.pnr.trim() : `PNR${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 
     // Find or create customer
     let customerId = data.customerId;
@@ -233,19 +260,34 @@ export const TicketService = {
       } else {
         // No matching customer found — create one from the passenger details on the ticket form
         const passengerNameSafe = (data.passengerName || 'Guest').trim() || 'Guest';
-        const newCustomer = await prisma.customer.create({
-          data: {
-            id: `CUST-${crypto.randomUUID().substring(0, 8).toUpperCase()}`,
-            name: passengerNameSafe,
-            email: data.email ? data.email.trim() : null,
-            phone: data.phone ? data.phone.trim() : null,
-            passport: data.passport ? data.passport.trim() : null,
-            nationality: data.nationality || 'Egyptian (EGY)',
-            isVip: false,
-            memberSince: String(new Date().getFullYear())
+        try {
+          const newCustomer = await prisma.customer.create({
+            data: {
+              id: `CUST-${crypto.randomUUID().substring(0, 8).toUpperCase()}`,
+              name: passengerNameSafe,
+              email: data.email ? data.email.trim() : null,
+              phone: data.phone ? data.phone.trim() : null,
+              passport: data.passport ? data.passport.trim() : null,
+              nationality: data.nationality || 'Egyptian (EGY)',
+              isVip: false,
+              memberSince: String(new Date().getFullYear())
+            }
+          });
+          customerId = newCustomer.id;
+        } catch (custErr) {
+          if (custErr.code === 'P2002' && data.passport) {
+            const existing = await prisma.customer.findFirst({
+              where: { passport: data.passport.trim(), deletedAt: null }
+            });
+            if (existing) {
+              customerId = existing.id;
+            } else {
+              throw custErr;
+            }
+          } else {
+            throw custErr;
           }
-        });
-        customerId = newCustomer.id;
+        }
       }
     }
 
@@ -254,7 +296,9 @@ export const TicketService = {
     const paymentStatus = derivePaymentStatus(price, initialPaymentAmount, 'UNPAID');
 
     // Create ticket in database
-    const newTicket = await prisma.ticket.create({
+    let newTicket;
+    try {
+      newTicket = await prisma.ticket.create({
       data: {
         id: newId,
         ticketNumber,
@@ -312,6 +356,18 @@ export const TicketService = {
         customer: true
       }
     });
+    } catch (err) {
+      if (err.code === 'P2002') {
+        const target = Array.isArray(err.meta?.target) ? err.meta.target.join(', ') : (err.meta?.target || '');
+        if (String(target).includes('pnr')) {
+          throw new BusinessRuleError('PNR already exists', 'DUPLICATE_PNR', 409);
+        }
+        if (String(target).includes('ticketNumber')) {
+          throw new BusinessRuleError('Ticket number already exists', 'DUPLICATE_TICKET_NUMBER', 409);
+        }
+      }
+      throw err;
+    }
 
     // Record audit log
     await AuditService.recordLog({
@@ -360,6 +416,18 @@ export const TicketService = {
       }
     }
 
+    if (updates.pnr && updates.pnr !== existing.pnr) {
+      const duplicate = await prisma.ticket.findFirst({
+        where: {
+          pnr: updates.pnr,
+          id: { not: existing.id }
+        }
+      });
+      if (duplicate) {
+        throw new BusinessRuleError('A ticket with this PNR already exists.', 'DUPLICATE_PNR', 409);
+      }
+    }
+
     allowedFields.forEach(f => {
       if (updates[f] !== undefined) {
         if (f === 'costPrice') {
@@ -385,16 +453,30 @@ export const TicketService = {
       data.returnArrivalDate = updates.returnArrivalDate ? new Date(updates.returnArrivalDate) : null;
     }
 
-    const updated = await prisma.ticket.update({
-      where: { id: existing.id },
-      data,
-      include: {
-        payments: true,
-        modifications: true,
-        refunds: true,
-        customer: true
+    let updated;
+    try {
+      updated = await prisma.ticket.update({
+        where: { id: existing.id },
+        data,
+        include: {
+          payments: true,
+          modifications: true,
+          refunds: true,
+          customer: true
+        }
+      });
+    } catch (err) {
+      if (err.code === 'P2002') {
+        const target = Array.isArray(err.meta?.target) ? err.meta.target.join(', ') : (err.meta?.target || '');
+        if (String(target).includes('pnr')) {
+          throw new BusinessRuleError('PNR already exists', 'DUPLICATE_PNR', 409);
+        }
+        if (String(target).includes('ticketNumber')) {
+          throw new BusinessRuleError('Ticket number already exists', 'DUPLICATE_TICKET_NUMBER', 409);
+        }
       }
-    });
+      throw err;
+    }
 
     await AuditService.recordLog({
       user: currentUser.name || 'Agent',

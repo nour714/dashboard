@@ -38,7 +38,7 @@ export async function seed() {
   }
 
   const hashedPassword = await bcrypt.hash(defaultPassword, saltRounds);
-  const nowIso = new Date().toISOString();
+  const now = new Date();
 
   for (const emp of INITIAL_EMPLOYEES) {
     await prisma.user.upsert({
@@ -50,7 +50,7 @@ export async function seed() {
         title: emp.title,
         passwordHash: hashedPassword,
         status: emp.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
-        lastActive: nowIso
+        lastActive: now
       },
       create: {
         id: emp.id,
@@ -60,7 +60,7 @@ export async function seed() {
         title: emp.title,
         passwordHash: hashedPassword,
         status: emp.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
-        lastActive: nowIso
+        lastActive: now
       }
     });
   }

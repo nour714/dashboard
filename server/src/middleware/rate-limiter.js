@@ -2,6 +2,11 @@
  * AfricaTravel - Rate Limiting Middleware
  *
  * Implements strict rate limiting for authentication and general API abuse prevention.
+ *
+ * NOTE (Serverless Safety): Uses express-rate-limit MemoryStore for zero-dependency local
+ * process throttling. In serverless multi-instance deployments (such as Vercel functions),
+ * each instance tracks rate budgets independently. For globally synchronized rate limits
+ * across autoscaled ephemeral instances, an external store (e.g. Upstash Redis) can be configured.
  */
 
 import rateLimit from 'express-rate-limit';
@@ -44,6 +49,20 @@ export const uploadRateLimiter = rateLimit({
     success: false,
     error: {
       message: 'Too many file uploads. Please try again later.',
+      code: 'RATE_LIMIT_EXCEEDED'
+    }
+  }
+});
+
+export const refreshRateLimiter = rateLimit({
+  windowMs: env.RATE_LIMIT_WINDOW_MS, // 15 minutes
+  max: env.RATE_LIMIT_MAX_REFRESH, // default 30 refresh attempts per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      message: 'Too many token refresh attempts. Please try again later.',
       code: 'RATE_LIMIT_EXCEEDED'
     }
   }

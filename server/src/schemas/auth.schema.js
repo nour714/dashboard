@@ -10,9 +10,7 @@ export const loginSchema = z.object({
   rememberMe: z.boolean().optional().default(true)
 });
 
-export const refreshTokenSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required').optional()
-}).optional().default({});
+export const refreshTokenSchema = z.object({}).strict().optional().default({});
 
 export const updateProfileSchema = z.object({
   name: z.string().min(1, 'Name cannot be empty').optional(),

@@ -9,6 +9,13 @@ import { env } from '../config/env.js';
 import { getPrismaClient } from '../config/database.js';
 import { UnauthorizedError, ForbiddenError } from '../domain/errors.js';
 
+/**
+ * In-memory local throttle cache for user activity heartbeat updates.
+ * NOTE (Serverless Safety): In multi-instance or serverless environments (e.g. Vercel),
+ * each instance maintains its own ephemeral cache. This cache is strictly an optimization
+ * to throttle database writes and is NEVER a source of truth. The PostgreSQL database
+ * (`users.lastActive`) remains the sole, authoritative source of truth.
+ */
 export const lastActiveTouchCache = new Map();
 
 /**

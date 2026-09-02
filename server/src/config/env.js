@@ -19,6 +19,7 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000),
   RATE_LIMIT_MAX_AUTH: z.coerce.number().default(10),
   RATE_LIMIT_MAX_API: z.coerce.number().default(500),
+  RATE_LIMIT_MAX_REFRESH: z.coerce.number().default(30),
   DEFAULT_ADMIN_PASSWORD: z.string().default('password123'),
   BOOTSTRAP_ADMIN_PASSWORD: z.string().optional(),
   SUPABASE_URL: z.string().default(''),

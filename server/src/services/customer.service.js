@@ -140,30 +140,52 @@ export const CustomerService = {
     }
 
     const prisma = getPrismaClient();
+    const cleanPassport = data.passport ? data.passport.trim() : null;
+
+    if (cleanPassport) {
+      const duplicate = await prisma.customer.findFirst({
+        where: {
+          passport: cleanPassport,
+          deletedAt: null
+        }
+      });
+      if (duplicate) {
+        throw new BusinessRuleError('Passport number already exists', 'DUPLICATE_PASSPORT', 409);
+      }
+    }
+
     const newId = `CUST-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
 
-    const newCustomer = await prisma.customer.create({
-      data: {
-        id: newId,
-        name: data.name.trim(),
-        email: data.email ? data.email.trim() : null,
-        phone: data.phone ? data.phone.trim() : null,
-        passport: data.passport ? data.passport.trim() : null,
-        nationality: data.nationality || 'Egyptian (EGY)',
-        isVip: Boolean(data.isVip),
-        memberSince: String(new Date().getFullYear()),
-        notes: data.initialNote && data.initialNote.trim() ? {
-          create: {
-            author: currentUser.name || 'Agent',
-            text: data.initialNote.trim(),
-            date: new Date()
-          }
-        } : undefined
-      },
-      include: {
-        notes: true
+    let newCustomer;
+    try {
+      newCustomer = await prisma.customer.create({
+        data: {
+          id: newId,
+          name: data.name.trim(),
+          email: data.email ? data.email.trim() : null,
+          phone: data.phone ? data.phone.trim() : null,
+          passport: cleanPassport,
+          nationality: data.nationality || 'Egyptian (EGY)',
+          isVip: Boolean(data.isVip),
+          memberSince: String(new Date().getFullYear()),
+          notes: data.initialNote && data.initialNote.trim() ? {
+            create: {
+              author: currentUser.name || 'Agent',
+              text: data.initialNote.trim(),
+              date: new Date()
+            }
+          } : undefined
+        },
+        include: {
+          notes: true
+        }
+      });
+    } catch (err) {
+      if (err.code === 'P2002') {
+        throw new BusinessRuleError('Passport number already exists', 'DUPLICATE_PASSPORT', 409);
       }
-    });
+      throw err;
+    }
 
     await AuditService.recordLog({
       user: currentUser.name || 'Agent',
@@ -193,17 +215,40 @@ export const CustomerService = {
     if (updates.name !== undefined) data.name = updates.name.trim();
     if (updates.email !== undefined) data.email = updates.email ? updates.email.trim() : null;
     if (updates.phone !== undefined) data.phone = updates.phone ? updates.phone.trim() : null;
-    if (updates.passport !== undefined) data.passport = updates.passport ? updates.passport.trim() : null;
+    if (updates.passport !== undefined) {
+      const cleanPassport = updates.passport ? updates.passport.trim() : null;
+      if (cleanPassport && cleanPassport !== existing.passport) {
+        const duplicate = await prisma.customer.findFirst({
+          where: {
+            passport: cleanPassport,
+            deletedAt: null,
+            id: { not: customerId }
+          }
+        });
+        if (duplicate) {
+          throw new BusinessRuleError('Passport number already exists', 'DUPLICATE_PASSPORT', 409);
+        }
+      }
+      data.passport = cleanPassport;
+    }
     if (updates.nationality !== undefined) data.nationality = updates.nationality;
     if (updates.isVip !== undefined) data.isVip = Boolean(updates.isVip);
 
-    const updated = await prisma.customer.update({
-      where: { id: customerId },
-      data,
-      include: {
-        notes: { orderBy: { date: 'desc' } }
+    let updated;
+    try {
+      updated = await prisma.customer.update({
+        where: { id: customerId },
+        data,
+        include: {
+          notes: { orderBy: { date: 'desc' } }
+        }
+      });
+    } catch (err) {
+      if (err.code === 'P2002') {
+        throw new BusinessRuleError('Passport number already exists', 'DUPLICATE_PASSPORT', 409);
       }
-    });
+      throw err;
+    }
 
     await AuditService.recordLog({
       user: currentUser.name || 'Agent',
