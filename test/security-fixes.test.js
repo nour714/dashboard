@@ -297,12 +297,12 @@ async function runSecurityFixesTests() {
   // Check docker-compose.yml content
   const dockerComposeContent = fs.readFileSync('docker-compose.yml', 'utf8');
   assert(dockerComposeContent.includes('${JWT_SECRET}'), 'docker-compose.yml uses ${JWT_SECRET} env substitution');
-  assert(dockerComposeContent.includes('${JWT_REFRESH_SECRET}'), 'docker-compose.yml uses ${JWT_REFRESH_SECRET} env substitution');
+  assert(!dockerComposeContent.includes('JWT_REFRESH_SECRET'), 'docker-compose.yml does not expose unused JWT refresh configuration');
   assert(!dockerComposeContent.includes('africatravel_production_super_secret_jwt_key_2026'), 'docker-compose.yml contains no plaintext JWT secret');
 
   // Check .env.example content
   const envExampleContent = fs.readFileSync('.env.example', 'utf8');
-  assert(envExampleContent.includes('openssl rand -hex 64'), '.env.example contains secure generation instruction');
+  assert(envExampleContent.includes('openssl rand -hex 32'), '.env.example contains secure generation instruction');
 
   // Check env.js validation and observability guard presence
   const envJsContent = fs.readFileSync('server/src/config/env.js', 'utf8');

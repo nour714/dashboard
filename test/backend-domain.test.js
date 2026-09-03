@@ -69,6 +69,7 @@ const samplePayments = [{ amount: 10000 }, { amount: 8500 }];
 assert(calculateTotalPaid(samplePayments) === 18500, 'calculateTotalPaid sums payment amounts correctly');
 assert(calculateTotalPaid([]) === 0, 'calculateTotalPaid handles empty payments');
 assert(calculateTotalPaid(null) === 0, 'calculateTotalPaid handles null');
+assert(calculateTotalPaid([{ amount: '10.10' }, { amount: '20.20' }, { amount: '5.05' }]) === 35.35, 'calculateTotalPaid preserves an exact decimal total');
 
 assert(calculateRemaining(18500, 10000) === 8500, 'calculateRemaining calculates price - paid');
 assert(calculateRemaining(18500, 20000) === 0, 'calculateRemaining caps at 0 when overpaid');

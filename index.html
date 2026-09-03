@@ -8,32 +8,7 @@
   <title>AfricaTravel — Travel Operations</title>
 
   <!-- Immediate Language, Direction & Sidebar State Initialization to Prevent Layout Shift -->
-  <script>
-    (function() {
-      try {
-        var stored = localStorage.getItem('africatravel.language');
-        var lang = stored;
-        if (!lang) {
-          if (navigator.language && navigator.language.startsWith('ar')) {
-            lang = 'ar';
-          } else {
-            lang = 'en';
-          }
-        }
-        if (lang === 'ar') {
-          document.documentElement.lang = 'ar';
-          document.documentElement.dir = 'rtl';
-        } else {
-          document.documentElement.lang = 'en';
-          document.documentElement.dir = 'ltr';
-        }
-
-        if (localStorage.getItem('africatravel.sidebarCollapsed') === '1') {
-          document.documentElement.classList.add('sidebar-collapsed');
-        }
-      } catch (e) {}
-    })();
-  </script>
+  <script src="/js/bootstrap.js"></script>
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="/assets/favicon.png" />
@@ -49,7 +24,7 @@
   <!-- Google Fonts: Geist, Inter & Noto Sans Arabic -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cinzel:wght@600;700&family=Geist:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Cinzel:wght@700&family=Geist:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <!-- Stylesheets with Cache Busting -->
   <link rel="stylesheet" href="/styles/tokens.css?v=2.5.0" />

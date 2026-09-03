@@ -213,11 +213,11 @@ export const TicketService = {
       const existingTicket = await prisma.ticket.findFirst({
         where: {
           pnr: cleanPnr,
-          deletedAt: null
+          deletedAt: { not: null }
         }
       });
       if (existingTicket) {
-        throw new BusinessRuleError('PNR already exists', 'DUPLICATE_PNR', 409);
+        throw new BusinessRuleError('PNR already exists in an archived ticket record', 'DUPLICATE_PNR', 409);
       }
     }
 
@@ -360,7 +360,8 @@ export const TicketService = {
       if (err.code === 'P2002') {
         const target = Array.isArray(err.meta?.target) ? err.meta.target.join(', ') : (err.meta?.target || '');
         if (String(target).includes('pnr')) {
-          throw new BusinessRuleError('PNR already exists', 'DUPLICATE_PNR', 409);
+          const archived = pnr ? await prisma.ticket.findFirst({ where: { pnr, deletedAt: { not: null } } }) : null;
+          throw new BusinessRuleError(archived ? 'PNR already exists in an archived ticket record' : 'PNR already exists', 'DUPLICATE_PNR', 409);
         }
         if (String(target).includes('ticketNumber')) {
           throw new BusinessRuleError('Ticket number already exists', 'DUPLICATE_TICKET_NUMBER', 409);
@@ -424,7 +425,7 @@ export const TicketService = {
         }
       });
       if (duplicate) {
-        throw new BusinessRuleError('A ticket with this PNR already exists.', 'DUPLICATE_PNR', 409);
+        throw new BusinessRuleError(duplicate.deletedAt ? 'PNR already exists in an archived ticket record' : 'A ticket with this PNR already exists.', 'DUPLICATE_PNR', 409);
       }
     }
 
@@ -469,7 +470,8 @@ export const TicketService = {
       if (err.code === 'P2002') {
         const target = Array.isArray(err.meta?.target) ? err.meta.target.join(', ') : (err.meta?.target || '');
         if (String(target).includes('pnr')) {
-          throw new BusinessRuleError('PNR already exists', 'DUPLICATE_PNR', 409);
+          const archived = data.pnr ? await prisma.ticket.findFirst({ where: { pnr: data.pnr, deletedAt: { not: null }, id: { not: existing.id } } }) : null;
+          throw new BusinessRuleError(archived ? 'PNR already exists in an archived ticket record' : 'PNR already exists', 'DUPLICATE_PNR', 409);
         }
         if (String(target).includes('ticketNumber')) {
           throw new BusinessRuleError('Ticket number already exists', 'DUPLICATE_TICKET_NUMBER', 409);

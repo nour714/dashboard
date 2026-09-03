@@ -7,7 +7,7 @@
 
 -- Create Enums
 DO $$ BEGIN
-  CREATE TYPE "Role" AS ENUM ('ADMIN', 'AGENT');
+  CREATE TYPE "Role" AS ENUM ('ADMIN', 'AGENT', 'TICKET_ONLY');
 EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS "users" (
     "title" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
     "status" "EmployeeStatus" NOT NULL DEFAULT 'ACTIVE',
-    "lastActive" TEXT DEFAULT 'Just now',
+    "lastActive" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
@@ -177,6 +177,7 @@ CREATE TABLE IF NOT EXISTS "refresh_tokens" (
     "tokenHash" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "revoked" BOOLEAN NOT NULL DEFAULT false,
+    "rememberMe" BOOLEAN NOT NULL DEFAULT true,
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "refresh_tokens_pkey" PRIMARY KEY ("id")
@@ -216,6 +217,10 @@ CREATE INDEX IF NOT EXISTS "payments_addedById_idx" ON "payments"("addedById");
 CREATE INDEX IF NOT EXISTS "tickets_createdById_idx" ON "tickets"("createdById");
 CREATE INDEX IF NOT EXISTS "expenses_createdById_idx" ON "expenses"("createdById");
 CREATE INDEX IF NOT EXISTS "expenses_date_idx" ON "expenses"("date");
+CREATE INDEX IF NOT EXISTS "customers_passport_idx" ON "customers"("passport");
+CREATE INDEX IF NOT EXISTS "customers_deletedAt_idx" ON "customers"("deletedAt");
+CREATE INDEX IF NOT EXISTS "tickets_pnr_idx" ON "tickets"("pnr");
+CREATE INDEX IF NOT EXISTS "tickets_deletedAt_idx" ON "tickets"("deletedAt");
 
 -- Foreign Keys
 DO $$ BEGIN
@@ -302,16 +307,16 @@ ON CONFLICT ("id") DO UPDATE SET "data" = EXCLUDED."data";
 
 -- Users (Password: password123)
 INSERT INTO "users" ("id", "name", "email", "role", "title", "passwordHash", "status", "lastActive", "createdAt", "updatedAt") 
-VALUES ('EMP-101', 'Mohamed Raafat', 'admin@africatravel.com', 'ADMIN', 'Senior Operations Director', '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', 'ACTIVE', 'Just now', NOW(), NOW()) 
+VALUES ('EMP-101', 'Mohamed Raafat', 'admin@africatravel.com', 'ADMIN', 'Senior Operations Director', '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', 'ACTIVE', NOW(), NOW(), NOW()) 
 ON CONFLICT ("id") DO UPDATE SET "passwordHash" = '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', "status" = 'ACTIVE';
 INSERT INTO "users" ("id", "name", "email", "role", "title", "passwordHash", "status", "lastActive", "createdAt", "updatedAt") 
-VALUES ('EMP-102', 'Ahmed Raafat', 'ahmed.r@africatravel.com', 'ADMIN', 'Senior Operations Manager', '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', 'ACTIVE', 'Just now', NOW(), NOW()) 
+VALUES ('EMP-102', 'Ahmed Raafat', 'ahmed.r@africatravel.com', 'ADMIN', 'Senior Operations Manager', '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', 'ACTIVE', NOW(), NOW(), NOW()) 
 ON CONFLICT ("id") DO UPDATE SET "passwordHash" = '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', "status" = 'ACTIVE';
 INSERT INTO "users" ("id", "name", "email", "role", "title", "passwordHash", "status", "lastActive", "createdAt", "updatedAt") 
-VALUES ('EMP-103', 'Nour Wael', 'nour.w@africatravel.com', 'AGENT', 'Ticketing Officer', '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', 'ACTIVE', 'Just now', NOW(), NOW()) 
+VALUES ('EMP-103', 'Nour Wael', 'nour.w@africatravel.com', 'AGENT', 'Ticketing Officer', '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', 'ACTIVE', NOW(), NOW(), NOW()) 
 ON CONFLICT ("id") DO UPDATE SET "passwordHash" = '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', "status" = 'ACTIVE';
 INSERT INTO "users" ("id", "name", "email", "role", "title", "passwordHash", "status", "lastActive", "createdAt", "updatedAt") 
-VALUES ('EMP-104', 'Hashem Ahmed', 'hashem.a@africatravel.com', 'AGENT', 'Customer Operations Specialist', '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', 'ACTIVE', 'Just now', NOW(), NOW()) 
+VALUES ('EMP-104', 'Hashem Ahmed', 'hashem.a@africatravel.com', 'AGENT', 'Customer Operations Specialist', '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', 'ACTIVE', NOW(), NOW(), NOW()) 
 ON CONFLICT ("id") DO UPDATE SET "passwordHash" = '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', "status" = 'ACTIVE';
 
 -- Customers

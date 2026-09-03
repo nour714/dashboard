@@ -56,21 +56,43 @@ export function applyApiMiddleware(app) {
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 }
 
+/** Mount API routes consistently for standalone and serverless entry points. */
+export function mountApiRoutes(app) {
+  app.use('/api', apiRouter);
+  app.use((req, res, next) => {
+    const isApiSubpath = ['/auth', '/tickets', '/customers', '/employees', '/reports', '/activity', '/health'].some(p => req.path.startsWith(p));
+    return isApiSubpath ? apiRouter(req, res, next) : next();
+  });
+}
+
+export function apiNotFound(req, res) {
+  res.status(404).json({
+    success: false,
+    error: {
+      message: `API endpoint ${req.method} ${req.originalUrl} not found`,
+      code: 'ROUTE_NOT_FOUND'
+    }
+  });
+}
+
+/** Create the complete API-only app used by Vercel serverless functions. */
+export function createApiApp() {
+  const app = express();
+  applyApiMiddleware(app);
+  mountApiRoutes(app);
+  app.use(apiNotFound);
+  app.use(errorHandler);
+  return app;
+}
+
 export function createApp(rootDir = ROOT_DIR) {
   const app = express();
 
   // Apply shared API middleware pipeline
   applyApiMiddleware(app);
 
-  // Mount API Endpoints (supports both /api prefix and stripped serverless routes)
-  app.use('/api', apiRouter);
-  app.use((req, res, next) => {
-    const isApiSubpath = ['/auth', '/tickets', '/customers', '/employees', '/reports', '/activity', '/health'].some(p => req.path.startsWith(p));
-    if (isApiSubpath) {
-      return apiRouter(req, res, next);
-    }
-    next();
-  });
+  // Mount API endpoints (supports both /api prefix and stripped serverless routes).
+  mountApiRoutes(app);
 
   // Security guard for static assets & frontend: block path traversal & dotfiles
   app.use((req, res, next) => {

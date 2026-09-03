@@ -101,7 +101,10 @@ export const CustomerController = {
 
   async getPassportDocument(req, res, next) {
     try {
-      const result = await CustomerService.getPassportDocumentUrl(req.params.id);
+      const result = await CustomerService.getPassportDocumentUrl(req.params.id, req.user, {
+        ip: req.ip,
+        userAgent: req.get('user-agent')
+      });
       return res.status(200).json({
         success: true,
         data: result

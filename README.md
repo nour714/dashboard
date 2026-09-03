@@ -36,11 +36,16 @@ AfricaTravel is a production-ready travel agency management platform built with 
 ### 5. Safe Environment & Health Diagnostics
 - `/api/health` returns only `{ success, data: { status, database, timestamp } }` in production.
 - Internal connection error strings, hostnames, and environment variable names are strictly hidden from unauthenticated callers in production mode.
-- Production startup guard prevents execution if `JWT_SECRET`, `JWT_REFRESH_SECRET`, or `DEFAULT_ADMIN_PASSWORD` use default/insecure development values.
+- Environment validation requires a strong `JWT_SECRET` and `DEFAULT_ADMIN_PASSWORD` in every environment; there are no application secret defaults.
 
 ### 6. Serverless Architecture Considerations
 - **Stateless Core:** Access tokens are cryptographically verified JWTs; sessions and refresh tokens are persisted in PostgreSQL.
-- **In-Memory Caches:** `lastActiveTouchCache` and `express-rate-limit` MemoryStore serve strictly as local process throttling layers to reduce DB load; the database remains the sole source of truth.
+- **Rate limits:** Vercel deployments must configure the Upstash integration (`UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`) so login, refresh, upload, and extraction limits are shared across instances. Local development falls back to an in-memory store.
+
+### 7. Passport document retention
+- Passport documents remain in private storage when a customer is soft-deleted, so the archived record remains reviewable.
+- They are deleted only when an administrator permanently purges an eligible customer. A customer with ticket history cannot be purged, preserving its document alongside the retained operational record.
+- Every signed URL issuance is recorded as `PASSPORT_DOCUMENT_VIEWED` with the actor, customer, IP address, and user agent.
 
 ---
 
@@ -50,17 +55,16 @@ AfricaTravel is a production-ready travel agency management platform built with 
 | :--- | :--- | :--- |
 | `NODE_ENV` | Runtime environment | `development` / `production` |
 | `PORT` | HTTP port | `3000` |
-| `DATABASE_URL` | PostgreSQL connection pooler URL | `postgresql://postgres:[PASSWORD]@[HOST]:6543/postgres?pgbouncer=true` |
+| `DATABASE_URL` | PostgreSQL connection pooler URL | `postgresql://postgres:[PASSWORD]@[HOST]:6543/postgres?pgbouncer=true&connection_limit=1` |
 | `JWT_SECRET` | Secret key for signing access JWTs (min 32 chars) | Generated with `openssl rand -hex 64` |
 | `JWT_EXPIRES_IN` | Access token lifespan | `15m` |
-| `JWT_REFRESH_SECRET`| Secret key for refresh token management (min 32 chars) | Generated with `openssl rand -hex 64` |
-| `JWT_REFRESH_EXPIRES_IN` | Refresh token lifespan | `7d` |
 | `CORS_ORIGIN` | Allowed CORS origins (comma-separated) | `https://africiatravel.vercel.app` |
 | `RATE_LIMIT_WINDOW_MS` | Rate limit window duration (ms) | `900000` (15 minutes) |
 | `RATE_LIMIT_MAX_AUTH` | Max requests per window for login | `10` |
 | `RATE_LIMIT_MAX_REFRESH` | Max requests per window for refresh | `30` |
 | `RATE_LIMIT_MAX_API` | Max requests per window for general API | `500` |
 | `DEFAULT_ADMIN_PASSWORD` | Initial admin seed password | Strong password (required in production) |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Shared Vercel rate-limit store | Configure through the Upstash integration |
 | `GEMINI_API_KEY` | Google Gemini API key for document extraction | `AIzaSy...` (optional) |
 | `GEMINI_MODEL` | Primary Gemini model | `gemini-2.5-flash` |
 | `SUPABASE_URL` | Supabase project URL | `https://[PROJECT].supabase.co` |
@@ -76,6 +80,8 @@ Run the full automated test suite (22 test files covering security, hardening, a
 ```bash
 npm test
 ```
+
+Before deploying a migration to a configured target database, run `npm run prisma:check-drift`. It compares the live database schema with `prisma/schema.prisma`; the command must produce no SQL before deployment. The production Supabase transaction-pooler URL must include `pgbouncer=true&connection_limit=1`.
 
 Specific test runners:
 ```bash

@@ -31,15 +31,15 @@ services:
       postgres:
         condition: service_healthy
     # IMPORTANT: Create a .env file alongside this docker-compose.yml with real values for:
-      #   JWT_SECRET=<generate with: openssl rand -hex 64>
-      #   JWT_REFRESH_SECRET=<generate with: openssl rand -hex 64>
+      #   JWT_SECRET=<generate with: openssl rand -hex 32>
+      #   DEFAULT_ADMIN_PASSWORD=<strong bootstrap password>
       # Docker Compose reads .env automatically from the same directory.
     environment:
       NODE_ENV: production
       PORT: 3000
       DATABASE_URL: "postgresql://postgres:${POSTGRES_PASSWORD:-postgrespassword}@postgres:5432/africatravel?schema=public"
       JWT_SECRET: ${JWT_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD}
       CORS_ORIGIN: "http://localhost:3000,http://127.0.0.1:3000"
     ports:
       - "3000:3000"

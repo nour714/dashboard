@@ -11,16 +11,16 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(3000),
   DATABASE_URL: z.string().default('postgresql://postgres:postgres@localhost:5432/africatravel?schema=public'),
-  JWT_SECRET: z.string().default('africatravel_super_secret_jwt_access_key_2026_dev_key'),
+  JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().default('15m'),
-  JWT_REFRESH_SECRET: z.string().default('africatravel_super_secret_jwt_refresh_key_2026_dev_key'),
-  JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   CORS_ORIGIN: z.string().default('http://localhost:3000,http://127.0.0.1:3000,https://africiatravel.vercel.app'),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000),
   RATE_LIMIT_MAX_AUTH: z.coerce.number().default(10),
   RATE_LIMIT_MAX_API: z.coerce.number().default(500),
   RATE_LIMIT_MAX_REFRESH: z.coerce.number().default(30),
-  DEFAULT_ADMIN_PASSWORD: z.string().default('password123'),
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
+  DEFAULT_ADMIN_PASSWORD: z.string().min(12),
   BOOTSTRAP_ADMIN_PASSWORD: z.string().optional(),
   SUPABASE_URL: z.string().default(''),
   SUPABASE_SERVICE_ROLE_KEY: z.string().default(''),
@@ -69,9 +69,7 @@ if (!parsedEnv.success) {
 // Insecure defaults check
 const INSECURE_DEFAULTS = [
   'africatravel_super_secret_jwt_access_key_2026_dev_key',
-  'africatravel_super_secret_jwt_refresh_key_2026_dev_key',
   'africatravel_production_super_secret_jwt_key_2026',
-  'africatravel_production_super_secret_refresh_key_2026',
   'secret',
   'jwt_secret',
   'change_me',
@@ -94,10 +92,6 @@ if (isProduction) {
   if (isWeakSecret(envData.JWT_SECRET)) {
     configErrors.push('[JWT_SECRET]: Missing or using an insecure/short default secret (minimum 32 characters required).');
   }
-  if (isWeakSecret(envData.JWT_REFRESH_SECRET)) {
-    configErrors.push('[JWT_REFRESH_SECRET]: Missing or using an insecure/short default secret (minimum 32 characters required).');
-  }
-
   const effectiveAdminPassword = envData.BOOTSTRAP_ADMIN_PASSWORD || envData.DEFAULT_ADMIN_PASSWORD;
   if (!effectiveAdminPassword || effectiveAdminPassword === 'password123') {
     configErrors.push('[BOOTSTRAP_ADMIN_PASSWORD / DEFAULT_ADMIN_PASSWORD]: Missing or using insecure default "password123". Set a strong password in environment variables.');

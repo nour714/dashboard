@@ -3,16 +3,32 @@
  *
  * Implements strict rate limiting for authentication and general API abuse prevention.
  *
- * NOTE (Serverless Safety): Uses express-rate-limit MemoryStore for zero-dependency local
- * process throttling. In serverless multi-instance deployments (such as Vercel functions),
- * each instance tracks rate budgets independently. For globally synchronized rate limits
- * across autoscaled ephemeral instances, an external store (e.g. Upstash Redis) can be configured.
+ * Uses Upstash Redis when its Vercel integration variables are configured. This makes
+ * rate budgets shared across serverless instances; local development keeps a memory
+ * fallback so it does not need a Redis service.
  */
 
 import rateLimit from 'express-rate-limit';
+import { Redis } from '@upstash/redis';
+import { RedisStore } from 'rate-limit-redis';
 import { env } from '../config/env.js';
 
-export const authRateLimiter = rateLimit({
+const upstashRedis = env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({ url: env.UPSTASH_REDIS_REST_URL, token: env.UPSTASH_REDIS_REST_TOKEN })
+  : null;
+
+const redisStore = upstashRedis
+  ? new RedisStore({
+      prefix: 'africatravel:rate-limit:',
+      sendCommand: (...args) => upstashRedis.sendCommand(args)
+    })
+  : undefined;
+
+function sharedRateLimit(options) {
+  return rateLimit({ ...options, ...(redisStore ? { store: redisStore } : {}) });
+}
+
+export const authRateLimiter = sharedRateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS, // 15 minutes
   max: env.RATE_LIMIT_MAX_AUTH, // default 10 requests per windowMs
   standardHeaders: true,
@@ -26,7 +42,7 @@ export const authRateLimiter = rateLimit({
   }
 });
 
-export const apiRateLimiter = rateLimit({
+export const apiRateLimiter = sharedRateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
   max: env.RATE_LIMIT_MAX_API, // default 500 requests per windowMs
   standardHeaders: true,
@@ -40,7 +56,7 @@ export const apiRateLimiter = rateLimit({
   }
 });
 
-export const uploadRateLimiter = rateLimit({
+export const uploadRateLimiter = sharedRateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS, // 15 minutes
   max: env.RATE_LIMIT_MAX_AUTH, // default 10 — same strict limit as auth routes
   standardHeaders: true,
@@ -54,7 +70,7 @@ export const uploadRateLimiter = rateLimit({
   }
 });
 
-export const refreshRateLimiter = rateLimit({
+export const refreshRateLimiter = sharedRateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS, // 15 minutes
   max: env.RATE_LIMIT_MAX_REFRESH, // default 30 refresh attempts per window
   standardHeaders: true,
@@ -67,4 +83,3 @@ export const refreshRateLimiter = rateLimit({
     }
   }
 });
-

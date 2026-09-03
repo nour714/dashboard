@@ -146,11 +146,11 @@ export const CustomerService = {
       const duplicate = await prisma.customer.findFirst({
         where: {
           passport: cleanPassport,
-          deletedAt: null
+          deletedAt: { not: null }
         }
       });
       if (duplicate) {
-        throw new BusinessRuleError('Passport number already exists', 'DUPLICATE_PASSPORT', 409);
+        throw new BusinessRuleError('Passport already exists in an archived customer record', 'DUPLICATE_PASSPORT', 409);
       }
     }
 
@@ -182,7 +182,8 @@ export const CustomerService = {
       });
     } catch (err) {
       if (err.code === 'P2002') {
-        throw new BusinessRuleError('Passport number already exists', 'DUPLICATE_PASSPORT', 409);
+        const archived = await prisma.customer.findFirst({ where: { passport: cleanPassport, deletedAt: { not: null } } });
+        throw new BusinessRuleError(archived ? 'Passport already exists in an archived customer record' : 'Passport number already exists', 'DUPLICATE_PASSPORT', 409);
       }
       throw err;
     }
@@ -221,12 +222,12 @@ export const CustomerService = {
         const duplicate = await prisma.customer.findFirst({
           where: {
             passport: cleanPassport,
-            deletedAt: null,
+            deletedAt: { not: null },
             id: { not: customerId }
           }
         });
         if (duplicate) {
-          throw new BusinessRuleError('Passport number already exists', 'DUPLICATE_PASSPORT', 409);
+          throw new BusinessRuleError('Passport already exists in an archived customer record', 'DUPLICATE_PASSPORT', 409);
         }
       }
       data.passport = cleanPassport;
@@ -245,7 +246,10 @@ export const CustomerService = {
       });
     } catch (err) {
       if (err.code === 'P2002') {
-        throw new BusinessRuleError('Passport number already exists', 'DUPLICATE_PASSPORT', 409);
+        const archived = data.passport
+          ? await prisma.customer.findFirst({ where: { passport: data.passport, deletedAt: { not: null }, id: { not: customerId } } })
+          : null;
+        throw new BusinessRuleError(archived ? 'Passport already exists in an archived customer record' : 'Passport number already exists', 'DUPLICATE_PASSPORT', 409);
       }
       throw err;
     }
@@ -393,7 +397,7 @@ export const CustomerService = {
    * @param {string} customerId
    * @returns {Promise<{url: string, expiresAt: string}>}
    */
-  async getPassportDocumentUrl(customerId) {
+  async getPassportDocumentUrl(customerId, currentUser = {}, requestMeta = {}) {
     const prisma = getPrismaClient();
     const customer = await prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer || !customer.passportDocPath) {
@@ -410,6 +414,15 @@ export const CustomerService = {
     }
 
     const expiresAt = new Date(Date.now() + 300 * 1000).toISOString();
+    await AuditService.recordLog({
+      user: currentUser.name || 'Agent',
+      userId: currentUser.id,
+      action: 'PASSPORT_DOCUMENT_VIEWED',
+      customerId,
+      description: `Generated a signed passport document URL for ${customer.name} (${customerId}).`,
+      ip: requestMeta.ip,
+      userAgent: requestMeta.userAgent
+    });
     return { url: data.signedUrl, expiresAt };
   },
 
@@ -645,4 +658,3 @@ export const CustomerService = {
     return result;
   }
 };
-

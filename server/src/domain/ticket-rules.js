@@ -5,6 +5,8 @@
  */
 
 import { ValidationError, BusinessRuleError } from './errors.js';
+import Decimal from 'decimal.js';
+import { asDecimal, moneyNumber } from '../utils/money.js';
 
 /**
  * Calculates total sum of recorded payments
@@ -13,7 +15,7 @@ import { ValidationError, BusinessRuleError } from './errors.js';
  */
 export function calculateTotalPaid(payments = []) {
   if (!Array.isArray(payments)) return 0;
-  return payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  return moneyNumber(payments.reduce((sum, p) => sum.plus(asDecimal(p.amount)), asDecimal(0)));
 }
 
 /**
@@ -24,10 +26,7 @@ export function calculateTotalPaid(payments = []) {
  * @returns {number}
  */
 export function calculateRemaining(ticketPrice = 0, totalPaid = 0) {
-  const price = Number(ticketPrice) || 0;
-  const paid = Number(totalPaid) || 0;
-  const rem = price - paid;
-  return rem > 0 ? rem : 0;
+  return moneyNumber(Decimal.max(0, asDecimal(ticketPrice).minus(asDecimal(totalPaid))));
 }
 
 /**
@@ -37,7 +36,7 @@ export function calculateRemaining(ticketPrice = 0, totalPaid = 0) {
  */
 export function calculateTotalModificationFees(modifications = []) {
   if (!Array.isArray(modifications)) return 0;
-  return modifications.reduce((sum, m) => sum + (Number(m.changeFee) || 0), 0);
+  return moneyNumber(modifications.reduce((sum, m) => sum.plus(asDecimal(m.changeFee)), asDecimal(0)));
 }
 
 /**
@@ -49,7 +48,7 @@ export function calculateTotalRefunded(refunds = []) {
   if (!Array.isArray(refunds)) return 0;
   return refunds
     .filter(r => r.status === 'COMPLETED' || r.status === 'Refunded' || r.status === 'APPROVED')
-    .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    .reduce((sum, r) => sum.plus(asDecimal(r.amount)), asDecimal(0)).toDecimalPlaces(2).toNumber();
 }
 
 /**
@@ -60,10 +59,7 @@ export function calculateTotalRefunded(refunds = []) {
  * @returns {number}
  */
 export function calculateAvailableRefund(totalPaid = 0, totalRefunded = 0) {
-  const paid = Number(totalPaid) || 0;
-  const refunded = Number(totalRefunded) || 0;
-  const avail = paid - refunded;
-  return avail > 0 ? avail : 0;
+  return moneyNumber(Decimal.max(0, asDecimal(totalPaid).minus(asDecimal(totalRefunded))));
 }
 
 /**
@@ -75,10 +71,7 @@ export function calculateAvailableRefund(totalPaid = 0, totalRefunded = 0) {
  * @returns {number}
  */
 export function calculateNetValue(ticketPrice = 0, modificationFees = 0, totalRefunded = 0) {
-  const price = Number(ticketPrice) || 0;
-  const modFees = Number(modificationFees) || 0;
-  const ref = Number(totalRefunded) || 0;
-  return Math.max(0, price + modFees - ref);
+  return moneyNumber(Decimal.max(0, asDecimal(ticketPrice).plus(asDecimal(modificationFees)).minus(asDecimal(totalRefunded))));
 }
 
 /**
@@ -90,7 +83,7 @@ export function calculateNetValue(ticketPrice = 0, modificationFees = 0, totalRe
  */
 export function calculateNetProfit(ticketPrice = 0, costPrice = null) {
   if (costPrice === null || costPrice === undefined) return null;
-  return Number(ticketPrice) - Number(costPrice);
+  return moneyNumber(asDecimal(ticketPrice).minus(asDecimal(costPrice)));
 }
 
 /**
@@ -104,10 +97,10 @@ export function derivePaymentStatus(ticketPrice = 0, totalPaid = 0, currentStatu
   if (currentStatus === 'CANCELLED') return 'CANCELLED';
   if (currentStatus === 'REFUNDED') return 'REFUNDED';
   if (currentStatus === 'PARTIALLY_REFUNDED') return 'PARTIALLY_REFUNDED';
-  const price = Number(ticketPrice) || 0;
-  const paid = Number(totalPaid) || 0;
-  if (paid >= price && price > 0) return 'CONFIRMED';
-  if (paid > 0 && paid < price) return 'PARTIALLY PAID';
+  const price = asDecimal(ticketPrice);
+  const paid = asDecimal(totalPaid);
+  if (paid.greaterThanOrEqualTo(price) && price.greaterThan(0)) return 'CONFIRMED';
+  if (paid.greaterThan(0) && paid.lessThan(price)) return 'PARTIALLY PAID';
   return 'UNPAID';
 }
 
@@ -118,23 +111,23 @@ export function derivePaymentStatus(ticketPrice = 0, totalPaid = 0, currentStatu
  */
 export function validateTicketCreation(data = {}) {
   const price = data.ticketPrice !== undefined && data.ticketPrice !== null && data.ticketPrice !== ''
-    ? Number(data.ticketPrice)
-    : 0;
-  if (isNaN(price) || price < 0) {
+    ? asDecimal(data.ticketPrice)
+    : asDecimal(0);
+  if (!price.isFinite() || price.lessThan(0)) {
     throw new ValidationError('Ticket price cannot be negative', 'ticketPrice');
   }
   if (data.costPrice !== undefined && data.costPrice !== null && data.costPrice !== '') {
-    const cost = Number(data.costPrice);
-    if (isNaN(cost) || cost < 0) {
+    const cost = asDecimal(data.costPrice);
+    if (!cost.isFinite() || cost.lessThan(0)) {
       throw new ValidationError('Cost price cannot be negative', 'costPrice');
     }
   }
   if (data.initialPayment !== undefined && data.initialPayment !== null && data.initialPayment !== '') {
-    const initPay = Number(data.initialPayment);
-    if (isNaN(initPay) || initPay < 0) {
+    const initPay = asDecimal(data.initialPayment);
+    if (!initPay.isFinite() || initPay.lessThan(0)) {
       throw new ValidationError('Initial payment cannot be negative', 'initialPayment');
     }
-    if (initPay > price) {
+    if (initPay.greaterThan(price)) {
       throw new BusinessRuleError(
         `Initial payment (${initPay}) cannot exceed ticket price (${price})`,
         'MAX_INITIAL_PAYMENT',

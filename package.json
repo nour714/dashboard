@@ -12,6 +12,7 @@
     "start": "node server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:check-drift": "prisma migrate diff --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --script",
     "db:check-unique-integrity": "node scripts/check-unique-integrity.js",
     "lint": "npx eslint server/ test/",
     "prisma:seed": "node prisma/seed.js",
@@ -62,9 +63,11 @@
     "@prisma/client": "^6.4.1",
     "@supabase/server": "^1.4.1",
     "@supabase/supabase-js": "^2.112.3",
+    "@upstash/redis": "^1.38.3",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "decimal.js": "^10.6.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
@@ -72,6 +75,7 @@
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.2.0",
+    "rate-limit-redis": "^6.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

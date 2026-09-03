@@ -11,6 +11,7 @@
 import { env } from '../config/env.js';
 import { BusinessRuleError } from '../domain/errors.js';
 import { findAirline } from '../constants/airlines.js';
+import { normalizeValidatedAirportCode } from '../constants/airports.js';
 
 const EXTRACTION_SCHEMA = {
   type: 'object',
@@ -136,15 +137,20 @@ export const TicketExtractionService = {
         }
       }
 
-      // Standardize origin and destination to 3-letter uppercase IATA code if present
-      if (parsed.origin && typeof parsed.origin === 'string') {
-        const match = parsed.origin.trim().toUpperCase().match(/\b([A-Z]{3})\b/);
-        parsed.origin = match ? match[1] : parsed.origin.trim().toUpperCase().slice(0, 3);
+      // Do not turn arbitrary text into a plausible-looking airport code. Invalid
+      // fields are omitted and reported for explicit operator confirmation.
+      const unrecognizedFields = [];
+      for (const field of ['origin', 'destination']) {
+        if (!parsed[field]) continue;
+        const code = normalizeValidatedAirportCode(parsed[field]);
+        if (code) {
+          parsed[field] = code;
+        } else {
+          delete parsed[field];
+          unrecognizedFields.push(field);
+        }
       }
-      if (parsed.destination && typeof parsed.destination === 'string') {
-        const match = parsed.destination.trim().toUpperCase().match(/\b([A-Z]{3})\b/);
-        parsed.destination = match ? match[1] : parsed.destination.trim().toUpperCase().slice(0, 3);
-      }
+      if (unrecognizedFields.length) parsed.unrecognizedFields = unrecognizedFields;
 
       // If no return flight is present, omit all return* fields and set tripType to "One Way"
       if (!parsed.returnDepartureDate && !parsed.returnFlightNumber) {
