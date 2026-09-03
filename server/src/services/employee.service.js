@@ -8,6 +8,7 @@
 import bcrypt from 'bcryptjs';
 import { getPrismaClient } from '../config/database.js';
 import { calculateTotalPaid, calculateRemaining, calculateTotalRefunded } from '../domain/ticket-rules.js';
+import { asDecimal, moneyNumber } from '../utils/money.js';
 import { ValidationError, NotFoundError, BusinessRuleError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
 
@@ -44,29 +45,30 @@ export const EmployeeService = {
     return users.map(user => {
       const userTickets = tickets.filter(t => t.createdById === user.id || t.createdBy === user.name);
 
-      let sales = 0;
-      let collected = 0;
-      let refunds = 0;
-      let outstanding = 0;
+      let salesDec = asDecimal(0);
+      let collectedDec = asDecimal(0);
+      let refundsDec = asDecimal(0);
+      let outstandingDec = asDecimal(0);
 
       userTickets.forEach(t => {
-        const price = Number(t.ticketPrice) || 0;
-        const paid = calculateTotalPaid(t.payments || []);
-        const ref = calculateTotalRefunded(t.refunds || []);
+        const price = asDecimal(t.ticketPrice);
+        const paid = asDecimal(calculateTotalPaid(t.payments || []));
+        const ref = asDecimal(calculateTotalRefunded(t.refunds || []));
+        const rem = asDecimal(calculateRemaining(t.ticketPrice, paid));
 
-        sales += price;
-        collected += paid;
-        refunds += ref;
-        outstanding += calculateRemaining(price, paid);
+        salesDec = salesDec.plus(price);
+        collectedDec = collectedDec.plus(paid);
+        refundsDec = refundsDec.plus(ref);
+        outstandingDec = outstandingDec.plus(rem);
       });
 
       return {
         ...user,
         ticketsCount: userTickets.length,
-        sales,
-        collected,
-        refunds,
-        outstanding,
+        sales: moneyNumber(salesDec),
+        collected: moneyNumber(collectedDec),
+        refunds: moneyNumber(refundsDec),
+        outstanding: moneyNumber(outstandingDec),
         isCalculated: true
       };
     });

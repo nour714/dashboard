@@ -5,6 +5,9 @@
 import dotenv from 'dotenv';
 import { z } from 'zod';
 
+if (process.env.NODE_ENV === 'test') {
+  dotenv.config({ path: '.env.test' });
+}
 dotenv.config();
 
 const envSchema = z.object({

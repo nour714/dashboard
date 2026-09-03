@@ -4,6 +4,7 @@
  * Computes executive KPIs, revenue trends, airline performance, and financial analytics.
  */
 
+import Decimal from 'decimal.js';
 import { getPrismaClient } from '../config/database.js';
 import {
   calculateTotalPaid,
@@ -13,6 +14,7 @@ import {
   calculateTotalModificationFees,
   calculateNetProfit
 } from '../domain/ticket-rules.js';
+import { asDecimal, moneyNumber } from '../utils/money.js';
 import { EmployeeService } from './employee.service.js';
 
 /**
@@ -37,18 +39,18 @@ export function computeWeeklyTrends(tickets = []) {
     const startLabel = `${start.toLocaleString('default', { month: 'short' })} ${start.getDate()}`;
     const weekIndex = 4 - i;
 
-    let sales = 0;
-    let collections = 0;
-    let refunds = 0;
-    let netProfit = 0;
+    let salesTotal = asDecimal(0);
+    let collectionsTotal = asDecimal(0);
+    let refundsTotal = asDecimal(0);
+    let netProfitTotal = asDecimal(0);
 
     tickets.forEach(t => {
       const ticketDate = new Date(t.createdAt || t.departureDate);
       if (ticketDate >= start && ticketDate < end) {
-        sales += (Number(t.ticketPrice) || 0);
+        salesTotal = salesTotal.plus(asDecimal(t.ticketPrice));
         const profit = calculateNetProfit(t.ticketPrice, t.costPrice);
         if (profit !== null) {
-          netProfit += profit;
+          netProfitTotal = netProfitTotal.plus(asDecimal(profit));
         }
       }
 
@@ -56,7 +58,7 @@ export function computeWeeklyTrends(tickets = []) {
         t.payments.forEach(p => {
           const pDate = new Date(p.date || p.createdAt);
           if (pDate >= start && pDate < end) {
-            collections += (Number(p.amount) || 0);
+            collectionsTotal = collectionsTotal.plus(asDecimal(p.amount));
           }
         });
       }
@@ -66,14 +68,18 @@ export function computeWeeklyTrends(tickets = []) {
           if (r.status === 'COMPLETED' || r.status === 'Refunded' || r.status === 'APPROVED') {
             const rDate = new Date(r.processedDate || r.requestedDate || r.createdAt);
             if (rDate >= start && rDate < end) {
-              refunds += (Number(r.amount) || 0);
+              refundsTotal = refundsTotal.plus(asDecimal(r.amount));
             }
           }
         });
       }
     });
 
-    const outstanding = Math.max(0, sales - collections);
+    const sales = moneyNumber(salesTotal);
+    const collections = moneyNumber(collectionsTotal);
+    const refunds = moneyNumber(refundsTotal);
+    const netProfit = moneyNumber(netProfitTotal);
+    const outstanding = moneyNumber(Decimal.max(0, salesTotal.minus(collectionsTotal)));
 
     weeks.push({
       label: `${startLabel}-${end.getDate()}`,
@@ -105,29 +111,38 @@ export const ReportService = {
     });
 
     let totalTickets = tickets.length;
-    let totalSales = 0;
-    let totalCollected = 0;
-    let totalOutstanding = 0;
-    let totalRefunds = 0;
-    let totalModFees = 0;
-    let totalNetProfit = 0;
+    let totalSalesDec = asDecimal(0);
+    let totalCollectedDec = asDecimal(0);
+    let totalOutstandingDec = asDecimal(0);
+    let totalRefundsDec = asDecimal(0);
+    let totalModFeesDec = asDecimal(0);
+    let totalNetProfitDec = asDecimal(0);
 
     tickets.forEach(t => {
-      const price = Number(t.ticketPrice) || 0;
-      totalSales += price;
-      const paid = calculateTotalPaid(t.payments || []);
-      totalCollected += paid;
-      totalOutstanding += calculateRemaining(price, paid);
-      totalRefunds += calculateTotalRefunded(t.refunds || []);
-      totalModFees += calculateTotalModificationFees(t.modifications || []);
+      const price = asDecimal(t.ticketPrice);
+      totalSalesDec = totalSalesDec.plus(price);
+      const paid = asDecimal(calculateTotalPaid(t.payments || []));
+      totalCollectedDec = totalCollectedDec.plus(paid);
+      totalOutstandingDec = totalOutstandingDec.plus(asDecimal(calculateRemaining(t.ticketPrice, paid)));
+      totalRefundsDec = totalRefundsDec.plus(asDecimal(calculateTotalRefunded(t.refunds || [])));
+      totalModFeesDec = totalModFeesDec.plus(asDecimal(calculateTotalModificationFees(t.modifications || [])));
       const profit = calculateNetProfit(t.ticketPrice, t.costPrice);
       if (profit !== null) {
-        totalNetProfit += profit;
+        totalNetProfitDec = totalNetProfitDec.plus(asDecimal(profit));
       }
     });
 
+    const totalSales = moneyNumber(totalSalesDec);
+    const totalCollected = moneyNumber(totalCollectedDec);
+    const totalOutstanding = moneyNumber(totalOutstandingDec);
+    const totalRefunds = moneyNumber(totalRefundsDec);
+    const totalModFees = moneyNumber(totalModFeesDec);
+    const totalNetProfit = moneyNumber(totalNetProfitDec);
+
     const netValue = calculateNetValue(totalSales, totalModFees, totalRefunds);
-    const collectionRate = totalSales > 0 ? Math.round((totalCollected / totalSales) * 100) : 0;
+    const collectionRate = totalSalesDec.greaterThan(0)
+      ? Math.round(totalCollectedDec.dividedBy(totalSalesDec).times(100).toNumber())
+      : 0;
 
     return {
       totalTickets,
@@ -167,26 +182,34 @@ export const ReportService = {
           airline,
           airlineCode: t.airlineCode || 'XX',
           ticketsSold: 0,
-          totalRevenue: 0,
-          totalRefunded: 0,
-          totalNetProfit: 0
+          totalRevenueDec: asDecimal(0),
+          totalRefundedDec: asDecimal(0),
+          totalNetProfitDec: asDecimal(0)
         };
       }
       airlineMap[airline].ticketsSold += 1;
-      airlineMap[airline].totalRevenue += (Number(t.ticketPrice) || 0);
-      airlineMap[airline].totalRefunded += calculateTotalRefunded(t.refunds || []);
+      airlineMap[airline].totalRevenueDec = airlineMap[airline].totalRevenueDec.plus(asDecimal(t.ticketPrice));
+      airlineMap[airline].totalRefundedDec = airlineMap[airline].totalRefundedDec.plus(asDecimal(calculateTotalRefunded(t.refunds || [])));
       const profit = calculateNetProfit(t.ticketPrice, t.costPrice);
       if (profit !== null) {
-        airlineMap[airline].totalNetProfit += profit;
+        airlineMap[airline].totalNetProfitDec = airlineMap[airline].totalNetProfitDec.plus(asDecimal(profit));
       }
     });
 
     const results = Object.values(airlineMap).map(a => {
-      const rate = a.totalRevenue > 0
-        ? ((a.totalRefunded / a.totalRevenue) * 100).toFixed(1) + '%'
+      const totalRevenue = moneyNumber(a.totalRevenueDec);
+      const totalRefunded = moneyNumber(a.totalRefundedDec);
+      const totalNetProfit = moneyNumber(a.totalNetProfitDec);
+      const rate = a.totalRevenueDec.greaterThan(0)
+        ? a.totalRefundedDec.dividedBy(a.totalRevenueDec).times(100).toFixed(1) + '%'
         : '0.0%';
       return {
-        ...a,
+        airline: a.airline,
+        airlineCode: a.airlineCode,
+        ticketsSold: a.ticketsSold,
+        totalRevenue,
+        totalRefunded,
+        totalNetProfit,
         refundRate: rate,
         isFallback: false
       };
@@ -266,7 +289,7 @@ export const ReportService = {
     });
 
     const rows = tickets.map(t => {
-      const price = Number(t.ticketPrice) || 0;
+      const price = moneyNumber(asDecimal(t.ticketPrice));
       const paid = calculateTotalPaid(t.payments || []);
       const remaining = calculateRemaining(price, paid);
 
@@ -287,3 +310,4 @@ export const ReportService = {
     return rows;
   }
 };
+

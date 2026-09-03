@@ -6,6 +6,7 @@
 
 import { getPrismaClient } from '../config/database.js';
 import { calculateTotalPaid, calculateRemaining, calculateTotalRefunded } from '../domain/ticket-rules.js';
+import { asDecimal, moneyNumber } from '../utils/money.js';
 import { ValidationError, NotFoundError, BusinessRuleError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
 import { enrichTicketFinancials } from './ticket.service.js';
@@ -97,21 +98,22 @@ export const CustomerService = {
     if (!customer) return null;
     if (!includeDeleted && customer.deletedAt !== null) return null;
 
-    let totalSpent = 0;
-    let totalPaid = 0;
-    let totalRefunded = 0;
-    let totalOutstanding = 0;
+    let totalSpentDec = asDecimal(0);
+    let totalPaidDec = asDecimal(0);
+    let totalRefundedDec = asDecimal(0);
+    let totalOutstandingDec = asDecimal(0);
 
     const enrichedTickets = (customer.tickets || []).map(t => {
       const enriched = enrichTicketFinancials(t);
-      const price = Number(t.ticketPrice) || 0;
-      const paid = calculateTotalPaid(t.payments || []);
-      const ref = calculateTotalRefunded(t.refunds || []);
+      const price = asDecimal(t.ticketPrice);
+      const paid = asDecimal(calculateTotalPaid(t.payments || []));
+      const ref = asDecimal(calculateTotalRefunded(t.refunds || []));
+      const rem = asDecimal(calculateRemaining(t.ticketPrice, paid));
 
-      totalSpent += price;
-      totalPaid += paid;
-      totalRefunded += ref;
-      totalOutstanding += calculateRemaining(price, paid);
+      totalSpentDec = totalSpentDec.plus(price);
+      totalPaidDec = totalPaidDec.plus(paid);
+      totalRefundedDec = totalRefundedDec.plus(ref);
+      totalOutstandingDec = totalOutstandingDec.plus(rem);
 
       return enriched;
     });
@@ -120,10 +122,10 @@ export const CustomerService = {
       ...customer,
       stats: {
         ticketCount: enrichedTickets.length,
-        totalSpent,
-        totalPaid,
-        totalRefunded,
-        totalOutstanding
+        totalSpent: moneyNumber(totalSpentDec),
+        totalPaid: moneyNumber(totalPaidDec),
+        totalRefunded: moneyNumber(totalRefundedDec),
+        totalOutstanding: moneyNumber(totalOutstandingDec)
       },
       tickets: enrichedTickets
     };

@@ -6,6 +6,7 @@ import http from 'http';
 import { createApp } from '../server/src/app.js';
 import { AuthService } from '../server/src/services/auth.service.js';
 import { ReportService as ServerReportService } from '../server/src/services/report.service.js';
+import { CustomerService } from '../server/src/services/customer.service.js';
 import * as dbModule from '../server/src/config/database.js';
 import { store } from '../js/state/store.js';
 import { ReportService as FrontendReportService } from '../js/services/report-service.js';
@@ -212,6 +213,106 @@ async function runCustomerPaymentsReportTests() {
   assert(ar.reports.customerPayments.oneWay === 'ذهاب فقط', 'AR reports.customerPayments.oneWay is defined');
   assert(en.reports.customerPayments.roundTrip === 'Round Trip', 'EN reports.customerPayments.roundTrip is defined');
   assert(ar.reports.customerPayments.roundTrip === 'ذهاب وعودة', 'AR reports.customerPayments.roundTrip is defined');
+
+  // --- 6. Floating-Point Precision Aggregation Regression Tests (Decimal.js) ---
+  console.log('\n--- 6. Floating-Point Precision Aggregation Regression Tests ---');
+  // Prices: 10.10, 20.20, 5.05, 100.01 (exact sum = 135.36; float math produces 135.35999999999999)
+  // Payments: 1.10, 2.20, 3.30 (exact sum = 6.60; float math produces 6.6000000000000005)
+  // Refunds: 0.10, 0.20 (exact sum = 0.30; float math produces 0.30000000000000004)
+  const trapTickets = [
+    {
+      id: 'TK-TRAP-1',
+      ticketNumber: '077-9000000001',
+      customerId: 'CUST-TRAP',
+      passengerName: 'Precision Test',
+      ticketPrice: 10.10,
+      airline: 'TrapAir',
+      airlineCode: 'TP',
+      tripType: 'One Way',
+      payments: [{ amount: 1.10 }],
+      refunds: [{ amount: 0.10, status: 'COMPLETED' }],
+      modifications: []
+    },
+    {
+      id: 'TK-TRAP-2',
+      ticketNumber: '077-9000000002',
+      customerId: 'CUST-TRAP',
+      passengerName: 'Precision Test',
+      ticketPrice: 20.20,
+      airline: 'TrapAir',
+      airlineCode: 'TP',
+      tripType: 'One Way',
+      payments: [{ amount: 2.20 }],
+      refunds: [{ amount: 0.20, status: 'COMPLETED' }],
+      modifications: []
+    },
+    {
+      id: 'TK-TRAP-3',
+      ticketNumber: '077-9000000003',
+      customerId: 'CUST-TRAP',
+      passengerName: 'Precision Test',
+      ticketPrice: 5.05,
+      airline: 'TrapAir',
+      airlineCode: 'TP',
+      tripType: 'One Way',
+      payments: [{ amount: 3.30 }],
+      refunds: [],
+      modifications: []
+    },
+    {
+      id: 'TK-TRAP-4',
+      ticketNumber: '077-9000000004',
+      customerId: 'CUST-TRAP',
+      passengerName: 'Precision Test',
+      ticketPrice: 100.01,
+      airline: 'TrapAir',
+      airlineCode: 'TP',
+      tripType: 'One Way',
+      payments: [],
+      refunds: [],
+      modifications: []
+    }
+  ];
+
+  const trapCustomer = {
+    id: 'CUST-TRAP',
+    name: 'Precision Test Customer',
+    deletedAt: null,
+    notes: [],
+    tickets: trapTickets
+  };
+
+  const trapMockPrisma = {
+    ticket: {
+      findMany: async () => [...trapTickets]
+    },
+    customer: {
+      findUnique: async ({ where }) => (where.id === 'CUST-TRAP' ? trapCustomer : null)
+    }
+  };
+
+  dbModule.setPrismaClient(trapMockPrisma);
+
+  // 6.1 ReportService KPI aggregation exact precision checks
+  const kpis = await ServerReportService.getSummaryKPIs();
+  assert(kpis.totalSales === 135.36, `ReportService totalSales exact decimal sum (${kpis.totalSales} === 135.36)`);
+  assert(kpis.totalCollected === 6.6, `ReportService totalCollected exact decimal sum (${kpis.totalCollected} === 6.6)`);
+  assert(kpis.totalRefunds === 0.3, `ReportService totalRefunds exact decimal sum (${kpis.totalRefunds} === 0.3)`);
+  assert(kpis.totalOutstanding === 128.76, `ReportService totalOutstanding exact decimal sum (${kpis.totalOutstanding} === 128.76)`);
+
+  // 6.2 ReportService Airline Performance aggregation exact precision checks
+  const airlinePerf = await ServerReportService.getAirlinePerformance();
+  const trapAir = airlinePerf.find(a => a.airline === 'TrapAir');
+  assert(trapAir && trapAir.totalRevenue === 135.36, `ReportService airline totalRevenue exact decimal sum (${trapAir?.totalRevenue} === 135.36)`);
+  assert(trapAir && trapAir.totalRefunded === 0.3, `ReportService airline totalRefunded exact decimal sum (${trapAir?.totalRefunded} === 0.3)`);
+
+  // 6.3 CustomerService Lifetime stats aggregation exact precision checks
+  const customerResult = await CustomerService.getCustomerById('CUST-TRAP');
+  assert(customerResult !== null, 'CustomerService.getCustomerById returns customer record');
+  assert(customerResult.stats.totalSpent === 135.36, `CustomerService totalSpent exact decimal sum (${customerResult.stats.totalSpent} === 135.36)`);
+  assert(customerResult.stats.totalPaid === 6.6, `CustomerService totalPaid exact decimal sum (${customerResult.stats.totalPaid} === 6.6)`);
+  assert(customerResult.stats.totalRefunded === 0.3, `CustomerService totalRefunded exact decimal sum (${customerResult.stats.totalRefunded} === 0.3)`);
+  assert(customerResult.stats.totalOutstanding === 128.76, `CustomerService totalOutstanding exact decimal sum (${customerResult.stats.totalOutstanding} === 128.76)`);
 
   console.log('\n========================================================');
   console.log(`Customer Payments Report Tests: ${passed} passed, ${failed} failed`);
