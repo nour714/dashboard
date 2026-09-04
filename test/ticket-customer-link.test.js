@@ -53,6 +53,15 @@ async function runTicketCustomerTests() {
       }
     },
     ticket: {
+      findFirst: async ({ where }) => {
+        if (where?.ticketNumber) {
+          return mockTickets.find(t => t.ticketNumber === where.ticketNumber && !t.deletedAt) || null;
+        }
+        if (where?.pnr) {
+          return mockTickets.find(t => t.pnr === where.pnr && !t.deletedAt) || null;
+        }
+        return mockTickets[0] || null;
+      },
       create: async ({ data }) => {
         const record = {
           ...data,
@@ -181,6 +190,45 @@ async function runTicketCustomerTests() {
     assert(ticket1.customerId !== 'CUST-8924', 'Ticket 1 does not use CUST-8924 fallback');
     assert(ticket2.customerId !== 'CUST-8924', 'Ticket 2 does not use CUST-8924 fallback');
     assert(ticket3.customerId !== 'CUST-8924', 'Ticket 3 does not use CUST-8924 fallback');
+
+    // 6. Optional ticketNumber & No Random Generation Verification
+    console.log('\n--- 6. Optional ticketNumber & No Random Generation ---');
+    const noTicketNum1 = await TicketService.createTicket({
+      passengerName: 'Passenger Without ETicket 1',
+      origin: 'CAI',
+      destination: 'JED',
+      airline: 'Saudia',
+      departureDate: '2026-10-01T08:00:00Z',
+      ticketPrice: 8000
+    }, { name: 'Agent Sarah', id: 'USR-01' });
+
+    assert(noTicketNum1.ticketNumber === null, 'Ticket without ticketNumber stores ticketNumber: null');
+    assert(noTicketNum1.ticketNumber !== undefined, 'Ticket ticketNumber is null, not undefined');
+    assert(typeof noTicketNum1.ticketNumber !== 'string' || !noTicketNum1.ticketNumber.startsWith('077-'), 'No random 077- ticket number was auto-generated');
+
+    const noTicketNum2 = await TicketService.createTicket({
+      passengerName: 'Passenger Without ETicket 2',
+      origin: 'CAI',
+      destination: 'RUH',
+      airline: 'Flynas',
+      ticketNumber: '   ',
+      departureDate: '2026-10-02T08:00:00Z',
+      ticketPrice: 6000
+    }, { name: 'Agent Sarah', id: 'USR-01' });
+
+    assert(noTicketNum2.ticketNumber === null, 'Ticket with whitespace-only ticketNumber stores ticketNumber: null');
+
+    const withExplicitTicketNum = await TicketService.createTicket({
+      passengerName: 'Passenger With Explicit ETicket',
+      origin: 'CAI',
+      destination: 'DXB',
+      airline: 'Emirates',
+      ticketNumber: '176-9876543210',
+      departureDate: '2026-10-03T08:00:00Z',
+      ticketPrice: 15000
+    }, { name: 'Agent Sarah', id: 'USR-01' });
+
+    assert(withExplicitTicketNum.ticketNumber === '176-9876543210', 'Ticket with explicit ticketNumber preserves exact value');
 
     console.log('\n========================================================');
     console.log(`Ticket Customer Link Tests: ${passed} passed, ${failed} failed`);

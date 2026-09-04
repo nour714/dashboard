@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS "customer_notes" (
 
 CREATE TABLE IF NOT EXISTS "tickets" (
     "id" TEXT NOT NULL,
-    "ticketNumber" TEXT NOT NULL,
+    "ticketNumber" TEXT,
     "pnr" TEXT NOT NULL,
     "customerId" TEXT NOT NULL,
     "passengerName" TEXT NOT NULL,

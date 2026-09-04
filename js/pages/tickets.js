@@ -35,7 +35,7 @@ function renderTicketRows(tickets) {
     return `
       <tr>
         <td>
-          <a href="/tickets/${escapeHtml(tData.id)}" class="cell-main ltr-data" data-link>${escapeHtml(tData.ticketNumber)}</a>
+          <a href="/tickets/${escapeHtml(tData.id)}" class="cell-main ltr-data" data-link>${tData.ticketNumber ? escapeHtml(tData.ticketNumber) : `<span class="text-muted">—</span>`}</a>
           <div class="cell-sub font-medium">PNR: <strong class="ltr-data" style="color: var(--color-primary);">${escapeHtml(tData.pnr)}</strong></div>
         </td>
         <td>
@@ -106,8 +106,8 @@ function exportTicketsToCsv(tickets) {
   const rows = tickets.map(t => {
     const financials = TicketService.getTicketFinancials(t);
     return [
-      t.ticketNumber,
-      t.pnr,
+      t.ticketNumber || '',
+      t.pnr || '',
       t.passengerName,
       t.airline,
       t.origin,

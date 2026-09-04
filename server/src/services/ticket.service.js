@@ -246,7 +246,7 @@ export const TicketService = {
 
     // Generate collision-resistant unique IDs
     const newId = `TK-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
-    const ticketNumber = data.ticketNumber ? data.ticketNumber.trim() : `077-${crypto.randomBytes(4).readUInt32BE(0).toString().padEnd(10, '0').slice(0, 10)}`;
+    const ticketNumber = data.ticketNumber && data.ticketNumber.trim() ? data.ticketNumber.trim() : null;
     const pnr = data.pnr ? data.pnr.trim() : `PNR${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 
     // Find or create customer
@@ -417,10 +417,10 @@ export const TicketService = {
       'tripType', 'flightDuration', 'cabinClass', 'seat', 'baggage', 'costPrice', 'status'
     ];
 
-    if (updates.ticketNumber && updates.ticketNumber !== existing.ticketNumber) {
+    if (updates.ticketNumber && updates.ticketNumber.trim() && updates.ticketNumber.trim() !== existing.ticketNumber) {
       const duplicate = await prisma.ticket.findFirst({
         where: {
-          ticketNumber: updates.ticketNumber,
+          ticketNumber: updates.ticketNumber.trim(),
           id: { not: existing.id }
         }
       });
@@ -448,8 +448,10 @@ export const TicketService = {
             throw new ForbiddenError('Only administrators can modify ticket cost price', 'FORBIDDEN');
           }
           data[f] = updates[f] !== null && updates[f] !== '' ? Number(updates[f]) : null;
-        } else if (f === 'pnr' || f === 'ticketNumber') {
-          data[f] = String(updates[f]).trim();
+        } else if (f === 'ticketNumber') {
+          data[f] = updates[f] && String(updates[f]).trim() ? String(updates[f]).trim() : null;
+        } else if (f === 'pnr') {
+          data[f] = updates[f] && String(updates[f]).trim() ? String(updates[f]).trim() : null;
         } else {
           data[f] = updates[f];
         }
@@ -844,7 +846,7 @@ export const TicketService = {
           action: 'DELETE_TICKET_WITH_FINANCIALS',
           ticketId: existing.id,
           customerId: existing.customerId,
-          description: `Permanently deleted ticket ${existing.ticketNumber} (${existing.passengerName}) along with ${existing.payments.length} payment(s) and ${existing.refunds.length} refund(s). Total paid: ${totalPaid} ${existing.currency}, total refunded: ${totalRefunded} ${existing.currency}.`,
+          description: `Permanently deleted ticket ${existing.ticketNumber || existing.id} (${existing.passengerName}) along with ${existing.payments.length} payment(s) and ${existing.refunds.length} refund(s). Total paid: ${totalPaid} ${existing.currency}, total refunded: ${totalRefunded} ${existing.currency}.`,
           metadata: {
             adminId: currentUser.id,
             ticketId: existing.id,

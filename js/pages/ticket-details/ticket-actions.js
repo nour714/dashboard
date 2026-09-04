@@ -390,8 +390,9 @@ export function openEditTicketModal(ticket, onSuccess) {
 }
 
 export function openDeleteTicketModal(ticket, onSuccess) {
+  const confirmValue = ticket.ticketNumber || ticket.id;
   openModal({
-    title: `${t('modals.deleteTicket.title') || t('common.delete') || 'Delete Ticket'} #${ticket.ticketNumber || ticket.id}`,
+    title: `${t('modals.deleteTicket.title') || t('common.delete') || 'Delete Ticket'} #${confirmValue}`,
     subtitle: `${ticket.passengerName} (${ticket.origin} ✈ ${ticket.destination})`,
     contentHtml: `
       <div class="d-flex flex-column gap-md">
@@ -405,8 +406,8 @@ export function openDeleteTicketModal(ticket, onSuccess) {
         </div>
 
         <div class="form-group">
-          <label class="form-label">${escapeHtml(t('modals.deleteTicket.typeToConfirm') || `اكتب رقم التذكرة (${ticket.ticketNumber}) للتأكيد`)} (${escapeHtml(ticket.ticketNumber)})</label>
-          <input type="text" id="delete-ticket-confirm-input" class="form-control ltr-field" autocomplete="off" placeholder="${escapeHtml(ticket.ticketNumber)}" />
+          <label class="form-label">${escapeHtml(t('modals.deleteTicket.typeToConfirm') || `اكتب رقم التذكرة (${confirmValue}) للتأكيد`)} (${escapeHtml(confirmValue)})</label>
+          <input type="text" id="delete-ticket-confirm-input" class="form-control ltr-field" autocomplete="off" placeholder="${escapeHtml(confirmValue)}" />
         </div>
 
         <div id="delete-ticket-error-box" class="p-sm text-sm text-danger" style="display: none; background-color: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md); border: 1px solid rgba(239, 68, 68, 0.3);"></div>
@@ -426,7 +427,7 @@ export function openDeleteTicketModal(ticket, onSuccess) {
 
       if (confirmInput && confirmBtn) {
         confirmInput.addEventListener('input', () => {
-          confirmBtn.disabled = confirmInput.value.trim() !== ticket.ticketNumber;
+          confirmBtn.disabled = confirmInput.value.trim() !== confirmValue;
         });
       }
 

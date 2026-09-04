@@ -8,7 +8,7 @@ export const createTicketSchema = z.object({
   customerId: z.string().optional(),
   passengerName: z.string().trim().optional().default(''),
   pnr: z.string().max(10).optional(),
-  ticketNumber: z.string().optional(),
+  ticketNumber: z.string().nullable().optional().or(z.literal('')),
   phone: z.string().optional(),
   passport: z.string().optional(),
   nationality: z.string().optional(),
@@ -55,7 +55,7 @@ export const createTicketSchema = z.object({
 export const updateTicketSchema = z.object({
   passengerName: z.string().min(1).optional(),
   pnr: z.string().min(1).max(10).optional(),
-  ticketNumber: z.string().optional(),
+  ticketNumber: z.string().nullable().optional().or(z.literal('')),
   phone: z.string().optional(),
   passport: z.string().optional(),
   nationality: z.string().optional(),

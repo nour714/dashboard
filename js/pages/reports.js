@@ -32,7 +32,7 @@ export const ReportsPage = {
       <tr>
         <td>
           <strong class="cell-main">${escapeHtml(row.customerName)}</strong>
-          <div class="cell-sub ltr-data">${escapeHtml(row.ticketNumber)}</div>
+          <div class="cell-sub ltr-data">${row.ticketNumber ? escapeHtml(row.ticketNumber) : '<span class="text-muted">—</span>'}</div>
         </td>
         <td class="tabular-nums font-bold text-success">${formatCurrency(row.totalPaid, 'EGP')}</td>
         <td class="tabular-nums font-bold ${row.totalRemaining > 0 ? 'text-danger' : 'text-success'}">${formatCurrency(row.totalRemaining, 'EGP')}</td>

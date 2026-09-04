@@ -459,7 +459,7 @@ class App {
                         <span>${r.date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       </div>
                       <div class="text-sm font-medium">${escapeHtml(r.passengerName)} — ${escapeHtml(r.route)}</div>
-                      <div class="text-xs text-muted">${escapeHtml(r.ticketNumber)}</div>
+                      <div class="text-xs text-muted">${r.ticketNumber ? escapeHtml(r.ticketNumber) : escapeHtml(r.ticketId)}</div>
                     </a>
                   `).join('')}
                 </div>

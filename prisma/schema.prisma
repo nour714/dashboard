@@ -88,7 +88,7 @@ model CustomerNote {
 
 model Ticket {
   id                     String         @id
-  ticketNumber           String         @unique
+  ticketNumber           String?        @unique
   pnr                    String?        @unique
   customerId             String
   customer               Customer       @relation(fields: [customerId], references: [id])

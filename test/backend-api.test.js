@@ -248,6 +248,7 @@ async function runApiTests() {
     assert(emptyTicketRes.json?.data?.ticketPrice === 0, 'Empty ticket defaults ticketPrice to 0');
     assert(emptyTicketRes.json?.data?.status === 'UNPAID', 'Empty ticket derives UNPAID status');
     assert(Boolean(emptyTicketRes.json?.data?.pnr), 'Empty ticket auto-generates PNR');
+    assert(emptyTicketRes.json?.data?.ticketNumber === null, 'Empty ticket leaves ticketNumber null (no random auto-generation)');
 
     // IDOR Protection: TICKET_ONLY cannot access tickets where createdById is null or not owned
     // 1. Ticket with createdById = null
