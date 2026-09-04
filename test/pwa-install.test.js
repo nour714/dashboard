@@ -105,23 +105,29 @@ async function runPwaTests() {
   assert(htmlContent.includes('<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"'), 'index.html sets apple-mobile-web-app-status-bar-style');
   assert(htmlContent.includes('<meta name="apple-mobile-web-app-title" content="AfricaTravel"'), 'index.html sets apple-mobile-web-app-title');
 
-  // --- 5. vercel.json Routing & Builds ---
-  console.log('\n--- 5. vercel.json PWA Routing ---');
+  // --- 5. vercel.json & .vercelignore Configuration ---
+  console.log('\n--- 5. vercel.json & .vercelignore Configuration ---');
   const vercelConfig = JSON.parse(fs.readFileSync(path.resolve('vercel.json'), 'utf8'));
 
-  const manifestBuild = vercelConfig.builds?.find(b => b.src === 'manifest.json');
-  const swBuild = vercelConfig.builds?.find(b => b.src === 'sw.js');
-  assert(manifestBuild && manifestBuild.use === '@vercel/static', 'vercel.json builds manifest.json as static');
-  assert(swBuild && swBuild.use === '@vercel/static', 'vercel.json builds sw.js as static');
+  assert(vercelConfig.functions && vercelConfig.functions['api/index.js'], 'vercel.json defines api/index.js in functions');
+  assert(Array.isArray(vercelConfig.rewrites), 'vercel.json has rewrites array');
 
-  const manifestRouteIdx = vercelConfig.routes?.findIndex(r => r.src === '/manifest.json');
-  const swRouteIdx = vercelConfig.routes?.findIndex(r => r.src === '/sw.js');
-  const catchAllIdx = vercelConfig.routes?.findIndex(r => r.src === '/(.*)');
+  const apiRewrite = vercelConfig.rewrites.find(r => r.source === '/api/(.*)');
+  const catchAllRewrite = vercelConfig.rewrites.find(r => r.source === '/(.*)');
+  assert(apiRewrite && apiRewrite.destination === '/api/index.js', 'vercel.json rewrites /api/(.*) to /api/index.js');
+  assert(catchAllRewrite && catchAllRewrite.destination === '/index.html', 'vercel.json rewrites /(.*) to /index.html');
 
-  assert(manifestRouteIdx !== -1, 'vercel.json has explicit /manifest.json route');
-  assert(swRouteIdx !== -1, 'vercel.json has explicit /sw.js route');
-  assert(manifestRouteIdx < catchAllIdx, '/manifest.json route is placed BEFORE the catch-all SPA route');
-  assert(swRouteIdx < catchAllIdx, '/sw.js route is placed BEFORE the catch-all SPA route');
+  // Verify .vercelignore exists and preserves PWA assets while blocking sensitive files
+  const vercelIgnorePath = path.resolve('.vercelignore');
+  assert(fs.existsSync(vercelIgnorePath), '.vercelignore file exists');
+  const vercelIgnoreContent = fs.readFileSync(vercelIgnorePath, 'utf8');
+  const ignoredEntries = vercelIgnoreContent.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+  assert(!ignoredEntries.includes('manifest.json'), '.vercelignore does NOT ignore manifest.json');
+  assert(!ignoredEntries.includes('sw.js'), '.vercelignore does NOT ignore sw.js');
+  assert(!ignoredEntries.includes('assets/'), '.vercelignore does NOT ignore assets/');
+  assert(ignoredEntries.includes('prisma/'), '.vercelignore ignores prisma/');
+  assert(ignoredEntries.includes('server/'), '.vercelignore ignores server/');
+  assert(ignoredEntries.includes('test/'), '.vercelignore ignores test/');
 
   // --- 6. js/app.js Registration ---
   console.log('\n--- 6. js/app.js Service Worker Registration ---');

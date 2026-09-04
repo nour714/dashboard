@@ -1,0 +1,19 @@
+# Exclude sensitive and non-public files from Vercel static deployment.
+# Only index.html, assets/, styles/, js/, manifest.json, sw.js, and api/
+# should be publicly reachable. Everything else is excluded.
+
+test/
+server/
+prisma/
+scripts/
+.github/
+.env*
+*.md
+.eslintrc.json
+.prettierrc
+eslint.config.js
+docker-compose.yml
+Dockerfile
+server.js
+package-lock.json
+supabase-setup-summary.md
