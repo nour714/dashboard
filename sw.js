@@ -62,8 +62,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale-while-revalidate: serve from cache instantly if present, and
-  // refresh the cache in the background so the next load gets the update.
+  // Stale-while-revalidate with navigation fallback and guaranteed Response safety net
   event.respondWith(
     caches.match(request).then((cached) => {
       const networkFetch = fetch(request)
@@ -74,9 +73,16 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => cached);
+        .catch(() => {
+          // Network failed and this URL is not in cache (e.g. dynamic SPA routes like /tickets/TK-XXX).
+          // If this is a page navigation, return the cached app shell (/index.html) to prevent crash.
+          if (request.mode === 'navigate') {
+            return caches.match('/index.html');
+          }
+          return cached;
+        });
 
       return cached || networkFetch;
-    })
+    }).catch(() => new Response('Offline', { status: 503, statusText: 'Service Unavailable' }))
   );
 });

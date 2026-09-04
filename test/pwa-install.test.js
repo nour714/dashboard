@@ -81,6 +81,9 @@ async function runPwaTests() {
   assert(swContent.includes('self.addEventListener(\'install\''), 'sw.js handles install event');
   assert(swContent.includes('self.addEventListener(\'activate\''), 'sw.js handles activate event and cache cleanup');
   assert(swContent.includes('self.addEventListener(\'fetch\''), 'sw.js handles fetch event with stale-while-revalidate');
+  assert(swContent.includes("request.mode === 'navigate'"), 'sw.js handles navigation offline fallback to /index.html');
+  assert(swContent.includes("caches.match('/index.html')"), 'sw.js matches /index.html on navigate error');
+  assert(swContent.includes("new Response('Offline'"), 'sw.js includes top-level guaranteed Response fallback safety net');
 
   // --- 3. Icon Assets in assets/ ---
   console.log('\n--- 3. Icon Asset Files ---');
@@ -102,6 +105,7 @@ async function runPwaTests() {
   assert(htmlContent.includes('<link rel="manifest" href="/manifest.json"'), 'index.html links /manifest.json');
   assert(htmlContent.includes('<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"'), 'index.html links /assets/apple-touch-icon.png');
   assert(htmlContent.includes('<meta name="apple-mobile-web-app-capable" content="yes"'), 'index.html sets apple-mobile-web-app-capable');
+  assert(htmlContent.includes('<meta name="mobile-web-app-capable" content="yes"'), 'index.html sets standard mobile-web-app-capable tag');
   assert(htmlContent.includes('<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"'), 'index.html sets apple-mobile-web-app-status-bar-style');
   assert(htmlContent.includes('<meta name="apple-mobile-web-app-title" content="AfricaTravel"'), 'index.html sets apple-mobile-web-app-title');
 
