@@ -1,10 +1,8 @@
-# Exclude sensitive and non-public files from Vercel static deployment.
-# Only index.html, assets/, styles/, js/, manifest.json, sw.js, and api/
-# should be publicly reachable. Everything else is excluded.
+# Exclude non-deployment and developer-only files from Vercel deployment.
+# Note: prisma/ and server/ MUST NOT be excluded because they are required
+# for build-time prisma generate and the serverless api handler (api/index.js).
 
 test/
-server/
-prisma/
 scripts/
 .github/
 .env*

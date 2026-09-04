@@ -117,7 +117,7 @@ async function runPwaTests() {
   assert(apiRewrite && apiRewrite.destination === '/api/index.js', 'vercel.json rewrites /api/(.*) to /api/index.js');
   assert(catchAllRewrite && catchAllRewrite.destination === '/index.html', 'vercel.json rewrites /(.*) to /index.html');
 
-  // Verify .vercelignore exists and preserves PWA assets while blocking sensitive files
+  // Verify .vercelignore exists and preserves PWA assets and build prerequisites while blocking non-deployment files
   const vercelIgnorePath = path.resolve('.vercelignore');
   assert(fs.existsSync(vercelIgnorePath), '.vercelignore file exists');
   const vercelIgnoreContent = fs.readFileSync(vercelIgnorePath, 'utf8');
@@ -125,9 +125,11 @@ async function runPwaTests() {
   assert(!ignoredEntries.includes('manifest.json'), '.vercelignore does NOT ignore manifest.json');
   assert(!ignoredEntries.includes('sw.js'), '.vercelignore does NOT ignore sw.js');
   assert(!ignoredEntries.includes('assets/'), '.vercelignore does NOT ignore assets/');
-  assert(ignoredEntries.includes('prisma/'), '.vercelignore ignores prisma/');
-  assert(ignoredEntries.includes('server/'), '.vercelignore ignores server/');
+  assert(!ignoredEntries.includes('prisma/'), '.vercelignore does NOT ignore prisma/ (needed for prisma generate)');
+  assert(!ignoredEntries.includes('server/'), '.vercelignore does NOT ignore server/ (needed for api/index.js handler)');
   assert(ignoredEntries.includes('test/'), '.vercelignore ignores test/');
+  assert(ignoredEntries.includes('scripts/'), '.vercelignore ignores scripts/');
+  assert(ignoredEntries.includes('.env*'), '.vercelignore ignores .env*');
 
   // --- 6. js/app.js Registration ---
   console.log('\n--- 6. js/app.js Service Worker Registration ---');
