@@ -45,6 +45,7 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
 
       - name: Run Full Test Suite
+        if: always()
         run: npm test
         env:
           NODE_ENV: test
