@@ -13,6 +13,8 @@ import { BusinessRuleError } from '../domain/errors.js';
 import { findAirline } from '../constants/airlines.js';
 import { normalizeValidatedAirportCode } from '../constants/airports.js';
 
+const GEMINI_REQUEST_TIMEOUT_MS = 30000;
+
 const EXTRACTION_SCHEMA = {
   type: 'object',
   properties: {
@@ -56,8 +58,12 @@ export const TicketExtractionService = {
     const base64Data = fileBuffer.toString('base64');
     const prompt = `Extract flight ticket booking details from this document. Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Standardize airline names and their 2-letter IATA codes (e.g., EgyptAir MS, Air Cairo SM, Emirates EK, Etihad Airways EY, Qatar Airways QR, Turkish Airlines TK, Saudia SV, Flynas XY, flydubai FZ, Air Arabia G9, British Airways BA, Air France AF, Lufthansa LH, KLM KL, Iberia IB, ITA Airways AZ, Aegean Airlines A3, American Airlines AA, Delta Air Lines DL, United Airlines UA, Air Canada AC, Air China CA, China Eastern MU, China Southern CZ, Singapore Airlines SQ, Ethiopian Airlines ET, Kenya Airways KQ, Royal Air Maroc AT, Tunisair TU, Air Algérie AH). For "origin" and "destination", return ONLY the 3-letter IATA airport code (e.g. "CAI", "DXB") — never the city name, country name, or full airport name. Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
 
-    const primaryModel = env.GEMINI_MODEL || 'gemini-2.5-flash';
-    const candidateModels = Array.from(new Set([primaryModel, 'gemini-2.5-flash-lite']));
+    // Candidate models for extraction. Google periodically updates and deprecates model IDs
+    // without compile-time warnings, so candidate models are ordered by preference (primary -> fallback).
+    // Both models can be customized via GEMINI_MODEL and GEMINI_FALLBACK_MODEL environment variables.
+    const primaryModel = env.GEMINI_MODEL || 'gemini-3.7-flash';
+    const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite';
+    const candidateModels = Array.from(new Set([primaryModel, fallbackModel]));
 
     let lastError = null;
     let result = null;
@@ -65,7 +71,7 @@ export const TicketExtractionService = {
     for (const modelName of candidateModels) {
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent`;
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const timeoutId = setTimeout(() => controller.abort(), GEMINI_REQUEST_TIMEOUT_MS);
 
       try {
         const response = await fetch(apiUrl, {
@@ -95,6 +101,7 @@ export const TicketExtractionService = {
 
         if (response.ok) {
           result = await response.json();
+          console.log(`[TicketExtraction] Extraction succeeded using model: ${modelName}`);
           break;
         }
 

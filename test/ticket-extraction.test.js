@@ -159,6 +159,41 @@ async function runExtractionTests() {
   assert(normalizedAirports.returnDepartureDate === undefined, 'returnDepartureDate omitted for one-way ticket');
   assert(normalizedAirports.returnFlightNumber === undefined, 'returnFlightNumber omitted for one-way ticket');
 
+  // Test 3.2: Fallback Model Retry when Primary Model Fails
+  console.log('\n--- 3.2 Fallback Model Retry (gemini-3.5-flash-lite) ---');
+  const calledUrls = [];
+  globalThis.fetch = async (url) => {
+    calledUrls.push(url);
+    if (url.includes('gemini-3.7-flash') || url.includes(env.GEMINI_MODEL)) {
+      return {
+        ok: false,
+        status: 404,
+        text: async () => 'Model not found or rate limited'
+      };
+    }
+    if (url.includes('gemini-3.5-flash-lite')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          candidates: [{ content: { parts: [{ text: JSON.stringify(mockExtractedPayload) }] } }]
+        })
+      };
+    }
+    return {
+      ok: false,
+      status: 500,
+      text: async () => 'Unexpected model call'
+    };
+  };
+
+  const fallbackExtracted = await TicketExtractionService.extractFromDocument(dummyPdfBuffer, 'application/pdf');
+  assert(calledUrls.length === 2, 'Service retried with candidate fallback model after primary failed');
+  assert(calledUrls[0].includes('gemini-3.7-flash') || calledUrls[0].includes(env.GEMINI_MODEL), 'First attempt targeted primary model');
+  assert(calledUrls[1].includes('gemini-3.5-flash-lite'), 'Second attempt targeted gemini-3.5-flash-lite fallback model');
+  assert(!calledUrls.some(u => u.includes('gemini-2.5-flash-lite')), 'Did NOT attempt deprecated gemini-2.5-flash-lite model');
+  assert(fallbackExtracted.passengerName === 'Tarek Mahmoud Hassan', 'Extraction succeeded via fallback model');
+
   // --- 4. Security Isolation: costPrice Must NEVER be Returned ---
   console.log('\n--- 4. Security Isolation (costPrice Omission) ---');
   assert(extractedData.costPrice === undefined, 'costPrice is stripped and NEVER populated by AI extraction');

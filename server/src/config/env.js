@@ -29,7 +29,8 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().default(''),
   SUPABASE_STORAGE_BUCKET: z.string().default('customer-documents'),
   GEMINI_API_KEY: z.string().default(''),
-  GEMINI_MODEL: z.string().default('gemini-3.7-flash')
+  GEMINI_MODEL: z.string().default('gemini-3.7-flash'),
+  GEMINI_FALLBACK_MODEL: z.string().default('gemini-3.5-flash-lite')
 });
 
 function resolveDatabaseUrl() {
