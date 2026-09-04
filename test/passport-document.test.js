@@ -111,11 +111,20 @@ async function runPassportDocumentTests() {
       findUnique: async ({ where }) => {
         return mockCustomers.find(c => c.id === where.id) || null;
       },
+      findFirst: async ({ where }) => {
+        return mockCustomers.find(c => (!where.id || c.id === where.id) && (!where.deletedAt || c.deletedAt === where.deletedAt)) || null;
+      },
       update: async ({ where, data }) => {
         const customer = mockCustomers.find(c => c.id === where.id);
         if (!customer) throw new Error('Customer not found');
         Object.assign(customer, data);
         return customer;
+      }
+    },
+    user: {
+      findUnique: async ({ where }) => {
+        const role = (where?.id === 'EMP-101' || where?.id === 'EMP-ADMIN-1') ? 'ADMIN' : 'AGENT';
+        return { id: where?.id || 'EMP-1', name: 'Agent', email: 'agent@africatravel.com', role, status: 'ACTIVE' };
       }
     },
     auditLog: {

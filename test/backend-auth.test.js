@@ -112,60 +112,9 @@ async function runAuthTests() {
   assert(hashedToken === AuthService.hashToken(rawRefreshToken), 'Hash is deterministic for database lookup');
 
   // 4. Authentication Middleware Verification
+  // 4. Authentication Middleware Verification
   console.log('\n--- 4. Authentication Middleware Tests ---');
-  
-  // Valid token
-  let nextCalled = false;
-  let capturedErr = null;
-  const mockReqValid = { headers: { authorization: `Bearer ${token}` } };
-  const mockRes = {};
-  
-  authenticate(mockReqValid, mockRes, (err) => {
-    nextCalled = true;
-    capturedErr = err;
-  });
-  assert(nextCalled && !capturedErr && mockReqValid.user?.id === 'EMP-101', 'authenticate middleware accepts valid Bearer token and populates req.user');
 
-  // Missing header
-  let missingErr = null;
-  authenticate({ headers: {} }, mockRes, (err) => {
-    missingErr = err;
-  });
-  assert(missingErr instanceof UnauthorizedError, 'Missing authorization header yields UnauthorizedError');
-
-  // Invalid token
-  let invalidErr = null;
-  authenticate({ headers: { authorization: 'Bearer invalid.jwt.token' } }, mockRes, (err) => {
-    invalidErr = err;
-  });
-  assert(invalidErr instanceof UnauthorizedError, 'Invalid token string yields UnauthorizedError');
-
-  // 5. Role-Based Access Control (RBAC) Middleware
-  console.log('\n--- 5. RBAC Middleware Tests ---');
-  const adminReq = { user: { role: 'ADMIN' } };
-  const agentReq = { user: { role: 'AGENT' } };
-
-  let rbacPassed = false;
-  requireRole('ADMIN')(adminReq, mockRes, (err) => {
-    if (!err) rbacPassed = true;
-  });
-  assert(rbacPassed, 'ADMIN role passes requireRole("ADMIN")');
-
-  let rbacDenied = false;
-  requireRole('ADMIN')(agentReq, mockRes, (err) => {
-    if (err instanceof ForbiddenError) rbacDenied = true;
-  });
-  assert(rbacDenied, 'AGENT role denied with ForbiddenError on requireRole("ADMIN")');
-
-  let multiRolePassed = false;
-  requireRole('ADMIN', 'AGENT')(agentReq, mockRes, (err) => {
-    if (!err) multiRolePassed = true;
-  });
-  assert(multiRolePassed, 'AGENT role passes requireRole("ADMIN", "AGENT")');
-
-  // 6. Remember Me & Refresh Token Cookie Policy
-  console.log('\n--- 6. Remember Me & Refresh Cookie Policy ---');
-  
   const testUserPasswordHash = await AuthService.hashPassword('Password123!');
   const mockAuthUser = {
     id: 'EMP-AUTH-1',
@@ -183,6 +132,15 @@ async function runAuthTests() {
 
   const mockPrisma = {
     user: {
+      findUnique: async ({ where }) => {
+        if (where?.id === 'EMP-101') {
+          return { id: 'EMP-101', name: 'Mohamed Raafat', email: 'admin@africatravel.com', role: 'ADMIN', status: 'ACTIVE' };
+        }
+        if (where?.id === mockAuthUser.id || where?.email === mockAuthUser.email) {
+          return mockAuthUser;
+        }
+        return null;
+      },
       findFirst: async ({ where }) => {
         if (where?.email?.equals?.toLowerCase() === mockAuthUser.email.toLowerCase() || where?.email === mockAuthUser.email) {
           return mockAuthUser;
@@ -239,6 +197,67 @@ async function runAuthTests() {
   };
 
   setPrismaClient(mockPrisma);
+  
+  // Valid token
+  let nextCalled = false;
+  let capturedErr = null;
+  const mockReqValid = { headers: { authorization: `Bearer ${token}` } };
+  const mockRes = {};
+  
+  await new Promise(resolve => {
+    authenticate(mockReqValid, mockRes, (err) => {
+      nextCalled = true;
+      capturedErr = err;
+      resolve();
+    });
+  });
+  assert(nextCalled && !capturedErr && mockReqValid.user?.id === 'EMP-101', 'authenticate middleware accepts valid Bearer token and populates req.user');
+
+  // Missing header
+  let missingErr = null;
+  await new Promise(resolve => {
+    authenticate({ headers: {} }, mockRes, (err) => {
+      missingErr = err;
+      resolve();
+    });
+  });
+  assert(missingErr instanceof UnauthorizedError, 'Missing authorization header yields UnauthorizedError');
+
+  // Invalid token
+  let invalidErr = null;
+  await new Promise(resolve => {
+    authenticate({ headers: { authorization: 'Bearer invalid.jwt.token' } }, mockRes, (err) => {
+      invalidErr = err;
+      resolve();
+    });
+  });
+  assert(invalidErr instanceof UnauthorizedError, 'Invalid token string yields UnauthorizedError');
+
+  // 5. Role-Based Access Control (RBAC) Middleware
+  console.log('\n--- 5. RBAC Middleware Tests ---');
+  const adminReq = { user: { role: 'ADMIN' } };
+  const agentReq = { user: { role: 'AGENT' } };
+
+  let rbacPassed = false;
+  requireRole('ADMIN')(adminReq, mockRes, (err) => {
+    if (!err) rbacPassed = true;
+  });
+  assert(rbacPassed, 'ADMIN role passes requireRole("ADMIN")');
+
+  let rbacDenied = false;
+  requireRole('ADMIN')(agentReq, mockRes, (err) => {
+    if (err instanceof ForbiddenError) rbacDenied = true;
+  });
+  assert(rbacDenied, 'AGENT role denied with ForbiddenError on requireRole("ADMIN")');
+
+  let multiRolePassed = false;
+  requireRole('ADMIN', 'AGENT')(agentReq, mockRes, (err) => {
+    if (!err) multiRolePassed = true;
+  });
+  assert(multiRolePassed, 'AGENT role passes requireRole("ADMIN", "AGENT")');
+
+  // 6. Remember Me & Refresh Token Cookie Policy
+  console.log('\n--- 6. Remember Me & Refresh Cookie Policy ---');
 
   const app = createApp();
   const server = http.createServer(app);

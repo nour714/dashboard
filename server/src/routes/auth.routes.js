@@ -17,5 +17,6 @@ router.post('/logout', authenticate, AuthController.logout);
 router.get('/me', authenticate, AuthController.me);
 router.patch('/profile', authenticate, validate({ body: updateProfileSchema }), AuthController.updateProfile);
 router.post('/change-password', authenticate, validate({ body: changePasswordSchema }), AuthController.changePassword);
+router.post('/revoke-other-sessions', authenticate, AuthController.revokeOtherSessions);
 
 export default router;

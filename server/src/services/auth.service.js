@@ -398,5 +398,42 @@ export const AuthService = {
     });
 
     return { success: true };
+  },
+
+  /**
+   * Revokes all active refresh tokens for a user except the current session token
+   * @param {string} userId
+   * @param {string} [currentRawRefreshToken]
+   * @returns {Promise<{success: boolean, revokedCount: number}>}
+   */
+  async revokeOtherSessions(userId, currentRawRefreshToken = null) {
+    if (!userId) {
+      throw new UnauthorizedError('User ID is required');
+    }
+
+    const prisma = getPrismaClient();
+    const where = {
+      userId,
+      revoked: false
+    };
+
+    if (currentRawRefreshToken) {
+      const currentTokenHash = this.hashToken(currentRawRefreshToken);
+      where.tokenHash = { not: currentTokenHash };
+    }
+
+    const result = await prisma.refreshToken.updateMany({
+      where,
+      data: { revoked: true }
+    });
+
+    await AuditService.recordLog({
+      user: userId,
+      userId,
+      action: 'REVOKE_OTHER_SESSIONS',
+      description: `Revoked all other active sessions (${result?.count || 0} session(s) revoked).`
+    }).catch(e => console.warn('Could not record revoke sessions audit log:', e.message));
+
+    return { success: true, revokedCount: result?.count || 0 };
   }
 };

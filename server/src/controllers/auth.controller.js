@@ -125,5 +125,21 @@ export const AuthController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  async revokeOtherSessions(req, res, next) {
+    try {
+      const rawToken = req.cookies?.[REFRESH_COOKIE_NAME];
+      const result = await AuthService.revokeOtherSessions(req.user.id, rawToken);
+      return res.status(200).json({
+        success: true,
+        data: {
+          message: 'Other sessions revoked successfully',
+          revokedCount: result.revokedCount
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
   }
 };

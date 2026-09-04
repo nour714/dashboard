@@ -110,11 +110,11 @@ export const SettingsPage = {
               <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="new-pw">${escapeHtml(t('settings.profile.newPassword'))}</label>
-                  <input type="password" id="new-pw" class="form-control" placeholder="••••••••" autocomplete="new-password" minlength="6" required />
+                  <input type="password" id="new-pw" class="form-control" placeholder="••••••••" autocomplete="new-password" minlength="8" required />
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="conf-pw">${escapeHtml(t('settings.profile.confirmPassword'))}</label>
-                  <input type="password" id="conf-pw" class="form-control" placeholder="••••••••" autocomplete="new-password" minlength="6" required />
+                  <input type="password" id="conf-pw" class="form-control" placeholder="••••••••" autocomplete="new-password" minlength="8" required />
                 </div>
               </div>
               <div class="d-flex justify-end mt-md">
@@ -176,7 +176,7 @@ export const SettingsPage = {
                 <strong>${escapeHtml(t('settings.securitySection.twoFactor'))}</strong>
                 <p class="text-sm text-muted">${escapeHtml(t('settings.securitySection.twoFactorDesc'))}</p>
               </div>
-              <span class="badge badge-paid">${escapeHtml(t('common.enabled'))}</span>
+              <span class="badge badge-inactive">${escapeHtml(t('common.notAvailable') || 'غير متاح حاليًا')}</span>
             </div>
             <div class="d-flex justify-between items-center p-md" style="background-color: var(--color-surface); border-radius: var(--radius-lg);">
               <div>
@@ -407,8 +407,20 @@ export const SettingsPage = {
 
     const revokeBtn = container.querySelector('#revoke-sessions-btn');
     if (revokeBtn) {
-      revokeBtn.addEventListener('click', () => {
-        showToast(t('toasts.sessionsRevoked'), 'info');
+      revokeBtn.addEventListener('click', async () => {
+        revokeBtn.disabled = true;
+        try {
+          const result = await AuthService.revokeOtherSessions();
+          if (!result.success) {
+            showToast(result.error?.message || 'Failed to revoke sessions', 'error');
+            return;
+          }
+          showToast(t('toasts.sessionsRevoked'), 'success');
+        } catch (err) {
+          showToast(err.message || 'Failed to revoke sessions', 'error');
+        } finally {
+          revokeBtn.disabled = false;
+        }
       });
     }
 

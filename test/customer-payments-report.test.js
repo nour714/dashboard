@@ -109,6 +109,11 @@ async function runCustomerPaymentsReportTests() {
       findMany: async ({ include, orderBy }) => {
         return [...mockTickets];
       }
+    },
+    user: {
+      findUnique: async ({ where }) => {
+        return { id: where?.id || 'EMP-103', name: 'Nour Wael', email: 'nour.w@africatravel.com', role: 'AGENT', status: 'ACTIVE' };
+      }
     }
   };
 

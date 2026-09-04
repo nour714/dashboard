@@ -117,7 +117,8 @@ export const ar = {
     active: 'نشط',
     inactive: 'غير نشط',
     enabled: 'مفعّل',
-    disabled: 'معطّل'
+    disabled: 'معطّل',
+    notAvailable: 'غير متاح حاليًا'
   },
 
   // User Roles

@@ -21,7 +21,7 @@ import {
 import { validatePayment } from '../domain/payment-rules.js';
 import { validateRefund } from '../domain/refund-rules.js';
 import { validateModification } from '../domain/modification-rules.js';
-import { NotFoundError, BusinessRuleError, ValidationError } from '../domain/errors.js';
+import { NotFoundError, BusinessRuleError, ValidationError, ForbiddenError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
 
 /**
@@ -330,7 +330,9 @@ export const TicketService = {
         seat: data.seat || null,
         baggage: data.baggage || null,
         ticketPrice: price,
-        costPrice: data.costPrice !== undefined && data.costPrice !== null && data.costPrice !== '' ? Number(data.costPrice) : 0,
+        costPrice: currentUser?.role === 'ADMIN'
+          ? (data.costPrice !== undefined && data.costPrice !== null && data.costPrice !== '' ? Number(data.costPrice) : 0)
+          : 0,
         currency: data.currency || 'EGP',
         status: paymentStatus,
         createdBy: currentUser.name || 'Agent',
@@ -432,6 +434,9 @@ export const TicketService = {
     allowedFields.forEach(f => {
       if (updates[f] !== undefined) {
         if (f === 'costPrice') {
+          if (currentUser?.role !== 'ADMIN') {
+            throw new ForbiddenError('Only administrators can modify ticket cost price', 'FORBIDDEN');
+          }
           data[f] = updates[f] !== null && updates[f] !== '' ? Number(updates[f]) : null;
         } else if (f === 'pnr' || f === 'ticketNumber') {
           data[f] = String(updates[f]).trim();
@@ -509,7 +514,8 @@ export const TicketService = {
             { id: ticketId },
             { ticketNumber: ticketId },
             { pnr: ticketId }
-          ]
+          ],
+          deletedAt: null
         },
         include: {
           payments: true,
@@ -599,7 +605,8 @@ export const TicketService = {
             { id: ticketId },
             { ticketNumber: ticketId },
             { pnr: ticketId }
-          ]
+          ],
+          deletedAt: null
         },
         include: {
           payments: true,
@@ -699,7 +706,8 @@ export const TicketService = {
             { id: ticketId },
             { ticketNumber: ticketId },
             { pnr: ticketId }
-          ]
+          ],
+          deletedAt: null
         },
         include: {
           payments: true,

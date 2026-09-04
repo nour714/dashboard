@@ -90,5 +90,17 @@ export const AuthService = {
       return { success: true };
     }
     return { success: false, error: res.error?.message || 'Failed to change password' };
+  },
+
+  /**
+   * Revokes all active refresh tokens for the current user except the current session.
+   * @returns {Promise<{success: boolean, data?: object, error?: {message?: string}}>}
+   */
+  async revokeOtherSessions() {
+    const res = await apiClient.post('/auth/revoke-other-sessions', {});
+    if (res.success) {
+      return { success: true, data: res.data };
+    }
+    return { success: false, error: res.error || { message: 'Failed to revoke sessions' } };
   }
 };

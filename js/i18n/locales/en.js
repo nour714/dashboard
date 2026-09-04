@@ -117,7 +117,8 @@ export const en = {
     active: 'Active',
     inactive: 'Inactive',
     enabled: 'Enabled',
-    disabled: 'Disabled'
+    disabled: 'Disabled',
+    notAvailable: 'Currently Unavailable'
   },
 
   // User Roles

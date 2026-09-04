@@ -37,7 +37,7 @@ export function authenticate(req, res, next) {
     return next(err);
   }
 
-  jwt.verify(token, env.JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, env.JWT_SECRET, async (err, decoded) => {
     if (err) {
       if (err.name === 'TokenExpiredError') {
         return next(new UnauthorizedError('Session token has expired. Please refresh token or log in again.', 'TOKEN_EXPIRED'));
@@ -45,33 +45,49 @@ export function authenticate(req, res, next) {
       return next(new UnauthorizedError('Invalid authentication token', 'INVALID_TOKEN'));
     }
 
-    req.user = {
-      id: decoded.id,
-      name: decoded.name,
-      email: decoded.email,
-      role: decoded.role,
-      title: decoded.title
-    };
-
-    // Update lastActive timestamp on ongoing API activity (fire-and-forget, throttled to max 1 update per 60s per user)
-    if (req.user?.id) {
-      const now = Date.now();
-      const lastTouch = lastActiveTouchCache.get(req.user.id) || 0;
-      if (now - lastTouch > 60_000) {
-        lastActiveTouchCache.set(req.user.id, now);
-        try {
-          const prisma = getPrismaClient();
-          if (prisma?.user?.update) {
-            prisma.user.update({
-              where: { id: req.user.id },
-              data: { lastActive: new Date() }
-            }).catch(() => {});
-          }
-        } catch (_) {}
+    try {
+      const prisma = getPrismaClient();
+      let dbUser = null;
+      if (prisma?.user?.findUnique) {
+        dbUser = await prisma.user.findUnique({
+          where: { id: decoded.id },
+          select: { role: true, status: true }
+        });
       }
-    }
 
-    next();
+      if (!dbUser || dbUser.status !== 'ACTIVE') {
+        return next(new UnauthorizedError('Account is no longer active', 'ACCOUNT_INACTIVE'));
+      }
+
+      req.user = {
+        id: decoded.id,
+        name: decoded.name,
+        email: decoded.email,
+        role: dbUser.role, // from DB directly
+        title: decoded.title
+      };
+
+      // Update lastActive timestamp on ongoing API activity (fire-and-forget, throttled to max 1 update per 60s per user)
+      if (req.user?.id) {
+        const now = Date.now();
+        const lastTouch = lastActiveTouchCache.get(req.user.id) || 0;
+        if (now - lastTouch > 60_000) {
+          lastActiveTouchCache.set(req.user.id, now);
+          try {
+            if (prisma?.user?.update) {
+              prisma.user.update({
+                where: { id: req.user.id },
+                data: { lastActive: new Date() }
+              }).catch(() => {});
+            }
+          } catch (_) {}
+        }
+      }
+
+      next();
+    } catch (dbErr) {
+      return next(dbErr);
+    }
   });
 }
 
@@ -91,15 +107,31 @@ export function optionalAuthenticate(req, res, next) {
     return next();
   }
 
-  jwt.verify(token, env.JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, env.JWT_SECRET, async (err, decoded) => {
     if (!err && decoded) {
-      req.user = {
-        id: decoded.id,
-        name: decoded.name,
-        email: decoded.email,
-        role: decoded.role,
-        title: decoded.title
-      };
+      try {
+        const prisma = getPrismaClient();
+        let dbUser = null;
+        if (prisma?.user?.findUnique) {
+          dbUser = await prisma.user.findUnique({
+            where: { id: decoded.id },
+            select: { role: true, status: true }
+          });
+        }
+        if (dbUser && dbUser.status === 'ACTIVE') {
+          req.user = {
+            id: decoded.id,
+            name: decoded.name,
+            email: decoded.email,
+            role: dbUser.role,
+            title: decoded.title
+          };
+        } else {
+          req.user = null;
+        }
+      } catch (_) {
+        req.user = null;
+      }
     } else {
       req.user = null;
     }

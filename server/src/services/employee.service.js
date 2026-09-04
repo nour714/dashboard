@@ -204,6 +204,7 @@ export const EmployeeService = {
 
     const oldRole = existing.role;
     const isRoleChange = Boolean(data.role && data.role !== oldRole);
+    const isStatusChange = Boolean(data.status && data.status !== existing.status);
 
     const updated = await prisma.user.update({
       where: { id: employeeId },
@@ -219,6 +220,16 @@ export const EmployeeService = {
         createdAt: true
       }
     });
+
+    // Immediately revoke all refresh tokens if role was modified or employee was deactivated/modified
+    if (isRoleChange || isStatusChange) {
+      if (prisma.refreshToken?.updateMany) {
+        await prisma.refreshToken.updateMany({
+          where: { userId: employeeId },
+          data: { revoked: true }
+        });
+      }
+    }
 
     if (isRoleChange) {
       await AuditService.recordLog({

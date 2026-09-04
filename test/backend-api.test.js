@@ -130,6 +130,21 @@ async function runApiTests() {
         return data;
       }
     },
+    user: {
+      findUnique: async ({ where }) => {
+        if (where?.id === 'EMP-TICKET-ONLY') {
+          return { id: 'EMP-TICKET-ONLY', name: 'Ticket Only User', email: 'ticket-only@example.com', role: 'TICKET_ONLY', status: 'ACTIVE' };
+        }
+        if (where?.id === 'EMP-103') {
+          return { id: 'EMP-103', name: 'Nour Wael', email: 'nour.w@africatravel.com', role: 'AGENT', status: 'ACTIVE' };
+        }
+        if (where?.id === 'EMP-ADMIN-1') {
+          return { id: 'EMP-ADMIN-1', name: 'Admin Master', email: 'admin@africatravel.com', role: 'ADMIN', status: 'ACTIVE' };
+        }
+        return { id: where?.id || 'EMP-DEFAULT', name: 'Default User', email: 'default@africatravel.com', role: 'ADMIN', status: 'ACTIVE' };
+      },
+      update: async () => ({})
+    },
     $queryRaw: async () => [{ 1: 1 }]
   };
   setPrismaClient(mockPrisma);

@@ -209,7 +209,7 @@ export const CustomerService = {
    */
   async updateCustomer(customerId, updates, currentUser = {}) {
     const prisma = getPrismaClient();
-    const existing = await prisma.customer.findUnique({ where: { id: customerId } });
+    const existing = await prisma.customer.findFirst({ where: { id: customerId, deletedAt: null } });
     if (!existing) {
       throw new NotFoundError('Customer', customerId);
     }
@@ -279,7 +279,7 @@ export const CustomerService = {
     }
 
     const prisma = getPrismaClient();
-    const customer = await prisma.customer.findUnique({ where: { id: customerId } });
+    const customer = await prisma.customer.findFirst({ where: { id: customerId, deletedAt: null } });
     if (!customer) {
       throw new NotFoundError('Customer', customerId);
     }
@@ -314,7 +314,7 @@ export const CustomerService = {
    */
   async uploadPassportDocument(customerId, buffer, reportedMimeType, currentUser = {}) {
     const prisma = getPrismaClient();
-    const customer = await prisma.customer.findUnique({ where: { id: customerId } });
+    const customer = await prisma.customer.findFirst({ where: { id: customerId, deletedAt: null } });
     if (!customer) {
       throw new NotFoundError('Customer', customerId);
     }
@@ -401,7 +401,7 @@ export const CustomerService = {
    */
   async getPassportDocumentUrl(customerId, currentUser = {}, requestMeta = {}) {
     const prisma = getPrismaClient();
-    const customer = await prisma.customer.findUnique({ where: { id: customerId } });
+    const customer = await prisma.customer.findFirst({ where: { id: customerId, deletedAt: null } });
     if (!customer || !customer.passportDocPath) {
       throw new NotFoundError('Passport document', customerId);
     }
@@ -435,7 +435,7 @@ export const CustomerService = {
    */
   async deletePassportDocument(customerId, currentUser = {}) {
     const prisma = getPrismaClient();
-    const customer = await prisma.customer.findUnique({ where: { id: customerId } });
+    const customer = await prisma.customer.findFirst({ where: { id: customerId, deletedAt: null } });
     if (!customer || !customer.passportDocPath) {
       throw new NotFoundError('Passport document', customerId);
     }
