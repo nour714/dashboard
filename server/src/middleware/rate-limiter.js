@@ -24,6 +24,12 @@ const redisStore = upstashRedis
     })
   : undefined;
 
+if (redisStore) {
+  console.log('✅ [RateLimiter] Shared Redis rate limiting ENABLED (Upstash) — budgets synced across serverless instances.');
+} else {
+  console.warn('⚠️  [RateLimiter] Redis NOT configured — falling back to in-memory rate limiting. This is NOT reliable across multiple serverless instances in production. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN to enable shared limiting.');
+}
+
 function sharedRateLimit(options) {
   return rateLimit({ ...options, ...(redisStore ? { store: redisStore } : {}) });
 }
