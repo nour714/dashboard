@@ -207,6 +207,16 @@ export const TicketService = {
 
     const prisma = getPrismaClient();
 
+    // Verify customer exists and is active (not soft-deleted) if customerId is explicitly supplied
+    if (data.customerId) {
+      const customer = await prisma.customer.findFirst({
+        where: { id: data.customerId, deletedAt: null }
+      });
+      if (!customer) {
+        throw new NotFoundError('Customer', data.customerId);
+      }
+    }
+
     // Check proactive duplicate PNR or ticketNumber if explicitly provided
     if (data.pnr && data.pnr.trim()) {
       const cleanPnr = data.pnr.trim();
