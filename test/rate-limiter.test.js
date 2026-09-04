@@ -1,3 +1,6 @@
+// لازم يكون أول سطر فعلي في الملف — قبل أي import
+process.env.RATE_LIMIT_MAX_AUTH = '10';
+
 /**
  * AfricaTravel - Rate Limiter Integration & Unit Test
  *
@@ -97,13 +100,14 @@ async function runRateLimiterTests() {
     assert(healthRes.statusCode === 200, 'GET /api/health returns 200 OK');
     assert(healthRes.json?.success === true, 'GET /api/health has success: true');
 
-    // 2. Auth rate limiting on /api/auth/login (Max 10 per window)
-    console.log('\n--- 2. Auth Rate Limiter Enforcement ---');
+    // 2. Auth rate limiting on /api/auth/login
+    const configuredAuthMax = Number(process.env.RATE_LIMIT_MAX_AUTH) || 10;
+    console.log(`\n--- 2. Auth Rate Limiter Enforcement (limit: ${configuredAuthMax}) ---`);
     let authLimited = false;
     let lastAuthRes = null;
 
-    // Send 12 requests (limit is 10)
-    for (let i = 1; i <= 12; i++) {
+    // Send requests exceeding configured limit to ensure 429 threshold is reached
+    for (let i = 1; i <= configuredAuthMax + 2; i++) {
       const res = await makeRequest(server, {
         method: 'POST',
         path: '/api/auth/login',
@@ -116,7 +120,7 @@ async function runRateLimiterTests() {
       }
     }
 
-    assert(authLimited, 'POST /api/auth/login triggers 429 Too Many Requests after 10 requests');
+    assert(authLimited, `POST /api/auth/login triggers 429 after ${configuredAuthMax} requests`);
     assert(lastAuthRes?.json?.error?.code === 'RATE_LIMIT_EXCEEDED', '429 error code is RATE_LIMIT_EXCEEDED');
     assert(lastAuthRes?.json?.error?.message === 'Too many authentication attempts. Please try again later.', '429 returns custom auth rate limit message');
     assert(Boolean(lastAuthRes?.headers['ratelimit-limit']), 'RateLimit-Limit header present');
