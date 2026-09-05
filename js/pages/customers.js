@@ -13,13 +13,15 @@ import { t } from '../i18n/i18n.js';
 
 let searchQuery = '';
 
-function renderCustomerRows(customers) {
+function renderCustomerRows(customers, ticketsByCustomerMap = null) {
   if (customers.length === 0) {
     return `<tr><td colspan="7" class="text-center text-muted p-lg">${escapeHtml(t('customers.empty.description'))}</td></tr>`;
   }
 
+  const map = ticketsByCustomerMap || CustomerService.buildTicketsByCustomerMap();
+
   return customers.map(c => {
-    const stats = CustomerService.getCustomerStats(c.id);
+    const stats = CustomerService.getCustomerStats(c.id, map);
     const initials = (c.name || 'C').split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'C';
 
     return `
@@ -65,13 +67,15 @@ function renderCustomerRows(customers) {
   }).join('');
 }
 
-function renderCustomerCards(customers) {
+function renderCustomerCards(customers, ticketsByCustomerMap = null) {
   if (customers.length === 0) {
     return `<div class="text-center text-muted p-md">${escapeHtml(t('customers.empty.description'))}</div>`;
   }
 
+  const map = ticketsByCustomerMap || CustomerService.buildTicketsByCustomerMap();
+
   return customers.map(c => {
-    const stats = CustomerService.getCustomerStats(c.id);
+    const stats = CustomerService.getCustomerStats(c.id, map);
 
     return `
       <a href="/customers/${escapeHtml(c.id)}" class="mobile-data-card" data-link>
@@ -101,6 +105,7 @@ export const CustomersPage = {
     }
 
     const customers = CustomerService.searchCustomers(searchQuery);
+    const ticketsByCustomerMap = CustomerService.buildTicketsByCustomerMap();
 
     const headerHtml = renderPageHeader({
       title: t('customers.title'),
@@ -147,14 +152,14 @@ export const CustomersPage = {
               </tr>
             </thead>
             <tbody id="customers-table-tbody">
-              ${renderCustomerRows(customers)}
+              ${renderCustomerRows(customers, ticketsByCustomerMap)}
             </tbody>
           </table>
         </div>
 
         <!-- Mobile Cards -->
         <div class="mobile-card-list mobile-card-view p-sm" style="display: none;">
-          ${renderCustomerCards(customers)}
+          ${renderCustomerCards(customers, ticketsByCustomerMap)}
         </div>
       </div>
     `;
@@ -163,14 +168,19 @@ export const CustomersPage = {
   afterRender(container) {
     const searchInput = container.querySelector('#customer-search-input');
     const tableTbody = container.querySelector('#customers-table-tbody');
+    const mobileCardsContainer = container.querySelector('.mobile-card-list');
     const createBtn = container.querySelector('#create-customer-btn');
 
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
         searchQuery = e.target.value;
         const results = CustomerService.searchCustomers(searchQuery);
+        const map = CustomerService.buildTicketsByCustomerMap();
         if (tableTbody) {
-          tableTbody.innerHTML = renderCustomerRows(results);
+          tableTbody.innerHTML = renderCustomerRows(results, map);
+        }
+        if (mobileCardsContainer) {
+          mobileCardsContainer.innerHTML = renderCustomerCards(results, map);
         }
       });
     }

@@ -444,7 +444,6 @@ export const TicketCreatePage = {
 
           if (d.passengerName) setVal('cust-name', d.passengerName);
           if (d.passport) setVal('cust-passport', d.passport);
-          if (d.phone) setVal('cust-phone', d.phone);
           if (d.nationality) {
             const natEl = container.querySelector('#cust-nationality');
             if (natEl) {

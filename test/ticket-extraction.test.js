@@ -99,11 +99,16 @@ async function runExtractionTests() {
     assert(options.headers?.['x-goog-api-key'] === env.GEMINI_API_KEY, 'Passes API key securely via x-goog-api-key header');
 
     const body = JSON.parse(options.body);
-    assert(body.contents?.[0]?.parts?.[0]?.text, 'Request payload includes extraction prompt');
+    const promptText = body.contents?.[0]?.parts?.[0]?.text || '';
+    assert(promptText, 'Request payload includes extraction prompt');
+    assert(promptText.includes('SURNAME/GIVENNAME'), 'Prompt contains SURNAME/GIVENNAME passenger name instruction');
+    assert(promptText.includes('Givenname Surname'), 'Prompt instructs conversion to natural "Givenname Surname" order');
+    assert(promptText.includes('Do NOT confuse the passenger\'s name with the travel agency name'), 'Prompt warns against confusing passenger name with agency/staff');
     assert(body.contents?.[0]?.parts?.[1]?.inline_data?.data, 'Request payload includes base64 document data');
     assert(body.generationConfig?.responseMimeType === 'application/json', 'Requests structured application/json response');
     assert(body.generationConfig?.thinkingConfig?.thinkingLevel === 'low', 'Configures thinkingLevel low for optimal latency');
     assert(body.generationConfig?.responseSchema?.properties?.passengerName, 'Provides JSON extraction schema to Gemini');
+    assert(body.generationConfig?.responseSchema?.properties?.phone === undefined, 'EXTRACTION_SCHEMA.properties has NO phone field');
 
     return {
       ok: true,
@@ -260,6 +265,9 @@ async function runExtractionTests() {
   assert(createPageHtml.includes('id="cust-name"'), 'Passenger name input #cust-name exists in form');
   assert(createPageHtml.includes('id="flight-number"'), 'Flight number input #flight-number exists in form');
   assert(createPageHtml.includes('id="ticket-cost-price"'), 'Cost price input #ticket-cost-price exists for manual agent entry');
+
+  const ticketCreateSrc = fs.readFileSync(path.resolve('js/pages/ticket-create.js'), 'utf8');
+  assert(!ticketCreateSrc.includes("setVal('cust-phone'"), 'ticket-create.js does not auto-populate cust-phone from extracted data');
 
   // --- 7. Bilingual i18n Translations Verification ---
   console.log('\n--- 7. Bilingual i18n Translations Verification ---');

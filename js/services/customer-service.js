@@ -41,9 +41,21 @@ export const CustomerService = {
     return this.getCustomerById(customerId);
   },
 
-  getCustomerStats(customerId) {
+  buildTicketsByCustomerMap() {
     const { tickets } = store.getState();
-    const customerTickets = tickets.filter(t => t.customerId === customerId);
+    const map = new Map();
+    for (const t of tickets) {
+      if (!t.customerId) continue;
+      if (!map.has(t.customerId)) map.set(t.customerId, []);
+      map.get(t.customerId).push(t);
+    }
+    return map;
+  },
+
+  getCustomerStats(customerId, ticketsByCustomerMap = null) {
+    const customerTickets = ticketsByCustomerMap
+      ? (ticketsByCustomerMap.get(customerId) || [])
+      : store.getState().tickets.filter(t => t.customerId === customerId);
 
     let totalSpent = 0;
     let totalPaid = 0;

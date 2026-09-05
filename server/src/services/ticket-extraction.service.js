@@ -34,8 +34,7 @@ const EXTRACTION_SCHEMA = {
     currency: { type: 'string' },
     nationality: { type: 'string' },
     dob: { type: 'string' },
-    email: { type: 'string' },
-    phone: { type: 'string' }
+    email: { type: 'string' }
   }
 };
 
@@ -56,7 +55,11 @@ export const TicketExtractionService = {
     }
 
     const base64Data = fileBuffer.toString('base64');
-    const prompt = `Extract flight ticket booking details from this document. Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Standardize airline names and their 2-letter IATA codes (e.g., EgyptAir MS, Air Cairo SM, Emirates EK, Etihad Airways EY, Qatar Airways QR, Turkish Airlines TK, Saudia SV, Flynas XY, flydubai FZ, Air Arabia G9, British Airways BA, Air France AF, Lufthansa LH, KLM KL, Iberia IB, ITA Airways AZ, Aegean Airlines A3, American Airlines AA, Delta Air Lines DL, United Airlines UA, Air Canada AC, Air China CA, China Eastern MU, China Southern CZ, Singapore Airlines SQ, Ethiopian Airlines ET, Kenya Airways KQ, Royal Air Maroc AT, Tunisair TU, Air Algérie AH). For "origin" and "destination", return ONLY the 3-letter IATA airport code (e.g. "CAI", "DXB") — never the city name, country name, or full airport name. Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
+    const prompt = `Extract flight ticket booking details from this document.
+
+PASSENGER NAME — read carefully: airline tickets typically format the passenger name as "SURNAME/GIVENNAME" or "SURNAME/GIVENNAME MR/MRS/MS" (surname first, before the slash). Convert this to natural reading order: "Givenname Surname". Do NOT confuse the passenger's name with the travel agency name, booking agent name, or airline staff name that may also appear on the document — only extract the name explicitly labeled as the passenger/traveler. If there are multiple passengers listed and it's unclear which one this ticket is for, omit passengerName entirely rather than guessing.
+
+Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Standardize airline names and their 2-letter IATA codes (e.g., EgyptAir MS, Air Cairo SM, Emirates EK, Etihad Airways EY, Qatar Airways QR, Turkish Airlines TK, Saudia SV, Flynas XY, flydubai FZ, Air Arabia G9, British Airways BA, Air France AF, Lufthansa LH, KLM KL, Iberia IB, ITA Airways AZ, Aegean Airlines A3, American Airlines AA, Delta Air Lines DL, United Airlines UA, Air Canada AC, Air China CA, China Eastern MU, China Southern CZ, Singapore Airlines SQ, Ethiopian Airlines ET, Kenya Airways KQ, Royal Air Maroc AT, Tunisair TU, Air Algérie AH). For "origin" and "destination", return ONLY the 3-letter IATA airport code (e.g. "CAI", "DXB") — never the city name, country name, or full airport name. Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
 
     // Candidate models for extraction. Google periodically updates and deprecates model IDs
     // without compile-time warnings, so candidate models are ordered by preference (primary -> fallback).
