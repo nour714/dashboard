@@ -88,7 +88,14 @@ class EarlyMagicByteStorage {
     const chunks = [];
     let bytesRead = 0;
     let magicChecked = false;
+    let finished = false;
     const stream = file.stream;
+
+    const finish = (err, result) => {
+      if (finished) return;
+      finished = true;
+      cb(err, result);
+    };
 
     const onData = (chunk) => {
       bytesRead += chunk.length;
@@ -98,7 +105,7 @@ class EarlyMagicByteStorage {
         stream.resume();
         const err = new Error('LIMIT_FILE_SIZE');
         err.code = 'LIMIT_FILE_SIZE';
-        return cb(err);
+        return finish(err);
       }
 
       chunks.push(chunk);
@@ -117,7 +124,7 @@ class EarlyMagicByteStorage {
           stream.resume();
           const err = new Error('INVALID_FILE_TYPE');
           err.code = 'INVALID_FILE_TYPE';
-          return cb(err);
+          return finish(err);
         }
       }
     };
@@ -133,17 +140,17 @@ class EarlyMagicByteStorage {
         if (!isPdf && !isJpeg && !isPng) {
           const err = new Error('INVALID_FILE_TYPE');
           err.code = 'INVALID_FILE_TYPE';
-          return cb(err);
+          return finish(err);
         }
       }
 
-      cb(null, {
+      finish(null, {
         buffer: fullBuffer,
         size: fullBuffer.length
       });
     });
 
-    stream.on('error', (err) => cb(err));
+    stream.on('error', (err) => finish(err));
   }
 
   _removeFile(req, file, cb) {

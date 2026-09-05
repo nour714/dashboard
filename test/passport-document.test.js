@@ -12,10 +12,12 @@
  */
 
 import http from 'http';
+import { Readable } from 'stream';
 import { createApp } from '../server/src/app.js';
 import { AuthService } from '../server/src/services/auth.service.js';
 import * as dbModule from '../server/src/config/database.js';
 import * as storageModule from '../server/src/config/storage.js';
+import { passportDocUpload } from '../server/src/middleware/upload.js';
 
 let passed = 0;
 let failed = 0;
@@ -347,6 +349,119 @@ async function runPassportDocumentTests() {
     });
 
     assert(subsequentGetRes.statusCode === 404, 'Subsequent GET after deletion returns 404 Not Found');
+
+    // 8. EarlyMagicByteStorage Double-Callback Prevention Invariant Tests
+    console.log('\n--- 8. EarlyMagicByteStorage Double-Callback Guard Invariant Tests ---');
+    const storage = passportDocUpload.storage;
+
+    // Test 8.1: Oversized stream drains and triggers 'end' after size error
+    await new Promise((resolve) => {
+      let callCount = 0;
+      let receivedErr = null;
+      let receivedResult = null;
+
+      const stream = new Readable({
+        read() {}
+      });
+
+      storage._handleFile({}, { stream }, (err, result) => {
+        callCount++;
+        receivedErr = err;
+        receivedResult = result;
+      });
+
+      // Push oversized chunk > 5MB
+      stream.push(Buffer.alloc(5 * 1024 * 1024 + 1024));
+      // End the stream (simulates network stream finishing drain)
+      stream.push(null);
+
+      setImmediate(() => {
+        assert(callCount === 1, 'Oversized file triggers callback EXACTLY ONCE (never twice)');
+        assert(receivedErr?.code === 'LIMIT_FILE_SIZE', 'Callback received LIMIT_FILE_SIZE error');
+        assert(receivedResult === undefined, 'Callback received no result object on error');
+        resolve();
+      });
+    });
+
+    // Test 8.2: Invalid magic-byte stream drains and triggers 'end' after type error
+    await new Promise((resolve) => {
+      let callCount = 0;
+      let receivedErr = null;
+      let receivedResult = null;
+
+      const stream = new Readable({
+        read() {}
+      });
+
+      storage._handleFile({}, { stream }, (err, result) => {
+        callCount++;
+        receivedErr = err;
+        receivedResult = result;
+      });
+
+      // Push invalid header (>= 8 bytes, not PDF, JPEG, or PNG)
+      stream.push(Buffer.from('NOT_A_VALID_HEADER_DATA'));
+      // End the stream
+      stream.push(null);
+
+      setImmediate(() => {
+        assert(callCount === 1, 'Invalid magic bytes triggers callback EXACTLY ONCE (never twice)');
+        assert(receivedErr?.code === 'INVALID_FILE_TYPE', 'Callback received INVALID_FILE_TYPE error');
+        assert(receivedResult === undefined, 'Callback received no result object on error');
+        resolve();
+      });
+    });
+
+    // Test 8.3: Valid JPEG stream triggers callback exactly once with valid buffer
+    await new Promise((resolve) => {
+      let callCount = 0;
+      let receivedErr = null;
+      let receivedResult = null;
+
+      const stream = new Readable({
+        read() {}
+      });
+
+      storage._handleFile({}, { stream }, (err, result) => {
+        callCount++;
+        receivedErr = err;
+        receivedResult = result;
+      });
+
+      stream.push(validJpegBuffer);
+      stream.push(null);
+
+      setImmediate(() => {
+        assert(callCount === 1, 'Valid upload triggers callback EXACTLY ONCE');
+        assert(receivedErr === null, 'Callback received null error for valid file');
+        assert(receivedResult?.buffer?.length === validJpegBuffer.length, 'Callback received complete valid buffer');
+        resolve();
+      });
+    });
+
+    // Test 8.4: Stream error triggers callback exactly once
+    await new Promise((resolve) => {
+      let callCount = 0;
+      let receivedErr = null;
+
+      const stream = new Readable({
+        read() {}
+      });
+
+      storage._handleFile({}, { stream }, (err) => {
+        callCount++;
+        receivedErr = err;
+      });
+
+      stream.emit('error', new Error('STREAM_ABORTED'));
+      stream.push(null);
+
+      setImmediate(() => {
+        assert(callCount === 1, 'Stream error triggers callback EXACTLY ONCE');
+        assert(receivedErr?.message === 'STREAM_ABORTED', 'Callback received original stream error');
+        resolve();
+      });
+    });
 
     console.log('\n========================================================');
     console.log(`Customer Passport Document Tests: ${passed} passed, ${failed} failed`);
