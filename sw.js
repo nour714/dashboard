@@ -11,7 +11,7 @@
  * returning users pick up the new version instead of a stale cache.
  */
 
-const CACHE_NAME = 'africatravel-shell-v1';
+const CACHE_NAME = 'africatravel-shell-v2';
 
 const SHELL_ASSETS = [
   '/',
