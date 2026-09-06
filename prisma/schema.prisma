@@ -89,7 +89,7 @@ model CustomerNote {
 model Ticket {
   id                     String         @id
   ticketNumber           String?        @unique
-  pnr                    String?        @unique
+  pnr                    String?        // uniqueness enforced via partial index (active tickets only) — see migration
   customerId             String
   customer               Customer       @relation(fields: [customerId], references: [id])
   passengerName          String

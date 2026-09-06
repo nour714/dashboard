@@ -29,12 +29,13 @@ export async function checkUniqueIntegrity(prisma) {
       ORDER BY count DESC, val ASC
     `;
 
-    // Query duplicate ticket PNRs (ignoring null and whitespace-only)
+    // Query duplicate ticket PNRs on active tickets (ignoring null and whitespace-only)
     const duplicatePnrs = await client.$queryRaw`
       SELECT BTRIM("pnr") AS val, COUNT(*)::int AS count
       FROM "tickets"
       WHERE "pnr" IS NOT NULL
         AND BTRIM("pnr") <> ''
+        AND "deletedAt" IS NULL
       GROUP BY BTRIM("pnr")
       HAVING COUNT(*) > 1
       ORDER BY count DESC, val ASC

@@ -54,15 +54,40 @@ async function runTicketCustomerTests() {
     },
     ticket: {
       findFirst: async ({ where }) => {
+        if (where?.id) {
+          return mockTickets.find(t => t.id === where.id && (where.deletedAt === undefined || (where.deletedAt === null ? !t.deletedAt : !!t.deletedAt))) || null;
+        }
         if (where?.ticketNumber) {
-          return mockTickets.find(t => t.ticketNumber === where.ticketNumber && !t.deletedAt) || null;
+          return mockTickets.find(t => t.ticketNumber === where.ticketNumber && (where.deletedAt === undefined || (where.deletedAt === null ? !t.deletedAt : !!t.deletedAt))) || null;
         }
         if (where?.pnr) {
-          return mockTickets.find(t => t.pnr === where.pnr && !t.deletedAt) || null;
+          return mockTickets.find(t => t.pnr === where.pnr && (where.deletedAt === undefined || (where.deletedAt === null ? !t.deletedAt : !!t.deletedAt))) || null;
+        }
+        if (where?.OR) {
+          return mockTickets.find(t => !t.deletedAt && where.OR.some(c => (c.id && t.id === c.id) || (c.ticketNumber && t.ticketNumber === c.ticketNumber) || (c.pnr && t.pnr === c.pnr))) || null;
         }
         return mockTickets[0] || null;
       },
       create: async ({ data }) => {
+        // Enforce DB partial unique index simulation (active tickets only)
+        if (data.pnr) {
+          const duplicatePnr = mockTickets.find(t => t.pnr === data.pnr && !t.deletedAt);
+          if (duplicatePnr) {
+            const err = new Error('Unique constraint failed on the fields: (`pnr`)');
+            err.code = 'P2002';
+            err.meta = { target: ['pnr'] };
+            throw err;
+          }
+        }
+        if (data.ticketNumber) {
+          const duplicateTicketNumber = mockTickets.find(t => t.ticketNumber === data.ticketNumber && !t.deletedAt);
+          if (duplicateTicketNumber) {
+            const err = new Error('Unique constraint failed on the fields: (`ticketNumber`)');
+            err.code = 'P2002';
+            err.meta = { target: ['ticketNumber'] };
+            throw err;
+          }
+        }
         const record = {
           ...data,
           createdAt: new Date(),
@@ -73,7 +98,28 @@ async function runTicketCustomerTests() {
         };
         mockTickets.push(record);
         return record;
+      },
+      delete: async ({ where }) => {
+        const idx = mockTickets.findIndex(t => t.id === where.id);
+        if (idx !== -1) {
+          return mockTickets.splice(idx, 1)[0];
+        }
+        return null;
+      },
+      update: async ({ where, data }) => {
+        const t = mockTickets.find(t => t.id === where.id);
+        if (t) {
+          Object.assign(t, data, { updatedAt: new Date() });
+          return t;
+        }
+        return null;
       }
+    },
+    $transaction: async (fn) => {
+      if (typeof fn === 'function') {
+        return await fn(mockPrisma);
+      }
+      return fn;
     },
     auditLog: {
       create: async ({ data }) => {
@@ -229,6 +275,133 @@ async function runTicketCustomerTests() {
     }, { name: 'Agent Sarah', id: 'USR-01' });
 
     assert(withExplicitTicketNum.ticketNumber === '176-9876543210', 'Ticket with explicit ticketNumber preserves exact value');
+
+    // 7. PNR Reuse After Deletion & Active Duplicate Blocked
+    console.log('\n--- 7. PNR Reuse After Deletion & Active Duplicate Blocked ---');
+    const pnrTicket1 = await TicketService.createTicket({
+      passengerName: 'Passenger PNR 1',
+      pnr: 'PNR-REUSE-777',
+      origin: 'CAI',
+      destination: 'DXB',
+      airline: 'Emirates',
+      ticketPrice: 12000
+    }, { name: 'Agent Sarah', id: 'USR-01' });
+
+    assert(pnrTicket1.pnr === 'PNR-REUSE-777', 'Initial ticket created with PNR-REUSE-777');
+
+    // Attempting to create duplicate active PNR must fail with 409 DUPLICATE_PNR
+    let activeDuplicateFailed = false;
+    try {
+      await TicketService.createTicket({
+        passengerName: 'Passenger PNR 2 (Active Duplicate)',
+        pnr: 'PNR-REUSE-777',
+        origin: 'CAI',
+        destination: 'DXB',
+        airline: 'Emirates',
+        ticketPrice: 12000
+      }, { name: 'Agent Sarah', id: 'USR-01' });
+    } catch (err) {
+      activeDuplicateFailed = true;
+      assert((err.statusCode || err.status) === 409, 'Duplicate active PNR rejected with 409 status');
+      assert(err.code === 'DUPLICATE_PNR', 'Duplicate active PNR returns DUPLICATE_PNR error code');
+      assert(err.message === 'PNR already exists', 'Duplicate active PNR returns clean "PNR already exists" message');
+    }
+    assert(activeDuplicateFailed, 'Creating second active ticket with same PNR was blocked');
+
+    // Soft-delete the first ticket (simulate soft-deletion / archive)
+    const storedTicket1 = mockTickets.find(t => t.id === pnrTicket1.id);
+    storedTicket1.deletedAt = new Date();
+
+    // Creating new ticket with the exact same PNR after soft-delete MUST SUCCEED
+    const pnrTicket2 = await TicketService.createTicket({
+      passengerName: 'Passenger PNR 3 (Reused After Soft-Delete)',
+      pnr: 'PNR-REUSE-777',
+      origin: 'CAI',
+      destination: 'JED',
+      airline: 'Saudia',
+      ticketPrice: 9500
+    }, { name: 'Agent Sarah', id: 'USR-01' });
+
+    assert(pnrTicket2.pnr === 'PNR-REUSE-777', 'New ticket successfully reused PNR-REUSE-777 after soft-delete');
+    assert(pnrTicket2.id !== pnrTicket1.id, 'New ticket has distinct ID');
+
+    // Hard-delete the second ticket via deleteTicket (permanent delete)
+    await TicketService.deleteTicket(pnrTicket2.id, { id: 'ADM-01', role: 'ADMIN', name: 'Admin User' });
+    assert(!mockTickets.some(t => t.id === pnrTicket2.id), 'Second ticket hard-deleted from database');
+
+    // Creating new ticket with the exact same PNR after hard-delete MUST SUCCEED
+    const pnrTicket3 = await TicketService.createTicket({
+      passengerName: 'Passenger PNR 4 (Reused After Hard-Delete)',
+      pnr: 'PNR-REUSE-777',
+      origin: 'CAI',
+      destination: 'RUH',
+      airline: 'Flynas',
+      ticketPrice: 7500
+    }, { name: 'Agent Sarah', id: 'USR-01' });
+
+    assert(pnrTicket3.pnr === 'PNR-REUSE-777', 'New ticket successfully reused PNR-REUSE-777 after hard-delete');
+
+    // 8. TicketNumber Reuse After Deletion & Active Duplicate Blocked (Zero Regression)
+    console.log('\n--- 8. TicketNumber Reuse After Deletion & Active Duplicate Blocked ---');
+    const tNumTicket1 = await TicketService.createTicket({
+      passengerName: 'Passenger TicketNumber 1',
+      ticketNumber: '077-55556666',
+      origin: 'CAI',
+      destination: 'DOH',
+      airline: 'Qatar Airways',
+      ticketPrice: 14000
+    }, { name: 'Agent Sarah', id: 'USR-01' });
+
+    assert(tNumTicket1.ticketNumber === '077-55556666', 'Initial ticket created with ticketNumber 077-55556666');
+
+    // Attempting to create duplicate active ticketNumber must fail with 409 DUPLICATE_TICKET_NUMBER
+    let activeTicketNumFailed = false;
+    try {
+      await TicketService.createTicket({
+        passengerName: 'Passenger TicketNumber 2 (Active Duplicate)',
+        ticketNumber: '077-55556666',
+        origin: 'CAI',
+        destination: 'DOH',
+        airline: 'Qatar Airways',
+        ticketPrice: 14000
+      }, { name: 'Agent Sarah', id: 'USR-01' });
+    } catch (err) {
+      activeTicketNumFailed = true;
+      assert((err.statusCode || err.status) === 409, 'Duplicate active ticketNumber rejected with 409 status');
+      assert(err.code === 'DUPLICATE_TICKET_NUMBER', 'Duplicate active ticketNumber returns DUPLICATE_TICKET_NUMBER code');
+    }
+    assert(activeTicketNumFailed, 'Creating second active ticket with same ticketNumber was blocked');
+
+    // Soft-delete the ticket
+    const storedTNumTicket1 = mockTickets.find(t => t.id === tNumTicket1.id);
+    storedTNumTicket1.deletedAt = new Date();
+
+    // Reusing ticketNumber after soft-delete MUST SUCCEED
+    const tNumTicket2 = await TicketService.createTicket({
+      passengerName: 'Passenger TicketNumber 3 (Reused After Soft-Delete)',
+      ticketNumber: '077-55556666',
+      origin: 'CAI',
+      destination: 'KWI',
+      airline: 'Kuwait Airways',
+      ticketPrice: 11000
+    }, { name: 'Agent Sarah', id: 'USR-01' });
+
+    assert(tNumTicket2.ticketNumber === '077-55556666', 'New ticket successfully reused ticketNumber after soft-delete');
+
+    // Hard-delete via deleteTicket
+    await TicketService.deleteTicket(tNumTicket2.id, { id: 'ADM-01', role: 'ADMIN', name: 'Admin User' });
+
+    // Reusing ticketNumber after hard-delete MUST SUCCEED
+    const tNumTicket3 = await TicketService.createTicket({
+      passengerName: 'Passenger TicketNumber 4 (Reused After Hard-Delete)',
+      ticketNumber: '077-55556666',
+      origin: 'CAI',
+      destination: 'BAH',
+      airline: 'Gulf Air',
+      ticketPrice: 10500
+    }, { name: 'Agent Sarah', id: 'USR-01' });
+
+    assert(tNumTicket3.ticketNumber === '077-55556666', 'New ticket successfully reused ticketNumber after hard-delete');
 
     console.log('\n========================================================');
     console.log(`Ticket Customer Link Tests: ${passed} passed, ${failed} failed`);
