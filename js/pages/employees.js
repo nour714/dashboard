@@ -183,7 +183,6 @@ export const EmployeesPage = {
       <tr>
         <td>
           <div class="d-flex items-center gap-sm">
-            <div class="sidebar-user-avatar" style="width: 36px; height: 36px; font-size: 13px; background-color: ${e.role === 'ADMIN' ? '#1e3a8a' : '#2563eb'};">
             <div class="sidebar-user-avatar" style="width: 36px; height: 36px; font-size: 13px; background-color: ${e.role === 'ADMIN' ? 'var(--color-avatar-admin)' : 'var(--color-avatar-agent)'};">
               ${escapeHtml(e.name.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase())}
             </div>

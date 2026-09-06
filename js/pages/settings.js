@@ -64,7 +64,6 @@ export const SettingsPage = {
           <div class="card-body">
             <form id="profile-form">
               <div class="d-flex items-center gap-md mb-lg">
-                <div class="sidebar-user-avatar" style="width: 64px; height: 64px; font-size: 22px; background: linear-gradient(135deg, #1e3a8a, #2563eb);">
                 <div class="sidebar-user-avatar" style="width: 64px; height: 64px; font-size: 22px; background: linear-gradient(135deg, var(--color-avatar-admin), var(--color-avatar-agent));">
                   ${escapeHtml(userInitials)}
                 </div>
@@ -197,7 +196,6 @@ export const SettingsPage = {
               </div>
               <button type="button" class="btn btn-sm btn-danger-outline" id="revoke-sessions-btn">${escapeHtml(t('settings.securitySection.revokeOthers'))}</button>
             </div>
-            <div class="d-flex justify-between items-center p-md" style="background-color: var(--color-surface); border-radius: var(--radius-lg); border: 1px solid var(--color-border-danger, #fecaca);">
             <div class="d-flex justify-between items-center p-md" style="background-color: var(--color-surface); border-radius: var(--radius-lg); border: 1px solid var(--color-border-danger);">
               <div>
                 <strong class="text-danger">${escapeHtml(t('settings.securitySection.signOutAccount'))}</strong>

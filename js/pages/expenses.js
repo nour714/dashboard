@@ -233,7 +233,6 @@ export const ExpensesPage = {
         </td>
         <td>
           <div class="d-flex items-center gap-xs">
-            <div class="sidebar-user-avatar" style="width: 26px; height: 26px; font-size: 11px; background-color: #2563eb;">
             <div class="sidebar-user-avatar" style="width: 26px; height: 26px; font-size: 11px; background-color: var(--color-avatar-agent);">
               ${escapeHtml((exp.createdBy || 'S').slice(0, 2).toUpperCase())}
             </div>

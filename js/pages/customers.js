@@ -28,7 +28,6 @@ function renderCustomerRows(customers, ticketsByCustomerMap = null) {
       <tr>
         <td>
           <div class="d-flex items-center gap-sm">
-            <div class="sidebar-user-avatar" style="width: 36px; height: 36px; font-size: 13px; background-color: ${c.isVip ? '#854d0e' : '#2563eb'};">
             <div class="sidebar-user-avatar" style="width: 36px; height: 36px; font-size: 13px; background-color: ${c.isVip ? 'var(--color-avatar-vip)' : 'var(--color-avatar-agent)'};">
               ${escapeHtml(initials)}
             </div>

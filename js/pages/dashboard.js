@@ -85,7 +85,6 @@ export const DashboardPage = {
     const upcomingFlightsHtml = upcomingFlights.map(tk => `
       <div class="d-flex items-center justify-between p-sm mb-xs" style="background-color: var(--color-surface); border: 1px solid var(--color-border-soft); border-radius: var(--radius-lg);">
         <div class="d-flex items-center gap-sm">
-          <div style="width: 38px; height: 38px; border-radius: var(--radius-md); background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center;">
           <div style="width: 38px; height: 38px; border-radius: var(--radius-md); background: var(--color-icon-bg-info); color: var(--color-icon-fg-info); display: flex; align-items: center; justify-content: center;">
             ${icons.airplane('w-4 h-4')}
           </div>
