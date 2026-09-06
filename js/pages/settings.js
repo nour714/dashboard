@@ -65,6 +65,7 @@ export const SettingsPage = {
             <form id="profile-form">
               <div class="d-flex items-center gap-md mb-lg">
                 <div class="sidebar-user-avatar" style="width: 64px; height: 64px; font-size: 22px; background: linear-gradient(135deg, #1e3a8a, #2563eb);">
+                <div class="sidebar-user-avatar" style="width: 64px; height: 64px; font-size: 22px; background: linear-gradient(135deg, var(--color-avatar-admin), var(--color-avatar-agent));">
                   ${escapeHtml(userInitials)}
                 </div>
                 <div>
@@ -158,6 +159,17 @@ export const SettingsPage = {
               </div>
             </div>
 
+            <div class="d-flex justify-between items-center p-md" style="background-color: var(--color-surface); border: 1px solid var(--color-border-soft); border-radius: var(--radius-lg);">
+              <div>
+                <strong>${escapeHtml(t('settings.darkMode') || 'الوضع الغامق')}</strong>
+                <div class="text-xs text-muted">${escapeHtml(t('settings.darkModeDesc') || (curLang === 'ar' ? 'تفعيل المظهر الداكن لتقليل إجهاد العين في الإضاءة المنخفضة' : 'Enable dark appearance to reduce eye strain in low-light environments'))}</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="dark-mode-toggle" ${document.documentElement.getAttribute('data-theme') === 'dark' ? 'checked' : ''} />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
             <div class="d-flex justify-end mt-md">
               <button type="button" class="btn btn-primary" id="save-language-btn">${escapeHtml(t('common.saveChanges'))}</button>
             </div>
@@ -186,6 +198,7 @@ export const SettingsPage = {
               <button type="button" class="btn btn-sm btn-danger-outline" id="revoke-sessions-btn">${escapeHtml(t('settings.securitySection.revokeOthers'))}</button>
             </div>
             <div class="d-flex justify-between items-center p-md" style="background-color: var(--color-surface); border-radius: var(--radius-lg); border: 1px solid var(--color-border-danger, #fecaca);">
+            <div class="d-flex justify-between items-center p-md" style="background-color: var(--color-surface); border-radius: var(--radius-lg); border: 1px solid var(--color-border-danger);">
               <div>
                 <strong class="text-danger">${escapeHtml(t('settings.securitySection.signOutAccount'))}</strong>
                 <p class="text-sm text-muted">${escapeHtml(t('settings.securitySection.signOutDesc'))}</p>
@@ -311,6 +324,13 @@ export const SettingsPage = {
         }
       });
     }
+
+    const darkModeToggle = container.querySelector('#dark-mode-toggle');
+    darkModeToggle?.addEventListener('change', () => {
+      const isDark = darkModeToggle.checked;
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      localStorage.setItem('africatravel.theme', isDark ? 'dark' : 'light');
+    });
 
     const profileForm = container.querySelector('#profile-form');
     if (profileForm) {

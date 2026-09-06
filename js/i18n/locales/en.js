@@ -600,6 +600,8 @@ export const en = {
   settings: {
     title: 'Settings',
     subtitle: 'Workspace preferences, profile details, security, language, and financial configuration.',
+    darkMode: 'Dark Mode',
+    darkModeDesc: 'Enable dark appearance to reduce eye strain in low-light environments',
     tabs: {
       profile: 'Profile',
       language: 'Language & Region',

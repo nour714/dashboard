@@ -7,6 +7,13 @@ try {
   if (localStorage.getItem('africatravel.sidebarCollapsed') === '1') {
     document.documentElement.classList.add('sidebar-collapsed');
   }
+
+  // Theme: manual override priority, otherwise respect OS prefers-color-scheme
+  const storedTheme = localStorage.getItem('africatravel.theme');
+  const theme = storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  if (theme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
 } catch (_) {
   // Storage can be disabled; the static HTML defaults remain usable.
 }

@@ -432,6 +432,7 @@ body.sidebar-collapsed .sidebar-signout-btn {
 .app-topbar {
   height: var(--topbar-height);
   background-color: #ffffff;
+  background-color: var(--color-surface-card, #ffffff);
   border-bottom: 1px solid var(--color-border-soft);
   position: sticky;
   top: 0;
@@ -495,6 +496,7 @@ body.sidebar-collapsed .sidebar-signout-btn {
 
 .topbar-search-input:focus {
   background-color: #ffffff;
+  background-color: var(--color-surface-card, #ffffff);
   border-color: var(--color-accent);
   box-shadow: 0 0 0 2px rgba(212, 43, 43, 0.15);
   outline: none;
@@ -531,6 +533,7 @@ body.sidebar-collapsed .sidebar-signout-btn {
   inset-inline-start: 0;
   inset-inline-end: 0;
   background-color: #ffffff;
+  background-color: var(--color-surface-card, #ffffff);
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-modal);
@@ -743,6 +746,7 @@ body.sidebar-collapsed .sidebar-signout-btn {
   inset-inline-end: 0;
   height: var(--bottombar-height);
   background-color: #ffffff;
+  background-color: var(--color-surface-card, #ffffff);
   border-top: 1px solid var(--color-border-soft);
   z-index: var(--z-bottom-nav);
   padding: 0 var(--spacing-sm);
@@ -808,6 +812,7 @@ body.sidebar-collapsed .sidebar-signout-btn {
   inset-inline-start: 0;
   inset-inline-end: 0;
   background-color: #ffffff;
+  background-color: var(--color-surface-card, #ffffff);
   border-top-left-radius: var(--radius-2xl);
   border-top-right-radius: var(--radius-2xl);
   padding: var(--spacing-md) var(--spacing-md) calc(var(--bottombar-height) + var(--spacing-md)) var(--spacing-md);
