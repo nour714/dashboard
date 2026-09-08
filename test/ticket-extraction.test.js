@@ -104,11 +104,16 @@ async function runExtractionTests() {
     assert(promptText.includes('SURNAME/GIVENNAME'), 'Prompt contains SURNAME/GIVENNAME passenger name instruction');
     assert(promptText.includes('Givenname Surname'), 'Prompt instructs conversion to natural "Givenname Surname" order');
     assert(promptText.includes('Do NOT confuse the passenger\'s name with the travel agency name'), 'Prompt warns against confusing passenger name with agency/staff');
+    assert(promptText.includes('TRANSIT & CONNECTING FLIGHTS'), 'Prompt contains TRANSIT & CONNECTING FLIGHTS instructions');
+    assert(promptText.includes('NEVER extract an intermediate transit'), 'Prompt warns against setting transit hub as destination');
     assert(body.contents?.[0]?.parts?.[1]?.inline_data?.data, 'Request payload includes base64 document data');
     assert(body.generationConfig?.responseMimeType === 'application/json', 'Requests structured application/json response');
     assert(body.generationConfig?.thinkingConfig?.thinkingLevel === 'low', 'Configures thinkingLevel low for optimal latency');
     assert(body.generationConfig?.responseSchema?.properties?.passengerName, 'Provides JSON extraction schema to Gemini');
     assert(body.generationConfig?.responseSchema?.properties?.phone === undefined, 'EXTRACTION_SCHEMA.properties has NO phone field');
+    assert(body.generationConfig?.responseSchema?.properties?.origin?.description?.includes('FIRST departure airport'), 'Origin schema description specifies first departure airport');
+    assert(body.generationConfig?.responseSchema?.properties?.destination?.description?.includes('FINAL destination airport'), 'Destination schema description specifies final destination airport');
+    assert(body.generationConfig?.responseSchema?.properties?.destination?.description?.includes('NOT a transit/layover stop'), 'Destination schema description explicitly excludes transit/layover stops');
 
     return {
       ok: true,

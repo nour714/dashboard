@@ -24,8 +24,8 @@ const EXTRACTION_SCHEMA = {
     airline: { type: 'string' },
     airlineCode: { type: 'string' },
     flightNumber: { type: 'string' },
-    origin: { type: 'string', description: '3-letter IATA airport code (e.g. CAI)' },
-    destination: { type: 'string', description: '3-letter IATA airport code (e.g. DXB)' },
+    origin: { type: 'string', description: '3-letter IATA code of the FIRST departure airport of the entire journey (e.g. CAI)' },
+    destination: { type: 'string', description: '3-letter IATA code of the FINAL destination airport of the entire journey — NOT a transit/layover stop (e.g. BKK, LHR, JFK)' },
     departureDate: { type: 'string', description: 'YYYY-MM-DD format' },
     tripType: { type: 'string', enum: ['One Way', 'Round Trip'] },
     returnFlightNumber: { type: 'string' },
@@ -59,7 +59,13 @@ export const TicketExtractionService = {
 
 PASSENGER NAME — read carefully: airline tickets typically format the passenger name as "SURNAME/GIVENNAME" or "SURNAME/GIVENNAME MR/MRS/MS" (surname first, before the slash). Convert this to natural reading order: "Givenname Surname". Do NOT confuse the passenger's name with the travel agency name, booking agent name, or airline staff name that may also appear on the document — only extract the name explicitly labeled as the passenger/traveler. If there are multiple passengers listed and it's unclear which one this ticket is for, omit passengerName entirely rather than guessing.
 
-Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Standardize airline names and their 2-letter IATA codes (e.g., EgyptAir MS, Air Cairo SM, Emirates EK, Etihad Airways EY, Qatar Airways QR, Turkish Airlines TK, Saudia SV, Flynas XY, flydubai FZ, Air Arabia G9, British Airways BA, Air France AF, Lufthansa LH, KLM KL, Iberia IB, ITA Airways AZ, Aegean Airlines A3, American Airlines AA, Delta Air Lines DL, United Airlines UA, Air Canada AC, Air China CA, China Eastern MU, China Southern CZ, Singapore Airlines SQ, Ethiopian Airlines ET, Kenya Airways KQ, Royal Air Maroc AT, Tunisair TU, Air Algérie AH). For "origin" and "destination", return ONLY the 3-letter IATA airport code (e.g. "CAI", "DXB") — never the city name, country name, or full airport name. Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
+TRANSIT & CONNECTING FLIGHTS — read carefully: for tickets with transit stops, layovers, or connecting flights (e.g. CAI -> DXB -> BKK):
+- "origin": The 3-letter IATA code of the FIRST departure airport of the entire outbound journey (e.g. "CAI").
+- "destination": The 3-letter IATA code of the FINAL destination airport of the entire outbound journey (e.g. "BKK", "LHR", "JFK"). NEVER extract an intermediate transit, connection, or layover hub (such as "DXB", "DOH", "IST", "AUH") as the destination.
+- "flightNumber": The flight number of the FIRST flight departing from the origin airport.
+- "departureDate": The departure date of the FIRST flight segment in YYYY-MM-DD format.
+
+Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Standardize airline names and their 2-letter IATA codes (e.g., EgyptAir MS, Air Cairo SM, Emirates EK, Etihad Airways EY, Qatar Airways QR, Turkish Airlines TK, Saudia SV, Flynas XY, flydubai FZ, Air Arabia G9, British Airways BA, Air France AF, Lufthansa LH, KLM KL, Iberia IB, ITA Airways AZ, Aegean Airlines A3, American Airlines AA, Delta Air Lines DL, United Airlines UA, Air Canada AC, Air China CA, China Eastern MU, China Southern CZ, Singapore Airlines SQ, Ethiopian Airlines ET, Kenya Airways KQ, Royal Air Maroc AT, Tunisair TU, Air Algérie AH). For "origin" and "destination", return ONLY the 3-letter IATA airport code (e.g. "CAI", "BKK") — never the city name, country name, or full airport name. Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
 
     // Candidate models for extraction. Google periodically updates and deprecates model IDs
     // without compile-time warnings, so candidate models are ordered by preference (primary -> fallback).
