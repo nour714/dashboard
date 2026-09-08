@@ -14,7 +14,7 @@
  * 10. Audit check: zero hardcoded API keys in codebase
  */
 
-import { TicketExtractionService } from '../server/src/services/ticket-extraction.service.js';
+import { TicketExtractionService, toAirportCode } from '../server/src/services/ticket-extraction.service.js';
 import { env } from '../server/src/config/env.js';
 import { TicketCreatePage } from '../js/pages/ticket-create.js';
 import { en } from '../js/i18n/locales/en.js';
@@ -104,16 +104,19 @@ async function runExtractionTests() {
     assert(promptText.includes('SURNAME/GIVENNAME'), 'Prompt contains SURNAME/GIVENNAME passenger name instruction');
     assert(promptText.includes('Givenname Surname'), 'Prompt instructs conversion to natural "Givenname Surname" order');
     assert(promptText.includes('Do NOT confuse the passenger\'s name with the travel agency name'), 'Prompt warns against confusing passenger name with agency/staff');
-    assert(promptText.includes('TRANSIT & CONNECTING FLIGHTS'), 'Prompt contains TRANSIT & CONNECTING FLIGHTS instructions');
-    assert(promptText.includes('NEVER extract an intermediate transit'), 'Prompt warns against setting transit hub as destination');
+    assert(promptText.includes('connecting flights / layovers / transit stops'), 'Prompt contains connecting flights / layovers / transit stops instructions');
+    assert(promptText.includes('never an intermediate transit airport'), 'Prompt instructs destination is never an intermediate transit airport');
+    assert(promptText.includes('TK123, TK456'), 'Prompt includes multi-segment comma-separated flightNumber worked example');
     assert(body.contents?.[0]?.parts?.[1]?.inline_data?.data, 'Request payload includes base64 document data');
     assert(body.generationConfig?.responseMimeType === 'application/json', 'Requests structured application/json response');
     assert(body.generationConfig?.thinkingConfig?.thinkingLevel === 'low', 'Configures thinkingLevel low for optimal latency');
     assert(body.generationConfig?.responseSchema?.properties?.passengerName, 'Provides JSON extraction schema to Gemini');
     assert(body.generationConfig?.responseSchema?.properties?.phone === undefined, 'EXTRACTION_SCHEMA.properties has NO phone field');
-    assert(body.generationConfig?.responseSchema?.properties?.origin?.description?.includes('FIRST departure airport'), 'Origin schema description specifies first departure airport');
-    assert(body.generationConfig?.responseSchema?.properties?.destination?.description?.includes('FINAL destination airport'), 'Destination schema description specifies final destination airport');
-    assert(body.generationConfig?.responseSchema?.properties?.destination?.description?.includes('NOT a transit/layover stop'), 'Destination schema description explicitly excludes transit/layover stops');
+    assert(body.generationConfig?.responseSchema?.properties?.flightNumber?.description?.includes('Outbound flight number(s) in travel order'), 'flightNumber schema description specifies outbound flight numbers in travel order');
+    assert(body.generationConfig?.responseSchema?.properties?.origin?.description?.includes('FIRST outbound segment ONLY'), 'Origin schema description specifies first outbound segment only');
+    assert(body.generationConfig?.responseSchema?.properties?.destination?.description?.includes('LAST outbound segment ONLY'), 'Destination schema description specifies last outbound segment only');
+    assert(body.generationConfig?.responseSchema?.properties?.destination?.description?.includes('NEVER be an intermediate transit'), 'Destination schema description explicitly forbids intermediate transit airport');
+    assert(body.generationConfig?.responseSchema?.properties?.returnFlightNumber?.description?.includes('Return flight number(s) in travel order'), 'returnFlightNumber schema description specifies return flight numbers in travel order');
 
     return {
       ok: true,
@@ -168,6 +171,9 @@ async function runExtractionTests() {
   assert(normalizedAirports.tripType === 'One Way', 'tripType set to One Way when no return flight is present');
   assert(normalizedAirports.returnDepartureDate === undefined, 'returnDepartureDate omitted for one-way ticket');
   assert(normalizedAirports.returnFlightNumber === undefined, 'returnFlightNumber omitted for one-way ticket');
+  assert(toAirportCode('cai') === 'CAI', 'toAirportCode capitalizes lowercase airport codes');
+  assert(toAirportCode('DXB - Dubai International Airport') === 'DXB', 'toAirportCode extracts 3-letter IATA from dirty text');
+  assert(toAirportCode(null) === null, 'toAirportCode safely preserves null/non-string values');
 
   // Test 3.2: Fallback Model Retry when Primary Model Fails
   console.log('\n--- 3.2 Fallback Model Retry (gemini-3.5-flash-lite) ---');
