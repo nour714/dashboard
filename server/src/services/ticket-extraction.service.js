@@ -168,8 +168,17 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
         }
       }
 
-      // Do not turn arbitrary text into a plausible-looking airport code. Invalid
-      // fields are omitted and reported for explicit operator confirmation.
+      // Log raw AI values before normalization so any future extraction mismatch
+      // (e.g. a correct code rejected by the curated allowlist) is diagnosable from server logs.
+      if (parsed.origin || parsed.destination) {
+        console.log('[TicketExtraction] Raw origin/destination from Gemini:', parsed.origin, '/', parsed.destination);
+      }
+
+      // Validate origin/destination against the curated allowlist, but NEVER silently blank
+      // a field the model did extract — an agent reviewing a pre-filled (if unverified)
+      // suggestion like "ACC" is far better than facing an empty required field with no
+      // explanation. Fields outside the curated list are still flagged via unrecognizedFields
+      // so the UI can visually mark them for confirmation.
       const unrecognizedFields = [];
       for (const field of ['origin', 'destination']) {
         if (!parsed[field]) continue;
@@ -177,7 +186,6 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
         if (code) {
           parsed[field] = code;
         } else {
-          delete parsed[field];
           unrecognizedFields.push(field);
         }
       }
