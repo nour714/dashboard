@@ -21,9 +21,7 @@ export function renderTopbar(upcomingCount = 0) {
     <header class="app-topbar">
       <div class="topbar-left">
         <form class="topbar-search-form" id="topbar-global-search">
-          <span class="topbar-search-icon">
-            ${icons.search('w-4 h-4')}
-          </span>
+          <span class="topbar-search-icon">${icons.search('w-4 h-4')}</span>
           <input
             type="search"
             class="topbar-search-input"
@@ -38,9 +36,7 @@ export function renderTopbar(upcomingCount = 0) {
             id="topbar-search-close-btn"
             title="${escapeHtml(t('common.closeSearch') || t('common.close'))}"
             aria-label="${escapeHtml(t('common.closeSearch') || t('common.close'))}"
-          >
-            ${icons.close('w-4 h-4')}
-          </button>
+          >${icons.close('w-4 h-4')}</button>
           <div id="topbar-search-dropdown" class="search-dropdown d-none"></div>
         </form>
       </div>
@@ -53,9 +49,7 @@ export function renderTopbar(upcomingCount = 0) {
           id="topbar-mobile-search-btn"
           title="${escapeHtml(t('common.searchPlaceholder'))}"
           aria-label="${escapeHtml(t('common.searchPlaceholder'))}"
-        >
-          ${icons.search('w-5 h-5')}
-        </button>
+        >${icons.search('w-5 h-5')}</button>
 
         <!-- Language Switcher Pill -->
         <button

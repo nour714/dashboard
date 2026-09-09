@@ -466,6 +466,9 @@ body.sidebar-collapsed .sidebar-signout-btn {
 .topbar-search-form {
   position: relative;
   width: 100%;
+  display: flex;
+  align-items: center;
+  height: 38px;
 }
 
 .topbar-search-icon {
@@ -478,6 +481,20 @@ body.sidebar-collapsed .sidebar-signout-btn {
   pointer-events: none;
   width: 16px;
   height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+}
+
+.topbar-search-icon svg {
+  width: 16px !important;
+  height: 16px !important;
+  display: block !important;
+  vertical-align: unset !important;
+  flex-shrink: 0;
 }
 
 .topbar-search-input {
@@ -647,6 +664,9 @@ body.sidebar-collapsed .sidebar-signout-btn {
   transition: background-color var(--transition-fast);
   position: relative;
   flex-shrink: 0;
+  padding: 0;
+  border: none;
+  line-height: 1;
 }
 
 .topbar-icon-btn svg {
@@ -656,6 +676,8 @@ body.sidebar-collapsed .sidebar-signout-btn {
   max-width: 20px !important;
   stroke-width: 2;
   flex-shrink: 0;
+  display: block !important;
+  vertical-align: unset !important;
 }
 
 .topbar-icon-btn:hover {

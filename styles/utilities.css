@@ -197,20 +197,31 @@
 .view-search-box {
   position: relative;
   min-width: 260px;
+  display: flex;
+  align-items: center;
 }
 
 .view-search-box svg {
   position: absolute;
-  inset-inline-start: 10px;
+  inset-inline-start: 12px;
+  inset-inline-end: auto;
   top: 50%;
   transform: translateY(-50%);
   color: var(--color-text-muted);
-  width: 16px;
-  height: 16px;
+  width: 16px !important;
+  height: 16px !important;
+  pointer-events: none;
+  display: block !important;
+  vertical-align: unset !important;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .view-search-box input {
-  padding-inline-start: 32px;
+  width: 100%;
+  padding-inline-start: 36px;
+  display: block;
 }
 
 /* ==========================================================================
