@@ -319,13 +319,13 @@ export const CustomerService = {
       throw new NotFoundError('Customer', customerId);
     }
 
-    // Defensive size check (multer already caps at 5MB)
-    const MAX_SIZE = 5 * 1024 * 1024;
+    // Defensive size check (multer already caps at 10MB)
+    const MAX_SIZE = 10 * 1024 * 1024;
     if (!buffer || buffer.length === 0) {
       throw new ValidationError('File is empty', 'passportDocument');
     }
     if (buffer.length > MAX_SIZE) {
-      throw new ValidationError('File size exceeds the 5MB limit', 'passportDocument');
+      throw new ValidationError('File size exceeds the 10MB limit', 'passportDocument');
     }
 
     // Magic-byte sniffing — do not trust client-reported mimetype alone

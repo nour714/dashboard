@@ -42,7 +42,7 @@ export function errorHandler(err, req, res, next) {
   // Handle Multer file upload errors
   if (err.name === 'MulterError' || err.code === 'LIMIT_FILE_SIZE') {
     const messages = {
-      LIMIT_FILE_SIZE: 'File size exceeds the 5MB limit.',
+      LIMIT_FILE_SIZE: 'File size exceeds the 10MB limit.',
       LIMIT_FILE_COUNT: 'Too many files uploaded.',
       LIMIT_UNEXPECTED_FILE: 'Unexpected file field name.'
     };
