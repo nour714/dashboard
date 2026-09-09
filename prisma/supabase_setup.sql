@@ -279,7 +279,7 @@ ALTER TABLE "tickets" ALTER COLUMN "arrivalDate" DROP NOT NULL;
 -- Provisions the private storage bucket backing passport-document uploads
 -- (server/src/config/storage.js).
 --
--- NOTE: file_size_limit (10485760 bytes = 10MB) and allowed_mime_types
+-- NOTE: file_size_limit (15728640 bytes = 15MB) and allowed_mime_types
 -- MUST be kept in sync with MAX_FILE_SIZE and ALLOWED_MIME_TYPES constants
 -- in server/src/middleware/upload.js.
 --
@@ -291,7 +291,7 @@ VALUES (
   'customer-documents',
   'customer-documents',
   false,
-  10485760,
+  15728640,
   ARRAY['image/jpeg', 'image/png', 'application/pdf']
 )
 ON CONFLICT (id) DO NOTHING;

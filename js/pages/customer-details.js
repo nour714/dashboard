@@ -581,10 +581,10 @@ export const CustomerDetailsPage = {
           return;
         }
 
-        const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+        const MAX_SIZE = 15 * 1024 * 1024; // 15MB
         if (file.size > MAX_SIZE) {
           if (passportError) {
-            passportError.textContent = 'File size exceeds the 10MB limit.';
+            passportError.textContent = 'File size exceeds the 15MB limit.';
             passportError.style.display = 'block';
           }
           passportUploadBtn.disabled = true;

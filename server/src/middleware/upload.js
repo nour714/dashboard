@@ -4,14 +4,14 @@
  * Implements stream-level early magic-byte verification (CWE-434, CWE-400):
  * - Validates file signature (magic bytes) on the initial incoming stream chunks
  *   before buffering the full payload into memory.
- * - Enforces strict 10MB size limit during streaming.
+ * - Enforces strict 15MB size limit during streaming.
  * - Implements a concurrency budget / active upload semaphore to prevent DoS resource exhaustion.
  */
 
 import multer from 'multer';
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB hard cap
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB hard cap
 const MAX_CONCURRENT_UPLOADS = 10;
 
 let activeUploads = 0;

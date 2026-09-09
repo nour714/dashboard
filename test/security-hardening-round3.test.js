@@ -736,15 +736,15 @@ async function runSecurityHardeningRound3Tests() {
     }
     assert(threwInvalidMagicByte, 'uploadPassportDocument rejects file with magic-byte mismatch (fake JPEG)');
 
-    // D. Exceeding max size (> 10MB)
-    const oversizedBuffer = Buffer.alloc(10 * 1024 * 1024 + 1024);
+    // D. Exceeding max size (> 15MB)
+    const oversizedBuffer = Buffer.alloc(15 * 1024 * 1024 + 1024);
     let threwOversized = false;
     try {
       await CustomerService.uploadPassportDocument(activeCustomer.id, oversizedBuffer, 'image/jpeg', agentUser);
     } catch (err) {
-      threwOversized = err instanceof ValidationError && err.message.includes('10MB');
+      threwOversized = err instanceof ValidationError && err.message.includes('15MB');
     }
-    assert(threwOversized, 'uploadPassportDocument rejects file exceeding 10MB limit');
+    assert(threwOversized, 'uploadPassportDocument rejects file exceeding 15MB limit');
 
     // E. Replacing passport document deletes old file from storage
     // Real JPEG header buffer (FF D8 FF E0)

@@ -4,7 +4,7 @@
  * Covers:
  * 1. Upload a valid JPEG as authenticated AGENT -> 200, customer record updated
  * 2. Upload a file with .jpg name/reported MIME but text content (magic byte mismatch) -> 400, rejected
- * 3. Upload a file over 10MB -> 400, rejected
+ * 3. Upload a file over 15MB -> 400, rejected
  * 4. Upload with no auth token -> 401
  * 5. GET passport document as AGENT -> 200, returns signed URL
  * 6. DELETE as AGENT (not ADMIN) -> 403
@@ -257,9 +257,9 @@ async function runPassportDocumentTests() {
     assert(spoofedRes.json?.success === false, 'Spoofed file returns success: false');
     assert(spoofedRes.json?.error?.message.includes('Only JPEG, PNG, and PDF files are allowed'), 'Error message informs of allowed types');
 
-    // 3. Upload file over 10MB -> 400 rejected
-    console.log('\n--- 3. File Size Cap (Over 10MB) ---');
-    const oversizedBuffer = Buffer.alloc(10 * 1024 * 1024 + 1024); // 10MB + 1KB
+    // 3. Upload file over 15MB -> 400 rejected
+    console.log('\n--- 3. File Size Cap (Over 15MB) ---');
+    const oversizedBuffer = Buffer.alloc(15 * 1024 * 1024 + 1024); // 15MB + 1KB
     const oversizedPayload = buildMultipartPayload(
       boundary,
       'passportDocument',
@@ -278,7 +278,7 @@ async function runPassportDocumentTests() {
       body: oversizedPayload
     });
 
-    assert(oversizedRes.statusCode === 400, 'Oversized file (>10MB) returns 400 Bad Request');
+    assert(oversizedRes.statusCode === 400, 'Oversized file (>15MB) returns 400 Bad Request');
     assert(oversizedRes.json?.success === false, 'Oversized upload returns success: false');
 
     // 4. Upload with no auth token -> 401
@@ -370,8 +370,8 @@ async function runPassportDocumentTests() {
         receivedResult = result;
       });
 
-      // Push oversized chunk > 10MB
-      stream.push(Buffer.alloc(10 * 1024 * 1024 + 1024));
+      // Push oversized chunk > 15MB
+      stream.push(Buffer.alloc(15 * 1024 * 1024 + 1024));
       // End the stream (simulates network stream finishing drain)
       stream.push(null);
 
