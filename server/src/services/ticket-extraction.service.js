@@ -22,6 +22,12 @@ export function toAirportCode(raw) {
   return codeMatch ? codeMatch[0].toUpperCase() : clean.toUpperCase();
 }
 
+export function toSingleFlightNumber(raw) {
+  if (!raw || typeof raw !== 'string') return raw;
+  const first = raw.split(/[,/;]|\band\b/i)[0].trim();
+  return first || raw.trim();
+}
+
 const EXTRACTION_SCHEMA = {
   type: 'object',
   properties: {
@@ -30,12 +36,12 @@ const EXTRACTION_SCHEMA = {
     ticketNumber: { type: 'string' },
     airline: { type: 'string' },
     airlineCode: { type: 'string' },
-    flightNumber: { type: 'string', description: 'Outbound flight number(s) in travel order. If the outbound trip has a layover (more than one segment), list every leg\'s flight number separated by commas in order (e.g. "TK123, TK456"). If there is only one segment, return just that single flight number.' },
+    flightNumber: { type: 'string', description: 'The flight number of the FIRST outbound segment ONLY (e.g. "ET 0453" or "MS 986"). If the trip has layovers or connections, extract ONLY the first flight number departing from origin — do NOT combine multiple flight numbers or separate them by commas.' },
     origin: { type: 'string', description: 'The 3-letter IATA airport code of the departure airport of the FIRST outbound segment ONLY (e.g. "CAI"). Never include the city or country name.' },
     destination: { type: 'string', description: 'The 3-letter IATA airport code of the arrival airport of the LAST outbound segment ONLY — i.e. the true final destination (e.g. "DXB"). This must NEVER be an intermediate transit/layover/connection airport, even if it is the first arrival airport mentioned in the document. Never include the city or country name.' },
     departureDate: { type: 'string', description: 'YYYY-MM-DD format. The departure date of the FIRST outbound segment.' },
     tripType: { type: 'string', enum: ['One Way', 'Round Trip'] },
-    returnFlightNumber: { type: 'string', description: 'Return flight number(s) in travel order, same comma-separated rule as flightNumber if the return leg also has a layover.' },
+    returnFlightNumber: { type: 'string', description: 'The flight number of the FIRST return segment ONLY (e.g. "MS 987"). Extract ONLY one single flight number — do NOT combine multiple flight numbers or separate them by commas.' },
     returnDepartureDate: { type: 'string', description: 'YYYY-MM-DD format, or omit if one-way' },
     ticketPrice: { type: 'number' },
     currency: { type: 'string' },
@@ -71,11 +77,11 @@ Many tickets include one or more stopovers, e.g. CAI → IST → LHR as a single
 Rule: an airport is a TRANSIT/LAYOVER stop — never the "destination" — whenever it appears as the arrival ("to") of one outbound segment AND also as the departure ("from") of a later outbound segment on the same ticket. This is true regardless of how long or short the layover is. Only the arrival airport of the very LAST outbound segment (chronologically) can be the true "destination". Never treat the first arrival airport mentioned in the document as the destination just because it appears first — always check whether a later segment departs from that same airport.
 - "origin" = the departure airport of the FIRST outbound segment.
 - "destination" = the arrival airport of the LAST outbound segment (the true final destination) — never an intermediate transit airport.
-- If the outbound trip has more than one segment, list all outbound flight numbers in "flightNumber" separated by commas, in travel order (e.g. "TK123, TK456"). If it is a single non-stop segment, "flightNumber" is just that one flight number.
-- If this is a round trip, apply the exact same segment/transit logic independently to the return leg: "returnFlightNumber" follows the same comma-separated rule if the return leg also has a layover, and "returnDepartureDate" is the departure date of the FIRST return segment.
+- "flightNumber" = the flight number of the FIRST outbound segment ONLY (e.g. "ET 0453" or "TK123"). Even if the outbound trip has connections, layovers, or multiple segments, extract ONLY the single first flight number departing from the origin airport — NEVER return multiple flight numbers or comma-separated lists.
+- If this is a round trip, apply the exact same segment/transit logic independently to the return leg: "returnFlightNumber" is the single flight number of the FIRST return segment ONLY (never return multiple flight numbers), and "returnDepartureDate" is the departure date of the FIRST return segment.
 - Do not confuse a connecting outbound trip with a round trip. "tripType" is "Round Trip" ONLY when there is a genuine separate return flight heading back toward the origin on a later date. A one-way trip that merely has a layover (e.g. CAI → IST → LHR, no flight back) is still "tripType": "One Way".
 
-Worked example: outbound segments are TK123 CAI→IST departing 10 Jan, then TK456 IST→LHR departing 10 Jan (same day, connecting). IST is a transit stop because it is both an arrival and a later departure. Correct extraction: "origin": "CAI", "destination": "LHR" (NOT "IST"), "flightNumber": "TK123, TK456".
+Worked example: outbound segments are TK123 CAI→IST departing 10 Jan, then TK456 IST→LHR departing 10 Jan (same day, connecting). IST is a transit stop because it is both an arrival and a later departure. Correct extraction: "origin": "CAI", "destination": "LHR" (NOT "IST"), "flightNumber": "TK123" (ONLY the first flight number departing from CAI, do NOT include TK456).
 
 Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Standardize airline names and their 2-letter IATA codes (e.g., EgyptAir MS, Air Cairo SM, Emirates EK, Etihad Airways EY, Qatar Airways QR, Turkish Airlines TK, Saudia SV, Flynas XY, flydubai FZ, Air Arabia G9, British Airways BA, Air France AF, Lufthansa LH, KLM KL, Iberia IB, ITA Airways AZ, Aegean Airlines A3, American Airlines AA, Delta Air Lines DL, United Airlines UA, Air Canada AC, Air China CA, China Eastern MU, China Southern CZ, Singapore Airlines SQ, Ethiopian Airlines ET, Kenya Airways KQ, Royal Air Maroc AT, Tunisair TU, Air Algérie AH). For "origin" and "destination", return ONLY the 3-letter IATA airport code (e.g. "CAI", "DXB") — never the city name, country name, or full airport name. Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
 
@@ -155,6 +161,9 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
     // Security & Domain Rule: Never allow costPrice to be extracted or populated from AI
     if (parsed && typeof parsed === 'object') {
       delete parsed.costPrice;
+
+      if (parsed.flightNumber) parsed.flightNumber = toSingleFlightNumber(parsed.flightNumber);
+      if (parsed.returnFlightNumber) parsed.returnFlightNumber = toSingleFlightNumber(parsed.returnFlightNumber);
 
       if (parsed.origin) parsed.origin = toAirportCode(parsed.origin);
       if (parsed.destination) parsed.destination = toAirportCode(parsed.destination);

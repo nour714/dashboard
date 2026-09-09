@@ -475,7 +475,10 @@ export const TicketCreatePage = {
             }
           }
 
-          if (d.flightNumber) setVal('flight-number', d.flightNumber);
+          if (d.flightNumber) {
+            const singleFlight = String(d.flightNumber).split(/[,/;]|\band\b/i)[0].trim();
+            setVal('flight-number', singleFlight || d.flightNumber);
+          }
           if (d.pnr) setVal('flight-pnr', d.pnr);
           if (d.ticketNumber) setVal('flight-ticket-num', d.ticketNumber);
           if (d.origin) setVal('flight-origin', d.origin);
@@ -483,7 +486,10 @@ export const TicketCreatePage = {
           if (d.departureDate) setVal('flight-dep-date', d.departureDate);
 
           // Return flight details
-          if (d.returnFlightNumber) setVal('return-flight-number', d.returnFlightNumber);
+          if (d.returnFlightNumber) {
+            const singleReturnFlight = String(d.returnFlightNumber).split(/[,/;]|\band\b/i)[0].trim();
+            setVal('return-flight-number', singleReturnFlight || d.returnFlightNumber);
+          }
           if (d.returnDepartureDate) setVal('return-dep-date', d.returnDepartureDate);
 
           // Pricing (costPrice is deliberately NOT set from AI extraction)
