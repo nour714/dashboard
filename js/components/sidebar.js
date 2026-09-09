@@ -14,7 +14,7 @@ export function renderSidebar(activePath = '/dashboard') {
   const rawName = currentUser.name || currentUser.fullName || 'Mohamed Raafat';
   const userName = (rawName === 'Mohamed Raafat' && isAr) ? 'محمد رأفت' : rawName;
   const userRole = getUserRoleLabel(currentUser);
-  const initials = isAr ? 'م.ر' : (userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'MR');
+  const initials = userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || (isAr ? 'م.ر' : 'MR');
 
   const mainNav = [
     { path: '/dashboard', label: t('nav.dashboard'), icon: 'dashboard' },

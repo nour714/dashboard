@@ -3,11 +3,13 @@
  */
 
 import { renderSidebar } from '../js/components/sidebar.js';
+import { renderTopbar } from '../js/components/topbar.js';
 import { renderBottomNav } from '../js/components/bottom-nav.js';
 import { EmployeesPage } from '../js/pages/employees.js';
 import { ReportsPage } from '../js/pages/reports.js';
 import { store } from '../js/state/store.js';
 import { AuthService } from '../js/services/auth-service.js';
+import { i18n } from '../js/i18n/i18n.js';
 
 let passed = 0;
 let failed = 0;
@@ -94,6 +96,32 @@ async function runRbacUiTests() {
   const ticketOnlyBottomNav = renderBottomNav('/tickets/new');
   assert(ticketOnlyBottomNav.includes('href="/tickets/new"'), 'Mobile nav retains Create Ticket for TICKET_ONLY');
   assert(!ticketOnlyBottomNav.includes('href="/customers"'), 'Mobile nav hides Customers for TICKET_ONLY');
+
+  // 4. Test Avatar Initials in Arabic and English
+  console.log('\n--- 4. Avatar Initials (Dynamic & Bilingual) ---');
+  i18n.setLanguage('ar');
+  store.state.currentUser = {
+    id: 'USR-NOUR',
+    name: 'Nour Wael',
+    role: 'AGENT'
+  };
+  const arSidebar = renderSidebar('/dashboard');
+  const arTopbar = renderTopbar();
+  assert(arSidebar.includes('NW') && !arSidebar.includes('م.ر'), 'Arabic sidebar shows user initials "NW" instead of hardcoded "م.ر"');
+  assert(arTopbar.includes('NW') && !arTopbar.includes('م.ر'), 'Arabic topbar shows user initials "NW" instead of hardcoded "م.ر"');
+
+  store.state.currentUser = {
+    id: 'USR-AHMED',
+    name: 'أحمد محمود',
+    role: 'AGENT'
+  };
+  const arSidebarArabicName = renderSidebar('/dashboard');
+  const arTopbarArabicName = renderTopbar();
+  assert(arSidebarArabicName.includes('أم'), 'Arabic sidebar shows Arabic name initials "أم"');
+  assert(arTopbarArabicName.includes('أم'), 'Arabic topbar shows Arabic name initials "أم"');
+
+  // Reset language back to en
+  i18n.setLanguage('en');
 
   console.log('\n========================================================');
   console.log(`RBAC UI Tests: ${passed} passed, ${failed} failed`);

@@ -13,7 +13,7 @@ export function renderTopbar(upcomingCount = 0) {
   const rawName = currentUser.name || currentUser.fullName || 'Mohamed Raafat';
   const userName = (rawName === 'Mohamed Raafat' && isAr) ? 'محمد رأفت' : rawName;
   const userRole = getUserRoleLabel(currentUser);
-  const initials = isAr ? 'م.ر' : (userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'MR');
+  const initials = userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || (isAr ? 'م.ر' : 'MR');
   const currentLang = i18n.getLanguage();
   const nextLangLabel = currentLang === 'ar' ? 'English' : 'العربية';
 
