@@ -148,4 +148,15 @@ describe('Edit Ticket Expansion Verification', () => {
       'Must query and wire #edit-ticket-btn click listener'
     );
   });
+
+  it('9. ticket-actions.js imports i18n for translateStatus in edit status dropdown', () => {
+    assert.ok(
+      /import\s*\{[^}]*\bi18n\b[^}]*\}\s*from\s*['"]\.\.\/\.\.\/i18n\/i18n\.js['"]/.test(ticketActionsContent),
+      'ticket-actions.js must import i18n from ../../i18n/i18n.js'
+    );
+    assert.ok(
+      ticketActionsContent.includes('i18n.translateStatus('),
+      'ticket-actions.js must use i18n.translateStatus for status options'
+    );
+  });
 });
