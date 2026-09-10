@@ -30,6 +30,8 @@ console.log('========================================================\n');
 describe('Edit Ticket Expansion Verification', () => {
   const ticketActionsPath = path.join(rootDir, 'js', 'pages', 'ticket-details', 'ticket-actions.js');
   const ticketActionsContent = fs.readFileSync(ticketActionsPath, 'utf8');
+  const ticketDetailsPath = path.join(rootDir, 'js', 'pages', 'ticket-details', 'ticket-details.js');
+  const ticketDetailsContent = fs.readFileSync(ticketDetailsPath, 'utf8');
 
   // --- 1. Schema Validation Tests ---
   it('1. updateTicketSchema accepts valid ticketPrice and confirmPriceBelowPaid', () => {
@@ -131,6 +133,19 @@ describe('Edit Ticket Expansion Verification', () => {
     assert.ok(
       ticketActionsContent.includes('updatePayload.confirmPriceBelowPaid = true;'),
       'Must set confirmPriceBelowPaid on user confirmation'
+    );
+  });
+
+  it('8. ticket-details.js renders #edit-ticket-btn with icons.edit before #action-add-payment-btn', () => {
+    assert.ok(ticketDetailsContent.includes('id="edit-ticket-btn"'), 'Must render #edit-ticket-btn in ticket-details.js');
+    assert.ok(ticketDetailsContent.includes("icons.edit('w-4 h-4')"), 'Must use icons.edit for edit button');
+    assert.ok(
+      ticketDetailsContent.indexOf('id="edit-ticket-btn"') < ticketDetailsContent.indexOf('id="action-add-payment-btn"'),
+      '#edit-ticket-btn must appear before #action-add-payment-btn in page-actions'
+    );
+    assert.ok(
+      ticketDetailsContent.includes("container.querySelector('#edit-ticket-btn')"),
+      'Must query and wire #edit-ticket-btn click listener'
     );
   });
 });

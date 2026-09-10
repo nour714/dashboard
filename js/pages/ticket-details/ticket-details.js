@@ -67,6 +67,10 @@ export const TicketDetailsPage = {
         </div>
 
         <div class="page-actions">
+          <button type="button" class="btn btn-secondary" id="edit-ticket-btn">
+            ${icons.edit('w-4 h-4')}
+            <span>${escapeHtml(t('common.edit') || 'Edit')}</span>
+          </button>
           <button type="button" class="btn btn-secondary" id="action-add-payment-btn">
             ${icons.payments('w-4 h-4')}
             <span>${escapeHtml(t('ticketDetails.actions.addPayment'))}</span>
