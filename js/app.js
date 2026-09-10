@@ -80,6 +80,8 @@ class App {
     this.appContainer = document.getElementById('app');
     this.router = null;
     this.shellRendered = false;
+    this.globalClickBound = false;
+    this.globalSearchClickBound = false;
     this.init();
   }
 
@@ -375,11 +377,16 @@ class App {
       });
 
       // Close dropdown when clicking outside
-      document.addEventListener('click', (e) => {
-        if (!searchForm.contains(e.target) && searchDropdown) {
-          searchDropdown.classList.add('d-none');
-        }
-      });
+      if (!this.globalSearchClickBound) {
+        this.globalSearchClickBound = true;
+        document.addEventListener('click', (e) => {
+          const currentSearchForm = document.getElementById('topbar-global-search');
+          const currentSearchDropdown = document.getElementById('topbar-search-dropdown');
+          if (currentSearchDropdown && (!currentSearchForm || !currentSearchForm.contains(e.target))) {
+            currentSearchDropdown.classList.add('d-none');
+          }
+        });
+      }
 
       // Mobile search overlay controls
       const mobileSearchBtn = document.getElementById('topbar-mobile-search-btn');
@@ -535,33 +542,36 @@ class App {
     }
 
     // Delegated click listener for sidebar sign out & collapse toggle
-    document.addEventListener('click', async (e) => {
-      // Sidebar collapse toggle
-      const collapseBtn = e.target.closest('#sidebar-collapse-toggle');
-      if (collapseBtn) {
-        e.preventDefault();
-        const isNowCollapsed = document.documentElement.classList.toggle('sidebar-collapsed');
-        document.body.classList.toggle('sidebar-collapsed', isNowCollapsed);
-        localStorage.setItem('africatravel.sidebarCollapsed', isNowCollapsed ? '1' : '0');
+    if (!this.globalClickBound) {
+      this.globalClickBound = true;
+      document.addEventListener('click', async (e) => {
+        // Sidebar collapse toggle
+        const collapseBtn = e.target.closest('#sidebar-collapse-toggle');
+        if (collapseBtn) {
+          e.preventDefault();
+          const isNowCollapsed = document.documentElement.classList.toggle('sidebar-collapsed');
+          document.body.classList.toggle('sidebar-collapsed', isNowCollapsed);
+          localStorage.setItem('africatravel.sidebarCollapsed', isNowCollapsed ? '1' : '0');
 
-        // Re-render sidebar so icon and aria-expanded update
-        const sidebarContainer = document.getElementById('app-sidebar-container');
-        if (sidebarContainer) {
-          sidebarContainer.innerHTML = renderSidebar(window.location.pathname);
+          // Re-render sidebar so icon and aria-expanded update
+          const sidebarContainer = document.getElementById('app-sidebar-container');
+          if (sidebarContainer) {
+            sidebarContainer.innerHTML = renderSidebar(window.location.pathname);
+          }
+          return;
         }
-        return;
-      }
 
-      // Sign out
-      const signOutBtn = e.target.closest('#sidebar-sign-out-btn');
-      if (signOutBtn) {
-        e.preventDefault();
-        await AuthService.logout();
-        showToast(t('toasts.signedOut'), 'info');
-        window.history.pushState(null, null, '/login');
-        window.dispatchEvent(new PopStateEvent('popstate'));
-      }
-    });
+        // Sign out
+        const signOutBtn = e.target.closest('#sidebar-sign-out-btn');
+        if (signOutBtn) {
+          e.preventDefault();
+          await AuthService.logout();
+          showToast(t('toasts.signedOut'), 'info');
+          window.history.pushState(null, null, '/login');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }
+      });
+    }
   }
 
   updateHeaderProfile() {
