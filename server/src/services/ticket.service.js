@@ -400,7 +400,7 @@ export const TicketService = {
       'airline', 'airlineCode', 'flightNumber', 'returnFlightNumber',
       'origin', 'originTerminal', 'originAirportName',
       'destination', 'destinationTerminal', 'destinationAirportName',
-      'tripType', 'flightDuration', 'cabinClass', 'seat', 'baggage', 'costPrice', 'status'
+      'tripType', 'flightDuration', 'cabinClass', 'seat', 'baggage', 'costPrice', 'ticketPrice', 'status'
     ];
 
     if (updates.ticketNumber && updates.ticketNumber.trim() && updates.ticketNumber.trim() !== existing.ticketNumber) {
@@ -428,6 +428,24 @@ export const TicketService = {
       }
     }
 
+    // Guard: warn (don't silently clamp) if the corrected ticketPrice would be
+    // lower than what the customer has already paid. Requires explicit
+    // confirmation from the client before proceeding.
+    if (updates.ticketPrice !== undefined && updates.ticketPrice !== null && updates.ticketPrice !== '') {
+      if (currentUser?.role !== 'ADMIN') {
+        throw new ForbiddenError('Only administrators can modify the ticket price', 'FORBIDDEN');
+      }
+      const totalPaidSoFar = calculateTotalPaid(existing.payments || []);
+      const newPrice = Number(updates.ticketPrice);
+      if (newPrice < totalPaidSoFar && !updates.confirmPriceBelowPaid) {
+        throw new BusinessRuleError(
+          `Customer has already paid ${totalPaidSoFar}, which is more than the new price of ${newPrice}. Confirm to proceed anyway.`,
+          'PRICE_BELOW_PAID',
+          409
+        );
+      }
+    }
+
     allowedFields.forEach(f => {
       if (updates[f] !== undefined) {
         if (f === 'costPrice') {
@@ -435,6 +453,9 @@ export const TicketService = {
             throw new ForbiddenError('Only administrators can modify ticket cost price', 'FORBIDDEN');
           }
           data[f] = updates[f] !== null && updates[f] !== '' ? Number(updates[f]) : null;
+        } else if (f === 'ticketPrice') {
+          // Role check and below-paid confirmation already enforced above.
+          data[f] = Number(updates[f]);
         } else if (f === 'ticketNumber') {
           data[f] = updates[f] && String(updates[f]).trim() ? String(updates[f]).trim() : null;
         } else if (f === 'pnr') {
@@ -483,13 +504,20 @@ export const TicketService = {
       throw err;
     }
 
+    const changedFieldsSummary = Object.keys(data)
+      .filter(f => data[f] !== existing[f] && f !== 'updatedAt')
+      .map(f => `${f}: "${existing[f] ?? ''}" → "${data[f] ?? ''}"`)
+      .join('; ');
+
     await AuditService.recordLog({
       user: currentUser.name || 'Agent',
       userId: currentUser.id,
       action: 'UPDATE_TICKET',
       ticketId: existing.id,
       customerId: existing.customerId,
-      description: `Updated details for ticket ${existing.id}.`
+      description: changedFieldsSummary
+        ? `Updated ticket ${existing.id}. Changes: ${changedFieldsSummary}`
+        : `Updated details for ticket ${existing.id}.`
     });
 
     return enrichTicketFinancials(updated);

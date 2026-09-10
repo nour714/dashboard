@@ -81,6 +81,8 @@ export const updateTicketSchema = z.object({
   seat: z.string().optional(),
   baggage: z.string().optional(),
   costPrice: z.coerce.number().nonnegative('Cost price cannot be negative').optional(),
+  ticketPrice: z.coerce.number().positive('Ticket price must be greater than zero').optional(),
+  confirmPriceBelowPaid: z.boolean().optional(),
   status: z.enum([
     'CONFIRMED',
     'PARTIALLY PAID',

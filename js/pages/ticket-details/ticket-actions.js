@@ -306,6 +306,31 @@ export function openEditTicketModal(ticket, onSuccess) {
 
         <div class="form-grid-2">
           <div class="form-group">
+            <label class="form-label" for="edit-pnr">PNR</label>
+            <input type="text" id="edit-pnr" class="form-control ltr-field" value="${escapeHtml(ticket.pnr || '')}" maxlength="10" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-ticket-number">Ticket Number</label>
+            <input type="text" id="edit-ticket-number" class="form-control ltr-field" value="${escapeHtml(ticket.ticketNumber || '')}" />
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="edit-flight-number">Flight Number</label>
+            <input type="text" id="edit-flight-number" class="form-control ltr-field" value="${escapeHtml(ticket.flightNumber || '')}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-route">Origin → Destination</label>
+            <div class="d-flex gap-sm">
+              <input type="text" id="edit-origin" class="form-control ltr-field" style="width: 50%;" maxlength="3" value="${escapeHtml(ticket.origin || '')}" placeholder="CAI" />
+              <input type="text" id="edit-destination" class="form-control ltr-field" style="width: 50%;" maxlength="3" value="${escapeHtml(ticket.destination || '')}" placeholder="DXB" />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
             <label class="form-label" for="edit-seat">Seat Assignment</label>
             <input type="text" id="edit-seat" class="form-control ltr-field" value="${escapeHtml(ticket.seat || '12A')}" />
           </div>
@@ -333,9 +358,15 @@ export function openEditTicketModal(ticket, onSuccess) {
         </div>
 
         ${isAdmin ? `
-          <div class="form-group">
-            <label class="form-label" for="edit-cost-price">${escapeHtml(t('ticketDetails.overview.costPrice'))}</label>
-            <input type="number" id="edit-cost-price" class="form-control tabular-nums" value="${ticket.costPrice != null ? ticket.costPrice : ''}" min="1" step="any" placeholder="0.00" />
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="edit-ticket-price">Ticket Price (Sale Price)</label>
+              <input type="number" id="edit-ticket-price" class="form-control tabular-nums" value="${ticket.ticketPrice != null ? ticket.ticketPrice : ''}" min="1" step="any" placeholder="0.00" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="edit-cost-price">${escapeHtml(t('ticketDetails.overview.costPrice'))}</label>
+              <input type="number" id="edit-cost-price" class="form-control tabular-nums" value="${ticket.costPrice != null ? ticket.costPrice : ''}" min="1" step="any" placeholder="0.00" />
+            </div>
           </div>
         ` : ''}
       </div>
@@ -360,6 +391,11 @@ export function openEditTicketModal(ticket, onSuccess) {
           const updatePayload = {
             passengerName: name,
             phone: modalEl.querySelector('#edit-pax-phone').value.trim(),
+            pnr: modalEl.querySelector('#edit-pnr').value.trim(),
+            ticketNumber: modalEl.querySelector('#edit-ticket-number').value.trim(),
+            flightNumber: modalEl.querySelector('#edit-flight-number').value.trim(),
+            origin: modalEl.querySelector('#edit-origin').value.trim().toUpperCase(),
+            destination: modalEl.querySelector('#edit-destination').value.trim().toUpperCase(),
             seat: modalEl.querySelector('#edit-seat').value.trim(),
             baggage: modalEl.querySelector('#edit-baggage').value.trim(),
             departureDate: modalEl.querySelector('#edit-dep-date').value || ticket.departureDate,
@@ -370,9 +406,28 @@ export function openEditTicketModal(ticket, onSuccess) {
           if (costPriceEl && costPriceEl.value !== '') {
             updatePayload.costPrice = Number(costPriceEl.value);
           }
+          const ticketPriceEl = modalEl.querySelector('#edit-ticket-price');
+          if (ticketPriceEl && ticketPriceEl.value !== '') {
+            updatePayload.ticketPrice = Number(ticketPriceEl.value);
+          }
 
           saveBtn.disabled = true;
-          const result = await TicketService.updateTicket(ticket.id, updatePayload);
+          let result = await TicketService.updateTicket(ticket.id, updatePayload);
+
+          // If the new ticket price is below what the customer already paid, the
+          // backend returns PRICE_BELOW_PAID instead of silently clamping the balance
+          // to zero. Ask the agent to explicitly confirm before retrying.
+          if (!result.success && result.error?.code === 'PRICE_BELOW_PAID') {
+            const confirmed = window.confirm(`${result.error.message}\n\nProceed anyway?`);
+            if (confirmed) {
+              updatePayload.confirmPriceBelowPaid = true;
+              result = await TicketService.updateTicket(ticket.id, updatePayload);
+            } else {
+              saveBtn.disabled = false;
+              return;
+            }
+          }
+
           saveBtn.disabled = false;
 
           if (!result.success) {
