@@ -3,6 +3,7 @@
  */
 
 import { ReportService } from '../services/report-service.js';
+import { AuthService } from '../services/auth-service.js';
 import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { showToast } from '../components/toast.js';
@@ -12,6 +13,8 @@ import { t } from '../i18n/i18n.js';
 
 export const ReportsPage = {
   render() {
+    const currentUser = AuthService.getCurrentUser();
+    const isAdmin = (currentUser?.role || '').toUpperCase() === 'ADMIN';
     const kpis = ReportService.getKPIs();
     const customerPayments = ReportService.getCustomerPayments();
 
@@ -74,6 +77,24 @@ export const ReportsPage = {
           </div>
           <div class="stat-card-value tabular-nums ${kpis.totalOutstanding > 0 ? 'highlight-danger' : ''}">${formatCompactNumber(kpis.totalOutstanding)}</div>
           <div class="text-sm text-muted">${escapeHtml(t('dashboard.kpi.remainingSubtitle'))}</div>
+        </div>
+
+        ${isAdmin ? `
+          <div class="stat-card">
+            <div class="stat-card-top">
+              <span class="stat-card-label">${escapeHtml(t('dashboard.kpi.netProfit'))}</span>
+              <div class="stat-card-icon-wrap success">${icons.dollarSign('w-4 h-4')}</div>
+            </div>
+            <div class="stat-card-value tabular-nums">${formatCompactNumber(kpis.totalNetProfit)}</div>
+          </div>
+        ` : ''}
+
+        <div class="stat-card">
+          <div class="stat-card-top">
+            <span class="stat-card-label">${escapeHtml(t('dashboard.kpi.refunds'))}</span>
+            <div class="stat-card-icon-wrap warning">${icons.rotateCcw('w-4 h-4')}</div>
+          </div>
+          <div class="stat-card-value tabular-nums">${formatCompactNumber(kpis.totalRefunds)}</div>
         </div>
       </div>
 

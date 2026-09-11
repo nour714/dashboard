@@ -8,9 +8,13 @@ export const ReportController = {
   async getSummary(req, res, next) {
     try {
       const kpis = await ReportService.getSummaryKPIs();
+      const isAdmin = req.user?.role === 'ADMIN';
+      const data = isAdmin
+        ? kpis
+        : { ...kpis, totalNetProfit: undefined };
       return res.status(200).json({
         success: true,
-        data: kpis
+        data
       });
     } catch (err) {
       next(err);

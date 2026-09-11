@@ -220,6 +220,11 @@ export const icons = {
     <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
   `, cls, 18),
 
+  rotateCcw: (cls = '') => svgWrapper(`
+    <polyline points="1 4 1 10 7 10"></polyline>
+    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+  `, cls, 18),
+
   messageSquare: (cls = '') => svgWrapper(`
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
   `, cls, 18),

@@ -12,7 +12,8 @@ import {
   calculateRemaining,
   calculateTotalRefunded,
   calculateNetValue,
-  calculateTotalModificationFees
+  calculateTotalModificationFees,
+  calculateNetProfit
 } from '../domain/ticket-rules.js';
 
 /**
@@ -48,6 +49,7 @@ export function buildReportFromTickets(tickets = [], employees = []) {
   let totalOutstanding = 0;
   let totalRefunds = 0;
   let totalModFees = 0;
+  let totalNetProfit = 0;
 
   tickets.forEach(t => {
     const price = Number(t.ticketPrice) || 0;
@@ -57,6 +59,10 @@ export function buildReportFromTickets(tickets = [], employees = []) {
     totalOutstanding += calculateRemaining(price, paid);
     totalRefunds += calculateTotalRefunded(t.refunds);
     totalModFees += calculateTotalModificationFees(t.modifications);
+    const profit = calculateNetProfit(t.ticketPrice, t.costPrice);
+    if (profit !== null) {
+      totalNetProfit += profit;
+    }
   });
 
   const netValue = calculateNetValue(totalSales, totalModFees, totalRefunds);
@@ -69,6 +75,7 @@ export function buildReportFromTickets(tickets = [], employees = []) {
     totalOutstanding,
     totalRefunds,
     totalModFees,
+    totalNetProfit,
     netValue,
     collectionRate,
     isCalculated: true

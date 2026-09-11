@@ -117,6 +117,7 @@ async function runApiTests() {
         mockTickets.push(record);
         return record;
       },
+      findMany: async () => mockTickets,
       findFirst: async ({ where }) => {
         if (where?.OR) {
           return mockTickets.find(t => where.OR.some(cond => (cond.id && t.id === cond.id) || (cond.ticketNumber && t.ticketNumber === cond.ticketNumber) || (cond.pnr && t.pnr === cond.pnr))) || null;
@@ -474,6 +475,28 @@ async function runApiTests() {
     assert(adminGetTicketRes.json?.data?.netProfit === 6000, 'ADMIN response includes correct netProfit (6000)');
     assert(adminGetTicketRes.json?.data?.financials?.costPrice === 35000, 'ADMIN financials includes costPrice (35000)');
     assert(adminGetTicketRes.json?.data?.financials?.netProfit === 6000, 'ADMIN financials includes netProfit (6000)');
+
+    // 9. Executive KPI Summary RBAC Enforcement
+    console.log('\n--- 9. Executive KPI Summary RBAC Enforcement ---');
+    const agentSummaryRes = await makeRequest(server, {
+      method: 'GET',
+      path: '/api/reports/summary',
+      headers: { 'Authorization': `Bearer ${agentToken}` }
+    });
+    assert(agentSummaryRes.statusCode === 200, 'AGENT can fetch executive report summary');
+    assert(agentSummaryRes.json?.success === true, 'AGENT report summary returns success: true');
+    assert(agentSummaryRes.json?.data?.totalRefunds !== undefined, 'AGENT summary contains totalRefunds');
+    assert(agentSummaryRes.json?.data?.totalNetProfit === undefined, 'AGENT summary response strips totalNetProfit');
+
+    const adminSummaryRes = await makeRequest(server, {
+      method: 'GET',
+      path: '/api/reports/summary',
+      headers: adminHeaders
+    });
+    assert(adminSummaryRes.statusCode === 200, 'ADMIN can fetch executive report summary');
+    assert(adminSummaryRes.json?.success === true, 'ADMIN report summary returns success: true');
+    assert(adminSummaryRes.json?.data?.totalRefunds !== undefined, 'ADMIN summary contains totalRefunds');
+    assert(typeof adminSummaryRes.json?.data?.totalNetProfit === 'number', 'ADMIN summary contains totalNetProfit');
 
     console.log('\n========================================================');
     console.log(`Backend API Integration Tests: ${passed} passed, ${failed} failed`);

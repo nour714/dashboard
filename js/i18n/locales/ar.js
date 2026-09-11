@@ -175,6 +175,8 @@ export const ar = {
       totalCollected: 'إجمالي المحصل',
       remainingBalance: 'الرصيد المتبقي للتحصيل',
       activeTickets: 'التذاكر النشطة',
+      netProfit: 'صافي الربح',
+      refunds: 'المستردات',
       salesSubtitle: 'إجمالي القيمة الإجمالية للحجوزات المصدرة',
       collectedSubtitle: 'المدفوعات المستلمة والمحققة من العملاء',
       remainingSubtitle: 'المبالغ المستحقة قيد التحصيل من المسافرين',

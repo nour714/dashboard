@@ -175,6 +175,8 @@ export const en = {
       totalCollected: 'Total Collected',
       remainingBalance: 'Outstanding Balance',
       activeTickets: 'Active Tickets',
+      netProfit: 'Net Profit',
+      refunds: 'Refunds',
       salesSubtitle: 'Gross booking value across all issued tickets',
       collectedSubtitle: 'Verified received customer payments',
       remainingSubtitle: 'Pending receivable from passengers',
