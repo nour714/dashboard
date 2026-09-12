@@ -553,6 +553,8 @@ export const ar = {
     addExpense: 'مصروف جديد',
     newExpenseModalTitle: 'تسجيل مصروف مكتب جديد',
     newExpenseModalSubtitle: 'سجل مصروفات الخدمات أو التحويلات.',
+    editExpenseModalTitle: 'تعديل مصروف المكتب',
+    editExpenseModalSubtitle: 'تحديث بيانات سجل المصروف.',
     totalServices: 'إجمالي الخدمات',
     totalTransfers: 'إجمالي التحويلات',
     grandTotal: 'إجمالي المصروفات',
@@ -579,6 +581,7 @@ export const ar = {
     deleteConfirmTitle: 'حذف سجل المصروف',
     deleteConfirmMessage: 'هل أنت متأكد من رغبتك في حذف هذا المصروف؟ سيتم حذفه من سجل المصروفات.',
     createdSuccessfully: 'تم تسجيل المصروف بنجاح.',
+    updatedSuccessfully: 'تم تعديل سجل المصروف بنجاح.',
     deletedSuccessfully: 'تم حذف سجل المصروف بنجاح.',
     emptyState: 'لا توجد مصروفات مسجلة تطابق معايير البحث.'
   },

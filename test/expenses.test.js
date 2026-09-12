@@ -16,7 +16,11 @@
 
 import { ExpenseService } from '../server/src/services/expense.service.js';
 import { setPrismaClient } from '../server/src/config/database.js';
-import { createExpenseSchema, queryExpensesSchema } from '../server/src/schemas/expense.schema.js';
+import {
+  createExpenseSchema,
+  queryExpensesSchema,
+  updateExpenseSchema
+} from '../server/src/schemas/expense.schema.js';
 
 let passed = 0;
 let failed = 0;
@@ -266,6 +270,23 @@ async function runExpenseTests() {
   assert(validPayload.success, 'Schema coerces numeric amount string and accepts valid payload');
   assert(validPayload.data.amount === 4500.5, 'Parsed amount is numeric 4500.5');
 
+  // updateExpenseSchema validation
+  const emptyUpdate = updateExpenseSchema.safeParse({});
+  assert(!emptyUpdate.success, 'updateExpenseSchema rejects empty update payload');
+
+  const invalidUpdateCat = updateExpenseSchema.safeParse({ category: 'BOGUS' });
+  assert(!invalidUpdateCat.success, 'updateExpenseSchema rejects invalid category');
+
+  const invalidUpdateAmt = updateExpenseSchema.safeParse({ amount: -10 });
+  assert(!invalidUpdateAmt.success, 'updateExpenseSchema rejects negative amount');
+
+  const invalidUpdateDesc = updateExpenseSchema.safeParse({ description: '   ' });
+  assert(!invalidUpdateDesc.success, 'updateExpenseSchema rejects whitespace-only description');
+
+  const validPartialUpdate = updateExpenseSchema.safeParse({ amount: '2500', description: 'Updated note' });
+  assert(validPartialUpdate.success, 'updateExpenseSchema accepts valid partial update');
+  assert(validPartialUpdate.data.amount === 2500, 'updateExpenseSchema coerces amount to 2500');
+
   // --- 3. Visibility Scope: ADMIN vs AGENT ---
   console.log('\n--- 3. Role-Based Visibility Scope ---');
   // ADMIN fetches all expenses
@@ -334,14 +355,56 @@ async function runExpenseTests() {
     assert(err.statusCode === 404 || err.code === 'NOT_FOUND', 'Deleting non-existent/deleted expense throws NotFoundError');
   }
 
-  // --- 6. Complete Financial Separation from Ticket Reports ---
-  console.log('\n--- 6. Financial Separation from Ticket Ledger ---');
+  // --- 6. Expense Update & RBAC ---
+  console.log('\n--- 6. Expense Update & RBAC ---');
+  // AGENT attempts to update expense -> ForbiddenError
+  try {
+    await ExpenseService.updateExpense('EXP-1', { amount: 2000 }, agent1);
+    assert(false, 'AGENT updating expense should throw ForbiddenError');
+  } catch (err) {
+    assert(err.statusCode === 403 || err.code === 'FORBIDDEN', 'AGENT update is rejected with 403 / FORBIDDEN');
+  }
+
+  // TICKET_ONLY attempts to update expense -> ForbiddenError
+  try {
+    await ExpenseService.updateExpense('EXP-1', { amount: 2000 }, ticketOnlyUser);
+    assert(false, 'TICKET_ONLY updating expense should throw ForbiddenError');
+  } catch (err) {
+    assert(err.statusCode === 403 || err.code === 'FORBIDDEN', 'TICKET_ONLY update is rejected with 403 / FORBIDDEN');
+  }
+
+  // Updating non-existent or deleted expense -> NotFoundError
+  try {
+    await ExpenseService.updateExpense('EXP-2', { amount: 6000 }, adminUser);
+    assert(false, 'Updating deleted expense should throw NotFoundError');
+  } catch (err) {
+    assert(err.statusCode === 404 || err.code === 'NOT_FOUND', 'Updating non-existent/deleted expense throws NotFoundError');
+  }
+
+  // ADMIN updates expense -> succeeds
+  const updatedExp1 = await ExpenseService.updateExpense('EXP-1', {
+    amount: 1800,
+    description: 'Updated Electricity and Fiber Internet'
+  }, adminUser);
+
+  assert(updatedExp1.id === 'EXP-1', 'ADMIN successfully updated EXP-1');
+  assert(updatedExp1.amount === 1800, 'EXP-1 amount successfully updated to 1800');
+  assert(updatedExp1.description === 'Updated Electricity and Fiber Internet', 'EXP-1 description successfully updated');
+
+  // Verify updated expense appears with new data in getExpenses
+  const adminViewAfterUpdate = await ExpenseService.getExpenses({}, adminUser);
+  const foundExp1 = adminViewAfterUpdate.expenses.find(e => e.id === 'EXP-1');
+  assert(foundExp1.amount === 1800, 'getExpenses reflects updated amount 1800');
+  assert(foundExp1.description === 'Updated Electricity and Fiber Internet', 'getExpenses reflects updated description');
+
+  // --- 7. Complete Financial Separation from Ticket Reports ---
+  console.log('\n--- 7. Financial Separation from Ticket Ledger ---');
   // Confirm office expenses are completely distinct from ticket profit & loss calculation
   assert(!('ticketId' in exp1), 'Expense model has no ticketId foreign key');
   assert(!('customerId' in exp1), 'Expense model has no customerId foreign key');
 
-  // --- 7. Audit Logging for Expense Actions ---
-  console.log('\n--- 7. Audit Logging for Expense Actions ---');
+  // --- 8. Audit Logging for Expense Actions ---
+  console.log('\n--- 8. Audit Logging for Expense Actions ---');
   const createLogs = mockAuditLogs.filter(l => l.action === 'CREATE_EXPENSE');
   assert(createLogs.length === 3, 'Recorded 3 CREATE_EXPENSE audit logs for created expenses');
   assert(createLogs[0].metadata?.category === 'SERVICES', 'First create log has correct category SERVICES');
@@ -356,6 +419,13 @@ async function runExpenseTests() {
   assert(deleteLogs[0].metadata?.amount === 5000, 'Delete log records amount 5000');
   assert(deleteLogs[0].metadata?.description === 'Bank transfer for office rent', 'Delete log records description');
   assert(deleteLogs[0].metadata?.adminId === adminUser.id, 'Delete log records adminId');
+
+  const updateLogs = mockAuditLogs.filter(l => l.action === 'UPDATE_EXPENSE');
+  assert(updateLogs.length === 1, 'Recorded 1 UPDATE_EXPENSE audit log for updated expense');
+  assert(updateLogs[0].metadata?.expenseId === 'EXP-1', 'Update log references updated expenseId EXP-1');
+  assert(updateLogs[0].metadata?.changes?.amount === 1800, 'Update log records changed amount 1800');
+  assert(updateLogs[0].metadata?.previous?.amount === 1500, 'Update log records previous amount 1500');
+  assert(updateLogs[0].metadata?.adminId === adminUser.id, 'Update log records adminId');
 
   // Summary
   console.log('\n========================================================');

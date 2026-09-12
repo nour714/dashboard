@@ -143,5 +143,59 @@ export const ExpenseService = {
       where: { id: existing.id },
       data: { deletedAt: new Date() }
     });
+  },
+
+  /**
+   * Update an existing expense record (ADMIN only)
+   * @param {string} expenseId
+   * @param {object} data — partial fields to update
+   * @param {object} currentUser
+   */
+  async updateExpense(expenseId, data, currentUser = {}) {
+    const prisma = getPrismaClient();
+    const existing = await prisma.expense.findFirst({
+      where: { id: expenseId, deletedAt: null }
+    });
+
+    if (!existing) {
+      throw new NotFoundError('Expense', expenseId);
+    }
+
+    if (currentUser?.role !== 'ADMIN') {
+      throw new ForbiddenError('Only admins can edit expense records');
+    }
+
+    const updateData = {};
+    if (data.category !== undefined) updateData.category = data.category;
+    if (data.amount !== undefined) updateData.amount = data.amount;
+    if (data.currency !== undefined) updateData.currency = data.currency;
+    if (data.description !== undefined) updateData.description = data.description.trim();
+    if (data.date !== undefined) updateData.date = new Date(data.date);
+
+    const updated = await prisma.expense.update({
+      where: { id: existing.id },
+      data: updateData
+    });
+
+    await AuditService.recordLog({
+      user: currentUser?.name || currentUser?.email || 'Admin',
+      userId: currentUser?.id || null,
+      action: 'UPDATE_EXPENSE',
+      description: `Admin ${currentUser?.name || 'Admin'} updated office expense ${existing.id} (${updated.category}: ${updated.amount} ${updated.currency} - ${updated.description}).`,
+      metadata: {
+        adminId: currentUser?.id || null,
+        expenseId: existing.id,
+        changes: updateData,
+        previous: {
+          category: existing.category,
+          amount: Number(existing.amount),
+          currency: existing.currency,
+          description: existing.description,
+          date: existing.date
+        }
+      }
+    });
+
+    return updated;
   }
 };

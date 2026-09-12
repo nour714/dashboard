@@ -135,6 +135,114 @@ function openAddExpenseModal(onSuccess) {
   });
 }
 
+function openEditExpenseModal(expense, onSuccess) {
+  let localIsoDate = '';
+  if (expense.date) {
+    const d = new Date(expense.date);
+    if (!isNaN(d.getTime())) {
+      localIsoDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    }
+  }
+
+  openModal({
+    title: t('expenses.editExpenseModalTitle'),
+    subtitle: t('expenses.editExpenseModalSubtitle'),
+    contentHtml: `
+      <form id="edit-expense-form" class="d-flex flex-column gap-md">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="edit-exp-category">${escapeHtml(t('expenses.form.category'))} *</label>
+            <select id="edit-exp-category" class="form-control" required>
+              <option value="SERVICES" ${expense.category === 'SERVICES' ? 'selected' : ''}>${escapeHtml(t('expenses.categories.SERVICES'))} (Services)</option>
+              <option value="TRANSFERS" ${expense.category === 'TRANSFERS' ? 'selected' : ''}>${escapeHtml(t('expenses.categories.TRANSFERS'))} (Transfers)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-exp-amount">${escapeHtml(t('expenses.form.amount'))} *</label>
+            <input type="number" id="edit-exp-amount" class="form-control tabular-nums" min="0.01" step="any" value="${escapeHtml(String(expense.amount ?? ''))}" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit-exp-date">${escapeHtml(t('expenses.form.date'))} *</label>
+          <input type="datetime-local" id="edit-exp-date" class="form-control ltr-field" value="${escapeHtml(localIsoDate)}" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit-exp-desc">${escapeHtml(t('expenses.form.description'))} *</label>
+          <textarea id="edit-exp-desc" class="form-control" rows="3" placeholder="${escapeHtml(t('expenses.form.descriptionPlaceholder'))}" required>${escapeHtml(expense.description || '')}</textarea>
+        </div>
+
+        <div id="edit-exp-error-box" class="p-sm text-sm text-danger" style="display: none; background-color: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md); border: 1px solid rgba(239, 68, 68, 0.3);"></div>
+      </form>
+    `,
+    footerHtml: `
+      <button type="button" class="btn btn-secondary" id="cancel-edit-expense">${escapeHtml(t('common.cancel'))}</button>
+      <button type="button" class="btn btn-primary" id="submit-edit-expense">${escapeHtml(t('common.save'))}</button>
+    `,
+    onOpen: (modalEl) => {
+      const cancelBtn = modalEl.querySelector('#cancel-edit-expense');
+      const submitBtn = modalEl.querySelector('#submit-edit-expense');
+      const errorBox = modalEl.querySelector('#edit-exp-error-box');
+
+      if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+      if (submitBtn) {
+        submitBtn.addEventListener('click', async () => {
+          const category = modalEl.querySelector('#edit-exp-category').value;
+          const amount = Number(modalEl.querySelector('#edit-exp-amount').value);
+          const date = modalEl.querySelector('#edit-exp-date').value;
+          const description = modalEl.querySelector('#edit-exp-desc').value.trim();
+
+          if (!amount || amount <= 0) {
+            showToast(t('validation.requiredField') || 'Valid amount is required', 'error');
+            return;
+          }
+          if (!description) {
+            showToast(t('validation.requiredField') || 'Description is required', 'error');
+            return;
+          }
+          if (!date) {
+            showToast(t('validation.requiredField') || 'Date is required', 'error');
+            return;
+          }
+
+          submitBtn.disabled = true;
+          if (errorBox) {
+            errorBox.style.display = 'none';
+            errorBox.textContent = '';
+          }
+
+          const result = await ExpenseService.updateExpense(expense.id, {
+            category,
+            amount,
+            currency: expense.currency || 'EGP',
+            date,
+            description
+          });
+
+          submitBtn.disabled = false;
+
+          if (!result.success) {
+            const msg = result.error?.message || t('common.error');
+            if (errorBox) {
+              errorBox.textContent = msg;
+              errorBox.style.display = 'block';
+            }
+            showToast(msg, 'error');
+            return;
+          }
+
+          closeModal();
+          showToast(t('expenses.updatedSuccessfully'), 'success');
+          if (onSuccess) onSuccess();
+        });
+      }
+    }
+  });
+}
+
 function openDeleteExpenseModal(expense, onSuccess) {
   openModal({
     title: t('expenses.deleteConfirmTitle'),
@@ -241,9 +349,14 @@ export const ExpensesPage = {
         </td>
         ${isAdmin ? `
         <td>
-          <button type="button" class="btn btn-danger btn-sm btn-delete-expense" data-expense-id="${escapeHtml(exp.id)}" title="${escapeHtml(t('common.delete'))}">
-            ${icons.trash('w-4 h-4')}
-          </button>
+          <div class="d-flex items-center gap-xs">
+            <button type="button" class="btn btn-secondary btn-sm btn-edit-expense" data-expense-id="${escapeHtml(exp.id)}" title="${escapeHtml(t('common.edit') || 'Edit')}">
+              ${icons.edit('w-4 h-4')}
+            </button>
+            <button type="button" class="btn btn-danger btn-sm btn-delete-expense" data-expense-id="${escapeHtml(exp.id)}" title="${escapeHtml(t('common.delete'))}">
+              ${icons.trash('w-4 h-4')}
+            </button>
+          </div>
         </td>
         ` : ''}
       </tr>
@@ -418,6 +531,19 @@ export const ExpensesPage = {
         }
       });
     }
+
+    // Edit Buttons (Admin only)
+    container.querySelectorAll('.btn-edit-expense').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const expenseId = btn.dataset.expenseId;
+        const exp = cachedExpenses.find(e => e.id === expenseId);
+        if (exp) {
+          openEditExpenseModal(exp, () => {
+            fetchAndRefresh();
+          });
+        }
+      });
+    });
 
     // Delete Buttons (Admin only)
     container.querySelectorAll('.btn-delete-expense').forEach(btn => {

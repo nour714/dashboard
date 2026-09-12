@@ -24,6 +24,15 @@ export const ExpenseService = {
   },
 
   /**
+   * Update an existing expense record (ADMIN only)
+   * @param {string} expenseId
+   * @param {object} data - { category, amount, currency, description, date }
+   */
+  async updateExpense(expenseId, data) {
+    return await apiClient.patch(`/expenses/${expenseId}`, data);
+  },
+
+  /**
    * Soft-delete an expense record (ADMIN only)
    * @param {string} expenseId
    */

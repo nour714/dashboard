@@ -21,3 +21,15 @@ export const queryExpensesSchema = z.object({
   startDate: z.string().max(50).optional(),
   endDate: z.string().max(50).optional()
 });
+
+export const updateExpenseSchema = z.object({
+  category: z.enum(['SERVICES', 'TRANSFERS'], {
+    errorMap: () => ({ message: 'Category must be either SERVICES or TRANSFERS' })
+  }).optional(),
+  amount: z.coerce.number().positive('Amount must be greater than zero').optional(),
+  currency: z.string().max(10).optional(),
+  description: z.string().trim().min(1, 'Description is required').max(500, 'Description is too long').optional(),
+  date: z.string().trim().min(1, 'Date is required').max(50).optional()
+}).refine(data => Object.keys(data).length > 0, {
+  message: 'At least one field must be provided for update'
+});

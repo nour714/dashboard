@@ -553,6 +553,8 @@ export const en = {
     addExpense: 'Add Expense',
     newExpenseModalTitle: 'Record New Office Expense',
     newExpenseModalSubtitle: 'Log a service or transfer expenditure.',
+    editExpenseModalTitle: 'Edit Office Expense',
+    editExpenseModalSubtitle: 'Update details for this expense record.',
     totalServices: 'Services Total',
     totalTransfers: 'Transfers Total',
     grandTotal: 'Total Expenses',
@@ -579,6 +581,7 @@ export const en = {
     deleteConfirmTitle: 'Delete Expense Record',
     deleteConfirmMessage: 'Are you sure you want to delete this expense record? This action will remove it from the ledger.',
     createdSuccessfully: 'Expense record created successfully.',
+    updatedSuccessfully: 'Expense record updated successfully.',
     deletedSuccessfully: 'Expense record deleted successfully.',
     emptyState: 'No expense records found matching the criteria.'
   },

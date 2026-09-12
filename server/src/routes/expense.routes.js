@@ -8,7 +8,8 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import {
   createExpenseSchema,
-  queryExpensesSchema
+  queryExpensesSchema,
+  updateExpenseSchema
 } from '../schemas/expense.schema.js';
 
 const router = Router();
@@ -18,6 +19,7 @@ router.use(authenticate);
 
 router.get('/', requireRole('ADMIN', 'AGENT'), validate({ query: queryExpensesSchema }), ExpenseController.getExpenses);
 router.post('/', requireRole('ADMIN', 'AGENT'), validate({ body: createExpenseSchema }), ExpenseController.createExpense);
+router.patch('/:id', requireRole('ADMIN'), validate({ body: updateExpenseSchema }), ExpenseController.updateExpense);
 router.delete('/:id', requireRole('ADMIN'), ExpenseController.deleteExpense);
 
 export default router;

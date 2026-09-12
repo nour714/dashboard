@@ -40,5 +40,17 @@ export const ExpenseController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  async updateExpense(req, res, next) {
+    try {
+      const updated = await ExpenseService.updateExpense(req.params.id, req.body, req.user);
+      return res.status(200).json({
+        success: true,
+        data: updated
+      });
+    } catch (err) {
+      next(err);
+    }
   }
 };
