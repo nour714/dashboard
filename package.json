@@ -88,7 +88,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "prisma": "^6.4.1",
+    "prisma": "^7.10.0",
     "puppeteer-core": "^25.10.0"
   }
 }
