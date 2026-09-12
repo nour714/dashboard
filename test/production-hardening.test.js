@@ -9,15 +9,18 @@
  * 5. Error handling: Prisma P2002 -> 409 Conflict, P2025 -> 404 Not Found
  */
 
+process.env.RATE_LIMIT_MAX_REFRESH = '30';
+
 import http from 'http';
 import jwt from 'jsonwebtoken';
-import { createApp } from '../server/src/app.js';
-import { env } from '../server/src/config/env.js';
-import { setPrismaClient } from '../server/src/config/database.js';
-import { CustomerService } from '../server/src/services/customer.service.js';
-import { TicketService } from '../server/src/services/ticket.service.js';
-import { AuthService } from '../server/src/services/auth.service.js';
-import { errorHandler } from '../server/src/middleware/error-handler.js';
+
+const { createApp } = await import('../server/src/app.js');
+const { env } = await import('../server/src/config/env.js');
+const { setPrismaClient } = await import('../server/src/config/database.js');
+const { CustomerService } = await import('../server/src/services/customer.service.js');
+const { TicketService } = await import('../server/src/services/ticket.service.js');
+const { AuthService } = await import('../server/src/services/auth.service.js');
+const { errorHandler } = await import('../server/src/middleware/error-handler.js');
 
 let passed = 0;
 let failed = 0;
