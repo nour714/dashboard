@@ -11,3 +11,6 @@ node_modules/
 .vscode/
 .vercel
 *.patch
+.agents/
+.claude/
+.testsprite/

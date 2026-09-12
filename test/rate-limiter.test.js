@@ -157,6 +157,143 @@ async function runRateLimiterTests() {
     assert(testJson?.error?.message === 'Custom limit reached', 'Custom message correctly returned');
     assert(testJson?.error?.code === 'RATE_LIMIT_EXCEEDED', 'RATE_LIMIT_EXCEEDED returned');
 
+    // 4. Upstash Distributed Mode (Available)
+    console.log('\n--- 4. Upstash Distributed Mode (Available) ---');
+    const mockUpstashLimiter = {
+      calls: 0,
+      async limit() {
+        mockUpstashLimiter.calls++;
+        if (mockUpstashLimiter.calls <= 2) {
+          return { success: true, limit: 2, remaining: 2 - mockUpstashLimiter.calls, reset: Date.now() + 10000 };
+        }
+        return { success: false, limit: 2, remaining: 0, reset: Date.now() + 5000 };
+      }
+    };
+
+    const distributedLimiter = createLimiter({
+      name: 'distributed-test',
+      windowMs: 10000,
+      max: 2,
+      upstashLimiter: mockUpstashLimiter
+    });
+
+    let distHeaders = {};
+    let distStatus = null;
+    let distJson = null;
+    const mockDistRes = {
+      setHeader(k, v) { distHeaders[k.toLowerCase()] = v; },
+      status(code) { distStatus = code; return this; },
+      json(body) { distJson = body; return this; }
+    };
+
+    let distNextCalls = 0;
+    await distributedLimiter(mockReq, mockDistRes, () => { distNextCalls++; });
+    assert(distNextCalls === 1 && distStatus === null, 'Upstash request 1/2 allowed');
+    assert(distHeaders['ratelimit-limit'] === 2, 'Upstash RateLimit-Limit header matches');
+    assert(distHeaders['ratelimit-remaining'] === 1, 'Upstash RateLimit-Remaining is 1');
+
+    await distributedLimiter(mockReq, mockDistRes, () => { distNextCalls++; });
+    assert(distNextCalls === 2 && distStatus === null, 'Upstash request 2/2 allowed');
+    assert(distHeaders['ratelimit-remaining'] === 0, 'Upstash RateLimit-Remaining is 0');
+
+    // 3rd call exceeds Upstash limit -> 429
+    await distributedLimiter(mockReq, mockDistRes, () => { distNextCalls++; });
+    assert(distStatus === 429, 'Upstash returns 429 when budget exceeded');
+    assert(distJson?.error?.code === 'RATE_LIMIT_EXCEEDED', 'Upstash returns RATE_LIMIT_EXCEEDED error code');
+    assert(Boolean(distHeaders['retry-after']), 'Upstash sets Retry-After header');
+
+    // 5. Upstash Unavailable (Fail-Open / In-Memory Fallback)
+    console.log('\n--- 5. Upstash Unavailable (Graceful In-Memory Fallback) ---');
+    const failingUpstashLimiter = {
+      async limit() {
+        throw new Error('Upstash cluster unreachable / connection timeout');
+      }
+    };
+
+    const resilientLimiter = createLimiter({
+      name: 'resilient-test',
+      windowMs: 5000,
+      max: 2,
+      upstashLimiter: failingUpstashLimiter
+    });
+
+    let resNextCalls = 0;
+    let resStatus = null;
+    let resHeaders = {};
+    const mockResilientRes = {
+      setHeader(k, v) { resHeaders[k.toLowerCase()] = v; },
+      status(code) { resStatus = code; return this; },
+      json(body) { return this; }
+    };
+
+    // Should not crash or return 500; gracefully falls back to in-memory store
+    await resilientLimiter(mockReq, mockResilientRes, () => { resNextCalls++; });
+    assert(resNextCalls === 1 && resStatus === null, 'Failing Upstash gracefully falls back to in-memory without 500');
+    assert(Boolean(resHeaders['ratelimit-limit']), 'In-memory fallback sets RateLimit-Limit header');
+
+    // 6. Sensitive Fallback Mode (auth / refresh Stricter Local Threshold)
+    console.log('\n--- 6. Sensitive Fallback Mode (Stricter Local Threshold) ---');
+    memoryFallbackMap.clear();
+
+    const sensitiveAuthLimiter = createLimiter({
+      name: 'auth',
+      windowMs: 5000,
+      max: 6, // max is 6, so effectiveMax should be throttled to Math.ceil(6 / 2) = 3
+      message: 'Too many auth attempts'
+    });
+
+    let sensStatus = null;
+    let sensJson = null;
+    let sensHeaders = {};
+    const mockSensRes = {
+      setHeader(k, v) { sensHeaders[k.toLowerCase()] = v; },
+      status(code) { sensStatus = code; return this; },
+      json(body) { sensJson = body; return this; }
+    };
+    const sensReq = { ip: '10.0.0.99', headers: {} };
+
+    let sensNextCalls = 0;
+    // Requests 1, 2, 3 should pass (threshold is 3)
+    for (let i = 1; i <= 3; i++) {
+      await sensitiveAuthLimiter(sensReq, mockSensRes, () => { sensNextCalls++; });
+    }
+    assert(sensNextCalls === 3 && sensStatus === null, 'Sensitive limiter allows 3 requests under stricter fallback');
+    assert(sensHeaders['ratelimit-limit'] === 3, 'Sensitive fallback RateLimit-Limit header reflects throttled max (3)');
+
+    // 4th request exceeds stricter threshold (3)
+    await sensitiveAuthLimiter(sensReq, mockSensRes, () => { sensNextCalls++; });
+    assert(sensStatus === 429, '4th request on sensitive limiter returns 429');
+    assert(sensHeaders['retry-after'] !== undefined, 'Retry-After header present on sensitive 429');
+    assert(sensHeaders['ratelimit-remaining'] === 0, 'RateLimit-Remaining is 0 on sensitive 429');
+
+    // 7. Normal Fallback Mode (Standard API Threshold)
+    console.log('\n--- 7. Normal Fallback Mode (Standard Threshold) ---');
+    const normalApiLimiter = createLimiter({
+      name: 'api',
+      windowMs: 5000,
+      max: 4
+    });
+
+    let normStatus = null;
+    let normHeaders = {};
+    const mockNormRes = {
+      setHeader(k, v) { normHeaders[k.toLowerCase()] = v; },
+      status(code) { normStatus = code; return this; },
+      json(body) { return this; }
+    };
+    const normReq = { ip: '10.0.0.101', headers: {} };
+
+    let normNextCalls = 0;
+    for (let i = 1; i <= 4; i++) {
+      await normalApiLimiter(normReq, mockNormRes, () => { normNextCalls++; });
+    }
+    assert(normNextCalls === 4 && normStatus === null, 'Normal api limiter allows all 4 requests up to standard max');
+    assert(normHeaders['ratelimit-limit'] === 4, 'Normal fallback RateLimit-Limit header reflects standard max (4)');
+
+    // 5th request exceeds standard max
+    await normalApiLimiter(normReq, mockNormRes, () => { normNextCalls++; });
+    assert(normStatus === 429, '5th request on normal api limiter returns 429');
+
   } finally {
     server.close();
   }

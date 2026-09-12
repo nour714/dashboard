@@ -19,34 +19,42 @@ export const ExpenseService = {
    */
   async createExpense(data, currentUser = {}) {
     const prisma = getPrismaClient();
-    const newExpense = await prisma.expense.create({
-      data: {
-        category: data.category,
-        amount: data.amount,
-        currency: data.currency || 'EGP',
-        description: data.description.trim(),
-        date: new Date(data.date),
-        createdBy: currentUser?.name || currentUser?.email || 'Staff',
-        createdById: currentUser?.id || null
-      }
-    });
 
-    await AuditService.recordLog({
-      user: currentUser?.name || currentUser?.email || 'Staff',
-      userId: currentUser?.id || null,
-      action: 'CREATE_EXPENSE',
-      description: `Created office expense ${newExpense.id} (${newExpense.category}: ${newExpense.amount} ${newExpense.currency} - ${newExpense.description}).`,
-      metadata: {
-        expenseId: newExpense.id,
-        category: newExpense.category,
-        amount: Number(newExpense.amount),
-        currency: newExpense.currency,
-        description: newExpense.description,
-        createdById: currentUser?.id || null
-      }
-    });
+    const executeCreation = async (tx) => {
+      const newExpense = await tx.expense.create({
+        data: {
+          category: data.category,
+          amount: data.amount,
+          currency: data.currency || 'EGP',
+          description: data.description.trim(),
+          date: new Date(data.date),
+          createdBy: currentUser?.name || currentUser?.email || 'Staff',
+          createdById: currentUser?.id || null
+        }
+      });
 
-    return newExpense;
+      await AuditService.recordCriticalLog({
+        user: currentUser?.name || currentUser?.email || 'Staff',
+        userId: currentUser?.id || null,
+        action: 'CREATE_EXPENSE',
+        description: `Created office expense ${newExpense.id} (${newExpense.category}: ${newExpense.amount} ${newExpense.currency} - ${newExpense.description}).`,
+        metadata: {
+          expenseId: newExpense.id,
+          category: newExpense.category,
+          amount: Number(newExpense.amount),
+          currency: newExpense.currency,
+          description: newExpense.description,
+          createdById: currentUser?.id || null
+        }
+      }, { tx });
+
+      return newExpense;
+    };
+
+    if (typeof prisma.$transaction === 'function') {
+      return await prisma.$transaction(executeCreation);
+    }
+    return await executeCreation(prisma);
   },
 
   /**
@@ -112,37 +120,45 @@ export const ExpenseService = {
    */
   async deleteExpense(expenseId, currentUser = {}) {
     const prisma = getPrismaClient();
-    const existing = await prisma.expense.findFirst({
-      where: { id: expenseId, deletedAt: null }
-    });
 
-    if (!existing) {
-      throw new NotFoundError('Expense', expenseId);
-    }
+    const executeDeletion = async (tx) => {
+      const existing = await tx.expense.findFirst({
+        where: { id: expenseId, deletedAt: null }
+      });
 
-    if (currentUser?.role !== 'ADMIN') {
-      throw new ForbiddenError('Only admins can delete expense records');
-    }
-
-    await AuditService.recordLog({
-      user: currentUser?.name || currentUser?.email || 'Admin',
-      userId: currentUser?.id || null,
-      action: 'DELETE_EXPENSE',
-      description: `Admin ${currentUser?.name || 'Admin'} deleted office expense ${existing.id} (${existing.category}: ${existing.amount} ${existing.currency} - ${existing.description}).`,
-      metadata: {
-        adminId: currentUser?.id || null,
-        expenseId: existing.id,
-        category: existing.category,
-        amount: Number(existing.amount),
-        currency: existing.currency,
-        description: existing.description
+      if (!existing) {
+        throw new NotFoundError('Expense', expenseId);
       }
-    });
 
-    return prisma.expense.update({
-      where: { id: existing.id },
-      data: { deletedAt: new Date() }
-    });
+      if (currentUser?.role !== 'ADMIN') {
+        throw new ForbiddenError('Only admins can delete expense records');
+      }
+
+      await AuditService.recordCriticalLog({
+        user: currentUser?.name || currentUser?.email || 'Admin',
+        userId: currentUser?.id || null,
+        action: 'DELETE_EXPENSE',
+        description: `Admin ${currentUser?.name || 'Admin'} deleted office expense ${existing.id} (${existing.category}: ${existing.amount} ${existing.currency} - ${existing.description}).`,
+        metadata: {
+          adminId: currentUser?.id || null,
+          expenseId: existing.id,
+          category: existing.category,
+          amount: Number(existing.amount),
+          currency: existing.currency,
+          description: existing.description
+        }
+      }, { tx });
+
+      return await tx.expense.update({
+        where: { id: existing.id },
+        data: { deletedAt: new Date() }
+      });
+    };
+
+    if (typeof prisma.$transaction === 'function') {
+      return await prisma.$transaction(executeDeletion);
+    }
+    return await executeDeletion(prisma);
   },
 
   /**
@@ -153,49 +169,57 @@ export const ExpenseService = {
    */
   async updateExpense(expenseId, data, currentUser = {}) {
     const prisma = getPrismaClient();
-    const existing = await prisma.expense.findFirst({
-      where: { id: expenseId, deletedAt: null }
-    });
 
-    if (!existing) {
-      throw new NotFoundError('Expense', expenseId);
-    }
+    const executeUpdate = async (tx) => {
+      const existing = await tx.expense.findFirst({
+        where: { id: expenseId, deletedAt: null }
+      });
 
-    if (currentUser?.role !== 'ADMIN') {
-      throw new ForbiddenError('Only admins can edit expense records');
-    }
-
-    const updateData = {};
-    if (data.category !== undefined) updateData.category = data.category;
-    if (data.amount !== undefined) updateData.amount = data.amount;
-    if (data.currency !== undefined) updateData.currency = data.currency;
-    if (data.description !== undefined) updateData.description = data.description.trim();
-    if (data.date !== undefined) updateData.date = new Date(data.date);
-
-    const updated = await prisma.expense.update({
-      where: { id: existing.id },
-      data: updateData
-    });
-
-    await AuditService.recordLog({
-      user: currentUser?.name || currentUser?.email || 'Admin',
-      userId: currentUser?.id || null,
-      action: 'UPDATE_EXPENSE',
-      description: `Admin ${currentUser?.name || 'Admin'} updated office expense ${existing.id} (${updated.category}: ${updated.amount} ${updated.currency} - ${updated.description}).`,
-      metadata: {
-        adminId: currentUser?.id || null,
-        expenseId: existing.id,
-        changes: updateData,
-        previous: {
-          category: existing.category,
-          amount: Number(existing.amount),
-          currency: existing.currency,
-          description: existing.description,
-          date: existing.date
-        }
+      if (!existing) {
+        throw new NotFoundError('Expense', expenseId);
       }
-    });
 
-    return updated;
+      if (currentUser?.role !== 'ADMIN') {
+        throw new ForbiddenError('Only admins can edit expense records');
+      }
+
+      const updateData = {};
+      if (data.category !== undefined) updateData.category = data.category;
+      if (data.amount !== undefined) updateData.amount = data.amount;
+      if (data.currency !== undefined) updateData.currency = data.currency;
+      if (data.description !== undefined) updateData.description = data.description.trim();
+      if (data.date !== undefined) updateData.date = new Date(data.date);
+
+      const updated = await tx.expense.update({
+        where: { id: existing.id },
+        data: updateData
+      });
+
+      await AuditService.recordCriticalLog({
+        user: currentUser?.name || currentUser?.email || 'Admin',
+        userId: currentUser?.id || null,
+        action: 'UPDATE_EXPENSE',
+        description: `Admin ${currentUser?.name || 'Admin'} updated office expense ${existing.id} (${updated.category}: ${updated.amount} ${updated.currency} - ${updated.description}).`,
+        metadata: {
+          adminId: currentUser?.id || null,
+          expenseId: existing.id,
+          changes: updateData,
+          previous: {
+            category: existing.category,
+            amount: Number(existing.amount),
+            currency: existing.currency,
+            description: existing.description,
+            date: existing.date
+          }
+        }
+      }, { tx });
+
+      return updated;
+    };
+
+    if (typeof prisma.$transaction === 'function') {
+      return await prisma.$transaction(executeUpdate);
+    }
+    return await executeUpdate(prisma);
   }
 };

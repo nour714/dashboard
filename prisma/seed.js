@@ -33,8 +33,8 @@ export async function seed() {
   const saltRounds = 12;
   const defaultPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD || process.env.DEFAULT_ADMIN_PASSWORD;
 
-  if (!defaultPassword || defaultPassword === 'password123' || defaultPassword.length < 8) {
-    throw new Error('❌ FATAL: BOOTSTRAP_ADMIN_PASSWORD or DEFAULT_ADMIN_PASSWORD environment variable must be provided (min 8 chars) and cannot be default "password123".');
+  if (!defaultPassword || defaultPassword === 'password123' || defaultPassword.length < 12) {
+    throw new Error('❌ FATAL: BOOTSTRAP_ADMIN_PASSWORD or DEFAULT_ADMIN_PASSWORD environment variable must be provided (min 12 chars) and cannot be default "password123".');
   }
 
   const hashedPassword = await bcrypt.hash(defaultPassword, saltRounds);

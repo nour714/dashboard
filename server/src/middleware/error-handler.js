@@ -70,14 +70,22 @@ export function errorHandler(err, req, res, next) {
   if (err.code === 'P2002') {
     const target = Array.isArray(err.meta?.target) ? err.meta.target.join(', ') : (err.meta?.target || 'field');
     let message = `A record with this ${target} already exists.`;
+    let safeField = target;
     if (String(target).includes('passport')) {
       message = 'Passport number already exists';
+      safeField = 'passport';
     } else if (String(target).includes('pnr')) {
       message = 'PNR already exists';
+      safeField = 'pnr';
     } else if (String(target).includes('ticketNumber')) {
       message = 'Ticket number already exists';
+      safeField = 'ticketNumber';
     } else if (String(target).includes('email')) {
       message = 'Email address already exists';
+      safeField = 'email';
+    } else if (env.NODE_ENV === 'production') {
+      message = 'A record with this field already exists.';
+      safeField = 'field';
     }
     return res.status(409).json({
       success: false,
@@ -85,19 +93,33 @@ export function errorHandler(err, req, res, next) {
       error: {
         message,
         code: 'UNIQUE_CONSTRAINT_VIOLATION',
-        field: target
+        field: safeField
       }
     });
   }
 
   if (err.code === 'P2025') {
-    const message = err.meta?.cause || 'Requested record was not found in the database.';
+    const message = env.NODE_ENV === 'production'
+      ? 'Requested record was not found.'
+      : (err.meta?.cause || 'Requested record was not found in the database.');
     return res.status(404).json({
       success: false,
       message,
       error: {
         message,
         code: 'NOT_FOUND'
+      }
+    });
+  }
+
+  // Handle Prisma Client Validation Errors
+  if (err.name === 'PrismaClientValidationError') {
+    console.error('❌ Prisma validation error:', err.message);
+    return res.status(400).json({
+      success: false,
+      error: {
+        message: env.NODE_ENV === 'production' ? 'Invalid request data provided.' : err.message,
+        code: 'VALIDATION_ERROR'
       }
     });
   }
@@ -115,12 +137,16 @@ export function errorHandler(err, req, res, next) {
   ) {
     const isMissingTableOrColumn = err.code === 'P2021' || err.code === 'P2022' || err.message?.includes('does not exist in the current database');
     console.error('❌ Database error:', err.message);
+    const prodMessage = isMissingTableOrColumn
+      ? 'Database service is temporarily undergoing maintenance. Please try again shortly.'
+      : 'Database service is temporarily unavailable. Please try again shortly.';
+    const devMessage = isMissingTableOrColumn
+      ? 'Database schema requires migration. A table or column does not exist in the connected database.'
+      : 'Cannot connect to PostgreSQL database. Please ensure DATABASE_URL is reachable and configured.';
     return res.status(503).json({
       success: false,
       error: {
-        message: isMissingTableOrColumn
-          ? 'Database schema requires migration. A table or column does not exist in the connected database.'
-          : 'Cannot connect to PostgreSQL database. Please ensure DATABASE_URL is reachable and configured.',
+        message: env.NODE_ENV === 'production' ? prodMessage : devMessage,
         code: isMissingTableOrColumn ? 'DATABASE_MIGRATION_REQUIRED' : 'DATABASE_UNAVAILABLE',
         details: env.NODE_ENV === 'development' ? err.message : undefined
       }

@@ -4,7 +4,7 @@
   "description": "AfricaTravel — Internal Travel Agency Management System",
   "type": "module",
   "engines": {
-    "node": "26.x"
+    "node": "24.x"
   },
   "scripts": {
     "postinstall": "prisma generate",
@@ -88,6 +88,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "prisma": "^6.4.1"
+    "prisma": "^6.4.1",
+    "puppeteer-core": "^25.10.0"
   }
 }

@@ -4,8 +4,8 @@ import { INITIAL_CUSTOMERS, INITIAL_EMPLOYEES, INITIAL_TICKETS, INITIAL_ACTIVITY
 
 async function generateSQL() {
   const bootstrapPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD || process.env.INITIAL_ADMIN_PASSWORD;
-  if (!bootstrapPassword || bootstrapPassword === 'password123' || bootstrapPassword.trim().length < 8) {
-    console.error('❌ FATAL: BOOTSTRAP_ADMIN_PASSWORD environment variable is required to generate seed SQL, cannot be "password123", and must be at least 8 characters.');
+  if (!bootstrapPassword || bootstrapPassword === 'password123' || bootstrapPassword.trim().length < 12) {
+    console.error('❌ FATAL: BOOTSTRAP_ADMIN_PASSWORD environment variable is required to generate seed SQL, cannot be "password123", and must be at least 12 characters.');
     process.exit(1);
   }
   const hash = await bcrypt.hash(bootstrapPassword.trim(), 10);

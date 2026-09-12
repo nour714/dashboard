@@ -314,27 +314,25 @@ export const EmployeeService = {
     }
 
     const executeDeletion = async (tx) => {
-      // Write audit log BEFORE deleting the employee
+      // Write audit log BEFORE deleting the employee (fail-closed: throws to roll back transaction on failure)
       if (tx.auditLog && typeof tx.auditLog.create === 'function') {
-        try {
-          await tx.auditLog.create({
-            data: {
-              id: `ACT-${crypto.randomUUID()}`,
-              user: currentUser.name || 'Admin',
-              userId: currentUser.id || null,
-              action: 'DELETE_EMPLOYEE',
-              description: `Admin ${currentUser.name || 'Admin'} permanently deleted employee account ${existing.name} (${existing.email}, Role: ${existing.role}).`,
-              metadata: {
-                adminId: currentUser.id,
-                targetId: existing.id,
-                targetType: 'EMPLOYEE',
-                employeeName: existing.name,
-                employeeEmail: existing.email,
-                deletedRole: existing.role
-              }
+        await tx.auditLog.create({
+          data: {
+            id: `ACT-${crypto.randomUUID()}`,
+            user: currentUser.name || 'Admin',
+            userId: currentUser.id || null,
+            action: 'DELETE_EMPLOYEE',
+            description: `Admin ${currentUser.name || 'Admin'} permanently deleted employee account ${existing.name} (${existing.email}, Role: ${existing.role}).`,
+            metadata: {
+              adminId: currentUser.id,
+              targetId: existing.id,
+              targetType: 'EMPLOYEE',
+              employeeName: existing.name,
+              employeeEmail: existing.email,
+              deletedRole: existing.role
             }
-          });
-        } catch (_) {}
+          }
+        });
       }
 
       // Hard delete — FKs are ON DELETE SET NULL / CASCADE

@@ -34,8 +34,8 @@ async function main() {
   const fixedPassword = customPasswordArg ? customPasswordArg.split('=')[1] : null;
   const targetEmail = targetEmailArg ? targetEmailArg.split('=')[1].toLowerCase().trim() : null;
 
-  if (fixedPassword && fixedPassword.length < 8) {
-    console.error('❌ Password must be at least 8 characters long.');
+  if (fixedPassword && fixedPassword.length < 12) {
+    console.error('❌ Password must be at least 12 characters long.');
     process.exit(1);
   }
 

@@ -10,11 +10,13 @@ export const AuditService = {
   /**
    * Records a new audit log entry
    * @param {{ user: string, userId?: string, action: string, ticketId?: string, customerId?: string, description: string, metadata?: object, ip?: string, userAgent?: string }} data
+   * @param {{ required?: boolean, tx?: object }} [options] - If required is true, failure throws to roll back caller transaction
    */
-  async recordLog(data) {
+  async recordLog(data, options = {}) {
+    const isRequired = options.required === true;
+    const client = options.tx || getPrismaClient();
     try {
-      const prisma = getPrismaClient();
-      return await prisma.auditLog.create({
+      return await client.auditLog.create({
         data: {
           user: data.user || 'System',
           userId: data.userId || null,
@@ -29,8 +31,21 @@ export const AuditService = {
       });
     } catch (err) {
       console.error('⚠️ Failed to record audit log:', err.message);
+      if (isRequired) {
+        throw err;
+      }
       return null;
     }
+  },
+
+  /**
+   * Records a critical audit log entry that throws on failure (fail-closed).
+   * Suitable for financial transactions and destructive operations to enforce rollback.
+   * @param {object} data
+   * @param {{ tx?: object }} [options]
+   */
+  async recordCriticalLog(data, options = {}) {
+    return await this.recordLog(data, { ...options, required: true });
   },
 
   /**

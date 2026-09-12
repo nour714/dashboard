@@ -854,7 +854,7 @@ export const TicketService = {
           action: 'DELETE_TICKET_WITH_FINANCIALS',
           ticketId: existing.id,
           customerId: existing.customerId,
-          description: `Permanently deleted ticket ${existing.ticketNumber || existing.id} (${existing.passengerName}) along with ${existing.payments.length} payment(s) and ${existing.refunds.length} refund(s). Total paid: ${totalPaid} ${existing.currency}, total refunded: ${totalRefunded} ${existing.currency}.`,
+          description: `Soft-deleted ticket ${existing.ticketNumber || existing.id} (${existing.passengerName}) preserving ${existing.payments.length} payment(s) and ${existing.refunds.length} refund(s). Total paid: ${totalPaid} ${existing.currency}, total refunded: ${totalRefunded} ${existing.currency}.`,
           metadata: {
             adminId: currentUser.id,
             ticketId: existing.id,

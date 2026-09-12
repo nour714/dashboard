@@ -427,6 +427,73 @@ async function runExpenseTests() {
   assert(updateLogs[0].metadata?.previous?.amount === 1500, 'Update log records previous amount 1500');
   assert(updateLogs[0].metadata?.adminId === adminUser.id, 'Update log records adminId');
 
+  // --- 9. Fail-Closed Transactional Audit Logging ---
+  console.log('\n--- 9. Fail-Closed Transactional Audit Logging ---');
+  let simulateAuditFailure = false;
+  mockPrisma.auditLog.create = async ({ data }) => {
+    if (simulateAuditFailure) {
+      throw new Error('Database connection failure during auditLog.create');
+    }
+    const log = {
+      id: `ACT-${mockAuditLogs.length + 1}`,
+      ...data,
+      timestamp: new Date()
+    };
+    mockAuditLogs.push(log);
+    return log;
+  };
+
+  mockPrisma.$transaction = async (fn) => {
+    // Snapshot state for rollback simulation
+    const expensesSnapshot = new Map([...mockExpenses.entries()].map(([k, v]) => [k, { ...v }]));
+    const auditLogsSnapshot = [...mockAuditLogs];
+    try {
+      return await fn(mockPrisma);
+    } catch (err) {
+      mockExpenses.clear();
+      for (const [k, v] of expensesSnapshot.entries()) {
+        mockExpenses.set(k, v);
+      }
+      mockAuditLogs.length = 0;
+      mockAuditLogs.push(...auditLogsSnapshot);
+      throw err;
+    }
+  };
+
+  simulateAuditFailure = true;
+  let createExpenseRolledBack = false;
+  try {
+    await ExpenseService.createExpense({
+      category: 'SERVICES',
+      amount: 9999,
+      description: 'Audit failure test expense',
+      date: '2026-09-12'
+    }, adminUser);
+  } catch (err) {
+    if (err.message.includes('auditLog.create')) {
+      createExpenseRolledBack = true;
+    }
+  }
+  assert(createExpenseRolledBack, 'createExpense throws when audit logging fails (fail-closed)');
+  const uncommittedExp = [...mockExpenses.values()].find(e => e.amount === 9999);
+  assert(!uncommittedExp, 'Uncommitted expense was rolled back and not persisted in database');
+
+  let updateExpenseRolledBack = false;
+  try {
+    await ExpenseService.updateExpense('EXP-1', {
+      amount: 7777,
+      description: 'Rolled back update'
+    }, adminUser);
+  } catch (err) {
+    if (err.message.includes('auditLog.create')) {
+      updateExpenseRolledBack = true;
+    }
+  }
+  assert(updateExpenseRolledBack, 'updateExpense throws when audit logging fails (fail-closed)');
+  const exp1Current = mockExpenses.get('EXP-1');
+  assert(exp1Current.amount === 1800, 'EXP-1 was rolled back to previous amount 1800');
+  simulateAuditFailure = false;
+
   // Summary
   console.log('\n========================================================');
   console.log(`Office Expenses Tests: ${passed} passed, ${failed} failed`);

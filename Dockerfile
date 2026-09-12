@@ -1,6 +1,6 @@
 # AfricaTravel - Multi-stage Production Dockerfile
-# Base Runtime targeting Node.js 26
-FROM node:26-alpine AS base
+# Base Runtime targeting Node.js 24
+FROM node:24-alpine AS base
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ RUN npm ci
 RUN npx prisma generate
 
 # Stage 2: Production image
-FROM node:26-alpine AS runner
+FROM node:24-alpine AS runner
 
 WORKDIR /app
 

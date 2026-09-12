@@ -376,8 +376,8 @@ export const SettingsPage = {
           return;
         }
 
-        if (newPassword.length < 6) {
-          showToast('New password must be at least 6 characters', 'error');
+        if (newPassword.length < 12) {
+          showToast(t('employees.passwordTooShort') || 'New password must be at least 12 characters', 'error');
           return;
         }
 

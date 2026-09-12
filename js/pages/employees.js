@@ -358,7 +358,7 @@ export const EmployeesPage = {
               showToast(t('validation.requiredField'), 'error');
               return;
             }
-            if (password.length < 8) {
+            if (password.length < 12) {
               showToast(t('employees.passwordTooShort'), 'error');
               return;
             }

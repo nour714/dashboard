@@ -8,8 +8,8 @@ sql += 'INSERT INTO "system_settings" ("id", "data", "updatedAt") VALUES (\'defa
 
 // 2. Users (Require BOOTSTRAP_ADMIN_PASSWORD env variable)
 const bootstrapPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD || process.env.INITIAL_ADMIN_PASSWORD;
-if (!bootstrapPassword || bootstrapPassword === 'password123' || bootstrapPassword.trim().length < 8) {
-  console.error('❌ FATAL: BOOTSTRAP_ADMIN_PASSWORD environment variable is required to generate seed SQL, cannot be "password123", and must be at least 8 characters.');
+if (!bootstrapPassword || bootstrapPassword === 'password123' || bootstrapPassword.trim().length < 12) {
+  console.error('❌ FATAL: BOOTSTRAP_ADMIN_PASSWORD environment variable is required to generate seed SQL, cannot be "password123", and must be at least 12 characters.');
   process.exit(1);
 }
 import bcrypt from 'bcryptjs';

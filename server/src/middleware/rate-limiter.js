@@ -33,6 +33,14 @@ try {
 // In-memory fallback map for local development or Redis downtime
 export const memoryFallbackMap = new Map();
 
+/**
+ * Sets the Upstash Redis client instance (used for dependency injection and testing)
+ * @param {object|null} client
+ */
+export function setUpstashRedisClient(client) {
+  upstashRedis = client;
+}
+
 // Periodic cleanup of expired memory entries to prevent unbounded growth in long-running processes
 if (typeof setInterval !== 'undefined') {
   const cleanupInterval = setInterval(() => {
@@ -74,9 +82,9 @@ export function createLimiter(optionsOrName, windowMsArg, maxArg, messageArg) {
   }
 
   const windowSeconds = Math.max(1, Math.floor(windowMs / 1000));
-  let upstashLimiter = null;
+  let upstashLimiter = (typeof optionsOrName === 'object' && optionsOrName !== null && optionsOrName.upstashLimiter) || null;
 
-  if (upstashRedis) {
+  if (!upstashLimiter && upstashRedis) {
     try {
       upstashLimiter = new Ratelimit({
         redis: upstashRedis,
