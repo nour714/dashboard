@@ -121,6 +121,12 @@ export function createLimiter(optionsOrName, windowMsArg, maxArg, messageArg) {
     }
 
     // 2. In-Memory Fallback Rate Limiting (Local development or Redis fail-open)
+    const isSensitive = name === 'auth' || name === 'refresh';
+    if (isSensitive) {
+      console.error(`🚨 [RateLimiter:FALLBACK_ALERT] Sensitive limiter '${name}' is operating in in-memory fallback mode (Redis unavailable). Instance threshold throttled to mitigate serverless multiplication.`);
+    }
+
+    const effectiveMax = isSensitive ? Math.max(1, Math.ceil(max / 2)) : max;
     const now = Date.now();
     const key = `${name}:${identifier}`;
     let entry = memoryFallbackMap.get(key);
@@ -132,14 +138,14 @@ export function createLimiter(optionsOrName, windowMsArg, maxArg, messageArg) {
     entry.count += 1;
     memoryFallbackMap.set(key, entry);
 
-    const remaining = Math.max(0, max - entry.count);
+    const remaining = Math.max(0, effectiveMax - entry.count);
     const resetSeconds = Math.ceil((entry.resetAt - now) / 1000);
 
-    res.setHeader('RateLimit-Limit', max);
+    res.setHeader('RateLimit-Limit', effectiveMax);
     res.setHeader('RateLimit-Remaining', remaining);
     res.setHeader('RateLimit-Reset', entry.resetAt);
 
-    if (entry.count > max) {
+    if (entry.count > effectiveMax) {
       res.setHeader('Retry-After', resetSeconds > 0 ? resetSeconds : 1);
       return res.status(429).json({
         success: false,

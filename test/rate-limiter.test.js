@@ -1,21 +1,10 @@
 // لازم يكون أول سطر فعلي في الملف — قبل أي import
 process.env.RATE_LIMIT_MAX_AUTH = '10';
 
-/**
- * AfricaTravel - Rate Limiter Integration & Unit Test
- *
- * Tests:
- * 1. authRateLimiter 429 after MAX_AUTH requests
- * 2. Header presence: RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, Retry-After
- * 3. Error response body: { success: false, error: { message, code: 'RATE_LIMIT_EXCEEDED' } }
- * 4. GET /api/health returns 200 and is not blocked
- * 5. createLimiter custom instances and behavior
- */
-
-import http from 'http';
-import { createApp } from '../server/src/app.js';
-import { memoryFallbackMap, createLimiter } from '../server/src/middleware/rate-limiter.js';
-import { setPrismaClient } from '../server/src/config/database.js';
+const http = (await import('http')).default;
+const { createApp } = await import('../server/src/app.js');
+const { memoryFallbackMap, createLimiter } = await import('../server/src/middleware/rate-limiter.js');
+const { setPrismaClient } = await import('../server/src/config/database.js');
 
 let passed = 0;
 let failed = 0;

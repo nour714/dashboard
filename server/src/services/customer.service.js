@@ -507,26 +507,24 @@ export const CustomerService = {
       });
 
       if (tx.auditLog && typeof tx.auditLog.create === 'function') {
-        try {
-          await tx.auditLog.create({
-            data: {
-              id: `ACT-${crypto.randomUUID()}`,
-              user: currentUser.name || 'Admin',
-              userId: currentUser.id || null,
-              action: 'DELETE_CUSTOMER',
-              customerId: customer.id,
-              description: `Admin ${currentUser.name || 'Admin'} deleted customer ${customer.name} (${customer.id}).`,
-              metadata: {
-                adminId: currentUser.id,
-                targetId: customer.id,
-                targetType: 'CUSTOMER',
-                customerName: customer.name,
-                passportDocPreserved: !!customer.passportDocPath,
-                softDeleted: true
-              }
+        await tx.auditLog.create({
+          data: {
+            id: `ACT-${crypto.randomUUID()}`,
+            user: currentUser.name || 'Admin',
+            userId: currentUser.id || null,
+            action: 'DELETE_CUSTOMER',
+            customerId: customer.id,
+            description: `Admin ${currentUser.name || 'Admin'} deleted customer ${customer.name} (${customer.id}).`,
+            metadata: {
+              adminId: currentUser.id,
+              targetId: customer.id,
+              targetType: 'CUSTOMER',
+              customerName: customer.name,
+              passportDocPreserved: !!customer.passportDocPath,
+              softDeleted: true
             }
-          });
-        } catch (_) {}
+          }
+        });
       }
 
       return updated;
@@ -612,29 +610,27 @@ export const CustomerService = {
 
     const executePurge = async (tx) => {
       if (tx.auditLog && typeof tx.auditLog.create === 'function') {
-        try {
-          await tx.auditLog.create({
-            data: {
-              id: `ACT-${crypto.randomUUID()}`,
-              user: currentUser.name || 'Admin',
-              userId: currentUser.id || null,
-              action: 'PURGE_CUSTOMER',
-              customerId: customer.id,
-              description: `Permanently purged customer ${customer.name} (${customer.id}).`,
-              metadata: {
-                adminId: currentUser.id,
-                targetId: customer.id,
-                targetType: 'CUSTOMER',
-                customerName: customer.name,
-                passport: customer.passport,
-                email: customer.email,
-                phone: customer.phone,
-                passportDocDeleted: !!customer.passportDocPath,
-                purgedAt: new Date().toISOString()
-              }
+        await tx.auditLog.create({
+          data: {
+            id: `ACT-${crypto.randomUUID()}`,
+            user: currentUser.name || 'Admin',
+            userId: currentUser.id || null,
+            action: 'PURGE_CUSTOMER',
+            customerId: customer.id,
+            description: `Permanently purged customer ${customer.name} (${customer.id}).`,
+            metadata: {
+              adminId: currentUser.id,
+              targetId: customer.id,
+              targetType: 'CUSTOMER',
+              customerName: customer.name,
+              passport: customer.passport,
+              email: customer.email,
+              phone: customer.phone,
+              passportDocDeleted: !!customer.passportDocPath,
+              purgedAt: new Date().toISOString()
             }
-          });
-        } catch (_) {}
+          }
+        });
       }
 
       if (tx.customerNote && typeof tx.customerNote.deleteMany === 'function') {

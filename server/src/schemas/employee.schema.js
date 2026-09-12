@@ -9,7 +9,7 @@ export const createEmployeeSchema = z.object({
   email: z.string().email('Valid work email is required').trim(),
   role: z.enum(['ADMIN', 'AGENT', 'TICKET_ONLY']).default('AGENT'),
   title: z.string().optional(),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string().min(12, 'Password must be at least 12 characters'),
   status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE')
 });
 

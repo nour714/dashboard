@@ -503,7 +503,7 @@ export const en = {
     accessRestricted: 'Access Restricted',
     adminOnlyMessage: 'This page is only available to administrators.',
     addEmployee: 'Add Employee',
-    passwordTooShort: 'Password must be at least 8 characters',
+    passwordTooShort: 'Password must be at least 12 characters',
     createFailed: 'Failed to create employee',
     credentialsWarning: 'Share these credentials securely with the new employee. They will not be shown again.',
     newEmployeeCredentials: 'New Employee Credentials',

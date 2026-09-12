@@ -322,7 +322,7 @@ export const EmployeesPage = {
             <div class="form-group">
               <label class="form-label" for="new-emp-password">${escapeHtml(t('employees.password'))} *</label>
               <div class="d-flex gap-sm">
-                <input type="password" id="new-emp-password" class="form-control ltr-field" minlength="8" required />
+                <input type="password" id="new-emp-password" class="form-control ltr-field" minlength="12" required />
                 <button type="button" class="btn btn-secondary" id="generate-emp-password">${escapeHtml(t('employees.generate'))}</button>
                 <button type="button" class="btn btn-secondary" id="toggle-emp-password">${escapeHtml(t('employees.show'))}</button>
               </div>

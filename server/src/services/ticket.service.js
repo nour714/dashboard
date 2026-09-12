@@ -590,19 +590,17 @@ export const TicketService = {
 
       // 5. Record audit log entry
       if (tx.auditLog && typeof tx.auditLog.create === 'function') {
-        try {
-          await tx.auditLog.create({
-            data: {
-              id: `ACT-${crypto.randomUUID()}`,
-              user: currentUser.name || 'Agent',
-              userId: currentUser.id || null,
-              action: 'ADD_PAYMENT',
-              ticketId: ticket.id,
-              customerId: ticket.customerId,
-              description: `Recorded payment of ${paymentAmount.toLocaleString()} ${createdPayment.currency} via ${createdPayment.method} (${createdPayment.reference || newPaymentId}).`
-            }
-          });
-        } catch (_) {}
+        await tx.auditLog.create({
+          data: {
+            id: `ACT-${crypto.randomUUID()}`,
+            user: currentUser.name || 'Agent',
+            userId: currentUser.id || null,
+            action: 'ADD_PAYMENT',
+            ticketId: ticket.id,
+            customerId: ticket.customerId,
+            description: `Recorded payment of ${paymentAmount.toLocaleString()} ${createdPayment.currency} via ${createdPayment.method} (${createdPayment.reference || newPaymentId}).`
+          }
+        });
       }
 
       return createdPayment;
@@ -692,19 +690,17 @@ export const TicketService = {
 
       // 5. Record audit log entry
       if (tx.auditLog && typeof tx.auditLog.create === 'function') {
-        try {
-          await tx.auditLog.create({
-            data: {
-              id: `ACT-${crypto.randomUUID()}`,
-              user: currentUser.name || 'Agent',
-              userId: currentUser.id || null,
-              action: status === 'COMPLETED' ? 'COMPLETE_REFUND' : 'ADD_REFUND',
-              ticketId: ticket.id,
-              customerId: ticket.customerId,
-              description: `Processed refund of ${refundAmount.toLocaleString()} ${createdRefund.currency} for ${ticket.id}. Reason: ${createdRefund.reason}`
-            }
-          });
-        } catch (_) {}
+        await tx.auditLog.create({
+          data: {
+            id: `ACT-${crypto.randomUUID()}`,
+            user: currentUser.name || 'Agent',
+            userId: currentUser.id || null,
+            action: status === 'COMPLETED' ? 'COMPLETE_REFUND' : 'ADD_REFUND',
+            ticketId: ticket.id,
+            customerId: ticket.customerId,
+            description: `Processed refund of ${refundAmount.toLocaleString()} ${createdRefund.currency} for ${ticket.id}. Reason: ${createdRefund.reason}`
+          }
+        });
       }
 
       return createdRefund;
@@ -803,19 +799,17 @@ export const TicketService = {
 
       // Record audit log
       if (tx.auditLog && typeof tx.auditLog.create === 'function') {
-        try {
-          await tx.auditLog.create({
-            data: {
-              id: `ACT-${crypto.randomUUID()}`,
-              user: currentUser.name || 'Agent',
-              userId: currentUser.id || null,
-              action: 'MODIFY_FLIGHT',
-              ticketId: ticket.id,
-              customerId: ticket.customerId,
-              description: `Modified flight for ticket ${ticket.id}. Change fee: ${changeFee} ${ticket.currency}. Reason: ${createdMod.reason}`
-            }
-          });
-        } catch (_) {}
+        await tx.auditLog.create({
+          data: {
+            id: `ACT-${crypto.randomUUID()}`,
+            user: currentUser.name || 'Agent',
+            userId: currentUser.id || null,
+            action: 'MODIFY_FLIGHT',
+            ticketId: ticket.id,
+            customerId: ticket.customerId,
+            description: `Modified flight for ticket ${ticket.id}. Change fee: ${changeFee} ${ticket.currency}. Reason: ${createdMod.reason}`
+          }
+        });
       }
 
       return createdMod;
@@ -828,8 +822,8 @@ export const TicketService = {
   },
 
   /**
-   * Permanently deletes a ticket and all associated financial records (ADMIN only)
-   * while recording a full financial audit log prior to deletion.
+   * Soft-deletes (archives) a ticket, preserving all financial history.
+   * Use purgeTicket() for permanent removal of clean records. (ADMIN only)
    * @param {string} ticketId
    * @param {object} currentUser
    */
@@ -882,9 +876,11 @@ export const TicketService = {
         }
       });
 
-      // Payment/Refund/Modification عليهم onDelete: Cascade في الـ schema بالفعل
-      // فالحذف ده هيمسحهم تلقائيًا مع التذكرة
-      await tx.ticket.delete({ where: { id: existing.id } });
+      // Soft-delete: update deletedAt while preserving financial records
+      await tx.ticket.update({
+        where: { id: existing.id },
+        data: { deletedAt: new Date() }
+      });
 
       return { deleted: true, ticketId: existing.id, ticketNumber: existing.ticketNumber };
     });
@@ -963,34 +959,32 @@ export const TicketService = {
 
     const executePurge = async (tx) => {
       if (tx.auditLog && typeof tx.auditLog.create === 'function') {
-        try {
-          await tx.auditLog.create({
-            data: {
-              id: `ACT-${crypto.randomUUID()}`,
-              user: currentUser.name || 'Admin',
-              userId: currentUser.id || null,
-              action: 'PURGE_TICKET',
-              ticketId: existing.id,
+        await tx.auditLog.create({
+          data: {
+            id: `ACT-${crypto.randomUUID()}`,
+            user: currentUser.name || 'Admin',
+            userId: currentUser.id || null,
+            action: 'PURGE_TICKET',
+            ticketId: existing.id,
+            customerId: existing.customerId,
+            description: `Permanently purged ticket ${existing.id} (${existing.ticketNumber}).`,
+            metadata: {
+              adminId: currentUser.id,
+              targetId: existing.id,
+              targetType: 'TICKET',
+              ticketNumber: existing.ticketNumber,
+              pnr: existing.pnr,
+              passengerName: existing.passengerName,
+              origin: existing.origin,
+              destination: existing.destination,
+              ticketPrice: Number(existing.ticketPrice),
+              currency: existing.currency,
               customerId: existing.customerId,
-              description: `Permanently purged ticket ${existing.id} (${existing.ticketNumber}).`,
-              metadata: {
-                adminId: currentUser.id,
-                targetId: existing.id,
-                targetType: 'TICKET',
-                ticketNumber: existing.ticketNumber,
-                pnr: existing.pnr,
-                passengerName: existing.passengerName,
-                origin: existing.origin,
-                destination: existing.destination,
-                ticketPrice: Number(existing.ticketPrice),
-                currency: existing.currency,
-                customerId: existing.customerId,
-                createdAt: existing.createdAt,
-                purgedAt: new Date().toISOString()
-              }
+              createdAt: existing.createdAt,
+              purgedAt: new Date().toISOString()
             }
-          });
-        } catch (_) {}
+          }
+        });
       }
 
       await tx.ticket.delete({

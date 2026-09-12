@@ -9,15 +9,24 @@ import cors from 'cors';
 import path from 'path';
 import { env } from '../config/env.js';
 
+const vercelConnectDomains = [
+  'https://africiatravel.vercel.app',
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null,
+  process.env.VERCEL_BRANCH_URL ? `https://${process.env.VERCEL_BRANCH_URL}` : null
+].filter(Boolean);
+
 export const helmetMiddleware = helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'"],
+      // TODO: Refactor inline style="..." attributes across HTML/JS views to CSS utility classes
+      // so that "'unsafe-inline'" can be safely eliminated from styleSrc in a future refactor.
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
       imgSrc: ["'self'", 'data:', 'blob:', 'https://*.supabase.co'],
-      connectSrc: ["'self'", 'https://*.supabase.co', 'https://*.vercel.app'],
+      connectSrc: ["'self'", 'https://*.supabase.co', ...vercelConnectDomains],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],

@@ -518,7 +518,7 @@ export const ar = {
     onlineNow: 'متصل الآن',
     lastSeen: 'آخر ظهور',
     neverLoggedIn: 'لم يسجل دخول بعد',
-    passwordTooShort: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل',
+    passwordTooShort: 'كلمة المرور يجب أن تكون 12 حرفاً على الأقل',
     createFailed: 'فشل إنشاء الموظف',
     credentialsWarning: 'شارك بيانات الدخول هذه بأمان مع الموظف الجديد. لن تظهر مرة أخرى.',
     newEmployeeCredentials: 'بيانات دخول الموظف الجديد',

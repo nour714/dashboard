@@ -110,11 +110,11 @@ export const SettingsPage = {
               <div class="form-grid-2">
                 <div class="form-group">
                   <label class="form-label" for="new-pw">${escapeHtml(t('settings.profile.newPassword'))}</label>
-                  <input type="password" id="new-pw" class="form-control" placeholder="••••••••" autocomplete="new-password" minlength="8" required />
+                  <input type="password" id="new-pw" class="form-control" placeholder="••••••••" autocomplete="new-password" minlength="12" required />
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="conf-pw">${escapeHtml(t('settings.profile.confirmPassword'))}</label>
-                  <input type="password" id="conf-pw" class="form-control" placeholder="••••••••" autocomplete="new-password" minlength="8" required />
+                  <input type="password" id="conf-pw" class="form-control" placeholder="••••••••" autocomplete="new-password" minlength="12" required />
                 </div>
               </div>
               <div class="d-flex justify-end mt-md">

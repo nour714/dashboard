@@ -387,23 +387,22 @@ async function runSecurityFixesTests() {
   }
   assert(overRefundFailed, 'Second concurrent refund exceeding available balance is rejected (REFUND_EXCEEDS_AVAILABLE)');
 
-  // Test 3: Permanent deletion with cascading financial records & Audit Log
+  // Test 3: Soft deletion (archiving) preserving financial records & Audit Log
   // testTicketId has 6,000 EGP paid, 4,000 EGP refunded (unrefunded balance = 2,000 EGP)
-  // Deleting ticket with unrefunded balance and payments succeeds permanently (not rejected)
+  // Deleting ticket with unrefunded balance and payments succeeds as soft-delete
   const deleteRes = await TicketService.deleteTicket(testTicketId, mockUser);
   assert(deleteRes && deleteRes.deleted === true && deleteRes.ticketId === testTicketId, 'Deleting ticket with payments and partial refund succeeds');
 
-  // After deletion: prisma.ticket.findUnique returns null
+  // After deletion: ticket is soft-deleted (deletedAt is set)
   const ticketInDb = await mockPrisma.ticket.findUnique({ where: { id: testTicketId } });
-  assert(ticketInDb === null, 'After deletion: prisma.ticket.findUnique returns null');
+  assert(ticketInDb !== null && ticketInDb.deletedAt !== null, 'After deletion: ticket is marked soft-deleted (deletedAt is not null)');
 
-  // After deletion: prisma.payment.findMany returns empty array (cascade deletion)
+  // After soft deletion: financial records are preserved for audit
   const paymentsInDb = await mockPrisma.payment.findMany({ where: { ticketId: testTicketId } });
-  assert(Array.isArray(paymentsInDb) && paymentsInDb.length === 0, 'After deletion: prisma.payment.findMany returns empty array (cascade deletion)');
+  assert(Array.isArray(paymentsInDb) && paymentsInDb.length === 1, 'After soft-delete: payments are preserved');
 
-  // After deletion: prisma.refund.findMany returns empty array (cascade deletion)
   const refundsInDb = await mockPrisma.refund.findMany({ where: { ticketId: testTicketId } });
-  assert(Array.isArray(refundsInDb) && refundsInDb.length === 0, 'After deletion: prisma.refund.findMany returns empty array (cascade deletion)');
+  assert(Array.isArray(refundsInDb) && refundsInDb.length === 1, 'After soft-delete: refunds are preserved');
 
   // After deletion: AuditLog created with DELETE_TICKET_WITH_FINANCIALS and correct financial metadata
   const deleteAuditLog = mockAuditLogs.find(l => l.action === 'DELETE_TICKET_WITH_FINANCIALS' && l.ticketId === testTicketId);

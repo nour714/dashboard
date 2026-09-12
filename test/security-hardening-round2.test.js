@@ -638,16 +638,16 @@ async function runSecurityHardeningRound2Tests() {
     );
 
     // =========================================================================
-    // 8. Settings password inputs enforce minlength="8"
+    // 8. Settings password inputs enforce minlength="12"
     // =========================================================================
     console.log('\n--- 8. Settings Password Length Verification ---');
     assert(
-      settingsJsContent.includes('id="new-pw" class="form-control" placeholder="••••••••" autocomplete="new-password" minlength="8"'),
-      'new-pw input enforces minlength="8"'
+      settingsJsContent.includes('id="new-pw" class="form-control" placeholder="••••••••" autocomplete="new-password" minlength="12"'),
+      'new-pw input enforces minlength="12"'
     );
     assert(
-      settingsJsContent.includes('id="conf-pw" class="form-control" placeholder="••••••••" autocomplete="new-password" minlength="8"'),
-      'conf-pw input enforces minlength="8"'
+      settingsJsContent.includes('id="conf-pw" class="form-control" placeholder="••••••••" autocomplete="new-password" minlength="12"'),
+      'conf-pw input enforces minlength="12"'
     );
 
     console.log('\n========================================================');

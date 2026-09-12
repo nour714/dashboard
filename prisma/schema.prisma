@@ -83,12 +83,13 @@ model CustomerNote {
   date       DateTime @default(now())
   createdAt  DateTime @default(now())
 
+  @@index([customerId])
   @@map("customer_notes")
 }
 
 model Ticket {
   id                     String         @id
-  ticketNumber           String?        @unique
+  ticketNumber           String?        // uniqueness enforced via partial index (active tickets only) — see migration
   pnr                    String?        // uniqueness enforced via partial index (active tickets only) — see migration
   customerId             String
   customer               Customer       @relation(fields: [customerId], references: [id])
@@ -154,6 +155,7 @@ model Payment {
   notes     String?
   createdAt DateTime @default(now())
 
+  @@index([ticketId])
   @@index([addedById])
   @@map("payments")
 }
@@ -176,6 +178,7 @@ model Modification {
   status         String   @default("COMPLETED")
   createdAt      DateTime @default(now())
 
+  @@index([ticketId])
   @@index([processedById])
   @@map("modifications")
 }
@@ -197,6 +200,7 @@ model Refund {
   user           User?     @relation("RefundProcessedBy", fields: [processedById], references: [id])
   createdAt      DateTime  @default(now())
 
+  @@index([ticketId])
   @@map("refunds")
 }
 

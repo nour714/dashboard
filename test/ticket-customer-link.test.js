@@ -325,13 +325,14 @@ async function runTicketCustomerTests() {
     assert(pnrTicket2.pnr === 'PNR-REUSE-777', 'New ticket successfully reused PNR-REUSE-777 after soft-delete');
     assert(pnrTicket2.id !== pnrTicket1.id, 'New ticket has distinct ID');
 
-    // Hard-delete the second ticket via deleteTicket (permanent delete)
+    // Soft-delete the second ticket via deleteTicket (archive)
     await TicketService.deleteTicket(pnrTicket2.id, { id: 'ADM-01', role: 'ADMIN', name: 'Admin User' });
-    assert(!mockTickets.some(t => t.id === pnrTicket2.id), 'Second ticket hard-deleted from database');
+    const pnrTicket2InDb = mockTickets.find(t => t.id === pnrTicket2.id);
+    assert(pnrTicket2InDb && pnrTicket2InDb.deletedAt !== null, 'Second ticket soft-deleted (archived) via deleteTicket');
 
-    // Creating new ticket with the exact same PNR after hard-delete MUST SUCCEED
+    // Creating new ticket with the exact same PNR after soft-delete via deleteTicket MUST SUCCEED
     const pnrTicket3 = await TicketService.createTicket({
-      passengerName: 'Passenger PNR 4 (Reused After Hard-Delete)',
+      passengerName: 'Passenger PNR 4 (Reused After Soft-Delete via deleteTicket)',
       pnr: 'PNR-REUSE-777',
       origin: 'CAI',
       destination: 'RUH',
@@ -339,7 +340,7 @@ async function runTicketCustomerTests() {
       ticketPrice: 7500
     }, { name: 'Agent Sarah', id: 'USR-01' });
 
-    assert(pnrTicket3.pnr === 'PNR-REUSE-777', 'New ticket successfully reused PNR-REUSE-777 after hard-delete');
+    assert(pnrTicket3.pnr === 'PNR-REUSE-777', 'New ticket successfully reused PNR-REUSE-777 after soft-delete via deleteTicket');
 
     // 8. TicketNumber Reuse After Deletion & Active Duplicate Blocked (Zero Regression)
     console.log('\n--- 8. TicketNumber Reuse After Deletion & Active Duplicate Blocked ---');
@@ -388,12 +389,14 @@ async function runTicketCustomerTests() {
 
     assert(tNumTicket2.ticketNumber === '077-55556666', 'New ticket successfully reused ticketNumber after soft-delete');
 
-    // Hard-delete via deleteTicket
+    // Soft-delete via deleteTicket (archive)
     await TicketService.deleteTicket(tNumTicket2.id, { id: 'ADM-01', role: 'ADMIN', name: 'Admin User' });
+    const tNumTicket2InDb = mockTickets.find(t => t.id === tNumTicket2.id);
+    assert(tNumTicket2InDb && tNumTicket2InDb.deletedAt !== null, 'Ticket successfully soft-deleted (archived) via deleteTicket');
 
-    // Reusing ticketNumber after hard-delete MUST SUCCEED
+    // Reusing ticketNumber after soft-delete via deleteTicket MUST SUCCEED
     const tNumTicket3 = await TicketService.createTicket({
-      passengerName: 'Passenger TicketNumber 4 (Reused After Hard-Delete)',
+      passengerName: 'Passenger TicketNumber 4 (Reused After Soft-Delete via deleteTicket)',
       ticketNumber: '077-55556666',
       origin: 'CAI',
       destination: 'BAH',
@@ -401,7 +404,7 @@ async function runTicketCustomerTests() {
       ticketPrice: 10500
     }, { name: 'Agent Sarah', id: 'USR-01' });
 
-    assert(tNumTicket3.ticketNumber === '077-55556666', 'New ticket successfully reused ticketNumber after hard-delete');
+    assert(tNumTicket3.ticketNumber === '077-55556666', 'New ticket successfully reused ticketNumber after soft-delete via deleteTicket');
 
     console.log('\n========================================================');
     console.log(`Ticket Customer Link Tests: ${passed} passed, ${failed} failed`);
