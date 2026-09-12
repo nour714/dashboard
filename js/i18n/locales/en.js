@@ -365,6 +365,7 @@ export const en = {
         previousSchedule: 'Previous Schedule',
         newSchedule: 'New Schedule',
         fee: 'Modification Fee',
+        airlineFee: 'Airline Fee',
         reason: 'Reason / Notes',
         processedBy: 'Processed By'
       },
@@ -698,9 +699,10 @@ export const en = {
       title: 'Modify Flight Schedule',
       subtitle: 'Record an itinerary change, new departure date, and modification fee.',
       newFlightNumber: 'New Flight Number',
-      newDeparture: 'New Departure Date & Time',
-      newArrival: 'New Arrival Date & Time',
-      modFee: 'Modification / Change Fee (EGP)',
+      newDeparture: 'New Departure Date',
+      newArrival: 'New Arrival Date',
+      modFeeAirline: 'Airline Modification Fee (Cost)',
+      modFeeCustomer: 'Fee Charged to Customer',
       reason: 'Modification Reason',
       submit: 'Save Flight Modification'
     },

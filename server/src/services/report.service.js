@@ -12,6 +12,7 @@ import {
   calculateTotalRefunded,
   calculateNetValue,
   calculateTotalModificationFees,
+  calculateTotalModificationProfit,
   calculateNetProfit
 } from '../domain/ticket-rules.js';
 import { asDecimal, moneyNumber } from '../utils/money.js';
@@ -50,7 +51,8 @@ export function computeWeeklyTrends(tickets = []) {
         salesTotal = salesTotal.plus(asDecimal(t.ticketPrice));
         const profit = calculateNetProfit(t.ticketPrice, t.costPrice);
         if (profit !== null) {
-          netProfitTotal = netProfitTotal.plus(asDecimal(profit));
+          const modProfit = calculateTotalModificationProfit(t.modifications || []);
+          netProfitTotal = netProfitTotal.plus(asDecimal(profit).plus(asDecimal(modProfit)));
         }
       }
 
@@ -128,7 +130,8 @@ export const ReportService = {
       totalModFeesDec = totalModFeesDec.plus(asDecimal(calculateTotalModificationFees(t.modifications || [])));
       const profit = calculateNetProfit(t.ticketPrice, t.costPrice);
       if (profit !== null) {
-        totalNetProfitDec = totalNetProfitDec.plus(asDecimal(profit));
+        const modProfit = calculateTotalModificationProfit(t.modifications || []);
+        totalNetProfitDec = totalNetProfitDec.plus(asDecimal(profit).plus(asDecimal(modProfit)));
       }
     });
 
@@ -166,7 +169,8 @@ export const ReportService = {
     const tickets = await prisma.ticket.findMany({
       where: { deletedAt: null },
       include: {
-        refunds: true
+        refunds: true,
+        modifications: true
       }
     });
 
@@ -192,7 +196,8 @@ export const ReportService = {
       airlineMap[airline].totalRefundedDec = airlineMap[airline].totalRefundedDec.plus(asDecimal(calculateTotalRefunded(t.refunds || [])));
       const profit = calculateNetProfit(t.ticketPrice, t.costPrice);
       if (profit !== null) {
-        airlineMap[airline].totalNetProfitDec = airlineMap[airline].totalNetProfitDec.plus(asDecimal(profit));
+        const modProfit = calculateTotalModificationProfit(t.modifications || []);
+        airlineMap[airline].totalNetProfitDec = airlineMap[airline].totalNetProfitDec.plus(asDecimal(profit).plus(asDecimal(modProfit)));
       }
     });
 
@@ -230,7 +235,8 @@ export const ReportService = {
         where: { deletedAt: null },
         include: {
           payments: true,
-          refunds: true
+          refunds: true,
+          modifications: true
         }
       })
     ]);
@@ -256,7 +262,8 @@ export const ReportService = {
         where: { deletedAt: null },
         include: {
           payments: true,
-          refunds: true
+          refunds: true,
+          modifications: true
         }
       })
     ]);

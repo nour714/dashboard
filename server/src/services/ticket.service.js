@@ -11,6 +11,7 @@ import {
   calculateTotalPaid,
   calculateRemaining,
   calculateTotalModificationFees,
+  calculateTotalModificationProfit,
   calculateTotalRefunded,
   calculateAvailableRefund,
   calculateNetValue,
@@ -18,6 +19,7 @@ import {
   derivePaymentStatus,
   validateTicketCreation
 } from '../domain/ticket-rules.js';
+import { asDecimal, moneyNumber } from '../utils/money.js';
 import { validatePayment } from '../domain/payment-rules.js';
 import { validateRefund } from '../domain/refund-rules.js';
 import { validateModification } from '../domain/modification-rules.js';
@@ -35,12 +37,14 @@ export function enrichTicketFinancials(ticket) {
   const totalPaid = calculateTotalPaid(ticket.payments || []);
   const remaining = calculateRemaining(ticket.ticketPrice, totalPaid);
   const modificationFees = calculateTotalModificationFees(ticket.modifications || []);
+  const modificationProfit = calculateTotalModificationProfit(ticket.modifications || []);
   const totalRefunded = calculateTotalRefunded(ticket.refunds || []);
   const availableRefund = calculateAvailableRefund(totalPaid, totalRefunded);
   const netValue = calculateNetValue(ticket.ticketPrice, modificationFees, totalRefunded);
   const paymentStatus = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status);
   const costPrice = ticket.costPrice !== null && ticket.costPrice !== undefined ? Number(ticket.costPrice) : null;
-  const netProfit = calculateNetProfit(ticket.ticketPrice, costPrice);
+  const baseProfit = calculateNetProfit(ticket.ticketPrice, costPrice);
+  const netProfit = baseProfit !== null ? moneyNumber(asDecimal(baseProfit).plus(asDecimal(modificationProfit))) : null;
 
   return {
     ...ticket,
@@ -54,6 +58,7 @@ export function enrichTicketFinancials(ticket) {
       totalPaid,
       remaining,
       modificationFees,
+      modificationProfit,
       totalRefunded,
       availableRefund,
       netValue,
@@ -134,7 +139,7 @@ export const TicketService = {
         where,
         include: {
           payments: { select: { amount: true, date: true } },
-          modifications: { select: { changeFee: true, date: true } },
+          modifications: { select: { changeFee: true, airlineFee: true, date: true } },
           refunds: { select: { amount: true, requestedDate: true } },
           customer: { select: { id: true, name: true, phone: true, email: true } }
         },
@@ -748,6 +753,7 @@ export const TicketService = {
       const modIndex = (ticket.modifications?.length || 0) + 1;
       const newModId = `MOD-${crypto.randomUUID()}`;
       const changeFee = Number(modData.changeFee) || 0;
+      const airlineFee = Number(modData.airlineFee) || 0;
 
       const originalFlight = {
         flightNumber: ticket.flightNumber,
@@ -771,6 +777,7 @@ export const TicketService = {
           originalFlight,
           newFlight,
           changeFee,
+          airlineFee,
           currency: ticket.currency || 'EGP',
           reason: modData.reason || 'Customer requested schedule adjustment',
           requestedBy: modData.requestedBy || ticket.passengerName,

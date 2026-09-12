@@ -6,6 +6,7 @@ import {
   calculateTotalPaid,
   calculateRemaining,
   calculateTotalModificationFees,
+  calculateTotalModificationProfit,
   calculateTotalRefunded,
   calculateAvailableRefund,
   calculateNetValue,
@@ -76,6 +77,14 @@ assert(calculateRemaining(18500, 20000) === 0, 'calculateRemaining caps at 0 whe
 
 const sampleMods = [{ changeFee: 1200 }, { changeFee: 300 }];
 assert(calculateTotalModificationFees(sampleMods) === 1500, 'calculateTotalModificationFees sums change fees');
+
+const sampleModsWithCost = [
+  { changeFee: 1200, airlineFee: 800 },
+  { changeFee: 500, airlineFee: 300 }
+];
+assert(calculateTotalModificationProfit(sampleModsWithCost) === 600, 'calculateTotalModificationProfit sums (changeFee - airlineFee)');
+assert(calculateTotalModificationProfit([{ changeFee: 1000 }]) === 1000, 'calculateTotalModificationProfit defaults airlineFee to 0 if omitted');
+assert(calculateTotalModificationProfit([]) === 0, 'calculateTotalModificationProfit returns 0 for empty array');
 
 const sampleRefunds = [
   { amount: 5000, status: 'COMPLETED' },
@@ -174,6 +183,21 @@ assertThrows(() => validateModification(testModTicket, {
   changeFee: 500,
   reason: 'Arrival before departure test'
 }), BusinessRuleError, 'New arrival earlier than new departure blocked by BusinessRuleError');
+
+assert(validateModification(testModTicket, {
+  newDepartureDate: '2023-10-25',
+  newArrivalDate: '2023-10-26',
+  changeFee: 1200,
+  airlineFee: 800,
+  reason: 'Date change YYYY-MM-DD'
+}), 'Valid modification with date-only YYYY-MM-DD and airlineFee allowed');
+
+assertThrows(() => validateModification(testModTicket, {
+  newDepartureDate: '2023-10-25',
+  changeFee: 500,
+  airlineFee: -100,
+  reason: 'Negative airline fee test'
+}), ValidationError, 'Negative airline fee rejected');
 
 assertThrows(() => validateModification(testModTicket, {
   newDepartureDate: '2023-10-25T10:00:00Z',

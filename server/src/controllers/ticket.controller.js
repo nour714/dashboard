@@ -17,6 +17,13 @@ export function sanitizeTicketForRole(ticket, role) {
     delete sanitized.financials.costPrice;
     delete sanitized.financials.netProfit;
   }
+  if (Array.isArray(sanitized.modifications)) {
+    sanitized.modifications = sanitized.modifications.map(m => {
+      const copy = { ...m };
+      delete copy.airlineFee;
+      return copy;
+    });
+  }
   return sanitized;
 }
 
@@ -110,9 +117,14 @@ export const TicketController = {
   async addModification(req, res, next) {
     try {
       const mod = await TicketService.addModification(req.params.id, req.body, req.user);
+      let responseData = mod;
+      if (req.user?.role !== 'ADMIN' && mod) {
+        responseData = { ...mod };
+        delete responseData.airlineFee;
+      }
       return res.status(201).json({
         success: true,
-        data: mod
+        data: responseData
       });
     } catch (err) {
       next(err);

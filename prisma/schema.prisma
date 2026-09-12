@@ -168,6 +168,7 @@ model Modification {
   originalFlight Json
   newFlight      Json
   changeFee      Decimal  @default(0) @db.Decimal(12, 2)
+  airlineFee     Decimal  @default(0) @db.Decimal(12, 2) // Airline cost fee for this modification
   currency       String   @default("EGP")
   reason         String
   requestedBy    String

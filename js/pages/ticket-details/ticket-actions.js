@@ -113,16 +113,25 @@ export function openModifyFlightModal(ticket, onSuccess) {
   openModal({
     title: `${t('modals.modifyFlight.title')} #${ticket.id}`,
     subtitle: `${ticket.origin} ✈ ${ticket.destination} (${ticket.flightNumber || 'MS 901'})`,
-    contentHtml: `
+    contentHtml: (() => {
+      const depDateVal = ticket.departureDate ? (typeof ticket.departureDate === 'string' ? ticket.departureDate.slice(0, 10) : new Date(ticket.departureDate).toISOString().slice(0, 10)) : '';
+      const arrDateVal = ticket.arrivalDate ? (typeof ticket.arrivalDate === 'string' ? ticket.arrivalDate.slice(0, 10) : new Date(ticket.arrivalDate).toISOString().slice(0, 10)) : '';
+
+      return `
       <form id="modify-flight-form" class="d-flex flex-column gap-md">
+        <div class="form-group">
+          <label class="form-label" for="mod-flight-num">${escapeHtml(t('modals.modifyFlight.newFlightNumber'))}</label>
+          <input type="text" id="mod-flight-num" class="form-control ltr-field" value="${escapeHtml(ticket.flightNumber || 'MS 905')}" required />
+        </div>
+
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label" for="mod-flight-num">${escapeHtml(t('modals.modifyFlight.newFlightNumber'))}</label>
-            <input type="text" id="mod-flight-num" class="form-control ltr-field" value="${escapeHtml(ticket.flightNumber || 'MS 905')}" required />
+            <label class="form-label" for="mod-airline-fee">${escapeHtml(t('modals.modifyFlight.modFeeAirline'))}</label>
+            <input type="number" id="mod-airline-fee" class="form-control tabular-nums" value="0" min="0" />
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="mod-change-fee">${escapeHtml(t('modals.modifyFlight.modFee'))}</label>
+            <label class="form-label" for="mod-change-fee">${escapeHtml(t('modals.modifyFlight.modFeeCustomer'))}</label>
             <input type="number" id="mod-change-fee" class="form-control tabular-nums" value="1200" min="0" />
           </div>
         </div>
@@ -130,12 +139,12 @@ export function openModifyFlightModal(ticket, onSuccess) {
         <div class="form-grid-2">
           <div class="form-group">
             <label class="form-label" for="mod-dep-date">${escapeHtml(t('modals.modifyFlight.newDeparture'))} *</label>
-            <input type="datetime-local" id="mod-dep-date" class="form-control" value="${ticket.departureDate || ''}" required />
+            <input type="date" id="mod-dep-date" class="form-control" value="${depDateVal}" required />
           </div>
 
           <div class="form-group">
             <label class="form-label" for="mod-arr-date">${escapeHtml(t('modals.modifyFlight.newArrival'))} *</label>
-            <input type="datetime-local" id="mod-arr-date" class="form-control" value="${ticket.arrivalDate || ''}" required />
+            <input type="date" id="mod-arr-date" class="form-control" value="${arrDateVal}" required />
           </div>
         </div>
 
@@ -154,7 +163,8 @@ export function openModifyFlightModal(ticket, onSuccess) {
           <input type="text" id="mod-note" class="form-control" placeholder="..." />
         </div>
       </form>
-    `,
+    `;
+    })(),
     footerHtml: `
       <button type="button" class="btn btn-secondary" id="modal-cancel-mod">${escapeHtml(t('common.cancel'))}</button>
       <button type="button" class="btn btn-primary" id="modal-submit-mod">${escapeHtml(t('modals.modifyFlight.submit'))}</button>
@@ -168,6 +178,7 @@ export function openModifyFlightModal(ticket, onSuccess) {
       if (submitBtn) {
         submitBtn.addEventListener('click', async () => {
           const flightNumber = modalEl.querySelector('#mod-flight-num').value.trim();
+          const airlineFee = Number(modalEl.querySelector('#mod-airline-fee').value) || 0;
           const changeFee = Number(modalEl.querySelector('#mod-change-fee').value) || 0;
           const newDepartureDate = modalEl.querySelector('#mod-dep-date').value;
           const newArrivalDate = modalEl.querySelector('#mod-arr-date').value;
@@ -178,6 +189,7 @@ export function openModifyFlightModal(ticket, onSuccess) {
           const result = await TicketService.addModification(ticket.id, {
             flightNumber,
             changeFee,
+            airlineFee,
             newDepartureDate,
             newArrivalDate,
             reason,

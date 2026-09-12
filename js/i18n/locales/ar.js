@@ -365,6 +365,7 @@ export const ar = {
         previousSchedule: 'الجدول السابق',
         newSchedule: 'الجدول الجديد',
         fee: 'رسوم التعديل',
+        airlineFee: 'رسوم شركة الطيران',
         reason: 'السبب / الملاحظات',
         processedBy: 'تمت المعالجة بواسطة'
       },
@@ -698,9 +699,10 @@ export const ar = {
       title: 'تعديل جدول الرحلة',
       subtitle: 'تسجيل تعديل في خط السير، موعد الإقلاع الجديد، ورسوم التعديل.',
       newFlightNumber: 'رقم الرحلة الجديد',
-      newDeparture: 'تاريخ ووقت الإقلاع الجديد',
-      newArrival: 'تاريخ ووقت الوصول الجديد',
-      modFee: 'رسوم التعديل (جنيه مصري)',
+      newDeparture: 'تاريخ الإقلاع الجديد',
+      newArrival: 'تاريخ الوصول الجديد',
+      modFeeAirline: 'رسوم التعديل من شركة الطيران (التكلفة)',
+      modFeeCustomer: 'الرسوم المحصّلة من العميل',
       reason: 'سبب التعديل',
       submit: 'حفظ تعديل الرحلة'
     },

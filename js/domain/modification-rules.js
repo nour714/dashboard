@@ -20,6 +20,11 @@ export function validateModification(ticket, modData = {}) {
     throw new ValidationError('Change fee cannot be negative', 'changeFee');
   }
 
+  const airlineFee = modData.airlineFee !== undefined ? Number(modData.airlineFee) : 0;
+  if (isNaN(airlineFee) || airlineFee < 0) {
+    throw new ValidationError('Airline fee cannot be negative', 'airlineFee');
+  }
+
   if (modData.newDepartureDate) {
     const depTime = new Date(modData.newDepartureDate).getTime();
     if (isNaN(depTime)) {

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel - Ticket Details: Modifications Tab Component
  */
 
@@ -42,10 +42,14 @@ export function renderModificationsTab(ticket) {
             <div class="text-xs font-semibold text-warning">${escapeHtml(m.newFlight.note || '')}</div>
           </div>
         </div>
-        <div class="d-flex justify-between items-center text-sm pt-sm" style="border-top: 1px solid var(--color-border-soft);">
+        <div class="d-flex justify-between items-center text-sm pt-sm" style="border-top: 1px solid var(--color-border-soft); flex-wrap: wrap; gap: 8px;">
           <div>
             <span class="text-muted">${escapeHtml(t('ticketDetails.modificationsTab.table.fee'))}:</span>
             <strong class="tabular-nums text-danger font-bold ms-xs">${formatCurrency(m.changeFee, m.currency || ticket.currency)}</strong>
+            ${m.airlineFee !== undefined ? `
+              <span class="text-muted ms-md">${escapeHtml(t('ticketDetails.modificationsTab.table.airlineFee'))}:</span>
+              <strong class="tabular-nums ms-xs">${formatCurrency(m.airlineFee, m.currency || ticket.currency)}</strong>
+            ` : ''}
             <span class="text-muted ms-md">${escapeHtml(t('common.reason'))}:</span> ${escapeHtml(m.reason)}
           </div>
           <div class="text-muted">

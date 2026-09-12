@@ -211,16 +211,23 @@ console.log('\n═══ 4. Modification Validation Tests ═══');
 const ticketForMod = { ticketPrice: 18500, payments: [], refunds: [], modifications: [] };
 
 // Valid: 1200 fee
-assert(validateModification(ticketForMod, { changeFee: 1200 }) === true, 'Modification fee 1200 accepted');
+assert(validateModification(ticketForMod, { changeFee: 1200, airlineFee: 800 }) === true, 'Modification fee 1200 and airline fee 800 accepted');
 
 // Valid: 0 fee
-assert(validateModification(ticketForMod, { changeFee: 0 }) === true, 'Modification fee 0 accepted');
+assert(validateModification(ticketForMod, { changeFee: 0, airlineFee: 0 }) === true, 'Modification fee 0 and airline fee 0 accepted');
 
 // Reject: negative fee
 assertThrows(
   () => validateModification(ticketForMod, { changeFee: -500 }),
   'ValidationError',
   'Modification fee -500 rejected'
+);
+
+// Reject: negative airline fee
+assertThrows(
+  () => validateModification(ticketForMod, { changeFee: 500, airlineFee: -100 }),
+  'ValidationError',
+  'Airline fee -100 rejected'
 );
 
 // Valid: chronological dates

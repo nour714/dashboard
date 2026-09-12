@@ -41,6 +41,20 @@ export function calculateTotalModificationFees(modifications = []) {
 }
 
 /**
+ * Calculates total profit margin from flight modifications
+ * (sum of customer-charged fee minus airline cost fee, per modification)
+ * @param {Array<{changeFee: number|string, airlineFee: number|string}>} modifications
+ * @returns {number}
+ */
+export function calculateTotalModificationProfit(modifications = []) {
+  if (!Array.isArray(modifications)) return 0;
+  return modifications.reduce(
+    (sum, m) => sum + ((Number(m.changeFee) || 0) - (Number(m.airlineFee) || 0)),
+    0
+  );
+}
+
+/**
  * Calculates total completed refunds
  * @param {Array<{amount: number|string, status: string}>} refunds
  * @returns {number}
