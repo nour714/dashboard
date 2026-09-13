@@ -90,7 +90,7 @@
   },
   "devDependencies": {
     "eslint": "^9.39.5",
-    "prisma": "^6.4.1",
+    "prisma": "^6.19.3",
     "puppeteer-core": "^25.10.0"
   }
 }
