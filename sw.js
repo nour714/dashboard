@@ -11,7 +11,7 @@
  * returning users pick up the new version instead of a stale cache.
  */
 
-const CACHE_NAME = 'africatravel-shell-v2';
+const CACHE_NAME = 'africatravel-shell-v3';
 
 const SHELL_ASSETS = [
   '/',
@@ -63,6 +63,8 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Stale-while-revalidate with navigation fallback and guaranteed Response safety net
+  const offlineResponse = () => new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+
   event.respondWith(
     caches.match(request).then((cached) => {
       const networkFetch = fetch(request)
@@ -73,16 +75,19 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => {
+        .catch(async () => {
           // Network failed and this URL is not in cache (e.g. dynamic SPA routes like /tickets/TK-XXX).
           // If this is a page navigation, return the cached app shell (/index.html) to prevent crash.
+          // Every branch here MUST resolve to a real Response — caches.match() and `cached` can both
+          // be undefined, and respondWith() throws "Failed to convert value to 'Response'" if so.
           if (request.mode === 'navigate') {
-            return caches.match('/index.html');
+            const shell = await caches.match('/index.html');
+            return shell || offlineResponse();
           }
-          return cached;
+          return cached || offlineResponse();
         });
 
       return cached || networkFetch;
-    }).catch(() => new Response('Offline', { status: 503, statusText: 'Service Unavailable' }))
+    }).catch(offlineResponse)
   );
 });
