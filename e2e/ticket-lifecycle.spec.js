@@ -107,9 +107,9 @@ test.describe('Ticket Lifecycle & Financials', () => {
     // Wait for redirect to /tickets
     await expect(page).toHaveURL(/\/tickets$/);
 
-    // Verify deleted ticket is not listed in tickets table
-    await page.waitForSelector('#tickets-table, .empty-state, .page-body');
-    const ticketRow = page.locator(`tr:has-text("${uniqueTicketNum}"), tr:has-text("${ticketId}")`);
+    // Verify deleted ticket is not listed in tickets table or mobile cards
+    await page.waitForSelector('#tickets-table, .mobile-tickets-list, .empty-state, .page-body');
+    const ticketRow = page.locator(`tr:has-text("${uniqueTicketNum}"), tr:has-text("${ticketId}"), .mobile-ticket-card:has-text("${uniqueTicketNum}")`);
     await expect(ticketRow).toHaveCount(0);
 
     // Directly navigate to the deleted ticket URL

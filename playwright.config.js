@@ -14,7 +14,12 @@ export default defineConfig({
     command: 'npm start',
     url: 'http://localhost:3000/api/health',
     reuseExistingServer: !process.env.CI,
-    timeout: 30000
+    timeout: 30000,
+    env: {
+      ...process.env,
+      RATE_LIMIT_MAX_AUTH: '1000',
+      RATE_LIMIT_MAX_API: '5000'
+    }
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
