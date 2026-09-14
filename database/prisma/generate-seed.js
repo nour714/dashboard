@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { INITIAL_CUSTOMERS, INITIAL_EMPLOYEES, INITIAL_TICKETS, INITIAL_ACTIVITY_LOGS, INITIAL_SETTINGS } from '../js/data/mock-data.js';
+import { INITIAL_CUSTOMERS, INITIAL_EMPLOYEES, INITIAL_TICKETS, INITIAL_ACTIVITY_LOGS, INITIAL_SETTINGS } from '../../frontend/js/data/mock-data.js';
 
 let sql = '-- AfricaTravel - Master Seed Data for Supabase PostgreSQL\n\n';
 

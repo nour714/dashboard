@@ -13,7 +13,7 @@ import {
   INITIAL_TICKETS,
   INITIAL_ACTIVITY_LOGS,
   INITIAL_SETTINGS
-} from '../js/data/mock-data.js';
+} from '../../frontend/js/data/mock-data.js';
 
 const prisma = new PrismaClient();
 
