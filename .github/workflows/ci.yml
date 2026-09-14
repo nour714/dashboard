@@ -89,6 +89,15 @@ jobs:
           DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_DATABASE_URL }}
         continue-on-error: true
 
+      - name: DIAGNOSTIC - Show exact schema diff (read-only, temporary)
+        run: |
+          npx prisma migrate diff \
+            --from-url "$DATABASE_URL" \
+            --to-schema-datamodel prisma/schema.prisma \
+            --script
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_DATABASE_URL }}
+
       - name: Apply pending migrations to production database
         run: npx prisma migrate deploy
         env:
