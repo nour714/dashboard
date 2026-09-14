@@ -7,10 +7,10 @@
 import http from 'http';
 import { fileURLToPath } from 'url';
 import path from 'path';
-import { createApp } from './server/src/app.js';
-import { validatePath } from './server/src/middleware/security.js';
-import { env } from './server/src/config/env.js';
-import { checkDatabaseHealth } from './server/src/config/database.js';
+import { createApp } from './backend/src/app.js';
+import { validatePath } from './backend/src/middleware/security.js';
+import { env } from './backend/src/config/env.js';
+import { checkDatabaseHealth } from './backend/src/config/database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

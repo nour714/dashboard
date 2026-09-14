@@ -6,33 +6,33 @@
       "use": "@vercel/node",
       "config": {
         "includeFiles": [
-          "prisma/**",
+          "database/prisma/**",
           "node_modules/.prisma/client/**"
         ]
       }
     },
     {
-      "src": "index.html",
+      "src": "frontend/index.html",
       "use": "@vercel/static"
     },
     {
-      "src": "assets/**",
+      "src": "frontend/assets/**",
       "use": "@vercel/static"
     },
     {
-      "src": "styles/**",
+      "src": "frontend/styles/**",
       "use": "@vercel/static"
     },
     {
-      "src": "js/**",
+      "src": "frontend/js/**",
       "use": "@vercel/static"
     },
     {
-      "src": "manifest.json",
+      "src": "frontend/manifest.json",
       "use": "@vercel/static"
     },
     {
-      "src": "sw.js",
+      "src": "frontend/sw.js",
       "use": "@vercel/static"
     }
   ],
@@ -43,27 +43,27 @@
     },
     {
       "src": "/assets/(.*)",
-      "dest": "/assets/$1"
+      "dest": "/frontend/assets/$1"
     },
     {
       "src": "/styles/(.*)",
-      "dest": "/styles/$1"
+      "dest": "/frontend/styles/$1"
     },
     {
       "src": "/js/(.*)",
-      "dest": "/js/$1"
+      "dest": "/frontend/js/$1"
     },
     {
       "src": "/manifest.json",
-      "dest": "/manifest.json"
+      "dest": "/frontend/manifest.json"
     },
     {
       "src": "/sw.js",
-      "dest": "/sw.js"
+      "dest": "/frontend/sw.js"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/frontend/index.html"
     }
   ],
   "headers": [

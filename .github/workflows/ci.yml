@@ -37,10 +37,10 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma Client
-        run: npx prisma generate
+        run: npx prisma generate --schema=database/prisma/schema.prisma
 
       - name: Lint (ESLint)
-        run: npx eslint server/ test/
+        run: npm run lint
         continue-on-error: false
 
       - name: Security Audit (production dependencies)
@@ -94,9 +94,9 @@ jobs:
           node-version: '24.x'
           cache: 'npm'
       - run: npm ci
-      - run: npx prisma generate
-      - run: npx prisma db push --skip-generate
-      - run: node prisma/seed.js
+      - run: npx prisma generate --schema=database/prisma/schema.prisma
+      - run: npx prisma db push --skip-generate --schema=database/prisma/schema.prisma
+      - run: node database/prisma/seed.js
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
       - uses: actions/upload-artifact@v4
@@ -133,14 +133,14 @@ jobs:
         run: npm ci
 
       - name: Check migration status (read-only, diagnostic)
-        run: npx prisma migrate status
+        run: npx prisma migrate status --schema=database/prisma/schema.prisma
         env:
           DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_DATABASE_URL }}
         continue-on-error: true
 
       - name: Apply pending migrations to production database
-        run: npx prisma migrate deploy
+        run: npx prisma migrate deploy --schema=database/prisma/schema.prisma
         env:
           DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_DATABASE_URL }}

@@ -9,13 +9,13 @@ RUN apk add --no-cache libc6-compat openssl
 
 # Copy package files
 COPY package*.json ./
-COPY prisma ./prisma/
+COPY database/prisma ./database/prisma/
 
 # Install all dependencies (including devDependencies for prisma build)
 RUN npm ci
 
 # Generate Prisma Client
-RUN npx prisma generate
+RUN npx prisma generate --schema=database/prisma/schema.prisma
 
 # Stage 2: Production image
 FROM node:24-alpine AS runner
@@ -34,14 +34,11 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 # Copy built application & node_modules
 COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/prisma ./prisma
+COPY --from=base /app/database/prisma ./database/prisma
 COPY package*.json ./
 COPY server.js ./
-COPY server ./server/
-COPY js ./js/
-COPY styles ./styles/
-COPY assets ./assets/
-COPY index.html ./
+COPY backend ./backend/
+COPY frontend ./frontend/
 
 USER africatravel
 
