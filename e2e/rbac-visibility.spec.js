@@ -3,7 +3,6 @@ import { test, expect } from '@playwright/test';
 const AGENT_EMAIL = 'nour.w@africatravel.com';
 const ADMIN_EMAIL = 'admin@africatravel.com';
 const PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD || 'CiTestOnlyPassword123';
-const TEST_TICKET_ID = 'TK-10254';
 
 test.describe('RBAC Visibility Enforcement', () => {
   test('AGENT cannot see costPrice, netProfit, or airlineFee in the DOM', async ({ page }) => {
@@ -14,8 +13,10 @@ test.describe('RBAC Visibility Enforcement', () => {
     await page.click('#login-submit-btn');
     await expect(page).toHaveURL(/\/dashboard$/);
 
-    // 2. Open ticket details
-    await page.goto(`/tickets/${TEST_TICKET_ID}`);
+    // 2. Open tickets list and navigate to first ticket details
+    await page.goto('/tickets');
+    await expect(page.locator('#tickets-table, .mobile-tickets-list')).toBeVisible();
+    await page.locator('a[href^="/tickets/TK-"]').first().click();
     await expect(page.locator('.financial-ledger-banner')).toBeVisible();
 
     // 3. Verify costPrice is completely absent from DOM (not just CSS hidden)
@@ -43,8 +44,10 @@ test.describe('RBAC Visibility Enforcement', () => {
     await page.click('#login-submit-btn');
     await expect(page).toHaveURL(/\/dashboard$/);
 
-    // 2. Open ticket details
-    await page.goto(`/tickets/${TEST_TICKET_ID}`);
+    // 2. Open tickets list and navigate to first ticket details
+    await page.goto('/tickets');
+    await expect(page.locator('#tickets-table, .mobile-tickets-list')).toBeVisible();
+    await page.locator('a[href^="/tickets/TK-"]').first().click();
     await expect(page.locator('.financial-ledger-banner')).toBeVisible();
 
     // 3. Verify costPrice is present and visible

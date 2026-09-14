@@ -45,7 +45,8 @@ test.describe('Authentication Flows', () => {
 
     // 2. Sign out: on desktop via sidebar, on mobile via settings
     if (isMobile) {
-      await page.goto('/settings?section=security');
+      await page.goto('/settings');
+      await page.click('button[data-settings-target="security"]');
       const signOutBtn = page.locator('#setting-sign-out-btn');
       await expect(signOutBtn).toBeVisible();
       await signOutBtn.click();

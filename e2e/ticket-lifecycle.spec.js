@@ -52,7 +52,7 @@ test.describe('Ticket Lifecycle & Financials', () => {
     await page.click('#create-ticket-form button[type="submit"]');
 
     // 2. Verify redirect to ticket details page
-    await expect(page).toHaveURL(/\/tickets\/TK-\d+$/);
+    await expect(page).toHaveURL(/\/tickets\/TK-[\dA-Za-z]+$/);
     const ticketUrl = page.url();
     const ticketId = ticketUrl.split('/').pop();
     expect(ticketId).toBeTruthy();
