@@ -57,12 +57,14 @@ export function applyApiMiddleware(app) {
 }
 
 /** Mount API routes consistently for standalone and serverless entry points. */
-export function mountApiRoutes(app) {
+export function mountApiRoutes(app, { isServerless = false } = {}) {
   app.use('/api', apiRouter);
-  app.use((req, res, next) => {
-    const isApiSubpath = ['/auth', '/tickets', '/customers', '/employees', '/reports', '/activity', '/health'].some(p => req.path.startsWith(p));
-    return isApiSubpath ? apiRouter(req, res, next) : next();
-  });
+  if (isServerless) {
+    app.use((req, res, next) => {
+      const isApiSubpath = ['/auth', '/tickets', '/customers', '/employees', '/reports', '/activity', '/health'].some(p => req.path.startsWith(p));
+      return isApiSubpath ? apiRouter(req, res, next) : next();
+    });
+  }
 }
 
 export function apiNotFound(req, res) {
@@ -79,7 +81,7 @@ export function apiNotFound(req, res) {
 export function createApiApp() {
   const app = express();
   applyApiMiddleware(app);
-  mountApiRoutes(app);
+  mountApiRoutes(app, { isServerless: true });
   app.use(apiNotFound);
   app.use(errorHandler);
   return app;
@@ -91,8 +93,8 @@ export function createApp(rootDir = ROOT_DIR) {
   // Apply shared API middleware pipeline
   applyApiMiddleware(app);
 
-  // Mount API endpoints (supports both /api prefix and stripped serverless routes).
-  mountApiRoutes(app);
+  // Mount API endpoints on /api (standalone server preserves SPA routes for frontend)
+  mountApiRoutes(app, { isServerless: false });
 
   // Security guard for static assets & frontend: block path traversal & dotfiles
   app.use((req, res, next) => {
