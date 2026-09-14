@@ -13,6 +13,7 @@ import {
   calculateTotalPaid,
   calculateRemaining,
   calculateTotalModificationFees,
+  calculateTotalModificationProfit,
   calculateTotalRefunded,
   calculateAvailableRefund,
   calculateNetValue,
@@ -95,7 +96,9 @@ export const TicketService = {
     const netValue = calculateNetValue(ticket.ticketPrice, modificationFees, totalRefunded);
     const paymentStatus = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status);
     const costPrice = ticket.costPrice !== null && ticket.costPrice !== undefined ? Number(ticket.costPrice) : null;
-    const netProfit = calculateNetProfit(ticket.ticketPrice, costPrice);
+    const baseProfit = calculateNetProfit(ticket.ticketPrice, costPrice);
+    const modificationProfit = calculateTotalModificationProfit(ticket.modifications || []);
+    const netProfit = baseProfit !== null ? Number((baseProfit + modificationProfit).toFixed(2)) : null;
 
     return {
       ticketPrice: ticket.ticketPrice,

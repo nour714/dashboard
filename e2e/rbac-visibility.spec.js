@@ -15,8 +15,9 @@ test.describe('RBAC Visibility Enforcement', () => {
 
     // 2. Open tickets list and navigate to first ticket details
     await page.goto('/tickets');
-    await expect(page.locator('#tickets-table, .mobile-tickets-list')).toBeVisible();
-    await page.locator('a[href^="/tickets/TK-"]').first().click();
+    const ticketLink = page.locator('a[href^="/tickets/TK-"]').first();
+    await expect(ticketLink).toBeVisible();
+    await ticketLink.click();
     await expect(page.locator('.financial-ledger-banner')).toBeVisible();
 
     // 3. Verify costPrice is completely absent from DOM (not just CSS hidden)
@@ -46,8 +47,9 @@ test.describe('RBAC Visibility Enforcement', () => {
 
     // 2. Open tickets list and navigate to first ticket details
     await page.goto('/tickets');
-    await expect(page.locator('#tickets-table, .mobile-tickets-list')).toBeVisible();
-    await page.locator('a[href^="/tickets/TK-"]').first().click();
+    const ticketLink = page.locator('a[href^="/tickets/TK-"]').first();
+    await expect(ticketLink).toBeVisible();
+    await ticketLink.click();
     await expect(page.locator('.financial-ledger-banner')).toBeVisible();
 
     // 3. Verify costPrice is present and visible
