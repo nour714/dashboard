@@ -15,7 +15,7 @@ test.describe('RBAC Visibility Enforcement', () => {
 
     // 2. Open tickets list and navigate to first ticket details
     await page.goto('/tickets');
-    const ticketLink = page.locator('a[href^="/tickets/TK-"]').first();
+    const ticketLink = page.locator('a[href^="/tickets/TK-"]:visible').first();
     await expect(ticketLink).toBeVisible();
     await ticketLink.click();
     await expect(page.locator('.financial-ledger-banner')).toBeVisible();
@@ -47,7 +47,7 @@ test.describe('RBAC Visibility Enforcement', () => {
 
     // 2. Open tickets list and navigate to first ticket details
     await page.goto('/tickets');
-    const ticketLink = page.locator('a[href^="/tickets/TK-"]').first();
+    const ticketLink = page.locator('a[href^="/tickets/TK-"]:visible').first();
     await expect(ticketLink).toBeVisible();
     await ticketLink.click();
     await expect(page.locator('.financial-ledger-banner')).toBeVisible();
