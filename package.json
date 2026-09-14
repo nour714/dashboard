@@ -72,7 +72,7 @@
     "seed": "node database/prisma/seed.js"
   },
   "dependencies": {
-    "@prisma/client": "^6.4.1",
+    "@prisma/client": "^6.19.3",
     "@supabase/server": "^1.5.1",
     "@supabase/supabase-js": "^2.112.4",
     "@upstash/ratelimit": "^2.0.8",
