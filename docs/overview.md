@@ -178,13 +178,13 @@ node scripts/deployment/verify-deployment.js
 
 ## Technical Documentation
 
-Detailed guides are available in the [`docs/`](./docs) directory:
-- [System Architecture](docs/architecture.md): Lifecycle, component hierarchy, and routing.
-- [Database Guide](docs/database.md): Schema models, relationships, indexing, and migrations.
-- [Security Guide](docs/security-architecture.md): JWT cookie delivery, RBAC, CSP, and rate limiting.
-- [Deployment Guide](docs/deployment.md): Docker, Vercel, and CI pipeline setup.
-- [Testing Guide](docs/testing.md): Automated testing framework and test suites reference.
-- [Product Requirements (PRD)](docs/PRD.md): Functional specification and business rules.
+Detailed guides are available in the current directory:
+- [System Architecture](architecture.md): Lifecycle, component hierarchy, and routing.
+- [Database Guide](database.md): Schema models, relationships, indexing, and migrations.
+- [Security Guide](security-architecture.md): JWT cookie delivery, RBAC, CSP, and rate limiting.
+- [Deployment Guide](deployment.md): Docker, Vercel, and CI pipeline setup.
+- [Testing Guide](testing.md): Automated testing framework and test suites reference.
+- [Product Requirements (PRD)](PRD.md): Functional specification and business rules.
 
 ---
 
