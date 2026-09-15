@@ -48,7 +48,7 @@ Africiatravel/
 │   ├── architecture.md        # System architecture & execution lifecycle
 │   ├── database.md            # Database models, indexes, and migrations
 │   ├── deployment.md          # Docker, Vercel, and CI/CD operations
-│   ├── security.md            # Auth, RBAC, encryption, and hardening
+│   ├── security-architecture.md # Auth, RBAC, encryption, and hardening
 │   ├── testing.md             # Automated testing guide & command reference
 │   └── supabase-setup-summary.md # Supabase infrastructure summary
 ├── frontend/                  # Static Single Page Application (SPA)
@@ -181,7 +181,7 @@ node scripts/deployment/verify-deployment.js
 Detailed guides are available in the [`docs/`](./docs) directory:
 - [System Architecture](docs/architecture.md): Lifecycle, component hierarchy, and routing.
 - [Database Guide](docs/database.md): Schema models, relationships, indexing, and migrations.
-- [Security Guide](docs/security.md): JWT cookie delivery, RBAC, CSP, and rate limiting.
+- [Security Guide](docs/security-architecture.md): JWT cookie delivery, RBAC, CSP, and rate limiting.
 - [Deployment Guide](docs/deployment.md): Docker, Vercel, and CI pipeline setup.
 - [Testing Guide](docs/testing.md): Automated testing framework and test suites reference.
 - [Product Requirements (PRD)](docs/PRD.md): Functional specification and business rules.
