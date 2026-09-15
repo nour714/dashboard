@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel — Payments Ledger Page
  */
 
@@ -12,6 +12,7 @@ import { showToast } from '../components/toast.js';
 import {
   calculateTotalPaid,
   calculateRemaining,
+  calculateTotalModificationFees,
   formatCurrency,
   formatDateTime
 } from '../utils/calculations.js';
@@ -20,7 +21,7 @@ import { t } from '../i18n/i18n.js';
 
 export const PaymentsPage = {
   render() {
-    const { tickets } = store.getState();
+    const { tickets = [] } = store.getState();
 
     // Flatten all payments across all tickets with ticket metadata
     const allPayments = [];
@@ -29,10 +30,12 @@ export const PaymentsPage = {
     let grandTotalRemaining = 0;
 
     tickets.forEach(tData => {
-      grandTotalValue += Number(tData.ticketPrice) || 0;
+      const price = Number(tData.ticketPrice) || 0;
+      const modFees = calculateTotalModificationFees(tData.modifications);
+      grandTotalValue += (price + modFees);
       const tPaid = calculateTotalPaid(tData.payments);
       grandTotalPaid += tPaid;
-      grandTotalRemaining += calculateRemaining(tData.ticketPrice, tPaid);
+      grandTotalRemaining += calculateRemaining(tData.ticketPrice, tPaid, modFees);
 
       (tData.payments || []).forEach(p => {
         allPayments.push({

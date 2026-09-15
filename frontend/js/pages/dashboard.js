@@ -9,6 +9,7 @@ import { renderStatusBadge } from '../components/status-badge.js';
 import {
   calculateTotalPaid,
   calculateRemaining,
+  calculateTotalModificationFees,
   formatCurrency,
   formatCompactNumber,
   formatDateTime,
@@ -19,9 +20,9 @@ import { t } from '../i18n/i18n.js';
 
 export const DashboardPage = {
   render() {
-    const { tickets, activityLogs } = store.getState();
+    const { tickets = [], activityLogs = [] } = store.getState();
 
-    // Compute KPIs
+    // Financial KPIs
     let totalTickets = tickets.length;
     let totalSales = 0;
     let totalCollected = 0;
@@ -32,7 +33,8 @@ export const DashboardPage = {
       totalSales += price;
       const paid = calculateTotalPaid(tk.payments);
       totalCollected += paid;
-      totalOutstanding += calculateRemaining(price, paid);
+      const modFees = calculateTotalModificationFees(tk.modifications);
+      totalOutstanding += calculateRemaining(price, paid, modFees);
     });
 
     const collectionRate = totalSales > 0 ? Math.round((totalCollected / totalSales) * 100) : 0;
@@ -50,7 +52,8 @@ export const DashboardPage = {
 
     const recentTicketsHtml = recentTickets.map(tk => {
       const totalPaid = calculateTotalPaid(tk.payments);
-      const remaining = calculateRemaining(tk.ticketPrice, totalPaid);
+      const modFees = calculateTotalModificationFees(tk.modifications);
+      const remaining = calculateRemaining(tk.ticketPrice, totalPaid, modFees);
       const isPaid = remaining === 0;
 
       return `
@@ -151,7 +154,7 @@ export const DashboardPage = {
           value: formatCurrency(totalOutstanding),
           icon: 'alertTriangle',
           iconStyle: 'danger',
-          alertPill: totalOutstanding > 0 ? (totalOutstanding > 0 ? t('common.remaining') : '') : '',
+          alertPill: totalOutstanding > 0 ? t('common.remaining') : '',
           subtext: t('dashboard.kpi.remainingSubtitle')
         })}
       </div>

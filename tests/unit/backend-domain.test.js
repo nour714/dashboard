@@ -144,6 +144,17 @@ assertThrows(() => validatePayment(testTicket, { amount: 0 }), ValidationError, 
 assertThrows(() => validatePayment(testTicket, { amount: -500 }), ValidationError, 'Negative payment amount rejected');
 assertThrows(() => validatePayment(null, { amount: 1000 }), NotFoundError, 'Payment against non-existent ticket throws NotFoundError');
 
+// 4.1 Payment on ticket with modification fees when base price is fully paid
+const fullyPaidWithModTicket = {
+  id: 'TK-TEST-MOD-1',
+  ticketPrice: 10000,
+  payments: [{ amount: 10000 }],
+  modifications: [{ changeFee: 750, airlineFee: 250 }],
+  currency: 'EGP'
+};
+assert(validatePayment(fullyPaidWithModTicket, { amount: 750, method: 'Cash' }), 'Payment equal to modification fee (750) allowed on fully paid base ticket');
+assertThrows(() => validatePayment(fullyPaidWithModTicket, { amount: 800, method: 'Cash' }), BusinessRuleError, 'Payment exceeding modification fee (800 > 750) blocked by BusinessRuleError');
+
 // 5. Refund Domain Rules (Over-refund Prevention)
 console.log('\n--- 5. Refund Domain Validation ---');
 const testRefundTicket = {

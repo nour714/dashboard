@@ -126,7 +126,31 @@ export const ReportsPage = {
     const exportBtn = container.querySelector('#export-report-btn');
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
-        showToast(t('reports.exportCsv') + '...', 'info');
+        const customerPayments = ReportService.getCustomerPayments() || [];
+        if (customerPayments.length === 0) {
+          showToast(t('common.noData'), 'warning');
+          return;
+        }
+        const headers = ['Customer Name', 'Ticket Number', 'Total Paid (EGP)', 'Total Remaining (EGP)', 'Trip Type'];
+        const csvRows = [headers.join(',')];
+        customerPayments.forEach(row => {
+          const safeName = `"${(row.customerName || '').replace(/"/g, '""')}"`;
+          const safeTicket = `"${(row.ticketNumber || '').replace(/"/g, '""')}"`;
+          const safePaid = Number(row.totalPaid) || 0;
+          const safeRemaining = Number(row.totalRemaining) || 0;
+          const safeTrip = `"${(row.tripType || '').replace(/"/g, '""')}"`;
+          csvRows.push([safeName, safeTicket, safePaid, safeRemaining, safeTrip].join(','));
+        });
+        const blob = new Blob(['\uFEFF' + csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `customer-payments-report-${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showToast(t('reports.exportCsv'), 'success');
       });
     }
   }

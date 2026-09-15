@@ -35,13 +35,13 @@ export function enrichTicketFinancials(ticket) {
   if (!ticket) return null;
 
   const totalPaid = calculateTotalPaid(ticket.payments || []);
-  const remaining = calculateRemaining(ticket.ticketPrice, totalPaid);
   const modificationFees = calculateTotalModificationFees(ticket.modifications || []);
+  const remaining = calculateRemaining(ticket.ticketPrice, totalPaid, modificationFees);
   const modificationProfit = calculateTotalModificationProfit(ticket.modifications || []);
   const totalRefunded = calculateTotalRefunded(ticket.refunds || []);
   const availableRefund = calculateAvailableRefund(totalPaid, totalRefunded);
   const netValue = calculateNetValue(ticket.ticketPrice, modificationFees, totalRefunded);
-  const paymentStatus = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status);
+  const paymentStatus = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status, modificationFees);
   const costPrice = ticket.costPrice !== null && ticket.costPrice !== undefined ? Number(ticket.costPrice) : null;
   const baseProfit = calculateNetProfit(ticket.ticketPrice, costPrice);
   const netProfit = baseProfit !== null ? moneyNumber(asDecimal(baseProfit).plus(asDecimal(modificationProfit))) : null;

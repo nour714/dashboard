@@ -8,8 +8,9 @@ import { formatDate, formatDateTime } from '../../utils/calculations.js';
 import { escapeHtml } from '../../utils/security.js';
 import { t } from '../../i18n/i18n.js';
 
-export function renderOverviewTab(ticket) {
-  const paxInitials = ticket.passengerName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'PA';
+export function renderOverviewTab(ticket = {}) {
+  const paxName = (ticket.passengerName || 'Passenger').trim();
+  const paxInitials = paxName.split(/\s+/).map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'PA';
 
   return `
     <div class="tab-pane active" id="tab-pane-overview">

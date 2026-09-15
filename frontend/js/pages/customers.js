@@ -9,6 +9,7 @@ import { openModal, closeModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
 import { formatCurrency } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
+import { debounce } from '../utils/dom.js';
 import { t } from '../i18n/i18n.js';
 
 let searchQuery = '';
@@ -172,8 +173,8 @@ export const CustomersPage = {
     const createBtn = container.querySelector('#create-customer-btn');
 
     if (searchInput) {
-      searchInput.addEventListener('input', (e) => {
-        searchQuery = e.target.value;
+      const handleSearch = debounce((val) => {
+        searchQuery = val;
         const results = CustomerService.searchCustomers(searchQuery);
         const map = CustomerService.buildTicketsByCustomerMap();
         if (tableTbody) {
@@ -182,7 +183,8 @@ export const CustomersPage = {
         if (mobileCardsContainer) {
           mobileCardsContainer.innerHTML = renderCustomerCards(results, map);
         }
-      });
+      }, 250);
+      searchInput.addEventListener('input', (e) => handleSearch(e.target.value));
     }
 
     if (createBtn) {

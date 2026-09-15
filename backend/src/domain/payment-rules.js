@@ -3,7 +3,8 @@
  */
 
 import { ValidationError, BusinessRuleError, NotFoundError } from './errors.js';
-import { calculateTotalPaid, calculateRemaining } from './ticket-rules.js';
+import { calculateTotalPaid, calculateRemaining, calculateTotalModificationFees } from './ticket-rules.js';
+import { asDecimal } from '../utils/money.js';
 
 /**
  * Validates a payment recording against a ticket's financial ledger
@@ -16,19 +17,21 @@ export function validatePayment(ticket, paymentData = {}) {
     throw new NotFoundError('Ticket');
   }
 
-  const amount = Number(paymentData.amount);
-  if (isNaN(amount) || amount <= 0) {
+  const amountDec = asDecimal(paymentData.amount);
+  if (!amountDec.isFinite() || amountDec.lessThanOrEqualTo(0)) {
     throw new ValidationError('Payment amount must be greater than zero', 'amount');
   }
 
   const totalPaid = calculateTotalPaid(ticket.payments || []);
-  const remaining = calculateRemaining(ticket.ticketPrice, totalPaid);
+  const totalModFees = calculateTotalModificationFees(ticket.modifications || []);
+  const remaining = calculateRemaining(ticket.ticketPrice, totalPaid, totalModFees);
+  const remainingDec = asDecimal(remaining);
 
-  if (amount > remaining) {
+  if (amountDec.greaterThan(remainingDec)) {
     throw new BusinessRuleError(
       'Payment exceeds the remaining balance.',
       'PAYMENT_EXCEEDS_BALANCE',
-      { amount, remaining, currency: ticket.currency || 'EGP' }
+      { amount: amountDec.toNumber(), remaining: remainingDec.toNumber(), currency: ticket.currency || 'EGP' }
     );
   }
 

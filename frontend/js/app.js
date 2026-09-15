@@ -529,7 +529,7 @@ class App {
             </div>
           `,
           footerHtml: `
-            <button type="button" class="btn btn-secondary" onclick="document.querySelector('#modal-close-trigger')?.click()">${escapeHtml(t('common.close'))}</button>
+            <button type="button" class="btn btn-secondary" data-modal-close>${escapeHtml(t('common.close'))}</button>
           `
         });
       });

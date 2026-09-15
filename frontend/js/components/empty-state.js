@@ -1,10 +1,11 @@
 /**
- * AfricaTravel — Empty State Component
+ * AfricaTravel - Empty State Component
  */
 
 import { icons } from './icons.js';
+import { escapeHtml } from '../utils/security.js';
 
-export function renderEmptyState(options) {
+export function renderEmptyState(options = {}) {
   const {
     title = 'No records found',
     description = 'There are no items matching your criteria at this time.',
@@ -14,24 +15,25 @@ export function renderEmptyState(options) {
     actionId = ''
   } = options;
 
-  const iconSvg = typeof icons[icon] === 'function' ? icons[icon]('w-8 h-8') : icons.ticket('w-8 h-8');
+  const iconSvg = typeof icons[icon] === 'function' ? icons[icon]('w-8 h-8') : (typeof icons.ticket === 'function' ? icons.ticket('w-8 h-8') : '');
 
   let actionHtml = '';
   if (actionText) {
+    const safeText = escapeHtml(actionText);
     if (actionHref) {
-      actionHtml = `<a href="${actionHref}" class="btn btn-primary" data-link>${actionText}</a>`;
+      actionHtml = `<a href="${escapeHtml(actionHref)}" class="btn btn-primary" data-link>${safeText}</a>`;
     } else if (actionId) {
-      actionHtml = `<button type="button" class="btn btn-primary" id="${actionId}">${actionText}</button>`;
+      actionHtml = `<button type="button" class="btn btn-primary" id="${escapeHtml(actionId)}">${safeText}</button>`;
     }
   }
 
   return `
-    <div class="empty-state">
-      <div class="empty-state-icon">
+    <div class="empty-state" role="status">
+      <div class="empty-state-icon" aria-hidden="true">
         ${iconSvg}
       </div>
-      <div class="empty-state-title">${title}</div>
-      <p class="empty-state-desc">${description}</p>
+      <div class="empty-state-title">${escapeHtml(title)}</div>
+      <p class="empty-state-desc">${escapeHtml(description)}</p>
       ${actionHtml}
     </div>
   `;

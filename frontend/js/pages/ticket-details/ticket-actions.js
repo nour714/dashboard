@@ -448,7 +448,7 @@ export function openEditTicketModal(ticket, onSuccess) {
           }
 
           closeModal();
-          showToast(t('toasts.customerUpdated'), 'success');
+          showToast(t('toasts.ticketUpdated'), 'success');
           if (onSuccess) onSuccess();
         });
       }

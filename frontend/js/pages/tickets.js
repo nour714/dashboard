@@ -11,10 +11,12 @@ import { showToast } from '../components/toast.js';
 import {
   calculateTotalPaid,
   calculateRemaining,
+  calculateTotalModificationFees,
   formatCurrency,
   formatDate
 } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
+import { debounce } from '../utils/dom.js';
 import { t, i18n } from '../i18n/i18n.js';
 import { AIRLINES, getAirlineLabel } from '../data/airlines.js';
 
@@ -29,7 +31,8 @@ function renderTicketRows(tickets) {
   if (tickets.length === 0) return '';
   return tickets.map(tData => {
     const totalPaid = calculateTotalPaid(tData.payments);
-    const remaining = calculateRemaining(tData.ticketPrice, totalPaid);
+    const modFees = calculateTotalModificationFees(tData.modifications);
+    const remaining = calculateRemaining(tData.ticketPrice, totalPaid, modFees);
     const isPaid = remaining === 0;
 
     return `
@@ -73,7 +76,8 @@ function renderMobileCards(tickets) {
   if (tickets.length === 0) return '';
   return tickets.map(tData => {
     const totalPaid = calculateTotalPaid(tData.payments);
-    const remaining = calculateRemaining(tData.ticketPrice, totalPaid);
+    const modFees = calculateTotalModificationFees(tData.modifications);
+    const remaining = calculateRemaining(tData.ticketPrice, totalPaid, modFees);
 
     return `
       <a href="/tickets/${escapeHtml(tData.id)}" class="mobile-data-card" data-link>
@@ -306,10 +310,11 @@ export const TicketsPage = {
     };
 
     if (searchInput) {
-      searchInput.addEventListener('input', (e) => {
-        currentFilters.search = e.target.value;
+      const handleSearch = debounce((val) => {
+        currentFilters.search = val;
         updateResults();
-      });
+      }, 250);
+      searchInput.addEventListener('input', (e) => handleSearch(e.target.value));
     }
 
     if (statusFilter) {

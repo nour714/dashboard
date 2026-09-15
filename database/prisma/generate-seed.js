@@ -15,7 +15,7 @@ if (!bootstrapPassword || bootstrapPassword === 'password123' || bootstrapPasswo
 import bcrypt from 'bcryptjs';
 const hash = await bcrypt.hash(bootstrapPassword.trim(), 10);
 for (const emp of INITIAL_EMPLOYEES) {
-  sql += `INSERT INTO "users" ("id", "name", "email", "role", "title", "passwordHash", "status", "lastActive", "createdAt", "updatedAt") VALUES ('${emp.id}', '${emp.name.replace(/'/g, "''")}', '${emp.email.toLowerCase()}', '${emp.role}', '${emp.title.replace(/'/g, "''")}', '${hash}', 'ACTIVE', 'Just now', NOW(), NOW()) ON CONFLICT ("id") DO UPDATE SET "name" = EXCLUDED."name", "email" = EXCLUDED."email", "passwordHash" = EXCLUDED."passwordHash";\n`;
+  sql += `INSERT INTO "users" ("id", "name", "email", "role", "title", "passwordHash", "status", "lastActive", "createdAt", "updatedAt") VALUES ('${emp.id}', '${emp.name.replace(/'/g, "''")}', '${emp.email.toLowerCase()}', '${emp.role}', '${emp.title.replace(/'/g, "''")}', '${hash}', 'ACTIVE', NOW(), NOW(), NOW()) ON CONFLICT ("id") DO UPDATE SET "name" = EXCLUDED."name", "email" = EXCLUDED."email", "passwordHash" = EXCLUDED."passwordHash";\n`;
 }
 sql += '\n';
 

@@ -11,7 +11,7 @@
  * returning users pick up the new version instead of a stale cache.
  */
 
-const CACHE_NAME = 'africatravel-shell-v3';
+const CACHE_NAME = 'africatravel-shell-v4';
 
 const SHELL_ASSETS = [
   '/',
@@ -26,7 +26,8 @@ const SHELL_ASSETS = [
   '/js/app.js',
   '/assets/favicon.png',
   '/assets/icon-192.png',
-  '/assets/icon-512.png'
+  '/assets/icon-512.png',
+  '/assets/savannah-bg.jpg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -66,7 +67,7 @@ self.addEventListener('fetch', (event) => {
   const offlineResponse = () => new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
 
   event.respondWith(
-    caches.match(request).then((cached) => {
+    caches.match(request, { ignoreSearch: true }).then((cached) => {
       const networkFetch = fetch(request)
         .then((response) => {
           if (response && response.status === 200) {

@@ -7,7 +7,12 @@
 
 import bcrypt from 'bcryptjs';
 import { getPrismaClient } from '../config/database.js';
-import { calculateTotalPaid, calculateRemaining, calculateTotalRefunded } from '../domain/ticket-rules.js';
+import {
+  calculateTotalPaid,
+  calculateRemaining,
+  calculateTotalRefunded,
+  calculateTotalModificationFees
+} from '../domain/ticket-rules.js';
 import { asDecimal, moneyNumber } from '../utils/money.js';
 import { ValidationError, NotFoundError, BusinessRuleError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
@@ -34,9 +39,11 @@ export const EmployeeService = {
         orderBy: { createdAt: 'asc' }
       }),
       prisma.ticket.findMany({
+        where: { deletedAt: null },
         include: {
           payments: true,
-          refunds: true
+          refunds: true,
+          modifications: true
         }
       })
     ]);
@@ -54,9 +61,10 @@ export const EmployeeService = {
         const price = asDecimal(t.ticketPrice);
         const paid = asDecimal(calculateTotalPaid(t.payments || []));
         const ref = asDecimal(calculateTotalRefunded(t.refunds || []));
-        const rem = asDecimal(calculateRemaining(t.ticketPrice, paid));
+        const modFees = asDecimal(calculateTotalModificationFees(t.modifications || []));
+        const rem = asDecimal(calculateRemaining(t.ticketPrice, paid, modFees));
 
-        salesDec = salesDec.plus(price);
+        salesDec = salesDec.plus(price).plus(modFees);
         collectedDec = collectedDec.plus(paid);
         refundsDec = refundsDec.plus(ref);
         outstandingDec = outstandingDec.plus(rem);

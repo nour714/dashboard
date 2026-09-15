@@ -125,9 +125,10 @@ export const ReportService = {
       totalSalesDec = totalSalesDec.plus(price);
       const paid = asDecimal(calculateTotalPaid(t.payments || []));
       totalCollectedDec = totalCollectedDec.plus(paid);
-      totalOutstandingDec = totalOutstandingDec.plus(asDecimal(calculateRemaining(t.ticketPrice, paid)));
+      const modFees = asDecimal(calculateTotalModificationFees(t.modifications || []));
+      totalModFeesDec = totalModFeesDec.plus(modFees);
+      totalOutstandingDec = totalOutstandingDec.plus(asDecimal(calculateRemaining(t.ticketPrice, paid, modFees)));
       totalRefundsDec = totalRefundsDec.plus(asDecimal(calculateTotalRefunded(t.refunds || [])));
-      totalModFeesDec = totalModFeesDec.plus(asDecimal(calculateTotalModificationFees(t.modifications || [])));
       const profit = calculateNetProfit(t.ticketPrice, t.costPrice);
       if (profit !== null) {
         const modProfit = calculateTotalModificationProfit(t.modifications || []);
@@ -288,6 +289,7 @@ export const ReportService = {
       where: { deletedAt: null },
       include: {
         payments: true,
+        modifications: true,
         customer: true
       },
       orderBy: {
@@ -298,7 +300,8 @@ export const ReportService = {
     const rows = tickets.map(t => {
       const price = moneyNumber(asDecimal(t.ticketPrice));
       const paid = calculateTotalPaid(t.payments || []);
-      const remaining = calculateRemaining(price, paid);
+      const modFees = calculateTotalModificationFees(t.modifications || []);
+      const remaining = calculateRemaining(price, paid, modFees);
 
       return {
         ticketId: t.id,

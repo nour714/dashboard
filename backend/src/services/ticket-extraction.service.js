@@ -118,10 +118,8 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
             generationConfig: {
               responseMimeType: 'application/json',
               responseSchema: EXTRACTION_SCHEMA,
-              thinkingConfig: {
-                thinkingLevel: 'low'
-              },
-              maxOutputTokens: 1000
+              maxOutputTokens: 1000,
+              thinkingConfig: { thinkingLevel: 'low' }
             }
           })
         });

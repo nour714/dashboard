@@ -3,7 +3,7 @@
  */
 
 import { ValidationError, BusinessRuleError, NotFoundError } from './errors.js';
-import { calculateTotalPaid, calculateRemaining } from './ticket-rules.js';
+import { calculateTotalPaid, calculateRemaining, calculateTotalModificationFees } from './ticket-rules.js';
 
 /**
  * Validates a payment recording against a ticket's financial ledger
@@ -21,8 +21,9 @@ export function validatePayment(ticket, paymentData = {}) {
     throw new ValidationError('Payment amount must be greater than zero', 'amount');
   }
 
-  const totalPaid = calculateTotalPaid(ticket.payments);
-  const remaining = calculateRemaining(ticket.ticketPrice, totalPaid);
+  const totalPaid = calculateTotalPaid(ticket.payments || []);
+  const totalModFees = calculateTotalModificationFees(ticket.modifications || []);
+  const remaining = calculateRemaining(ticket.ticketPrice, totalPaid, totalModFees);
 
   if (amount > remaining) {
     throw new BusinessRuleError(

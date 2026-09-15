@@ -764,6 +764,7 @@ export const ar = {
   // Toast Notification Messages
   toasts: {
     ticketCreated: 'تم إنشاء التذكرة بنجاح.',
+    ticketUpdated: 'تم تحديث بيانات التذكرة بنجاح.',
     paymentAdded: 'تمت إضافة الدفعة بنجاح.',
     flightModified: 'تم حفظ تعديل الرحلة.',
     refundCreated: 'تم إنشاء طلب الاسترداد.',

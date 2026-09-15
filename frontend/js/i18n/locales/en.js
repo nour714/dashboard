@@ -764,6 +764,7 @@ export const en = {
   // Toast Notification Messages
   toasts: {
     ticketCreated: 'Ticket created successfully.',
+    ticketUpdated: 'Ticket updated successfully.',
     paymentAdded: 'Payment added successfully.',
     flightModified: 'Flight modification saved.',
     refundCreated: 'Refund request created.',

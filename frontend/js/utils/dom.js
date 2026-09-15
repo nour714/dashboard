@@ -85,3 +85,23 @@ export function clearElement(element) {
     element.removeChild(element.firstChild);
   }
 }
+
+/**
+ * Creates a debounced function that delays invoking fn until after waitMs milliseconds.
+ * @param {Function} fn - Function to debounce
+ * @param {number} [waitMs=250] - Delay in milliseconds
+ * @returns {Function}
+ */
+export function debounce(fn, waitMs = 250) {
+  let timeoutId = null;
+  return function (...args) {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => {
+      timeoutId = null;
+      fn.apply(this, args);
+    }, waitMs);
+  };
+}
+

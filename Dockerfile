@@ -17,6 +17,9 @@ RUN npm ci
 # Generate Prisma Client
 RUN npx prisma generate --schema=database/prisma/schema.prisma
 
+# Prune devDependencies to keep production image minimal
+RUN npm prune --omit=dev
+
 # Stage 2: Production image
 FROM node:24-alpine AS runner
 
@@ -32,16 +35,19 @@ RUN apk add --no-cache openssl
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 africatravel
 
-# Copy built application & node_modules
-COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/database/prisma ./database/prisma
-COPY package*.json ./
-COPY server.js ./
-COPY backend ./backend/
-COPY frontend ./frontend/
+# Copy built application & node_modules with non-root ownership
+COPY --chown=africatravel:nodejs --from=base /app/node_modules ./node_modules
+COPY --chown=africatravel:nodejs --from=base /app/database/prisma ./database/prisma
+COPY --chown=africatravel:nodejs package*.json ./
+COPY --chown=africatravel:nodejs server.js ./
+COPY --chown=africatravel:nodejs backend ./backend/
+COPY --chown=africatravel:nodejs frontend ./frontend/
 
 USER africatravel
 
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:3000/api/health || exit 1
 
 CMD ["node", "server.js"]

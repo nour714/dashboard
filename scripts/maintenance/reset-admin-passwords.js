@@ -27,11 +27,8 @@ async function main() {
   console.log('   AfricaTravel User Password Rotation Utility');
   console.log('========================================================\n');
 
-  const args = process.argv.slice(2);
-  const customPasswordArg = args.find(a => a.startsWith('--new-password='));
-  const targetEmailArg = args.find(a => a.startsWith('--email='));
-
-  const fixedPassword = customPasswordArg ? customPasswordArg.split('=')[1] : null;
+  const envPassword = process.env.ADMIN_NEW_PASSWORD || process.env.NEW_PASSWORD;
+  const fixedPassword = envPassword || (customPasswordArg ? customPasswordArg.split('=')[1] : null);
   const targetEmail = targetEmailArg ? targetEmailArg.split('=')[1].toLowerCase().trim() : null;
 
   if (fixedPassword && fixedPassword.length < 12) {
@@ -50,6 +47,7 @@ async function main() {
   console.log(`Found ${users.length} user(s). Updating passwords with bcrypt cost factor 12...\n`);
 
   for (const user of users) {
+    const isGenerated = !fixedPassword;
     const newPlainPassword = fixedPassword || generateSecurePassword();
     const newHash = await bcrypt.hash(newPlainPassword, 12);
 
@@ -68,7 +66,11 @@ async function main() {
     });
 
     console.log(`✅ [${user.role}] ${user.name} (${user.email}):`);
-    console.log(`   New Password: ${newPlainPassword}\n`);
+    if (isGenerated) {
+      console.log(`   Generated Password: ${newPlainPassword}\n`);
+    } else {
+      console.log(`   Password updated successfully (supplied via environment/flag).\n`);
+    }
   }
 
   console.log('✨ All passwords successfully rotated and active sessions revoked.');

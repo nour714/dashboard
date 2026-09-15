@@ -125,7 +125,7 @@ model Ticket {
   status                 String         @default("CONFIRMED")
   createdBy              String
   createdById            String?
-  user                   User?          @relation("TicketCreatedBy", fields: [createdById], references: [id])
+  user                   User?          @relation("TicketCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   deletedAt              DateTime?
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
@@ -144,7 +144,7 @@ model Ticket {
 model Payment {
   id        String   @id
   ticketId  String
-  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Restrict)
   amount    Decimal  @db.Decimal(12, 2)
   currency  String   @default("EGP")
   method    String   @default("Credit Card")
@@ -152,7 +152,7 @@ model Payment {
   date      DateTime @default(now())
   addedBy   String
   addedById String?
-  user      User?    @relation("PaymentAddedBy", fields: [addedById], references: [id])
+  user      User?    @relation("PaymentAddedBy", fields: [addedById], references: [id], onDelete: SetNull)
   notes     String?
   createdAt DateTime @default(now())
 
@@ -164,7 +164,7 @@ model Payment {
 model Modification {
   id             String   @id
   ticketId       String
-  ticket         Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticket         Ticket   @relation(fields: [ticketId], references: [id], onDelete: Restrict)
   title          String
   originalFlight Json
   newFlight      Json
@@ -175,7 +175,7 @@ model Modification {
   requestedBy    String
   processedBy    String
   processedById  String?
-  user           User?    @relation("ModificationProcessedBy", fields: [processedById], references: [id])
+  user           User?    @relation("ModificationProcessedBy", fields: [processedById], references: [id], onDelete: SetNull)
   date           DateTime @default(now())
   status         String   @default("COMPLETED")
   createdAt      DateTime @default(now())
@@ -188,7 +188,7 @@ model Modification {
 model Refund {
   id             String    @id
   ticketId       String
-  ticket         Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticket         Ticket    @relation(fields: [ticketId], references: [id], onDelete: Restrict)
   originalAmount Decimal?  @db.Decimal(12, 2)
   totalPaid      Decimal?  @db.Decimal(12, 2)
   amount         Decimal   @db.Decimal(12, 2)
@@ -199,10 +199,11 @@ model Refund {
   processedDate  DateTime? @default(now())
   processedBy    String
   processedById  String?
-  user           User?     @relation("RefundProcessedBy", fields: [processedById], references: [id])
+  user           User?     @relation("RefundProcessedBy", fields: [processedById], references: [id], onDelete: SetNull)
   createdAt      DateTime  @default(now())
 
   @@index([ticketId])
+  @@index([processedById])
   @@map("refunds")
 }
 
@@ -211,7 +212,7 @@ model AuditLog {
   timestamp   DateTime @default(now())
   user        String
   userId      String?
-  userRef     User?    @relation("AuditUser", fields: [userId], references: [id])
+  userRef     User?    @relation("AuditUser", fields: [userId], references: [id], onDelete: SetNull)
   action      String
   ticketId    String?
   customerId  String?
@@ -222,6 +223,9 @@ model AuditLog {
   createdAt   DateTime @default(now())
 
   @@index([userId])
+  @@index([timestamp(sort: Desc)])
+  @@index([ticketId])
+  @@index([customerId])
   @@map("audit_logs")
 }
 
@@ -236,6 +240,7 @@ model RefreshToken {
   createdAt  DateTime @default(now())
 
   @@index([userId])
+  @@index([expiresAt])
   @@map("refresh_tokens")
 }
 
@@ -263,6 +268,7 @@ model Expense {
 
   @@index([createdById])
   @@index([date])
+  @@index([deletedAt])
   @@map("expenses")
 }
 

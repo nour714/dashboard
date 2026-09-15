@@ -14,6 +14,6 @@ router.get('/summary', requireRole('ADMIN', 'AGENT'), ReportController.getSummar
 router.get('/revenue', requireRole('ADMIN', 'AGENT'), ReportController.getRevenue);
 router.get('/airlines', requireRole('ADMIN', 'AGENT'), ReportController.getAirlines);
 router.get('/customer-payments', requireRole('ADMIN', 'AGENT'), ReportController.getCustomerPayments);
-router.get('/full', requireRole('ADMIN', 'AGENT'), ReportController.getFullReport);
+router.get('/full', requireRole('ADMIN'), ReportController.getFullReport);
 
 export default router;

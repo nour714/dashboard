@@ -132,6 +132,9 @@ async function runApiTests() {
       }
     },
     user: {
+      findMany: async () => [
+        { id: 'EMP-ADMIN-1', name: 'Admin Master', email: 'admin@africatravel.com', role: 'ADMIN', status: 'ACTIVE' }
+      ],
       findUnique: async ({ where }) => {
         if (where?.id === 'EMP-TICKET-ONLY') {
           return { id: 'EMP-TICKET-ONLY', name: 'Ticket Only User', email: 'ticket-only@example.com', role: 'TICKET_ONLY', status: 'ACTIVE' };
@@ -497,6 +500,44 @@ async function runApiTests() {
     assert(adminSummaryRes.json?.success === true, 'ADMIN report summary returns success: true');
     assert(adminSummaryRes.json?.data?.totalRefunds !== undefined, 'ADMIN summary contains totalRefunds');
     assert(typeof adminSummaryRes.json?.data?.totalNetProfit === 'number', 'ADMIN summary contains totalNetProfit');
+
+    // Revenue Trends RBAC
+    const agentRevenueRes = await makeRequest(server, {
+      method: 'GET',
+      path: '/api/reports/revenue',
+      headers: { 'Authorization': `Bearer ${agentToken}` }
+    });
+    assert(agentRevenueRes.statusCode === 200, 'AGENT can fetch revenue trends');
+    assert(agentRevenueRes.json?.data?.kpis?.totalNetProfit === undefined, 'AGENT revenue response strips kpis.totalNetProfit');
+    if (agentRevenueRes.json?.data?.weeklyTrends?.length > 0) {
+      assert(agentRevenueRes.json.data.weeklyTrends[0].netProfit === undefined, 'AGENT weeklyTrends strips netProfit');
+    }
+
+    // Airline Performance RBAC
+    const agentAirlinesRes = await makeRequest(server, {
+      method: 'GET',
+      path: '/api/reports/airlines',
+      headers: { 'Authorization': `Bearer ${agentToken}` }
+    });
+    assert(agentAirlinesRes.statusCode === 200, 'AGENT can fetch airline performance');
+    if (agentAirlinesRes.json?.data?.length > 0) {
+      assert(agentAirlinesRes.json.data[0].totalNetProfit === undefined, 'AGENT airline performance strips totalNetProfit');
+    }
+
+    // Full Report RBAC: AGENT is forbidden, ADMIN is allowed
+    const agentFullRes = await makeRequest(server, {
+      method: 'GET',
+      path: '/api/reports/full',
+      headers: { 'Authorization': `Bearer ${agentToken}` }
+    });
+    assert(agentFullRes.statusCode === 403, 'AGENT calling GET /api/reports/full returns 403 Forbidden');
+
+    const adminFullRes = await makeRequest(server, {
+      method: 'GET',
+      path: '/api/reports/full',
+      headers: adminHeaders
+    });
+    assert(adminFullRes.statusCode === 200, 'ADMIN calling GET /api/reports/full returns 200 OK');
 
     console.log('\n========================================================');
     console.log(`Backend API Integration Tests: ${passed} passed, ${failed} failed`);

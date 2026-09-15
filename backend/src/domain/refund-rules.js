@@ -4,6 +4,7 @@
 
 import { ValidationError, BusinessRuleError, NotFoundError } from './errors.js';
 import { calculateTotalPaid, calculateTotalRefunded, calculateAvailableRefund } from './ticket-rules.js';
+import { asDecimal } from '../utils/money.js';
 
 /**
  * Validates a refund request against a ticket's financial ledger
@@ -16,20 +17,21 @@ export function validateRefund(ticket, refundData = {}) {
     throw new NotFoundError('Ticket');
   }
 
-  const amount = Number(refundData.amount);
-  if (isNaN(amount) || amount <= 0) {
+  const amountDec = asDecimal(refundData.amount);
+  if (!amountDec.isFinite() || amountDec.lessThanOrEqualTo(0)) {
     throw new ValidationError('Refund amount must be greater than zero', 'amount');
   }
 
   const totalPaid = calculateTotalPaid(ticket.payments || []);
   const totalRefunded = calculateTotalRefunded(ticket.refunds || []);
   const availableRefund = calculateAvailableRefund(totalPaid, totalRefunded);
+  const availableRefundDec = asDecimal(availableRefund);
 
-  if (amount > availableRefund) {
+  if (amountDec.greaterThan(availableRefundDec)) {
     throw new BusinessRuleError(
       'Refund exceeds the available refundable amount.',
       'REFUND_EXCEEDS_AVAILABLE',
-      { amount, availableRefund, totalPaid, totalRefunded, currency: ticket.currency || 'EGP' }
+      { amount: amountDec.toNumber(), availableRefund: availableRefundDec.toNumber(), totalPaid, totalRefunded, currency: ticket.currency || 'EGP' }
     );
   }
 

@@ -18,16 +18,18 @@ export function calculateTotalPaid(payments = []) {
 
 /**
  * Calculates remaining balance
- * remaining = max(0, ticketPrice - totalPaid)
+ * remaining = max(0, (ticketPrice + modificationFees) - totalPaid)
  * @param {number|string} ticketPrice
  * @param {number|string} totalPaid
+ * @param {number|string} modificationFees
  * @returns {number}
  */
-export function calculateRemaining(ticketPrice = 0, totalPaid = 0) {
+export function calculateRemaining(ticketPrice = 0, totalPaid = 0, modificationFees = 0) {
   const price = Number(ticketPrice) || 0;
+  const modFees = Number(modificationFees) || 0;
   const paid = Number(totalPaid) || 0;
-  const rem = price - paid;
-  return rem > 0 ? rem : 0;
+  const rem = (price + modFees) - paid;
+  return rem > 0 ? Math.round(rem * 100) / 100 : 0;
 }
 
 /**
@@ -112,13 +114,14 @@ export function calculateNetProfit(ticketPrice = 0, costPrice = null) {
  * @param {number|string} ticketPrice
  * @param {number|string} totalPaid
  * @param {string} currentStatus
+ * @param {number|string} modificationFees
  * @returns {string} 'CONFIRMED' | 'PARTIALLY PAID' | 'UNPAID' | 'CANCELLED' | 'REFUNDED' | 'PARTIALLY_REFUNDED'
  */
-export function derivePaymentStatus(ticketPrice = 0, totalPaid = 0, currentStatus = 'UNPAID') {
+export function derivePaymentStatus(ticketPrice = 0, totalPaid = 0, currentStatus = 'UNPAID', modificationFees = 0) {
   if (currentStatus === 'CANCELLED') return 'CANCELLED';
   if (currentStatus === 'REFUNDED') return 'REFUNDED';
   if (currentStatus === 'PARTIALLY_REFUNDED') return 'PARTIALLY_REFUNDED';
-  const price = Number(ticketPrice) || 0;
+  const price = (Number(ticketPrice) || 0) + (Number(modificationFees) || 0);
   const paid = Number(totalPaid) || 0;
   if (paid >= price && price > 0) return 'CONFIRMED';
   if (paid > 0 && paid < price) return 'PARTIALLY PAID';

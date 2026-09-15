@@ -62,7 +62,7 @@ export function mountApiRoutes(app, { isServerless = false } = {}) {
   app.use('/api', apiRouter);
   if (isServerless) {
     app.use((req, res, next) => {
-      const isApiSubpath = ['/auth', '/tickets', '/customers', '/employees', '/reports', '/activity', '/health'].some(p => req.path.startsWith(p));
+      const isApiSubpath = ['/auth', '/tickets', '/customers', '/employees', '/reports', '/activity', '/settings', '/expenses', '/health'].some(p => req.path.startsWith(p));
       return isApiSubpath ? apiRouter(req, res, next) : next();
     });
   }
@@ -105,9 +105,15 @@ export function createApp(rootDir = ROOT_DIR) {
   // Security guard for static assets & frontend: block path traversal & dotfiles
   app.use((req, res, next) => {
     if (req.path.startsWith('/api')) return next();
-    const rawPath = req.originalUrl || req.url || req.path;
-    const pathnameRaw = decodeURIComponent(rawPath.split('?')[0]);
-    const pathnameReq = decodeURIComponent(req.path);
+    let pathnameRaw;
+    let pathnameReq;
+    try {
+      const rawPath = req.originalUrl || req.url || req.path;
+      pathnameRaw = decodeURIComponent(rawPath.split('?')[0]);
+      pathnameReq = decodeURIComponent(req.path);
+    } catch (_) {
+      return res.status(400).type('text/plain').send('400 Bad Request');
+    }
     const v1 = validatePath(pathnameRaw === '/' ? '/index.html' : pathnameRaw, frontendDir);
     const v2 = validatePath(pathnameReq === '/' ? '/index.html' : pathnameReq, frontendDir);
     if (!v1.isSafe || !v2.isSafe) {

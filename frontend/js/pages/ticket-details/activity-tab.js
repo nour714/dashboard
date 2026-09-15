@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel - Ticket Details: Activity Timeline Tab Component
  */
 
@@ -18,11 +18,12 @@ export function renderActivityTab(ticket) {
   ` : `
     <div class="timeline">
       ${ticketLogs.map(log => {
-        const initials = log.user.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'US';
+        const userName = (log.user || 'User').trim();
+        const initials = userName.split(/\s+/).map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'US';
         return `
           <div class="timeline-item">
             <div class="sidebar-user-avatar" style="width: 32px; height: 32px; font-size: 12px; background-color: var(--color-primary);">
-              ${initials}
+              ${escapeHtml(initials)}
             </div>
             <div class="timeline-content">
               <div class="timeline-header">
