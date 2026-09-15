@@ -1,9 +1,8 @@
-﻿/**
+/**
  * AfricaTravel — Audit Trail / Activity Log Page
  */
 
 import { store } from '../state/store.js';
-import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { formatDateTime, formatRelativeTime } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
@@ -17,7 +16,7 @@ let actFilters = {
 
 export const ActivityPage = {
   render() {
-    const { activityLogs, employees } = store.getState();
+    const { activityLogs } = store.getState();
 
     let logs = [...activityLogs];
 
@@ -112,7 +111,7 @@ export const ActivityPage = {
     `;
   },
 
-  afterRender(container) {
+  afterRender(_container) {
     // Dynamic bindings
   }
 };

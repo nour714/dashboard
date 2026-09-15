@@ -11,8 +11,6 @@ import { openModal, closeModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
 import {
   calculateTotalPaid,
-  calculateRemaining,
-  calculateTotalModificationFees,
   formatCurrency,
   formatDate,
   formatDateTime
@@ -48,8 +46,6 @@ export const CustomerDetailsPage = {
 
     const ticketRows = stats.tickets.map(tData => {
       const totalPaid = calculateTotalPaid(tData.payments);
-      const modFees = calculateTotalModificationFees(tData.modifications);
-      const remaining = calculateRemaining(tData.ticketPrice, totalPaid, modFees);
 
       return `
         <tr>

@@ -2,7 +2,6 @@
  * AfricaTravel — Create Ticket / New Reservation Page
  */
 
-import { store } from '../state/store.js';
 import { TicketService } from '../services/ticket-service.js';
 import { icons } from '../components/icons.js';
 import { showToast } from '../components/toast.js';

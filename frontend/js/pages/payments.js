@@ -3,12 +3,8 @@
  */
 
 import { store } from '../state/store.js';
-import { TicketService } from '../services/ticket-service.js';
 import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
-import { renderStatusBadge } from '../components/status-badge.js';
-import { openModal, closeModal } from '../components/modal.js';
-import { showToast } from '../components/toast.js';
 import {
   calculateTotalPaid,
   calculateRemaining,
@@ -135,7 +131,7 @@ export const PaymentsPage = {
     `;
   },
 
-  afterRender(container) {
+  afterRender(_container) {
     // Event bindings if needed
   }
 };

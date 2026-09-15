@@ -1,10 +1,8 @@
-﻿/**
+/**
  * AfricaTravel — Refunds Management Page
  */
 
 import { store } from '../state/store.js';
-import { TicketService } from '../services/ticket-service.js';
-import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { renderStatusBadge } from '../components/status-badge.js';
 import { formatCurrency, formatDateTime } from '../utils/calculations.js';
@@ -16,7 +14,6 @@ export const RefundsPage = {
     const { tickets } = store.getState();
 
     const allRefunds = [];
-    let totalRefundsCount = 0;
     let completedCount = 0;
     let requestedCount = 0;
     let totalRefundedAmount = 0;
@@ -123,7 +120,7 @@ export const RefundsPage = {
     `;
   },
 
-  afterRender(container) {
+  afterRender(_container) {
     // Event listeners if needed
   }
 };

@@ -11,7 +11,6 @@
 import { apiClient } from '../services/api-client.js';
 import { getStoredUser, setSession, clearSession, hasSession, updateStoredUser } from '../services/api-client.js';
 import { calculateTotalPaid, derivePaymentStatus } from '../domain/ticket-rules.js';
-import { NotFoundError } from '../domain/errors.js';
 import { INITIAL_SETTINGS } from '../data/mock-data.js';
 
 class Store {
@@ -139,7 +138,7 @@ class Store {
   async logout() {
     try {
       await apiClient.post('/auth/logout', {});
-    } catch (e) {
+    } catch (_e) {
       // Best-effort server-side revocation; always clear local session regardless.
     }
 

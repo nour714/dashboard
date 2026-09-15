@@ -11,7 +11,6 @@ import {
   calculateRemaining,
   calculateTotalModificationFees,
   formatCurrency,
-  formatCompactNumber,
   formatDateTime,
   formatRelativeTime
 } from '../utils/calculations.js';
@@ -214,7 +213,7 @@ export const DashboardPage = {
     `;
   },
 
-  afterRender(container) {
+  afterRender(_container) {
     // Dynamic bindings if any
   }
 };

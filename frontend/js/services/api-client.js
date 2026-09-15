@@ -165,7 +165,7 @@ async function request(method, path, { body, auth = true, retry = true } = {}) {
       credentials: 'include',
       body: isFormData ? body : (body !== undefined ? JSON.stringify(body) : undefined)
     });
-  } catch (networkErr) {
+  } catch (_networkErr) {
     return {
       success: false,
       error: { message: 'Network error — please check your connection and try again.', code: 'NETWORK_ERROR' }

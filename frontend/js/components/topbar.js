@@ -5,14 +5,13 @@
 import { icons } from './icons.js';
 import { AuthService } from '../services/auth-service.js';
 import { escapeHtml } from '../utils/security.js';
-import { i18n, t, getUserRoleLabel } from '../i18n/i18n.js';
+import { i18n, t } from '../i18n/i18n.js';
 
 export function renderTopbar(upcomingCount = 0) {
   const currentUser = AuthService.getCurrentUser() || {};
   const isAr = i18n.getLanguage() === 'ar';
   const rawName = currentUser.name || currentUser.fullName || 'Mohamed Raafat';
   const userName = (rawName === 'Mohamed Raafat' && isAr) ? 'محمد رأفت' : rawName;
-  const userRole = getUserRoleLabel(currentUser);
   const initials = userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || (isAr ? 'م.ر' : 'MR');
   const currentLang = i18n.getLanguage();
   const nextLangLabel = currentLang === 'ar' ? 'English' : 'العربية';

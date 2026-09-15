@@ -89,7 +89,7 @@ export function renderBottomNav(activePath = '/dashboard') {
   `;
 }
 
-export function bindBottomNavEvents(container, onNavigate) {
+export function bindBottomNavEvents(container, _onNavigate) {
   const moreTrigger = container.querySelector('#bottom-nav-more-trigger');
   const backdrop = container.querySelector('#mobile-more-backdrop');
   const drawer = container.querySelector('#mobile-more-drawer');

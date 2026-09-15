@@ -68,6 +68,7 @@ async function runPostgresIntegrationTests() {
         email: `test-${runId}@africatravel.test`,
         passwordHash: 'dummy_hash_for_test',
         name: 'IntegrationTest User',
+        title: 'Test Administrator',
         role: 'ADMIN'
       }
     });

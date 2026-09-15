@@ -3,8 +3,7 @@
  */
 
 import { icons } from '../../components/icons.js';
-import { renderStatusBadge } from '../../components/status-badge.js';
-import { formatDate, formatDateTime } from '../../utils/calculations.js';
+import { formatDate } from '../../utils/calculations.js';
 import { escapeHtml } from '../../utils/security.js';
 import { t } from '../../i18n/i18n.js';
 
