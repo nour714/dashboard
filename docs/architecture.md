@@ -100,6 +100,7 @@ Africiatravel/
 │       ├── schema.prisma      # Relational schema definition
 │       └── seed.js            # Initial data seed (Admin/Agents)
 ├── docs/                      # Technical documentation & project specs
+│   ├── overview.md
 │   ├── PRD.md
 │   ├── architecture.md
 │   ├── database.md
