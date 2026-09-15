@@ -50,6 +50,7 @@ async function runPostgresIntegrationTests() {
   // Track created test IDs for safe cleanup
   const createdCustomerIds = [];
   const createdTicketIds = [];
+  let testUserId = null;
 
   const runId = crypto.randomUUID().substring(0, 8);
   const passportA = `TEST-P-${runId}-1`;
@@ -58,6 +59,20 @@ async function runPostgresIntegrationTests() {
   try {
     // 1. Set the active Prisma client for services
     setPrismaClient(prisma);
+
+    // Create a real test user to satisfy foreign key constraints (createdById, userId)
+    testUserId = `USER-TEST-${runId}`;
+    await prisma.user.create({
+      data: {
+        id: testUserId,
+        email: `test-${runId}@africatravel.test`,
+        passwordHash: 'dummy_hash_for_test',
+        name: 'IntegrationTest User',
+        role: 'ADMIN'
+      }
+    });
+
+    const testUser = { name: 'IntegrationTest User', id: testUserId };
 
     // ══════════════════════════════════════════════════════════════
     // SECTION 1: Customer Passport Uniqueness in PostgreSQL
@@ -69,7 +84,7 @@ async function runPostgresIntegrationTests() {
       name: `Test Customer ${runId}-1`,
       passport: passportA,
       nationality: 'Egyptian (EGY)'
-    }, { name: 'IntegrationTest', id: 'TEST-USER' });
+    }, testUser);
     createdCustomerIds.push(cust1.id);
     assert(cust1 && cust1.passport === passportA, 'Customer with unique passport inserted into PostgreSQL');
 
@@ -80,7 +95,7 @@ async function runPostgresIntegrationTests() {
         name: `Test Customer ${runId}-2`,
         passport: passportA,
         nationality: 'Egyptian (EGY)'
-      }, { name: 'IntegrationTest', id: 'TEST-USER' });
+      }, testUser);
     } catch (err) {
       dupPassportErr = err;
     }
@@ -91,12 +106,12 @@ async function runPostgresIntegrationTests() {
     // 1.3: Multiple customers with NULL passport allowed in PostgreSQL
     const custNull1 = await CustomerService.createCustomer({
       name: `Test Customer Null 1 ${runId}`
-    }, { name: 'IntegrationTest', id: 'TEST-USER' });
+    }, testUser);
     createdCustomerIds.push(custNull1.id);
 
     const custNull2 = await CustomerService.createCustomer({
       name: `Test Customer Null 2 ${runId}`
-    }, { name: 'IntegrationTest', id: 'TEST-USER' });
+    }, testUser);
     createdCustomerIds.push(custNull2.id);
 
     assert(custNull1.id && custNull2.id, 'PostgreSQL allows multiple customers with NULL passport');
@@ -117,7 +132,7 @@ async function runPostgresIntegrationTests() {
       destination: 'DXB',
       ticketPrice: 5000,
       customerId: cust1.id
-    }, { name: 'IntegrationTest', id: 'TEST-USER' });
+    }, testUser);
     createdTicketIds.push(ticket1.id);
     assert(ticket1 && ticket1.pnr === pnrA, 'Ticket with unique PNR inserted into PostgreSQL');
 
@@ -134,7 +149,7 @@ async function runPostgresIntegrationTests() {
         destination: 'DXB',
         ticketPrice: 6000,
         customerId: cust1.id
-      }, { name: 'IntegrationTest', id: 'TEST-USER' });
+      }, testUser);
     } catch (err) {
       dupPnrErr = err;
     }
@@ -151,7 +166,7 @@ async function runPostgresIntegrationTests() {
       destination: 'JED',
       ticketPrice: 3000,
       customerId: cust1.id
-    }, { name: 'IntegrationTest', id: 'TEST-USER' });
+    }, testUser);
     createdTicketIds.push(ticketNull1.id);
 
     assert(ticketNull1 && ticketNull1.id, 'PostgreSQL allows tickets with auto-generated/null PNR');
@@ -169,9 +184,14 @@ async function runPostgresIntegrationTests() {
         await prisma.customerNote.deleteMany({ where: { customerId: { in: createdCustomerIds } } });
         await prisma.customer.deleteMany({ where: { id: { in: createdCustomerIds } } });
       }
+      if (testUserId) {
+        await prisma.auditLog.deleteMany({ where: { userId: testUserId } });
+        await prisma.user.deleteMany({ where: { id: testUserId } });
+      }
     } catch (cleanupErr) {
       console.warn('⚠️ Test cleanup notice:', cleanupErr.message);
     }
+    setPrismaClient(null);
     await prisma.$disconnect().catch(() => {});
   }
 

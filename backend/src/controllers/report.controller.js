@@ -31,7 +31,8 @@ export const ReportController = {
           kpis: revenue.kpis ? { ...revenue.kpis, totalNetProfit: undefined } : revenue.kpis,
           weeklyTrends: Array.isArray(revenue.weeklyTrends)
             ? revenue.weeklyTrends.map(w => {
-                const { netProfit: _, ...rest } = w;
+                const rest = { ...w };
+                delete rest.netProfit;
                 return rest;
               })
             : revenue.weeklyTrends
@@ -53,7 +54,8 @@ export const ReportController = {
       const data = isAdmin
         ? airlines
         : airlines.map(a => {
-            const { totalNetProfit: _, ...rest } = a;
+            const rest = { ...a };
+            delete rest.totalNetProfit;
             return rest;
           });
       return res.status(200).json({
@@ -75,14 +77,16 @@ export const ReportController = {
           kpis: report.kpis ? { ...report.kpis, totalNetProfit: undefined } : report.kpis,
           airlinePerformance: Array.isArray(report.airlinePerformance)
             ? report.airlinePerformance.map(a => {
-                const { totalNetProfit: _, ...rest } = a;
+                const rest = { ...a };
+                delete rest.totalNetProfit;
                 return rest;
               })
             : report.airlinePerformance,
           employeePerformance: report.employeePerformance,
           weeklyTrends: Array.isArray(report.weeklyTrends)
             ? report.weeklyTrends.map(w => {
-                const { netProfit: _, ...rest } = w;
+                const rest = { ...w };
+                delete rest.netProfit;
                 return rest;
               })
             : report.weeklyTrends

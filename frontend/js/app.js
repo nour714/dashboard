@@ -12,7 +12,7 @@ import { renderTopbar } from './components/topbar.js';
 import { renderBottomNav, bindBottomNavEvents } from './components/bottom-nav.js';
 import { openModal, closeModal } from './components/modal.js';
 import { showToast } from './components/toast.js';
-import { createElement, clearElement, appendChildren } from './utils/dom.js';
+import { createElement, clearElement } from './utils/dom.js';
 import { escapeHtml } from './utils/security.js';
 import { getUpcomingFlightReminders } from './utils/flight-reminders.js';
 import { i18n, t, getUserRoleLabel } from './i18n/i18n.js';
@@ -143,7 +143,7 @@ class App {
     setBootProgress(25, t('bootSplash.systemPreparing') || 'جاري تجهيز النظام...', t('bootSplash.systemWait') || 'يرجي الانتظار لحظة');
     try {
       await refreshAccessToken();
-    } catch (e) {
+    } catch (_e) {
       // If refresh fails (e.g. invalid/expired refresh token cookie),
       // let ensureHydrated() handle it gracefully as it currently does.
     }
@@ -154,7 +154,7 @@ class App {
     setBootProgress(50, t('bootSplash.systemPreparing') || 'جاري تجهيز النظام...', t('bootSplash.systemWait') || 'يرجي الانتظار لحظة');
     try {
       AuthService.getCurrentUser();
-    } catch (e) {}
+    } catch (_e) {}
     markBootStep('boot-step-user', 'done');
 
     // Step 3: System Data Hydration
