@@ -104,7 +104,7 @@ Africiatravel/
 │   ├── architecture.md
 │   ├── database.md
 │   ├── deployment.md
-│   ├── security.md
+│   ├── security-architecture.md
 │   ├── testing.md
 │   └── supabase-setup-summary.md
 ├── frontend/                  # Static client assets
