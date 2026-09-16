@@ -51,7 +51,7 @@ export const EmployeeService = {
             select: { amount: true, status: true }
           },
           modifications: {
-            select: { clientFee: true }
+            select: { changeFee: true }
           }
         }
       })
@@ -133,7 +133,7 @@ export const EmployeeService = {
           select: { amount: true, status: true }
         },
         modifications: {
-          select: { clientFee: true }
+          select: { changeFee: true }
         }
       }
     });

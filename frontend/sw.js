@@ -11,7 +11,7 @@
  * returning users pick up the new version instead of a stale cache.
  */
 
-const CACHE_NAME = 'africatravel-shell-v5';
+const CACHE_NAME = 'africatravel-shell-v6';
 
 const SHELL_ASSETS = [
   '/',
@@ -111,9 +111,42 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale-while-revalidate with navigation fallback and guaranteed Response safety net
-  const offlineResponse = () => new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+  // Guaranteed safe Response fallback — avoids 503 errors during navigation
+  const offlineResponse = () => new Response('Offline', {
+    status: 200,
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+  });
 
+  // For page navigations (e.g. /dashboard, /tickets, /login), prioritize network
+  // and fall back to the cached index.html shell so dynamic routes never fail.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return response;
+        })
+        .catch(async () => {
+          const shell = await caches.match('/index.html') || await caches.match('/');
+          if (shell) return shell;
+
+          const allCaches = await caches.keys();
+          for (const key of allCaches) {
+            const c = await caches.open(key);
+            const match = await c.match('/index.html') || await c.match('/');
+            if (match) return match;
+          }
+
+          return offlineResponse();
+        })
+    );
+    return;
+  }
+
+  // Stale-while-revalidate with navigation fallback and guaranteed Response safety net
   event.respondWith(
     caches.match(request, { ignoreSearch: true }).then((cached) => {
       const networkFetch = fetch(request)
@@ -125,10 +158,6 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(async () => {
-          // Network failed and this URL is not in cache (e.g. dynamic SPA routes like /tickets/TK-XXX).
-          // If this is a page navigation, return the cached app shell (/index.html) to prevent crash.
-          // Every branch here MUST resolve to a real Response — caches.match() and `cached` can both
-          // be undefined, and respondWith() throws "Failed to convert value to 'Response'" if so.
           if (request.mode === 'navigate') {
             const shell = await caches.match('/index.html');
             return shell || offlineResponse();

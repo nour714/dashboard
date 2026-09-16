@@ -110,7 +110,7 @@ async function runExtractionTests() {
     assert(promptText.includes('ONLY the first flight number'), 'Prompt explicitly instructs extracting only the first flight number');
     assert(body.contents?.[0]?.parts?.[1]?.inline_data?.data, 'Request payload includes base64 document data');
     assert(body.generationConfig?.responseMimeType === 'application/json', 'Requests structured application/json response');
-    assert(body.generationConfig?.thinkingConfig?.thinkingLevel === 'low', 'Configures thinkingLevel low for optimal latency');
+    assert(body.generationConfig?.maxOutputTokens === 2000, 'Configures maxOutputTokens for complete extraction response');
     assert(body.generationConfig?.responseSchema?.properties?.passengerName, 'Provides JSON extraction schema to Gemini');
     assert(body.generationConfig?.responseSchema?.properties?.phone === undefined, 'EXTRACTION_SCHEMA.properties has NO phone field');
     assert(body.generationConfig?.responseSchema?.properties?.flightNumber?.description?.includes('FIRST outbound segment ONLY'), 'flightNumber schema description specifies first outbound segment only');
