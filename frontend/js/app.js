@@ -52,27 +52,27 @@ function localizeBootSplash() {
   const stepSessionTitle = document.getElementById('boot-step-session-title');
   const stepSessionSub = document.getElementById('boot-step-session-sub');
   if (stepSessionTitle) stepSessionTitle.textContent = isAr ? 'جاري التحقق من الجلسة' : 'Checking Session';
-  if (stepSessionSub) stepSessionSub.textContent = isAr ? 'Checking session' : 'جاري التحقق من الجلسة';
+  if (stepSessionSub) stepSessionSub.textContent = isAr ? 'جاري التحقق من الجلسة' : 'Checking session';
 
   const stepUserTitle = document.getElementById('boot-step-user-title');
   const stepUserSub = document.getElementById('boot-step-user-sub');
   if (stepUserTitle) stepUserTitle.textContent = isAr ? 'جاري تحميل بيانات المستخدم' : 'Loading User Data';
-  if (stepUserSub) stepUserSub.textContent = isAr ? 'Loading user data' : 'جاري تحميل بيانات المستخدم';
+  if (stepUserSub) stepUserSub.textContent = isAr ? 'جاري تحميل بيانات المستخدم' : 'Loading user data';
 
   const stepDataTitle = document.getElementById('boot-step-data-title');
   const stepDataSub = document.getElementById('boot-step-data-sub');
   if (stepDataTitle) stepDataTitle.textContent = isAr ? 'جاري تحميل بيانات النظام' : 'Loading System Data';
-  if (stepDataSub) stepDataSub.textContent = isAr ? 'Loading system data' : 'جاري تحميل بيانات النظام';
+  if (stepDataSub) stepDataSub.textContent = isAr ? 'جاري تحميل بيانات النظام' : 'Loading system data';
 
   const stepShellTitle = document.getElementById('boot-step-shell-title');
   const stepShellSub = document.getElementById('boot-step-shell-sub');
   if (stepShellTitle) stepShellTitle.textContent = isAr ? 'جاري تجهيز لوحة التحكم' : 'Preparing Dashboard';
-  if (stepShellSub) stepShellSub.textContent = isAr ? 'Preparing dashboard' : 'جاري تجهيز لوحة التحكم';
+  if (stepShellSub) stepShellSub.textContent = isAr ? 'جاري تجهيز لوحة التحكم' : 'Preparing dashboard';
 
   const secureTitle = document.getElementById('boot-splash-secure-title');
   const secureSub = document.getElementById('boot-splash-secure-sub');
   if (secureTitle) secureTitle.textContent = isAr ? 'نظام آمن ومشفّر' : 'Secure & Encrypted';
-  if (secureSub) secureSub.textContent = isAr ? 'SECURE & ENCRYPTED' : 'نظام آمن ومشفّر';
+  if (secureSub) secureSub.textContent = isAr ? 'نظام آمن ومشفّر' : 'SECURE & ENCRYPTED';
 }
 
 class App {

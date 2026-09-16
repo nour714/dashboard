@@ -44,7 +44,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
     console.log(`======================================================\n`);
 
     const dbHealthy = await checkDatabaseHealth();
-    if (dbHealthy) {
+    if (dbHealthy && dbHealthy.ok) {
       console.log('✅ Connected to PostgreSQL database successfully.');
     } else {
       console.log('ℹ️  PostgreSQL database connection in standby mode (using mock / fallback until DB container connects).');
