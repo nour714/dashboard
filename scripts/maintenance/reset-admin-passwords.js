@@ -27,6 +27,8 @@ async function main() {
   console.log('   AfricaTravel User Password Rotation Utility');
   console.log('========================================================\n');
 
+  const customPasswordArg = process.argv.find(a => a.startsWith('--new-password='));
+  const targetEmailArg = process.argv.find(a => a.startsWith('--email='));
   const envPassword = process.env.ADMIN_NEW_PASSWORD || process.env.NEW_PASSWORD;
   const fixedPassword = envPassword || (customPasswordArg ? customPasswordArg.split('=')[1] : null);
   const targetEmail = targetEmailArg ? targetEmailArg.split('=')[1].toLowerCase().trim() : null;

@@ -584,7 +584,8 @@ export const TicketService = {
       // 4. Recalculate ledger status inside transaction
       const updatedPayments = [...(ticket.payments || []), createdPayment];
       const totalPaid = calculateTotalPaid(updatedPayments);
-      const newStatus = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status);
+      const modFees = calculateTotalModificationFees(ticket.modifications || []);
+      const newStatus = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status, modFees);
 
       if (newStatus !== ticket.status) {
         await tx.ticket.update({

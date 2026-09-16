@@ -28,7 +28,6 @@ export const RefundsPage = {
           currency: tData.currency
         });
 
-        totalRefundsCount += 1;
         if (r.status === 'COMPLETED') {
           completedCount += 1;
           totalRefundedAmount += Number(r.amount) || 0;
