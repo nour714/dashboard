@@ -11,7 +11,7 @@
  * returning users pick up the new version instead of a stale cache.
  */
 
-const CACHE_NAME = 'africatravel-shell-v6';
+const CACHE_NAME = 'africatravel-shell-v7';
 
 const SHELL_ASSETS = [
   '/',
@@ -117,9 +117,13 @@ self.addEventListener('fetch', (event) => {
     headers: { 'Content-Type': 'text/plain; charset=utf-8' }
   });
 
-  // For page navigations (e.g. /dashboard, /tickets, /login), prioritize network
+  const isHtmlRequest = request.mode === 'navigate' ||
+    request.destination === 'document' ||
+    Boolean(request.headers.get('accept')?.includes('text/html'));
+
+  // For page navigations (e.g. /dashboard, /tickets/new, /tickets, /login), prioritize network
   // and fall back to the cached index.html shell so dynamic routes never fail.
-  if (request.mode === 'navigate') {
+  if (isHtmlRequest) {
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -158,8 +162,8 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(async () => {
-          if (request.mode === 'navigate') {
-            const shell = await caches.match('/index.html');
+          if (request.mode === 'navigate' || isHtmlRequest) {
+            const shell = await caches.match('/index.html') || await caches.match('/');
             return shell || offlineResponse();
           }
           return cached || offlineResponse();

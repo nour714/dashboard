@@ -64,6 +64,31 @@ const EXTRACTION_SCHEMA = {
   }
 };
 
+export async function discoverAvailableModels(apiKey) {
+  if (!apiKey) return [];
+  const versions = ['v1beta', 'v1'];
+  for (const ver of versions) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/${ver}/models?key=${encodeURIComponent(apiKey)}`;
+      const res = await fetch(url, {
+        headers: { 'x-goog-api-key': apiKey }
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const models = (data.models || [])
+        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+        .map(m => ({
+          version: ver,
+          modelName: m.name.replace(/^models\//, '')
+        }));
+      if (models.length > 0) return models;
+    } catch {
+      // Ignore and try next version
+    }
+  }
+  return [];
+}
+
 export const TicketExtractionService = {
   /**
    * Extracts ticket details from an uploaded document buffer using Google Gemini API.
@@ -98,18 +123,38 @@ Worked example: outbound segments are TK123 CAI→IST departing 10 Jan, then TK4
 
 Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Standardize airline names and their 2-letter IATA codes (e.g., EgyptAir MS, Air Cairo SM, Emirates EK, Etihad Airways EY, Qatar Airways QR, Turkish Airlines TK, Saudia SV, Flynas XY, flydubai FZ, Air Arabia G9, British Airways BA, Air France AF, Lufthansa LH, KLM KL, Iberia IB, ITA Airways AZ, Aegean Airlines A3, American Airlines AA, Delta Air Lines DL, United Airlines UA, Air Canada AC, Air China CA, China Eastern MU, China Southern CZ, Singapore Airlines SQ, Ethiopian Airlines ET, Kenya Airways KQ, Royal Air Maroc AT, Tunisair TU, Air Algérie AH). For "origin" and "destination", return ONLY the 3-letter IATA airport code (e.g. "CAI", "DXB") — never the city name, country name, or full airport name. Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
 
-    // Candidate models for extraction. Google periodically updates and deprecates model IDs
-    // without compile-time warnings, so candidate models are ordered by preference (primary -> fallback).
-    // Both models can be customized via GEMINI_MODEL and GEMINI_FALLBACK_MODEL environment variables.
     const primaryModel = env.GEMINI_MODEL || 'gemini-2.5-flash';
     const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-2.0-flash';
-    const candidateModels = Array.from(new Set([primaryModel, fallbackModel, 'gemini-1.5-flash'])).filter(Boolean);
+    const candidateModels = Array.from(new Set([
+      primaryModel,
+      fallbackModel,
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-001',
+      'gemini-1.5-flash-002',
+      'gemini-2.0-flash-lite',
+      'gemini-1.5-pro'
+    ])).filter(Boolean);
 
     let lastError = null;
     let result = null;
 
-    for (const modelName of candidateModels) {
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent`;
+    const requestPayload = JSON.stringify({
+      contents: [{
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType, data: base64Data } }
+        ]
+      }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: EXTRACTION_SCHEMA,
+        maxOutputTokens: 2000
+      }
+    });
+
+    const tryCallEndpoint = async (apiVersion, modelName) => {
+      const apiUrl = `https://generativelanguage.googleapis.com/${apiVersion}/models/${encodeURIComponent(modelName)}:generateContent`;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), GEMINI_REQUEST_TIMEOUT_MS);
 
@@ -121,29 +166,17 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
             'x-goog-api-key': env.GEMINI_API_KEY
           },
           signal: controller.signal,
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { text: prompt },
-                { inlineData: { mimeType, data: base64Data } }
-              ]
-            }],
-            generationConfig: {
-              responseMimeType: 'application/json',
-              responseSchema: EXTRACTION_SCHEMA,
-              maxOutputTokens: 2000
-            }
-          })
+          body: requestPayload
         });
 
         if (response.ok) {
-          result = await response.json();
-          console.log(`[TicketExtraction] Extraction succeeded using model: ${modelName}`);
-          break;
+          const json = await response.json();
+          console.log(`[TicketExtraction] Extraction succeeded using ${apiVersion}/${modelName}`);
+          return { ok: true, json };
         }
 
         const errBody = await response.text().catch(() => '');
-        console.error(`[TicketExtraction] Gemini API error with model ${modelName}:`, response.status, errBody);
+        console.error(`[TicketExtraction] Gemini API error with ${apiVersion}/${modelName}:`, response.status, errBody);
 
         let googleErrMsg = '';
         try {
@@ -157,11 +190,50 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
           ? `Gemini API (${modelName}): ${googleErrMsg}`
           : 'Failed to extract data from document. Please fill the form manually.';
         lastError = new BusinessRuleError(friendlyMsg, 'AI_EXTRACTION_FAILED', 502);
+        return { ok: false, status: response.status };
       } catch (networkErr) {
-        console.error(`[TicketExtraction] Network error with model ${modelName}:`, networkErr.message);
+        console.error(`[TicketExtraction] Network error with ${apiVersion}/${modelName}:`, networkErr.message);
         lastError = new BusinessRuleError('Unable to connect to AI extraction service. Please fill the form manually.', 'AI_EXTRACTION_FAILED', 502);
+        return { ok: false, status: 0 };
       } finally {
         clearTimeout(timeoutId);
+      }
+    };
+
+    // Phase 1: Try candidate models on v1beta (fast path)
+    for (const modelName of candidateModels) {
+      const res = await tryCallEndpoint('v1beta', modelName);
+      if (res.ok) {
+        result = res.json;
+        break;
+      }
+    }
+
+    // Phase 2: If all candidate models on v1beta failed, try candidate models on v1 (GA path)
+    if (!result) {
+      for (const modelName of candidateModels) {
+        const res = await tryCallEndpoint('v1', modelName);
+        if (res.ok) {
+          result = res.json;
+          break;
+        }
+      }
+    }
+
+    // Phase 3: If still not found, discover active models via ListModels
+    if (!result) {
+      try {
+        const discovered = await discoverAvailableModels(env.GEMINI_API_KEY);
+        for (const { version, modelName } of discovered) {
+          if (candidateModels.includes(modelName)) continue;
+          const res = await tryCallEndpoint(version, modelName);
+          if (res.ok) {
+            result = res.json;
+            break;
+          }
+        }
+      } catch (discoverErr) {
+        console.warn('[TicketExtraction] Automatic model discovery failed:', discoverErr.message);
       }
     }
 
