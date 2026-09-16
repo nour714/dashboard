@@ -55,9 +55,14 @@ async function main() {
   console.log('\n🧹 Executing cleanup SQL statements in exact order...');
 
   const results = await prisma.$transaction(async (tx) => {
-    // 1. Delete mock tickets (cascades to payments, refunds, modifications)
+    // 1. Delete dependent financial records first (respecting ON DELETE RESTRICT)
+    const mockTicketIds = "'TK-10254', 'TK-10253', 'TK-10252', 'TK-10251', 'TK-9824'";
+    await tx.$executeRawUnsafe(`DELETE FROM payments WHERE "ticketId" IN (${mockTicketIds});`);
+    await tx.$executeRawUnsafe(`DELETE FROM refunds WHERE "ticketId" IN (${mockTicketIds});`);
+    await tx.$executeRawUnsafe(`DELETE FROM modifications WHERE "ticketId" IN (${mockTicketIds});`);
+
     const deletedTickets = await tx.$executeRawUnsafe(
-      `DELETE FROM tickets WHERE id IN ('TK-10254', 'TK-10253', 'TK-10252', 'TK-10251', 'TK-9824');`
+      `DELETE FROM tickets WHERE id IN (${mockTicketIds});`
     );
     console.log(`  1. Tickets deleted: ${deletedTickets}`);
 

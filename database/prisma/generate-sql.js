@@ -19,7 +19,7 @@ async function generateSQL() {
 
 -- Create Enums
 DO $$ BEGIN
-  CREATE TYPE "Role" AS ENUM ('ADMIN', 'AGENT');
+  CREATE TYPE "Role" AS ENUM ('ADMIN', 'AGENT', 'TICKET_ONLY');
 EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS "users" (
     "title" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
     "status" "EmployeeStatus" NOT NULL DEFAULT 'ACTIVE',
-    "lastActive" TEXT DEFAULT 'Just now',
+    "lastActive" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
@@ -211,7 +211,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 DO $$ BEGIN
-  ALTER TABLE "payments" ADD CONSTRAINT "payments_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "tickets"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  ALTER TABLE "payments" ADD CONSTRAINT "payments_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "tickets"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 DO $$ BEGIN
@@ -219,7 +219,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 DO $$ BEGIN
-  ALTER TABLE "modifications" ADD CONSTRAINT "modifications_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "tickets"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  ALTER TABLE "modifications" ADD CONSTRAINT "modifications_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "tickets"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 DO $$ BEGIN
@@ -227,7 +227,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 DO $$ BEGIN
-  ALTER TABLE "refunds" ADD CONSTRAINT "refunds_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "tickets"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  ALTER TABLE "refunds" ADD CONSTRAINT "refunds_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "tickets"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 DO $$ BEGIN

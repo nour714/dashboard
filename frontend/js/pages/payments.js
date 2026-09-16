@@ -19,23 +19,27 @@ export const PaymentsPage = {
   render() {
     const { tickets = [] } = store.getState();
 
-    // Flatten all payments across all tickets with ticket metadata
+    // Flatten all payments across all tickets with ticket metadata & track totals per currency
     const allPayments = [];
-    let grandTotalValue = 0;
-    let grandTotalPaid = 0;
-    let grandTotalRemaining = 0;
+    const totalsByCurrency = {};
 
     tickets.forEach(tData => {
+      const curr = tData.currency || 'EGP';
+      if (!totalsByCurrency[curr]) {
+        totalsByCurrency[curr] = { value: 0, paid: 0, remaining: 0 };
+      }
+
       const price = Number(tData.ticketPrice) || 0;
       const modFees = calculateTotalModificationFees(tData.modifications);
-      grandTotalValue += (price + modFees);
+      totalsByCurrency[curr].value += (price + modFees);
       const tPaid = calculateTotalPaid(tData.payments);
-      grandTotalPaid += tPaid;
-      grandTotalRemaining += calculateRemaining(tData.ticketPrice, tPaid, modFees);
+      totalsByCurrency[curr].paid += tPaid;
+      totalsByCurrency[curr].remaining += calculateRemaining(tData.ticketPrice, tPaid, modFees);
 
       (tData.payments || []).forEach(p => {
         allPayments.push({
           ...p,
+          currency: p.currency || curr,
           ticketId: tData.id,
           ticketNumber: tData.ticketNumber,
           passengerName: tData.passengerName,
@@ -43,6 +47,24 @@ export const PaymentsPage = {
         });
       });
     });
+
+    const currencies = Object.keys(totalsByCurrency);
+    const primaryCurrency = currencies.includes('EGP') ? 'EGP' : (currencies[0] || 'EGP');
+    const primaryTotals = totalsByCurrency[primaryCurrency] || { value: 0, paid: 0, remaining: 0 };
+
+    const renderMetricValue = (field, textClass = '') => {
+      if (currencies.length <= 1) {
+        return `<div class="stat-card-value tabular-nums ${textClass}">${formatCurrency(primaryTotals[field], primaryCurrency)}</div>`;
+      }
+      return `
+        <div class="stat-card-value tabular-nums ${textClass}">${formatCurrency(primaryTotals[field], primaryCurrency)}</div>
+        <div class="d-flex flex-wrap gap-xs mt-xs text-xs text-secondary">
+          ${currencies.filter(c => c !== primaryCurrency).map(c => `
+            <span class="badge badge-subtle tabular-nums">${formatCurrency(totalsByCurrency[c][field], c)}</span>
+          `).join('')}
+        </div>
+      `;
+    };
 
     // Sort by date descending
     allPayments.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -91,19 +113,19 @@ export const PaymentsPage = {
       <div class="stat-card-grid mb-lg">
         <div class="stat-card">
           <span class="stat-card-label">${escapeHtml(t('dashboard.kpi.totalSales'))}</span>
-          <div class="stat-card-value tabular-nums">${formatCurrency(grandTotalValue, 'EGP')}</div>
+          ${renderMetricValue('value')}
           <div class="text-sm text-muted">${escapeHtml(t('dashboard.kpi.salesSubtitle'))}</div>
         </div>
 
         <div class="stat-card">
           <span class="stat-card-label">${escapeHtml(t('dashboard.kpi.totalCollected'))}</span>
-          <div class="stat-card-value tabular-nums text-success">${formatCurrency(grandTotalPaid, 'EGP')}</div>
+          ${renderMetricValue('paid', 'text-success')}
           <div class="text-sm text-muted">${escapeHtml(t('dashboard.kpi.collectedSubtitle'))}</div>
         </div>
 
         <div class="stat-card">
           <span class="stat-card-label">${escapeHtml(t('dashboard.kpi.remainingBalance'))}</span>
-          <div class="stat-card-value tabular-nums text-danger">${formatCurrency(grandTotalRemaining, 'EGP')}</div>
+          ${renderMetricValue('remaining', 'text-danger')}
           <div class="text-sm text-muted">${escapeHtml(t('dashboard.kpi.remainingSubtitle'))}</div>
         </div>
       </div>

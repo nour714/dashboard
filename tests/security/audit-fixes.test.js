@@ -216,15 +216,18 @@ async function runAuditFixesTests() {
   assert(paginatedResult.pagination?.totalPages === 4, 'CustomerService.getCustomers calculates correct totalPages');
 
   // 8. Password Policy Consistency
-  console.log('\n--- 8. Password Policy Consistency (>= 8 chars) ---');
+  console.log('\n--- 8. Password Policy Consistency (>= 12 chars) ---');
   const shortChangePw = changePasswordSchema.safeParse({ currentPassword: 'oldPassWord1!', newPassword: '12345' });
-  assert(!shortChangePw.success, 'changePasswordSchema rejects password with < 8 chars');
+  assert(!shortChangePw.success, 'changePasswordSchema rejects password with < 12 chars');
+
+  const borderlineChangePw = changePasswordSchema.safeParse({ currentPassword: 'oldPassWord1!', newPassword: 'only11chars' });
+  assert(!borderlineChangePw.success, 'changePasswordSchema rejects password with 11 chars');
 
   const validChangePw = changePasswordSchema.safeParse({ currentPassword: 'oldPassWord1!', newPassword: 'newValidPass123' });
-  assert(validChangePw.success, 'changePasswordSchema accepts password with >= 8 chars');
+  assert(validChangePw.success, 'changePasswordSchema accepts password with >= 12 chars');
 
-  const shortCreateEmp = createEmployeeSchema.safeParse({ name: 'A', email: 'a@a.com', password: '123' });
-  assert(!shortCreateEmp.success, 'createEmployeeSchema rejects password with < 8 chars');
+  const shortCreateEmp = createEmployeeSchema.safeParse({ name: 'A', email: 'a@a.com', password: 'shortpass11' });
+  assert(!shortCreateEmp.success, 'createEmployeeSchema rejects password with < 12 chars');
 
   // 9. Partial Refund Status Calculation
   console.log('\n--- 9. Partial vs Full Refund Status Handling ---');

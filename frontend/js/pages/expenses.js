@@ -396,9 +396,9 @@ export const ExpensesPage = {
             </div>
 
             <div class="d-flex items-center gap-xs">
-              <input type="date" id="exp-filter-start-date" class="form-control" value="${escapeHtml(currentFilters.startDate || '')}" placeholder="From Date" />
+              <input type="date" id="exp-filter-start-date" class="form-control" value="${escapeHtml(currentFilters.startDate || '')}" placeholder="${escapeHtml(t('common.fromDate'))}" />
               <span class="text-muted">—</span>
-              <input type="date" id="exp-filter-end-date" class="form-control" value="${escapeHtml(currentFilters.endDate || '')}" placeholder="To Date" />
+              <input type="date" id="exp-filter-end-date" class="form-control" value="${escapeHtml(currentFilters.endDate || '')}" placeholder="${escapeHtml(t('common.toDate'))}" />
             </div>
 
             <button type="button" class="btn btn-secondary btn-sm" id="exp-filter-clear">
@@ -432,11 +432,15 @@ export const ExpensesPage = {
         ${cachedPagination.totalPages > 1 ? `
         <div class="card-footer d-flex items-center justify-between p-md" style="border-top: 1px solid var(--color-border-soft);">
           <span class="text-sm text-muted">
-            Page ${cachedPagination.page} of ${cachedPagination.totalPages} (${cachedPagination.total} records)
+            ${escapeHtml(t('common.pageOf', 'Page {page} of {totalPages} ({total} records)', {
+              page: cachedPagination.page,
+              totalPages: cachedPagination.totalPages,
+              total: cachedPagination.total
+            }))}
           </span>
           <div class="d-flex gap-xs">
-            <button type="button" class="btn btn-secondary btn-sm" id="exp-page-prev" ${cachedPagination.page <= 1 ? 'disabled' : ''}>‹ Prev</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="exp-page-next" ${cachedPagination.page >= cachedPagination.totalPages ? 'disabled' : ''}>Next ›</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="exp-page-prev" ${cachedPagination.page <= 1 ? 'disabled' : ''}>‹ ${escapeHtml(t('common.prev'))}</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="exp-page-next" ${cachedPagination.page >= cachedPagination.totalPages ? 'disabled' : ''}>${escapeHtml(t('common.next'))} ›</button>
           </div>
         </div>
         ` : ''}

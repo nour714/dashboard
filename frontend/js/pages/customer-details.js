@@ -220,39 +220,39 @@ export const CustomerDetailsPage = {
         <!-- Passport Document Section -->
         <div class="col-span-4">
           <div class="card p-md">
-            <h3 class="card-title mb-md">${escapeHtml('Passport Document')}</h3>
+            <h3 class="card-title mb-md">${escapeHtml(t('customerDetails.passportDoc.title'))}</h3>
             <div id="passport-doc-section" class="d-flex flex-column gap-sm">
               ${customer.passportDocUploadedAt ? `
                 <div class="d-flex flex-column gap-sm">
                   <div class="d-flex justify-between align-items-center text-sm">
-                    <span class="text-muted">Uploaded</span>
+                    <span class="text-muted">${escapeHtml(t('customerDetails.passportDoc.uploaded'))}</span>
                     <span>${escapeHtml(formatDate(customer.passportDocUploadedAt))}</span>
                   </div>
                   <div class="d-flex gap-sm" style="margin-top: 4px;">
                     <button type="button" class="btn btn-primary btn-sm" id="btn-view-passport-doc" style="flex:1;">
-                      ${icons.eye('w-4 h-4')} View Document
+                      ${icons.eye('w-4 h-4')} ${escapeHtml(t('customerDetails.passportDoc.view'))}
                     </button>
                     ${isAdmin ? `
                       <button type="button" class="btn btn-danger btn-sm" id="btn-delete-passport-doc">
-                        ${icons.trash('w-4 h-4')} Delete
+                        ${icons.trash('w-4 h-4')} ${escapeHtml(t('common.delete'))}
                       </button>
                     ` : ''}
                   </div>
                   <div class="text-sm" style="margin-top: 4px;">
-                    <span class="text-muted">Replace:</span>
+                    <span class="text-muted">${escapeHtml(t('customerDetails.passportDoc.replace'))}</span>
                     <input type="file" id="passport-doc-input" accept=".jpg,.jpeg,.png,.pdf" class="form-control" style="font-size:12px; padding:4px; margin-top:4px;" />
                     <button type="button" class="btn btn-secondary btn-sm" id="btn-upload-passport-doc" style="margin-top:6px; width:100%;" disabled>
-                      Upload New
+                      ${escapeHtml(t('customerDetails.passportDoc.uploadNew'))}
                     </button>
                     <div id="passport-doc-error" class="text-danger text-xs" style="margin-top:4px; display:none;"></div>
                   </div>
                 </div>
               ` : `
                 <div class="d-flex flex-column gap-sm">
-                  <p class="text-muted text-sm" style="margin:0;">No passport document uploaded yet.</p>
+                  <p class="text-muted text-sm" style="margin:0;">${escapeHtml(t('customerDetails.passportDoc.empty'))}</p>
                   <input type="file" id="passport-doc-input" accept=".jpg,.jpeg,.png,.pdf" class="form-control" style="font-size:12px; padding:4px;" />
                   <button type="button" class="btn btn-primary btn-sm" id="btn-upload-passport-doc" style="width:100%;" disabled>
-                    Upload Document
+                    ${escapeHtml(t('customerDetails.passportDoc.upload'))}
                   </button>
                   <div id="passport-doc-error" class="text-danger text-xs" style="margin-top:4px; display:none;"></div>
                 </div>

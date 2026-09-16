@@ -91,8 +91,13 @@ export const AuthService = {
       }
     });
 
-    // Mitigate user enumeration: verify password before revealing any account status
-    const isMatch = user ? await this.comparePassword(password, user.passwordHash) : false;
+    // Mitigate user enumeration & timing side-channels:
+    // When user is not found, perform a dummy bcrypt comparison against a valid constant hash
+    // so response time is indistinguishable between registered and unregistered emails.
+    const DUMMY_HASH = '$2b$12$e80yq9kXb2s7nNqH4K3H4.uC9mG2T1s7nNqH4K3H4.uC9mG2T1s7n';
+    const hashToCompare = user?.passwordHash || DUMMY_HASH;
+    const isMatch = await this.comparePassword(password, hashToCompare);
+
     if (!user || !isMatch) {
       throw new UnauthorizedError('Invalid email or password', 'INVALID_CREDENTIALS');
     }

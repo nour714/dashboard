@@ -16,7 +16,27 @@ import { UnauthorizedError, ForbiddenError } from '../domain/errors.js';
  * to throttle database writes and is NEVER a source of truth. The PostgreSQL database
  * (`users.lastActive`) remains the sole, authoritative source of truth.
  */
+const MAX_LAST_ACTIVE_CACHE_SIZE = 1000;
+const LAST_ACTIVE_ENTRY_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
 export const lastActiveTouchCache = new Map();
+
+function pruneLastActiveTouchCache() {
+  if (lastActiveTouchCache.size <= MAX_LAST_ACTIVE_CACHE_SIZE) return;
+  const now = Date.now();
+  for (const [key, timestamp] of lastActiveTouchCache) {
+    if (now - timestamp > LAST_ACTIVE_ENTRY_TTL_MS) {
+      lastActiveTouchCache.delete(key);
+    }
+  }
+  if (lastActiveTouchCache.size > MAX_LAST_ACTIVE_CACHE_SIZE) {
+    const entries = [...lastActiveTouchCache.entries()].sort((a, b) => a[1] - b[1]);
+    const toRemove = entries.length - MAX_LAST_ACTIVE_CACHE_SIZE;
+    for (let i = 0; i < toRemove; i++) {
+      lastActiveTouchCache.delete(entries[i][0]);
+    }
+  }
+}
 
 /**
  * Authenticates request using JWT Bearer token
@@ -73,6 +93,7 @@ export function authenticate(req, res, next) {
         const lastTouch = lastActiveTouchCache.get(req.user.id) || 0;
         if (now - lastTouch > 60_000) {
           lastActiveTouchCache.set(req.user.id, now);
+          pruneLastActiveTouchCache();
           try {
             if (prisma?.user?.update) {
               prisma.user.update({

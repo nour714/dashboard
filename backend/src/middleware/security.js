@@ -58,7 +58,15 @@ export const corsMiddleware = cors({
       .filter(Boolean)
       .map(d => `https://${d}`.replace(/\/+$/, ''));
 
-    const isLocalhost = isDevelopment && (normalizedOrigin.includes('localhost') || normalizedOrigin.includes('127.0.0.1'));
+    let isLocalhost = false;
+    if (isDevelopment) {
+      try {
+        const parsed = new URL(normalizedOrigin);
+        isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1' || parsed.hostname === '[::1]';
+      } catch {
+        isLocalhost = false;
+      }
+    }
     const isWildcardAllowed = isDevelopment && allowedOrigins.includes('*');
 
     if (

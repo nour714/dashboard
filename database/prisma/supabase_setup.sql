@@ -305,19 +305,19 @@ INSERT INTO "system_settings" ("id", "data", "updatedAt")
 VALUES ('default', '{"profile":{"name":"Mohamed Raafat","fullName":"Mohamed Raafat","email":"admin@africatravel.com","role":"Senior Operations Director","title":"Senior Operations Director","phone":"+20 100 000 1122"},"company":{"name":"AfricaTravel Travel Operations Ltd.","iataNumber":"12-3 4567 8","taxId":"EG-904-881-229","baseCurrency":"EGP","address":"14 Al-Thawra Street, Heliopolis, Cairo, Egypt","phone":"+20 2 2415 8800"},"currencies":["EGP","USD","EUR","SAR","AED"],"paymentMethods":["Cash","Credit Card","Bank Transfer","Vodafone Cash","InstaPay","Corporate Account"],"ticketStatuses":["CONFIRMED","PENDING PAY","PARTIALLY PAID","PAID","MODIFIED","REFUNDED","CANCELLED"],"notifications":{"emailOnNewTicket":true,"emailOnRefundRequest":true,"emailOnFlightDelay":true,"dailySummaryReport":true}}'::jsonb, NOW())
 ON CONFLICT ("id") DO UPDATE SET "data" = EXCLUDED."data";
 
--- Users (Password: password123)
+-- Users (Note: passwordHash is set to disabled placeholder; bootstrap accounts with scripts/maintenance/reset-admin-passwords.js)
 INSERT INTO "users" ("id", "name", "email", "role", "title", "passwordHash", "status", "lastActive", "createdAt", "updatedAt") 
-VALUES ('EMP-101', 'Mohamed Raafat', 'admin@africatravel.com', 'ADMIN', 'Senior Operations Director', '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', 'ACTIVE', NOW(), NOW(), NOW()) 
-ON CONFLICT ("id") DO UPDATE SET "passwordHash" = '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', "status" = 'ACTIVE';
+VALUES ('EMP-101', 'Mohamed Raafat', 'admin@africatravel.com', 'ADMIN', 'Senior Operations Director', '!DISABLED_ACCOUNT_BOOTSTRAP_REQUIRED!', 'ACTIVE', NOW(), NOW(), NOW()) 
+ON CONFLICT ("id") DO NOTHING;
 INSERT INTO "users" ("id", "name", "email", "role", "title", "passwordHash", "status", "lastActive", "createdAt", "updatedAt") 
-VALUES ('EMP-102', 'Ahmed Raafat', 'ahmed.r@africatravel.com', 'ADMIN', 'Senior Operations Manager', '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', 'ACTIVE', NOW(), NOW(), NOW()) 
-ON CONFLICT ("id") DO UPDATE SET "passwordHash" = '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', "status" = 'ACTIVE';
+VALUES ('EMP-102', 'Ahmed Raafat', 'ahmed.r@africatravel.com', 'ADMIN', 'Senior Operations Manager', '!DISABLED_ACCOUNT_BOOTSTRAP_REQUIRED!', 'ACTIVE', NOW(), NOW(), NOW()) 
+ON CONFLICT ("id") DO NOTHING;
 INSERT INTO "users" ("id", "name", "email", "role", "title", "passwordHash", "status", "lastActive", "createdAt", "updatedAt") 
-VALUES ('EMP-103', 'Nour Wael', 'nour.w@africatravel.com', 'AGENT', 'Ticketing Officer', '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', 'ACTIVE', NOW(), NOW(), NOW()) 
-ON CONFLICT ("id") DO UPDATE SET "passwordHash" = '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', "status" = 'ACTIVE';
+VALUES ('EMP-103', 'Nour Wael', 'nour.w@africatravel.com', 'AGENT', 'Ticketing Officer', '!DISABLED_ACCOUNT_BOOTSTRAP_REQUIRED!', 'ACTIVE', NOW(), NOW(), NOW()) 
+ON CONFLICT ("id") DO NOTHING;
 INSERT INTO "users" ("id", "name", "email", "role", "title", "passwordHash", "status", "lastActive", "createdAt", "updatedAt") 
-VALUES ('EMP-104', 'Hashem Ahmed', 'hashem.a@africatravel.com', 'AGENT', 'Customer Operations Specialist', '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', 'ACTIVE', NOW(), NOW(), NOW()) 
-ON CONFLICT ("id") DO UPDATE SET "passwordHash" = '$2b$10$NwtYw1S7Glwpsuwt9wNR4OiFsuCGV7kQKnwU0ooXs6NrRgC9mXe.2', "status" = 'ACTIVE';
+VALUES ('EMP-104', 'Hashem Ahmed', 'hashem.a@africatravel.com', 'AGENT', 'Customer Operations Specialist', '!DISABLED_ACCOUNT_BOOTSTRAP_REQUIRED!', 'ACTIVE', NOW(), NOW(), NOW()) 
+ON CONFLICT ("id") DO NOTHING;
 
 -- Customers
 INSERT INTO "customers" ("id", "name", "email", "phone", "passport", "nationality", "isVip", "memberSince", "createdAt", "updatedAt") 

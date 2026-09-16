@@ -318,22 +318,22 @@ export function openEditTicketModal(ticket, onSuccess) {
 
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label" for="edit-pnr">PNR</label>
+            <label class="form-label" for="edit-pnr">${escapeHtml(t('tickets.pnr'))}</label>
             <input type="text" id="edit-pnr" class="form-control ltr-field" value="${escapeHtml(ticket.pnr || '')}" maxlength="10" />
           </div>
           <div class="form-group">
-            <label class="form-label" for="edit-ticket-number">Ticket Number</label>
+            <label class="form-label" for="edit-ticket-number">${escapeHtml(t('tickets.ticketNumber'))}</label>
             <input type="text" id="edit-ticket-number" class="form-control ltr-field" value="${escapeHtml(ticket.ticketNumber || '')}" />
           </div>
         </div>
 
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label" for="edit-flight-number">Flight Number</label>
+            <label class="form-label" for="edit-flight-number">${escapeHtml(t('tickets.flightNumber'))}</label>
             <input type="text" id="edit-flight-number" class="form-control ltr-field" value="${escapeHtml(ticket.flightNumber || '')}" />
           </div>
           <div class="form-group">
-            <label class="form-label" for="edit-route">Origin → Destination</label>
+            <label class="form-label" for="edit-route">${escapeHtml(t('tickets.route'))}</label>
             <div class="d-flex gap-sm">
               <input type="text" id="edit-origin" class="form-control ltr-field" style="width: 50%;" maxlength="3" value="${escapeHtml(ticket.origin || '')}" placeholder="CAI" />
               <input type="text" id="edit-destination" class="form-control ltr-field" style="width: 50%;" maxlength="3" value="${escapeHtml(ticket.destination || '')}" placeholder="DXB" />
@@ -343,11 +343,11 @@ export function openEditTicketModal(ticket, onSuccess) {
 
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label" for="edit-seat">Seat Assignment</label>
+            <label class="form-label" for="edit-seat">${escapeHtml(t('tickets.seatAssignment'))}</label>
             <input type="text" id="edit-seat" class="form-control ltr-field" value="${escapeHtml(ticket.seat || '12A')}" />
           </div>
           <div class="form-group">
-            <label class="form-label" for="edit-baggage">Baggage Allowance</label>
+            <label class="form-label" for="edit-baggage">${escapeHtml(t('tickets.baggageAllowance'))}</label>
             <input type="text" id="edit-baggage" class="form-control" value="${escapeHtml(ticket.baggage || '1 x 23kg')}" />
           </div>
         </div>
@@ -372,7 +372,7 @@ export function openEditTicketModal(ticket, onSuccess) {
         ${isAdmin ? `
           <div class="form-grid-2">
             <div class="form-group">
-              <label class="form-label" for="edit-ticket-price">Ticket Price (Sale Price)</label>
+              <label class="form-label" for="edit-ticket-price">${escapeHtml(t('tickets.ticketPrice', 'Ticket Price (Sale Price)'))}</label>
               <input type="number" id="edit-ticket-price" class="form-control tabular-nums" value="${ticket.ticketPrice != null ? ticket.ticketPrice : ''}" min="1" step="any" placeholder="0.00" />
             </div>
             <div class="form-group">

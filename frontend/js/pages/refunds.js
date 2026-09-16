@@ -11,31 +11,51 @@ import { t } from '../i18n/i18n.js';
 
 export const RefundsPage = {
   render() {
-    const { tickets } = store.getState();
+    const { tickets = [] } = store.getState();
 
     const allRefunds = [];
     let completedCount = 0;
     let requestedCount = 0;
-    let totalRefundedAmount = 0;
+    const refundsByCurrency = {};
 
     tickets.forEach(tData => {
+      const ticketCurr = tData.currency || 'EGP';
       (tData.refunds || []).forEach(r => {
+        const curr = r.currency || ticketCurr;
         allRefunds.push({
           ...r,
           ticketId: tData.id,
           passengerName: tData.passengerName,
           pnr: tData.pnr,
-          currency: tData.currency
+          currency: curr
         });
 
         if (r.status === 'COMPLETED') {
           completedCount += 1;
-          totalRefundedAmount += Number(r.amount) || 0;
+          refundsByCurrency[curr] = (refundsByCurrency[curr] || 0) + (Number(r.amount) || 0);
         } else {
           requestedCount += 1;
         }
       });
     });
+
+    const refundCurrencies = Object.keys(refundsByCurrency);
+    const primaryCurrency = refundCurrencies.includes('EGP') ? 'EGP' : (refundCurrencies[0] || 'EGP');
+    const primaryRefundTotal = refundsByCurrency[primaryCurrency] || 0;
+
+    const renderRefundMetric = () => {
+      if (refundCurrencies.length <= 1) {
+        return `<div class="stat-card-value tabular-nums text-danger">${formatCurrency(primaryRefundTotal, primaryCurrency)}</div>`;
+      }
+      return `
+        <div class="stat-card-value tabular-nums text-danger">${formatCurrency(primaryRefundTotal, primaryCurrency)}</div>
+        <div class="d-flex flex-wrap gap-xs mt-xs text-xs text-secondary">
+          ${refundCurrencies.filter(c => c !== primaryCurrency).map(c => `
+            <span class="badge badge-subtle tabular-nums">${formatCurrency(refundsByCurrency[c], c)}</span>
+          `).join('')}
+        </div>
+      `;
+    };
 
     const headerHtml = renderPageHeader({
       title: t('refunds.title'),
@@ -48,7 +68,7 @@ export const RefundsPage = {
         <td><strong class="cell-main ltr-data">${escapeHtml(r.id)}</strong></td>
         <td>
           <a href="/tickets/${escapeHtml(r.ticketId)}" class="cell-main text-accent ltr-data" data-link>${escapeHtml(r.ticketId)}</a>
-          <div class="cell-sub font-medium">PNR: <span class="ltr-data">${escapeHtml(r.pnr)}</span></div>
+          <div class="cell-sub font-medium">${escapeHtml(t('tickets.pnr'))}: <span class="ltr-data">${escapeHtml(r.pnr)}</span></div>
         </td>
         <td>
           <div class="cell-main">${escapeHtml(r.passengerName)}</div>
@@ -68,7 +88,7 @@ export const RefundsPage = {
           <span class="text-sm text-muted">${formatDateTime(r.requestedDate)}</span>
         </td>
         <td>
-          <span class="text-sm font-medium">${escapeHtml(r.processedBy || 'Agent')}</span>
+          <span class="text-sm font-medium">${escapeHtml(r.processedBy || t('common.agent', 'Agent'))}</span>
         </td>
       </tr>
     `).join('');
@@ -80,7 +100,7 @@ export const RefundsPage = {
       <div class="stat-card-grid mb-lg">
         <div class="stat-card">
           <span class="stat-card-label">${escapeHtml(t('reports.kpi.refundsTotal'))}</span>
-          <div class="stat-card-value tabular-nums text-danger">${formatCurrency(totalRefundedAmount, 'EGP')}</div>
+          ${renderRefundMetric()}
         </div>
 
         <div class="stat-card">

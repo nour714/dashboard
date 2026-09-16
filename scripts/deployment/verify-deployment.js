@@ -27,7 +27,7 @@ const req = client.get(healthEndpoint, (res) => {
     if (res.statusCode === 200) {
       try {
         const json = JSON.parse(body);
-        if (json.success && json.data?.status === 'ok') {
+        if (json.success && (json.data?.status === 'healthy' || json.data?.status === 'ok')) {
           console.log('✅ Deployment health check passed:', JSON.stringify(json.data));
           process.exit(0);
         }

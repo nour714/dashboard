@@ -67,6 +67,11 @@ export const ar = {
     back: 'رجوع',
     next: 'التالي',
     previous: 'السابق',
+    prev: 'السابق',
+    fromDate: 'من تاريخ',
+    toDate: 'إلى تاريخ',
+    pageOf: 'صفحة {page} من {totalPages} ({total} سجل)',
+    agent: 'الموظف',
     actions: 'الإجراءات',
     status: 'الحالة',
     date: 'التاريخ',
@@ -209,6 +214,13 @@ export const ar = {
     title: 'التذاكر',
     subtitle: 'إدارة الحجوزات، إصدار التذاكر، تسجيل الدفعات، ومتابعة جداول الرحلات.',
     createTicket: 'إنشاء تذكرة',
+    pnr: 'رمز الحجز (PNR)',
+    ticketNumber: 'رقم التذكرة',
+    flightNumber: 'رقم الرحلة',
+    route: 'المسار (المغادرة ← الوصول)',
+    seatAssignment: 'رقم المقعد',
+    baggageAllowance: 'الوزن والأمتعة',
+    ticketPrice: 'سعر بيع التذكرة',
     searchPlaceholder: 'ابحث باسم المسافر، رمز PNR، رقم التذكرة أو شركة الطيران...',
     filterStatus: 'الحالة',
     filterAirline: 'شركة الطيران',
@@ -431,7 +443,17 @@ export const ar = {
     bookingHistory: 'سجل حجوزات التذاكر',
     totalSpent: 'إجمالي المبيعات',
     totalTickets: 'التذاكر المصدرة',
-    emptyTickets: 'لا توجد تذاكر مسجلة لهذا العميل.'
+    emptyTickets: 'لا توجد تذاكر مسجلة لهذا العميل.',
+    passportDoc: {
+      title: 'وثيقة جواز السفر',
+      uploaded: 'تم الرفع',
+      view: 'عرض المستند',
+      delete: 'حذف',
+      replace: 'استبدال:',
+      uploadNew: 'رفع مستند جديد',
+      empty: 'لم يتم رفع مستند جواز السفر بعد.',
+      upload: 'رفع المستند'
+    }
   },
 
   // Payments Page

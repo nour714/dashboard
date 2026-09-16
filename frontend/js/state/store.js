@@ -71,23 +71,51 @@ class Store {
     return this.hydrating;
   }
 
+  async fetchAllTickets() {
+    try {
+      const limit = 100;
+      const firstRes = await apiClient.get('/tickets', { limit, page: 1 });
+      if (!firstRes || !firstRes.success || !firstRes.data) {
+        return [];
+      }
+      let allTickets = Array.isArray(firstRes.data.tickets) ? [...firstRes.data.tickets] : [];
+      const totalPages = Number(firstRes.data.pagination?.totalPages) || 1;
+
+      if (totalPages > 1) {
+        const remainingPagePromises = [];
+        for (let p = 2; p <= totalPages; p++) {
+          remainingPagePromises.push(apiClient.get('/tickets', { limit, page: p }));
+        }
+        const remainingResults = await Promise.all(remainingPagePromises);
+        for (const res of remainingResults) {
+          if (res && res.success && Array.isArray(res.data?.tickets)) {
+            allTickets = allTickets.concat(res.data.tickets);
+          }
+        }
+      }
+      return allTickets;
+    } catch {
+      return [];
+    }
+  }
+
   async hydrate() {
     if (!hasSession()) return;
 
-    const [ticketsRes, customersRes, employeesRes, activityRes, settingsRes] = await Promise.all([
-      apiClient.get('/tickets', { limit: 100 }),
+    const [tickets, customersRes, employeesRes, activityRes, settingsRes] = await Promise.all([
+      this.fetchAllTickets(),
       apiClient.get('/customers'),
       apiClient.get('/employees'),
       apiClient.get('/activity', { limit: 100 }),
       apiClient.get('/settings')
     ]);
 
-    if (ticketsRes.success) this.state.tickets = ticketsRes.data.tickets || [];
-    if (customersRes.success) this.state.customers = customersRes.data || [];
+    this.state.tickets = tickets;
+    if (customersRes && customersRes.success) this.state.customers = customersRes.data || [];
     // Employees endpoint is ADMIN-only; agents simply keep an empty list.
-    if (employeesRes.success) this.state.employees = employeesRes.data || [];
-    if (activityRes.success) this.state.activityLogs = activityRes.data.logs || activityRes.data || [];
-    if (settingsRes.success && settingsRes.data && typeof settingsRes.data === 'object') {
+    if (employeesRes && employeesRes.success) this.state.employees = employeesRes.data || [];
+    if (activityRes && activityRes.success) this.state.activityLogs = activityRes.data.logs || activityRes.data || [];
+    if (settingsRes && settingsRes.success && settingsRes.data && typeof settingsRes.data === 'object') {
       this.state.settings = {
         ...INITIAL_SETTINGS,
         ...settingsRes.data
@@ -99,12 +127,10 @@ class Store {
   }
 
   async refreshTickets() {
-    const res = await apiClient.get('/tickets', { limit: 100 });
-    if (res.success) {
-      this.state.tickets = res.data.tickets || [];
-      this.notify();
-    }
-    return res;
+    const tickets = await this.fetchAllTickets();
+    this.state.tickets = tickets;
+    this.notify();
+    return { success: true, data: { tickets } };
   }
 
   async refreshEmployees() {

@@ -11,7 +11,7 @@
  * returning users pick up the new version instead of a stale cache.
  */
 
-const CACHE_NAME = 'africatravel-shell-v4';
+const CACHE_NAME = 'africatravel-shell-v5';
 
 const SHELL_ASSETS = [
   '/',
@@ -24,10 +24,58 @@ const SHELL_ASSETS = [
   '/styles/utilities.css',
   '/styles/responsive.css',
   '/js/app.js',
+  '/js/bootstrap.js',
+  '/js/state/store.js',
+  '/js/router/router.js',
+  '/js/router/routes.js',
+  '/js/i18n/i18n.js',
+  '/js/i18n/locales/ar.js',
+  '/js/i18n/locales/en.js',
+  '/js/services/api-client.js',
+  '/js/services/auth-service.js',
+  '/js/services/customer-service.js',
+  '/js/services/expense-service.js',
+  '/js/services/report-service.js',
+  '/js/services/ticket-service.js',
+  '/js/components/bottom-nav.js',
+  '/js/components/empty-state.js',
+  '/js/components/icons.js',
+  '/js/components/modal.js',
+  '/js/components/page-header.js',
+  '/js/components/sidebar.js',
+  '/js/components/stat-card.js',
+  '/js/components/status-badge.js',
+  '/js/components/tabs.js',
+  '/js/components/toast.js',
+  '/js/components/topbar.js',
+  '/js/utils/calculations.js',
+  '/js/utils/dom.js',
+  '/js/utils/flight-reminders.js',
+  '/js/utils/online-status.js',
+  '/js/utils/security.js',
+  '/js/pages/activity.js',
+  '/js/pages/customer-details.js',
+  '/js/pages/customers.js',
+  '/js/pages/dashboard.js',
+  '/js/pages/employees.js',
+  '/js/pages/expenses.js',
+  '/js/pages/login.js',
+  '/js/pages/payments.js',
+  '/js/pages/refunds.js',
+  '/js/pages/reports.js',
+  '/js/pages/settings.js',
+  '/js/pages/ticket-create.js',
+  '/js/pages/ticket-details.js',
+  '/js/pages/tickets.js',
   '/assets/favicon.png',
   '/assets/icon-192.png',
   '/assets/icon-512.png',
-  '/assets/savannah-bg.jpg'
+  '/assets/icon-512-maskable.png',
+  '/assets/apple-touch-icon.png',
+  '/assets/logo.png',
+  '/assets/logo.webp',
+  '/assets/savannah-bg.jpg',
+  '/assets/savannah-bg.webp'
 ];
 
 self.addEventListener('install', (event) => {

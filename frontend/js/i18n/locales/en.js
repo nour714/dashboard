@@ -67,6 +67,11 @@ export const en = {
     back: 'Back',
     next: 'Next',
     previous: 'Previous',
+    prev: 'Prev',
+    fromDate: 'From Date',
+    toDate: 'To Date',
+    pageOf: 'Page {page} of {totalPages} ({total} records)',
+    agent: 'Agent',
     actions: 'Actions',
     status: 'Status',
     date: 'Date',
@@ -209,6 +214,13 @@ export const en = {
     title: 'Tickets',
     subtitle: 'Manage reservations, issue tickets, record payments, and track flight schedules.',
     createTicket: 'Issue Ticket',
+    pnr: 'PNR',
+    ticketNumber: 'Ticket Number',
+    flightNumber: 'Flight Number',
+    route: 'Origin → Destination',
+    seatAssignment: 'Seat Assignment',
+    baggageAllowance: 'Baggage Allowance',
+    ticketPrice: 'Ticket Price (Sale Price)',
     searchPlaceholder: 'Search by passenger, PNR, ticket # or airline...',
     filterStatus: 'Status',
     filterAirline: 'Airline',
@@ -431,7 +443,17 @@ export const en = {
     bookingHistory: 'Ticket Booking History',
     totalSpent: 'Lifetime Sales',
     totalTickets: 'Tickets Issued',
-    emptyTickets: 'No tickets found for this customer.'
+    emptyTickets: 'No tickets found for this customer.',
+    passportDoc: {
+      title: 'Passport Document',
+      uploaded: 'Uploaded',
+      view: 'View Document',
+      delete: 'Delete',
+      replace: 'Replace:',
+      uploadNew: 'Upload New',
+      empty: 'No passport document uploaded yet.',
+      upload: 'Upload Document'
+    }
   },
 
   // Payments Page
