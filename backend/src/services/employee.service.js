@@ -40,10 +40,19 @@ export const EmployeeService = {
       }),
       prisma.ticket.findMany({
         where: { deletedAt: null },
-        include: {
-          payments: true,
-          refunds: true,
-          modifications: true
+        select: {
+          createdById: true,
+          createdBy: true,
+          ticketPrice: true,
+          payments: {
+            select: { amount: true }
+          },
+          refunds: {
+            select: { amount: true, status: true }
+          },
+          modifications: {
+            select: { clientFee: true }
+          }
         }
       })
     ]);
@@ -84,15 +93,78 @@ export const EmployeeService = {
 
   /**
    * Retrieves a single employee by ID with computed statistics
+   * Optimally queries only this employee's tickets rather than scanning full system history
    * @param {string} employeeId
    */
   async getEmployeeById(employeeId) {
-    const employees = await this.getEmployees();
-    const employee = employees.find(e => e.id === employeeId);
-    if (!employee) {
+    const prisma = getPrismaClient();
+    const user = await prisma.user.findUnique({
+      where: { id: employeeId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        title: true,
+        status: true,
+        lastActive: true,
+        createdAt: true
+      }
+    });
+
+    if (!user) {
       throw new NotFoundError('Employee', employeeId);
     }
-    return employee;
+
+    const userTickets = await prisma.ticket.findMany({
+      where: {
+        deletedAt: null,
+        OR: [
+          { createdById: user.id },
+          { createdBy: user.name }
+        ]
+      },
+      select: {
+        ticketPrice: true,
+        payments: {
+          select: { amount: true }
+        },
+        refunds: {
+          select: { amount: true, status: true }
+        },
+        modifications: {
+          select: { clientFee: true }
+        }
+      }
+    });
+
+    let salesDec = asDecimal(0);
+    let collectedDec = asDecimal(0);
+    let refundsDec = asDecimal(0);
+    let outstandingDec = asDecimal(0);
+
+    userTickets.forEach(t => {
+      const price = asDecimal(t.ticketPrice);
+      const paid = asDecimal(calculateTotalPaid(t.payments || []));
+      const ref = asDecimal(calculateTotalRefunded(t.refunds || []));
+      const modFees = asDecimal(calculateTotalModificationFees(t.modifications || []));
+      const rem = asDecimal(calculateRemaining(t.ticketPrice, paid, modFees));
+
+      salesDec = salesDec.plus(price).plus(modFees);
+      collectedDec = collectedDec.plus(paid);
+      refundsDec = refundsDec.plus(ref);
+      outstandingDec = outstandingDec.plus(rem);
+    });
+
+    return {
+      ...user,
+      ticketsCount: userTickets.length,
+      sales: moneyNumber(salesDec),
+      collected: moneyNumber(collectedDec),
+      refunds: moneyNumber(refundsDec),
+      outstanding: moneyNumber(outstandingDec),
+      isCalculated: true
+    };
   },
 
   /**

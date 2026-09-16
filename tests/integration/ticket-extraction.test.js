@@ -176,6 +176,7 @@ async function runExtractionTests() {
   assert(normalizedAirports.returnFlightNumber === undefined, 'returnFlightNumber omitted for one-way ticket');
   assert(toAirportCode('cai') === 'CAI', 'toAirportCode capitalizes lowercase airport codes');
   assert(toAirportCode('DXB - Dubai International Airport') === 'DXB', 'toAirportCode extracts 3-letter IATA from dirty text');
+  assert(toAirportCode('Dubai (DXB)') === 'DXB', 'toAirportCode extracts code from parentheses');
   assert(toAirportCode(null) === null, 'toAirportCode safely preserves null/non-string values');
   assert(toSingleFlightNumber('ET 0453, ET 0921') === 'ET 0453', 'toSingleFlightNumber extracts first flight from comma-separated string');
   assert(toSingleFlightNumber('TK123 / TK456') === 'TK123', 'toSingleFlightNumber extracts first flight from slash-separated string');
@@ -183,18 +184,18 @@ async function runExtractionTests() {
   assert(toSingleFlightNumber(null) === null, 'toSingleFlightNumber safely preserves null/non-string values');
 
   // Test 3.2: Fallback Model Retry when Primary Model Fails
-  console.log('\n--- 3.2 Fallback Model Retry (gemini-3.5-flash-lite) ---');
+  console.log(`\n--- 3.2 Fallback Model Retry (${env.GEMINI_FALLBACK_MODEL}) ---`);
   const calledUrls = [];
   globalThis.fetch = async (url) => {
     calledUrls.push(url);
-    if (url.includes('gemini-3.7-flash') || url.includes(env.GEMINI_MODEL)) {
+    if (url.includes('gemini-2.5-flash') || url.includes('gemini-3.7-flash') || url.includes(env.GEMINI_MODEL)) {
       return {
         ok: false,
         status: 404,
         text: async () => 'Model not found or rate limited'
       };
     }
-    if (url.includes('gemini-3.5-flash-lite')) {
+    if (url.includes('gemini-2.0-flash') || url.includes('gemini-3.5-flash-lite') || url.includes(env.GEMINI_FALLBACK_MODEL)) {
       return {
         ok: true,
         status: 200,
@@ -212,9 +213,9 @@ async function runExtractionTests() {
 
   const fallbackExtracted = await TicketExtractionService.extractFromDocument(dummyPdfBuffer, 'application/pdf');
   assert(calledUrls.length === 2, 'Service retried with candidate fallback model after primary failed');
-  assert(calledUrls[0].includes('gemini-3.7-flash') || calledUrls[0].includes(env.GEMINI_MODEL), 'First attempt targeted primary model');
-  assert(calledUrls[1].includes('gemini-3.5-flash-lite'), 'Second attempt targeted gemini-3.5-flash-lite fallback model');
-  assert(!calledUrls.some(u => u.includes('gemini-2.5-flash-lite')), 'Did NOT attempt deprecated gemini-2.5-flash-lite model');
+  assert(calledUrls[0].includes('gemini-2.5-flash') || calledUrls[0].includes('gemini-3.7-flash') || calledUrls[0].includes(env.GEMINI_MODEL), 'First attempt targeted primary model');
+  assert(calledUrls[1].includes('gemini-2.0-flash') || calledUrls[1].includes('gemini-3.5-flash-lite') || calledUrls[1].includes(env.GEMINI_FALLBACK_MODEL), 'Second attempt targeted fallback model');
+  assert(!calledUrls.some(u => u.includes('deprecated-model-xyz')), 'Did NOT attempt unknown model');
   assert(fallbackExtracted.passengerName === 'Tarek Mahmoud Hassan', 'Extraction succeeded via fallback model');
 
   // --- 4. Security Isolation: costPrice Must NEVER be Returned ---

@@ -18,6 +18,19 @@ const GEMINI_REQUEST_TIMEOUT_MS = 30000;
 export function toAirportCode(raw) {
   if (!raw || typeof raw !== 'string') return raw;
   const clean = raw.trim();
+
+  // 1. Try extracting from parentheses: "Dubai (DXB)" → "DXB"
+  const parenMatch = clean.match(/\(([A-Za-z]{3})\)/);
+  if (parenMatch) return parenMatch[1].toUpperCase();
+
+  // 2. Exact 3-letter string: "CAI" → "CAI"
+  if (/^[A-Za-z]{3}$/.test(clean)) return clean.toUpperCase();
+
+  // 3. Leading 3-letter code before separator: "DXB - Dubai International" → "DXB"
+  const leadingMatch = clean.match(/^([A-Za-z]{3})\s*[-–—/]/);
+  if (leadingMatch) return leadingMatch[1].toUpperCase();
+
+  // 4. Fallback: first 3-letter word boundary match
   const codeMatch = clean.match(/\b[A-Za-z]{3}\b/);
   return codeMatch ? codeMatch[0].toUpperCase() : clean.toUpperCase();
 }
@@ -88,8 +101,8 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
     // Candidate models for extraction. Google periodically updates and deprecates model IDs
     // without compile-time warnings, so candidate models are ordered by preference (primary -> fallback).
     // Both models can be customized via GEMINI_MODEL and GEMINI_FALLBACK_MODEL environment variables.
-    const primaryModel = env.GEMINI_MODEL || 'gemini-3.7-flash';
-    const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite';
+    const primaryModel = env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-2.0-flash';
     const candidateModels = Array.from(new Set([primaryModel, fallbackModel]));
 
     let lastError = null;

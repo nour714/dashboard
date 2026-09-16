@@ -100,10 +100,11 @@ export function computeWeeklyTrends(tickets = []) {
 export const ReportService = {
   /**
    * Computes high-level Executive KPIs
+   * @param {Array<object>} [preloadedTickets=null] - Optional preloaded tickets array to prevent duplicate queries
    */
-  async getSummaryKPIs() {
+  async getSummaryKPIs(preloadedTickets = null) {
     const prisma = getPrismaClient();
-    const tickets = await prisma.ticket.findMany({
+    const tickets = preloadedTickets || await prisma.ticket.findMany({
       where: { deletedAt: null },
       include: {
         payments: true,
@@ -164,10 +165,11 @@ export const ReportService = {
 
   /**
    * Computes airline market share and refund metrics
+   * @param {Array<object>} [preloadedTickets=null] - Optional preloaded tickets array to prevent duplicate queries
    */
-  async getAirlinePerformance() {
+  async getAirlinePerformance(preloadedTickets = null) {
     const prisma = getPrismaClient();
-    const tickets = await prisma.ticket.findMany({
+    const tickets = preloadedTickets || await prisma.ticket.findMany({
       where: { deletedAt: null },
       include: {
         refunds: true,
@@ -230,19 +232,19 @@ export const ReportService = {
    */
   async getRevenueTrends() {
     const prisma = getPrismaClient();
-    const [kpis, tickets] = await Promise.all([
-      this.getSummaryKPIs(),
-      prisma.ticket.findMany({
-        where: { deletedAt: null },
-        include: {
-          payments: true,
-          refunds: true,
-          modifications: true
-        }
-      })
-    ]);
+    const tickets = await prisma.ticket.findMany({
+      where: { deletedAt: null },
+      include: {
+        payments: true,
+        refunds: true,
+        modifications: true
+      }
+    });
 
-    const weeklyTrends = computeWeeklyTrends(tickets);
+    const [kpis, weeklyTrends] = await Promise.all([
+      this.getSummaryKPIs(tickets),
+      computeWeeklyTrends(tickets)
+    ]);
 
     return {
       kpis,
@@ -255,9 +257,7 @@ export const ReportService = {
    */
   async getFullReport() {
     const prisma = getPrismaClient();
-    const [kpis, airlinePerformance, employeePerformance, tickets] = await Promise.all([
-      this.getSummaryKPIs(),
-      this.getAirlinePerformance(),
+    const [employeePerformance, tickets] = await Promise.all([
       EmployeeService.getEmployees(),
       prisma.ticket.findMany({
         where: { deletedAt: null },
@@ -267,6 +267,11 @@ export const ReportService = {
           modifications: true
         }
       })
+    ]);
+
+    const [kpis, airlinePerformance] = await Promise.all([
+      this.getSummaryKPIs(tickets),
+      this.getAirlinePerformance(tickets)
     ]);
 
     const weeklyTrends = computeWeeklyTrends(tickets);
