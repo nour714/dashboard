@@ -103,7 +103,7 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
     // Both models can be customized via GEMINI_MODEL and GEMINI_FALLBACK_MODEL environment variables.
     const primaryModel = env.GEMINI_MODEL || 'gemini-2.5-flash';
     const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-2.0-flash';
-    const candidateModels = Array.from(new Set([primaryModel, fallbackModel]));
+    const candidateModels = Array.from(new Set([primaryModel, fallbackModel, 'gemini-1.5-flash'])).filter(Boolean);
 
     let lastError = null;
     let result = null;
@@ -125,7 +125,7 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
             contents: [{
               parts: [
                 { text: prompt },
-                { inline_data: { mime_type: mimeType, data: base64Data } }
+                { inlineData: { mimeType, data: base64Data } }
               ]
             }],
             generationConfig: {
@@ -144,7 +144,19 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
 
         const errBody = await response.text().catch(() => '');
         console.error(`[TicketExtraction] Gemini API error with model ${modelName}:`, response.status, errBody);
-        lastError = new BusinessRuleError('Failed to extract data from document. Please fill the form manually.', 'AI_EXTRACTION_FAILED', 502);
+
+        let googleErrMsg = '';
+        try {
+          const parsed = JSON.parse(errBody);
+          googleErrMsg = parsed?.error?.message || '';
+        } catch {
+          googleErrMsg = errBody ? errBody.slice(0, 150) : '';
+        }
+
+        const friendlyMsg = googleErrMsg
+          ? `Gemini API (${modelName}): ${googleErrMsg}`
+          : 'Failed to extract data from document. Please fill the form manually.';
+        lastError = new BusinessRuleError(friendlyMsg, 'AI_EXTRACTION_FAILED', 502);
       } catch (networkErr) {
         console.error(`[TicketExtraction] Network error with model ${modelName}:`, networkErr.message);
         lastError = new BusinessRuleError('Unable to connect to AI extraction service. Please fill the form manually.', 'AI_EXTRACTION_FAILED', 502);

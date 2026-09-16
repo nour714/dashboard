@@ -108,7 +108,7 @@ async function runExtractionTests() {
     assert(promptText.includes('never an intermediate transit airport'), 'Prompt instructs destination is never an intermediate transit airport');
     assert(promptText.includes('TK123'), 'Prompt includes flightNumber worked example');
     assert(promptText.includes('ONLY the first flight number'), 'Prompt explicitly instructs extracting only the first flight number');
-    assert(body.contents?.[0]?.parts?.[1]?.inline_data?.data, 'Request payload includes base64 document data');
+    assert(body.contents?.[0]?.parts?.[1]?.inlineData?.data || body.contents?.[0]?.parts?.[1]?.inline_data?.data, 'Request payload includes base64 document data');
     assert(body.generationConfig?.responseMimeType === 'application/json', 'Requests structured application/json response');
     assert(body.generationConfig?.maxOutputTokens === 2000, 'Configures maxOutputTokens for complete extraction response');
     assert(body.generationConfig?.responseSchema?.properties?.passengerName, 'Provides JSON extraction schema to Gemini');
