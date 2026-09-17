@@ -13,9 +13,11 @@ import {
   calculateTotalModificationFees,
   calculateTotalModificationProfit,
   calculateTotalRefunded,
+  calculateTotalAirlineRefunded,
   calculateAvailableRefund,
   calculateNetValue,
   calculateNetProfit,
+  calculateRefundedNetProfit,
   derivePaymentStatus,
   validateTicketCreation
 } from '../domain/ticket-rules.js';
@@ -39,11 +41,15 @@ export function enrichTicketFinancials(ticket) {
   const remaining = calculateRemaining(ticket.ticketPrice, totalPaid, modificationFees);
   const modificationProfit = calculateTotalModificationProfit(ticket.modifications || []);
   const totalRefunded = calculateTotalRefunded(ticket.refunds || []);
+  const totalAirlineRefunded = calculateTotalAirlineRefunded(ticket.refunds || []);
   const availableRefund = calculateAvailableRefund(totalPaid, totalRefunded);
   const netValue = calculateNetValue(ticket.ticketPrice, modificationFees, totalRefunded);
   const paymentStatus = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status, modificationFees);
   const costPrice = ticket.costPrice !== null && ticket.costPrice !== undefined ? Number(ticket.costPrice) : null;
-  const baseProfit = calculateNetProfit(ticket.ticketPrice, costPrice);
+  const isRefunded = ticket.status === 'REFUNDED';
+  const baseProfit = isRefunded
+    ? calculateRefundedNetProfit(totalPaid, totalRefunded, costPrice, totalAirlineRefunded)
+    : calculateNetProfit(ticket.ticketPrice, costPrice);
   const netProfit = baseProfit !== null ? moneyNumber(asDecimal(baseProfit).plus(asDecimal(modificationProfit))) : null;
 
   return {
@@ -60,6 +66,9 @@ export function enrichTicketFinancials(ticket) {
       modificationFees,
       modificationProfit,
       totalRefunded,
+      totalAirlineRefunded,
+      airlinePenalty: costPrice !== null ? Math.max(0, costPrice - totalAirlineRefunded) : 0,
+      customerDeduction: Math.max(0, totalPaid - totalRefunded),
       availableRefund,
       netValue,
       paymentStatus,
@@ -658,6 +667,7 @@ export const TicketService = {
       const status = refundData.status || 'COMPLETED';
 
       // 3. Insert refund record in DB
+      const airlineRefundAmount = Number(refundData.airlineRefundAmount) || 0;
       const createdRefund = await tx.refund.create({
         data: {
           id: newRefundId,
@@ -665,6 +675,7 @@ export const TicketService = {
           originalAmount: Number(ticket.ticketPrice),
           totalPaid: totalPaid,
           amount: refundAmount,
+          airlineRefundAmount,
           currency: refundData.currency || ticket.currency || 'EGP',
           reason: (refundData.reason || '').trim(),
           status: status,
@@ -675,12 +686,12 @@ export const TicketService = {
         }
       });
 
-      // 4. Update ticket status
+      // 4. Update ticket status and optional cost price
       const updatedRefunds = [...(ticket.refunds || []), createdRefund];
       const newTotalRefunded = calculateTotalRefunded(updatedRefunds);
       let newTicketStatus = ticket.status;
       if (status === 'COMPLETED') {
-        if (newTotalRefunded >= totalPaid && totalPaid > 0) {
+        if (refundData.isCompletedCancellation === true || (newTotalRefunded >= totalPaid && totalPaid > 0)) {
           newTicketStatus = 'REFUNDED';
         } else {
           newTicketStatus = 'PARTIALLY_REFUNDED';
@@ -689,9 +700,14 @@ export const TicketService = {
         newTicketStatus = 'REFUND REQUESTED';
       }
 
+      const ticketUpdates = { status: newTicketStatus };
+      if (refundData.costPrice !== undefined && refundData.costPrice !== null && (ticket.costPrice === null || ticket.costPrice === undefined)) {
+        ticketUpdates.costPrice = Number(refundData.costPrice);
+      }
+
       await tx.ticket.update({
         where: { id: ticket.id },
-        data: { status: newTicketStatus }
+        data: ticketUpdates
       });
 
       // 5. Record audit log entry
@@ -756,17 +772,27 @@ export const TicketService = {
       const changeFee = Number(modData.changeFee) || 0;
       const airlineFee = Number(modData.airlineFee) || 0;
 
+      const isRoundTrip = ticket.tripType === 'Round Trip' || Boolean(ticket.returnDepartureDate || ticket.returnFlightNumber);
+
       const originalFlight = {
         flightNumber: ticket.flightNumber,
+        returnFlightNumber: ticket.returnFlightNumber || null,
         date: ticket.departureDate,
-        route: `${ticket.origin} ➔ ${ticket.destination}`,
+        returnDate: ticket.returnDepartureDate || null,
+        route: isRoundTrip
+          ? `${ticket.origin} ⇄ ${ticket.destination}`
+          : `${ticket.origin} ➔ ${ticket.destination}`,
         duration: ticket.flightDuration || '3h 30m'
       };
 
       const newFlight = {
         flightNumber: modData.flightNumber || ticket.flightNumber,
+        returnFlightNumber: modData.returnFlightNumber || ticket.returnFlightNumber || null,
         date: modData.newDepartureDate || ticket.departureDate,
-        route: `${ticket.origin} ➔ ${ticket.destination}`,
+        returnDate: modData.newReturnDepartureDate || ticket.returnDepartureDate || null,
+        route: isRoundTrip
+          ? `${ticket.origin} ⇄ ${ticket.destination}`
+          : `${ticket.origin} ➔ ${ticket.destination}`,
         note: modData.note || 'Schedule adjusted'
       };
 
@@ -789,19 +815,50 @@ export const TicketService = {
         }
       });
 
-      // Update ticket departure / arrival dates if requested
+      // Update ticket departure / return dates and flight numbers if requested
       const ticketUpdates = {};
+      if (modData.flightNumber) {
+        ticketUpdates.flightNumber = modData.flightNumber;
+      }
+      if (modData.returnFlightNumber) {
+        ticketUpdates.returnFlightNumber = modData.returnFlightNumber;
+      }
       if (modData.newDepartureDate) {
         ticketUpdates.departureDate = new Date(modData.newDepartureDate);
       }
       if (modData.newArrivalDate) {
         ticketUpdates.arrivalDate = new Date(modData.newArrivalDate);
       }
+      if (modData.newReturnDepartureDate) {
+        ticketUpdates.returnDepartureDate = new Date(modData.newReturnDepartureDate);
+      }
+      if (modData.newReturnArrivalDate) {
+        ticketUpdates.returnArrivalDate = new Date(modData.newReturnArrivalDate);
+      }
 
       if (Object.keys(ticketUpdates).length > 0) {
         await tx.ticket.update({
           where: { id: ticket.id },
           data: ticketUpdates
+        });
+      }
+
+      // Auto-record payment if change fee was collected immediately
+      if (modData.collectedNow && changeFee > 0) {
+        const newPaymentId = `PAY-${crypto.randomUUID()}`;
+        await tx.payment.create({
+          data: {
+            id: newPaymentId,
+            ticketId: ticket.id,
+            amount: changeFee,
+            currency: ticket.currency || 'EGP',
+            method: modData.paymentMethod || 'Cash',
+            reference: `Mod #${modIndex}`,
+            date: new Date(),
+            addedBy: currentUser.name || 'Agent',
+            addedById: currentUser.id || null,
+            notes: `Auto-recorded collection for flight modification #${modIndex}`
+          }
         });
       }
 

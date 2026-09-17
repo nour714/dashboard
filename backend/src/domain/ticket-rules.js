@@ -69,6 +69,18 @@ export function calculateTotalRefunded(refunds = []) {
 }
 
 /**
+ * Calculates total airline refund received across completed refunds
+ * @param {Array<{airlineRefundAmount: number|string, status: string}>} refunds
+ * @returns {number}
+ */
+export function calculateTotalAirlineRefunded(refunds = []) {
+  if (!Array.isArray(refunds)) return 0;
+  return refunds
+    .filter(r => r.status === 'COMPLETED' || r.status === 'Refunded' || r.status === 'APPROVED')
+    .reduce((sum, r) => sum.plus(asDecimal(r.airlineRefundAmount || 0)), asDecimal(0)).toDecimalPlaces(2).toNumber();
+}
+
+/**
  * Calculates available refundable balance
  * availableRefund = max(0, totalPaid - totalRefunded)
  * @param {number|string} totalPaid
@@ -101,6 +113,24 @@ export function calculateNetValue(ticketPrice = 0, modificationFees = 0, totalRe
 export function calculateNetProfit(ticketPrice = 0, costPrice = null) {
   if (costPrice === null || costPrice === undefined) return null;
   return moneyNumber(asDecimal(ticketPrice).minus(asDecimal(costPrice)));
+}
+
+/**
+ * Calculates retained net profit for a refunded ticket:
+ * (retained amount from customer) minus (net unrefunded airline cost / cancellation penalty)
+ * @param {number|string} totalPaid
+ * @param {number|string} totalCustomerRefunded
+ * @param {number|string|null} costPrice
+ * @param {number|string} totalAirlineRefunded
+ * @returns {number|null}
+ */
+export function calculateRefundedNetProfit(totalPaid = 0, totalCustomerRefunded = 0, costPrice = null, totalAirlineRefunded = 0) {
+  const retainedCustomer = Decimal.max(0, asDecimal(totalPaid).minus(asDecimal(totalCustomerRefunded)));
+  if (costPrice === null || costPrice === undefined) {
+    return moneyNumber(retainedCustomer);
+  }
+  const netAirlineCost = Decimal.max(0, asDecimal(costPrice).minus(asDecimal(totalAirlineRefunded)));
+  return moneyNumber(retainedCustomer.minus(netAirlineCost));
 }
 
 /**

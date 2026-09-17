@@ -45,5 +45,25 @@ export function validateModification(ticket, modData = {}) {
     }
   }
 
+  if (modData.newReturnDepartureDate) {
+    const returnDepTime = new Date(modData.newReturnDepartureDate).getTime();
+    if (isNaN(returnDepTime)) {
+      throw new ValidationError('Invalid new return departure date', 'newReturnDepartureDate');
+    }
+
+    if (modData.newReturnArrivalDate) {
+      const returnArrTime = new Date(modData.newReturnArrivalDate).getTime();
+      if (isNaN(returnArrTime)) {
+        throw new ValidationError('Invalid new return arrival date', 'newReturnArrivalDate');
+      }
+      if (returnArrTime < returnDepTime) {
+        throw new BusinessRuleError(
+          'Invalid flight schedule: return arrival cannot be earlier than return departure.',
+          'ARRIVAL_BEFORE_DEPARTURE'
+        );
+      }
+    }
+  }
+
   return true;
 }

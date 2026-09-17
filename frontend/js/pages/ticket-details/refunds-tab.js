@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel - Ticket Details: Refunds Tab Component
  */
 
@@ -22,6 +22,9 @@ export function renderRefundsTab(ticket) {
         <span class="tabular-nums font-bold text-danger">
           ${formatCurrency(r.amount, r.currency || ticket.currency)}
         </span>
+        ${r.airlineRefundAmount !== undefined && r.airlineRefundAmount > 0 ? `
+          <div class="text-xs text-muted tabular-nums">✈ ${formatCurrency(r.airlineRefundAmount, r.currency || ticket.currency)}</div>
+        ` : ''}
       </td>
       <td><span class="text-sm">${escapeHtml(r.reason)}</span></td>
       <td>${renderStatusBadge(r.status)}</td>

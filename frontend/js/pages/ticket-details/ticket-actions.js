@@ -110,20 +110,62 @@ export function openAddPaymentModal(ticket, onSuccess) {
 }
 
 export function openModifyFlightModal(ticket, onSuccess) {
+  const isRoundTrip = ticket.tripType === 'Round Trip' || Boolean(ticket.returnDepartureDate || ticket.returnFlightNumber);
+
   openModal({
     title: `${t('modals.modifyFlight.title')} #${ticket.id}`,
-    subtitle: `${ticket.origin} ✈ ${ticket.destination} (${ticket.flightNumber || 'MS 901'})`,
+    subtitle: isRoundTrip
+      ? `${ticket.origin} ⇄ ${ticket.destination} (${ticket.flightNumber || 'MS 901'}${ticket.returnFlightNumber ? ` / ${ticket.returnFlightNumber}` : ''})`
+      : `${ticket.origin} ✈ ${ticket.destination} (${ticket.flightNumber || 'MS 901'})`,
     contentHtml: (() => {
       const depDateVal = ticket.departureDate ? (typeof ticket.departureDate === 'string' ? ticket.departureDate.slice(0, 10) : new Date(ticket.departureDate).toISOString().slice(0, 10)) : '';
       const arrDateVal = ticket.arrivalDate ? (typeof ticket.arrivalDate === 'string' ? ticket.arrivalDate.slice(0, 10) : new Date(ticket.arrivalDate).toISOString().slice(0, 10)) : '';
+      const retDepDateVal = ticket.returnDepartureDate ? (typeof ticket.returnDepartureDate === 'string' ? ticket.returnDepartureDate.slice(0, 10) : new Date(ticket.returnDepartureDate).toISOString().slice(0, 10)) : '';
+      const retArrDateVal = ticket.returnArrivalDate ? (typeof ticket.returnArrivalDate === 'string' ? ticket.returnArrivalDate.slice(0, 10) : new Date(ticket.returnArrivalDate).toISOString().slice(0, 10)) : '';
 
       return `
       <form id="modify-flight-form" class="d-flex flex-column gap-md">
-        <div class="form-group">
-          <label class="form-label" for="mod-flight-num">${escapeHtml(t('modals.modifyFlight.newFlightNumber'))}</label>
-          <input type="text" id="mod-flight-num" class="form-control ltr-field" value="${escapeHtml(ticket.flightNumber || 'MS 905')}" required />
+        <!-- Outbound Section -->
+        <div class="card p-sm bg-surface-raised border">
+          <div class="font-bold text-sm mb-xs text-primary">${escapeHtml(t('modals.modifyFlight.outboundSection'))}</div>
+          <div class="form-group mb-xs">
+            <label class="form-label" for="mod-flight-num">${escapeHtml(t('modals.modifyFlight.newFlightNumber'))}</label>
+            <input type="text" id="mod-flight-num" class="form-control ltr-field" value="${escapeHtml(ticket.flightNumber || '')}" />
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="mod-dep-date">${escapeHtml(t('modals.modifyFlight.newDeparture'))}</label>
+              <input type="date" id="mod-dep-date" class="form-control" value="${depDateVal}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="mod-arr-date">${escapeHtml(t('modals.modifyFlight.newArrival'))}</label>
+              <input type="date" id="mod-arr-date" class="form-control" value="${arrDateVal}" />
+            </div>
+          </div>
         </div>
 
+        <!-- Return Section (if Round Trip) -->
+        ${isRoundTrip ? `
+        <div class="card p-sm bg-surface-raised border">
+          <div class="font-bold text-sm mb-xs text-primary">${escapeHtml(t('modals.modifyFlight.returnSection'))}</div>
+          <div class="form-group mb-xs">
+            <label class="form-label" for="mod-return-flight-num">${escapeHtml(t('modals.modifyFlight.newReturnFlightNumber'))}</label>
+            <input type="text" id="mod-return-flight-num" class="form-control ltr-field" value="${escapeHtml(ticket.returnFlightNumber || '')}" />
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="mod-return-dep-date">${escapeHtml(t('modals.modifyFlight.newReturnDeparture'))}</label>
+              <input type="date" id="mod-return-dep-date" class="form-control" value="${retDepDateVal}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="mod-return-arr-date">${escapeHtml(t('modals.modifyFlight.newReturnArrival'))}</label>
+              <input type="date" id="mod-return-arr-date" class="form-control" value="${retArrDateVal}" />
+            </div>
+          </div>
+        </div>
+        ` : ''}
+
+        <!-- Fees Section -->
         <div class="form-grid-2">
           <div class="form-group">
             <label class="form-label" for="mod-airline-fee">${escapeHtml(t('modals.modifyFlight.modFeeAirline'))}</label>
@@ -136,15 +178,21 @@ export function openModifyFlightModal(ticket, onSuccess) {
           </div>
         </div>
 
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label class="form-label" for="mod-dep-date">${escapeHtml(t('modals.modifyFlight.newDeparture'))} *</label>
-            <input type="date" id="mod-dep-date" class="form-control" value="${depDateVal}" required />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="mod-arr-date">${escapeHtml(t('modals.modifyFlight.newArrival'))} *</label>
-            <input type="date" id="mod-arr-date" class="form-control" value="${arrDateVal}" required />
+        <!-- Quick Fee Collection Option -->
+        <div class="card p-xs bg-surface-raised border">
+          <label class="d-flex items-center gap-xs cursor-pointer mb-0">
+            <input type="checkbox" id="mod-collected-now" checked />
+            <span class="font-medium text-sm">${escapeHtml(t('modals.modifyFlight.collectedNow'))}</span>
+          </label>
+          <div class="form-group mt-xs" id="mod-payment-method-group">
+            <label class="form-label text-xs" for="mod-payment-method">${escapeHtml(t('modals.modifyFlight.paymentMethod'))}</label>
+            <select id="mod-payment-method" class="form-control">
+              <option value="Cash">Cash (نقداً)</option>
+              <option value="Credit Card">Credit Card (بطاقة دفع)</option>
+              <option value="Bank Transfer">Bank Transfer (تحويل بنكي)</option>
+              <option value="InstaPay">InstaPay (إنستاباي)</option>
+              <option value="Vodafone Cash">Vodafone Cash (فودافون كاش)</option>
+            </select>
           </div>
         </div>
 
@@ -172,30 +220,57 @@ export function openModifyFlightModal(ticket, onSuccess) {
     onOpen: (modalEl) => {
       const cancelBtn = modalEl.querySelector('#modal-cancel-mod');
       const submitBtn = modalEl.querySelector('#modal-submit-mod');
+      const collectedNowCheckbox = modalEl.querySelector('#mod-collected-now');
+      const paymentGroup = modalEl.querySelector('#mod-payment-method-group');
+
+      if (collectedNowCheckbox && paymentGroup) {
+        collectedNowCheckbox.addEventListener('change', () => {
+          paymentGroup.style.display = collectedNowCheckbox.checked ? 'block' : 'none';
+        });
+      }
 
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
       if (submitBtn) {
         submitBtn.addEventListener('click', async () => {
-          const flightNumber = modalEl.querySelector('#mod-flight-num').value.trim();
+          const flightNumber = (modalEl.querySelector('#mod-flight-num')?.value || '').trim();
+          const returnFlightInput = modalEl.querySelector('#mod-return-flight-num');
+          const returnFlightNumber = returnFlightInput ? returnFlightInput.value.trim() : undefined;
+
           const airlineFee = Number(modalEl.querySelector('#mod-airline-fee').value) || 0;
           const changeFee = Number(modalEl.querySelector('#mod-change-fee').value) || 0;
-          const newDepartureDate = modalEl.querySelector('#mod-dep-date').value;
-          const newArrivalDate = modalEl.querySelector('#mod-arr-date').value;
+          const newDepartureDate = modalEl.querySelector('#mod-dep-date')?.value || '';
+          const newArrivalDate = modalEl.querySelector('#mod-arr-date')?.value || '';
+
+          const retDepInput = modalEl.querySelector('#mod-return-dep-date');
+          const retArrInput = modalEl.querySelector('#mod-return-arr-date');
+          const newReturnDepartureDate = retDepInput ? retDepInput.value : undefined;
+          const newReturnArrivalDate = retArrInput ? retArrInput.value : undefined;
+
+          const collectedNow = collectedNowCheckbox ? collectedNowCheckbox.checked : false;
+          const paymentMethod = modalEl.querySelector('#mod-payment-method')?.value || 'Cash';
+
           const reason = modalEl.querySelector('#mod-reason').value;
           const note = modalEl.querySelector('#mod-note').value.trim();
 
           submitBtn.disabled = true;
-          const result = await TicketService.addModification(ticket.id, {
+          const payload = {
             flightNumber,
             changeFee,
             airlineFee,
-            newDepartureDate,
-            newArrivalDate,
+            collectedNow,
+            paymentMethod,
             reason,
             note,
             currency: ticket.currency
-          });
+          };
+          if (newDepartureDate) payload.newDepartureDate = newDepartureDate;
+          if (newArrivalDate) payload.newArrivalDate = newArrivalDate;
+          if (returnFlightNumber) payload.returnFlightNumber = returnFlightNumber;
+          if (newReturnDepartureDate) payload.newReturnDepartureDate = newReturnDepartureDate;
+          if (newReturnArrivalDate) payload.newReturnArrivalDate = newReturnArrivalDate;
+
+          const result = await TicketService.addModification(ticket.id, payload);
           submitBtn.disabled = false;
 
           if (!result.success) {
@@ -214,27 +289,94 @@ export function openModifyFlightModal(ticket, onSuccess) {
 
 export function openAddRefundModal(ticket, onSuccess) {
   const financials = TicketService.getTicketFinancials(ticket);
+  const costPriceVal = ticket.costPrice !== null && ticket.costPrice !== undefined ? Number(ticket.costPrice) : null;
+  const availableRefund = financials.availableRefund || 0;
+  const defaultCustomerRefund = availableRefund > 0 ? availableRefund : 0;
+  const defaultAirlineRefund = costPriceVal !== null ? costPriceVal : 0;
 
   openModal({
     title: `${t('modals.processRefund.title')} #${ticket.id}`,
-    subtitle: `${t('modals.processRefund.availableRefundable')} ${formatCurrency(financials.availableRefund, financials.currency)}`,
+    subtitle: `${t('modals.processRefund.availableRefundable')} ${formatCurrency(availableRefund, financials.currency)}`,
     contentHtml: `
       <form id="add-refund-form" class="d-flex flex-column gap-md">
+        <!-- If costPrice missing, allow entering it -->
+        ${costPriceVal === null ? `
+        <div class="card p-sm bg-surface-raised border">
+          <label class="form-label font-bold text-primary" for="refund-cost-price">${escapeHtml(t('modals.processRefund.costPrice'))} *</label>
+          <input
+            type="number"
+            id="refund-cost-price"
+            class="form-control tabular-nums"
+            placeholder="0.00"
+            min="0"
+            step="0.01"
+            required
+          />
+          <span class="text-xs text-muted mt-xxs">${escapeHtml(t('modals.processRefund.costPriceMissingHint'))}</span>
+        </div>
+        ` : ''}
+
         <div class="form-grid-2">
           <div class="form-group">
-            <label class="form-label" for="refund-amount">${escapeHtml(t('modals.processRefund.refundAmount'))} *</label>
+            <label class="form-label" for="refund-customer-amount">${escapeHtml(t('modals.processRefund.refundAmount'))} *</label>
             <input
               type="number"
-              id="refund-amount"
+              id="refund-customer-amount"
               class="form-control tabular-nums"
               placeholder="0.00"
-              value="${financials.availableRefund > 0 ? financials.availableRefund : ''}"
-              max="${financials.availableRefund}"
-              min="1"
+              value="${defaultCustomerRefund || ''}"
+              max="${availableRefund}"
+              min="0.01"
               step="0.01"
               required
             />
-            <span class="text-xs text-muted mt-xxs">${escapeHtml(t('modals.processRefund.availableRefundable'))} ${formatCurrency(financials.availableRefund, financials.currency)}</span>
+            <span class="text-xs text-muted mt-xxs">${escapeHtml(t('modals.processRefund.availableRefundable'))} ${formatCurrency(availableRefund, financials.currency)}</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="refund-airline-amount">${escapeHtml(t('modals.processRefund.airlineRefundAmount'))} *</label>
+            <input
+              type="number"
+              id="refund-airline-amount"
+              class="form-control tabular-nums"
+              placeholder="0.00"
+              value="${defaultAirlineRefund || '0'}"
+              min="0"
+              step="0.01"
+              required
+            />
+            <span class="text-xs text-muted mt-xxs">${costPriceVal !== null ? `${escapeHtml(t('modals.processRefund.costPriceLabel'))} ${formatCurrency(costPriceVal, financials.currency)}` : ''}</span>
+          </div>
+        </div>
+
+        <!-- Live Financial Summary Card -->
+        <div class="card p-sm bg-surface-raised border" id="refund-live-summary-box">
+          <div class="font-bold text-xs text-uppercase text-muted mb-xs">${escapeHtml(t('modals.processRefund.financialSummaryTitle'))}</div>
+          <div class="d-flex flex-column gap-xxs text-sm">
+            <div class="d-flex justify-between">
+              <span class="text-muted">${escapeHtml(t('modals.processRefund.airlinePenalty'))}</span>
+              <strong id="summary-airline-penalty" class="tabular-nums text-danger">0.00 ${financials.currency}</strong>
+            </div>
+            <div class="d-flex justify-between">
+              <span class="text-muted">${escapeHtml(t('modals.processRefund.customerDeduction'))}</span>
+              <strong id="summary-customer-deduction" class="tabular-nums text-primary">0.00 ${financials.currency}</strong>
+            </div>
+            <div class="border-top pt-xxs mt-xxs d-flex justify-between font-bold">
+              <span>${escapeHtml(t('modals.processRefund.netAgencyImpact'))}</span>
+              <span id="summary-net-impact" class="tabular-nums font-bold">0.00 ${financials.currency}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="refund-reason">${escapeHtml(t('modals.processRefund.reason'))} *</label>
+            <select id="refund-reason" class="form-control" required>
+              <option value="Customer Cancellation">Customer Cancellation (إلغاء من العميل)</option>
+              <option value="Flight Cancelled by Airline">Flight Cancelled by Airline (إلغاء من شركة الطيران)</option>
+              <option value="Medical Emergency">Medical Emergency (ظرف طبي)</option>
+              <option value="Schedule Incompatibility">Schedule Incompatibility (عدم توافق المواعيد)</option>
+            </select>
           </div>
 
           <div class="form-group">
@@ -246,14 +388,11 @@ export function openAddRefundModal(ticket, onSuccess) {
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="refund-reason">${escapeHtml(t('modals.processRefund.reason'))} *</label>
-          <select id="refund-reason" class="form-control" required>
-            <option value="Customer Cancellation">Customer Cancellation (إلغاء من العميل)</option>
-            <option value="Flight Cancelled by Airline">Flight Cancelled by Airline (إلغاء من شركة الطيران)</option>
-            <option value="Medical Emergency">Medical Emergency (ظرف طبي)</option>
-            <option value="Schedule Incompatibility">Schedule Incompatibility (عدم توافق المواعيد)</option>
-          </select>
+        <div class="form-check">
+          <label class="d-flex items-center gap-xs cursor-pointer mb-0">
+            <input type="checkbox" id="refund-close-ticket" checked />
+            <span class="font-medium text-sm">${escapeHtml(t('modals.processRefund.closeTicketRefunded'))}</span>
+          </label>
         </div>
       </form>
     `,
@@ -264,22 +403,63 @@ export function openAddRefundModal(ticket, onSuccess) {
     onOpen: (modalEl) => {
       const cancelBtn = modalEl.querySelector('#modal-cancel-refund');
       const submitBtn = modalEl.querySelector('#modal-submit-refund');
+      const custInput = modalEl.querySelector('#refund-customer-amount');
+      const airInput = modalEl.querySelector('#refund-airline-amount');
+      const costInput = modalEl.querySelector('#refund-cost-price');
+
+      const updateSummary = () => {
+        const cost = costInput ? (Number(costInput.value) || 0) : (costPriceVal || 0);
+        const customerRefund = Number(custInput?.value) || 0;
+        const airlineRefund = Number(airInput?.value) || 0;
+        const totalPaid = financials.totalPaid || 0;
+
+        const airlinePenalty = Math.max(0, cost - airlineRefund);
+        const customerDeduction = Math.max(0, totalPaid - customerRefund);
+        const netImpact = customerDeduction - airlinePenalty;
+
+        const penEl = modalEl.querySelector('#summary-airline-penalty');
+        const dedEl = modalEl.querySelector('#summary-customer-deduction');
+        const netEl = modalEl.querySelector('#summary-net-impact');
+
+        if (penEl) penEl.textContent = formatCurrency(airlinePenalty, financials.currency);
+        if (dedEl) dedEl.textContent = formatCurrency(customerDeduction, financials.currency);
+        if (netEl) {
+          netEl.textContent = formatCurrency(netImpact, financials.currency);
+          netEl.style.color = netImpact >= 0 ? 'var(--color-success, #10b981)' : 'var(--color-danger, #ef4444)';
+        }
+      };
+
+      if (custInput) custInput.addEventListener('input', updateSummary);
+      if (airInput) airInput.addEventListener('input', updateSummary);
+      if (costInput) costInput.addEventListener('input', updateSummary);
+
+      updateSummary();
 
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
       if (submitBtn) {
         submitBtn.addEventListener('click', async () => {
-          const amount = Number(modalEl.querySelector('#refund-amount').value);
+          const amount = Number(custInput?.value) || 0;
+          const airlineRefundAmount = Number(airInput?.value) || 0;
+          const costPrice = costInput ? Number(costInput.value) : undefined;
           const reason = modalEl.querySelector('#refund-reason').value;
           const status = modalEl.querySelector('#refund-status').value;
+          const isCompletedCancellation = modalEl.querySelector('#refund-close-ticket')?.checked ?? true;
 
           submitBtn.disabled = true;
-          const result = await TicketService.addRefund(ticket.id, {
+          const payload = {
             amount,
+            airlineRefundAmount,
             reason,
             status,
+            isCompletedCancellation,
             currency: ticket.currency
-          });
+          };
+          if (costPrice !== undefined && !isNaN(costPrice) && costPrice > 0) {
+            payload.costPrice = costPrice;
+          }
+
+          const result = await TicketService.addRefund(ticket.id, payload);
           submitBtn.disabled = false;
 
           if (!result.success) {

@@ -13,12 +13,17 @@
 import assert from 'node:assert/strict';
 import { test, describe, before, after } from 'node:test';
 import { addModificationSchema } from '../../backend/src/schemas/modification.schema.js';
+import { addRefundSchema } from '../../backend/src/schemas/refund.schema.js';
 import {
   calculateTotalModificationFees,
   calculateTotalModificationProfit,
-  calculateNetProfit
+  calculateTotalRefunded,
+  calculateTotalAirlineRefunded,
+  calculateNetProfit,
+  calculateRefundedNetProfit
 } from '../../backend/src/domain/ticket-rules.js';
 import { validateModification } from '../../backend/src/domain/modification-rules.js';
+import { validateRefund } from '../../backend/src/domain/refund-rules.js';
 import { enrichTicketFinancials, TicketService } from '../../backend/src/services/ticket.service.js';
 import { sanitizeTicketForRole } from '../../backend/src/controllers/ticket.controller.js';
 import { setPrismaClient, getPrismaClient } from '../../backend/src/config/database.js';
@@ -28,6 +33,8 @@ describe('Flight Modification Fee Split & Date-Only Input Tests', () => {
 
   const mockTickets = new Map();
   const mockModifications = [];
+  const mockPayments = [];
+  const mockRefunds = [];
   const mockAuditLogs = [];
 
   before(() => {
@@ -37,10 +44,12 @@ describe('Flight Modification Fee Split & Date-Only Input Tests', () => {
           const t = mockTickets.get(where.id);
           if (!t) return null;
           const mods = mockModifications.filter(m => m.ticketId === t.id);
+          const pays = mockPayments.filter(p => p.ticketId === t.id);
+          const refs = mockRefunds.filter(r => r.ticketId === t.id);
           return {
             ...t,
-            payments: [],
-            refunds: [],
+            payments: pays,
+            refunds: refs,
             modifications: mods
           };
         },
@@ -51,10 +60,12 @@ describe('Flight Modification Fee Split & Date-Only Input Tests', () => {
           );
           if (!t) return null;
           const mods = mockModifications.filter(m => m.ticketId === t.id);
+          const pays = mockPayments.filter(p => p.ticketId === t.id);
+          const refs = mockRefunds.filter(r => r.ticketId === t.id);
           return {
             ...t,
-            payments: [],
-            refunds: [],
+            payments: pays,
+            refunds: refs,
             modifications: mods
           };
         },
@@ -69,6 +80,18 @@ describe('Flight Modification Fee Split & Date-Only Input Tests', () => {
       modification: {
         create: async ({ data }) => {
           mockModifications.push(data);
+          return { ...data };
+        }
+      },
+      payment: {
+        create: async ({ data }) => {
+          mockPayments.push(data);
+          return { ...data };
+        }
+      },
+      refund: {
+        create: async ({ data }) => {
+          mockRefunds.push(data);
           return { ...data };
         }
       },
@@ -279,5 +302,176 @@ describe('Flight Modification Fee Split & Date-Only Input Tests', () => {
     // Total netProfit: 3400
     assert.equal(updatedTicket.netProfit, 3400);
     assert.equal(updatedTicket.financials.modificationProfit, 400);
+  });
+
+  test('9. Round-trip modification updates return flight number and return dates', async () => {
+    const rtTicket = {
+      id: 'TK-RT-MOD-1',
+      customerId: 'CUST-RT',
+      passengerName: 'Ahmed Ali',
+      tripType: 'Round Trip',
+      flightNumber: 'MS 777',
+      returnFlightNumber: 'MS 778',
+      origin: 'CAI',
+      destination: 'DXB',
+      departureDate: new Date('2026-09-01T10:00:00Z'),
+      arrivalDate: new Date('2026-09-01T14:00:00Z'),
+      returnDepartureDate: new Date('2026-10-15T10:00:00Z'),
+      returnArrivalDate: new Date('2026-10-15T14:00:00Z'),
+      ticketPrice: 20000,
+      costPrice: 16000,
+      currency: 'EGP',
+      status: 'CONFIRMED'
+    };
+    mockTickets.set(rtTicket.id, rtTicket);
+
+    const agentUser = { id: 'USR-AGENT-1', name: 'Agent Omar', role: 'AGENT' };
+
+    // Modify return flight from October 15 to September 20
+    const result = await TicketService.addModification(rtTicket.id, {
+      returnFlightNumber: 'MS 780',
+      newReturnDepartureDate: '2026-09-20',
+      newReturnArrivalDate: '2026-09-21',
+      changeFee: 1500,
+      airlineFee: 1000,
+      reason: 'Passenger requested earlier return',
+      collectedNow: false
+    }, agentUser);
+
+    assert.equal(result.ticketId, rtTicket.id);
+    const updated = await TicketService.getTicketById(rtTicket.id);
+    assert.equal(updated.returnFlightNumber, 'MS 780');
+    assert.equal(new Date(updated.returnDepartureDate).toISOString().slice(0, 10), '2026-09-20');
+    assert.equal(new Date(updated.returnArrivalDate).toISOString().slice(0, 10), '2026-09-21');
+    // Departure date unchanged
+    assert.equal(new Date(updated.departureDate).toISOString().slice(0, 10), '2026-09-01');
+  });
+
+  test('10. addModification with collectedNow: true creates automatic payment record', async () => {
+    const payTicket = {
+      id: 'TK-PAY-MOD-1',
+      customerId: 'CUST-PAY',
+      passengerName: 'Sara Hassan',
+      flightNumber: 'SM 101',
+      origin: 'HBE',
+      destination: 'RUH',
+      departureDate: new Date('2026-09-05T08:00:00Z'),
+      ticketPrice: 10000,
+      costPrice: 8000,
+      currency: 'EGP',
+      status: 'CONFIRMED'
+    };
+    mockTickets.set(payTicket.id, payTicket);
+
+    const initialPaymentsCount = mockPayments.length;
+
+    await TicketService.addModification(payTicket.id, {
+      newDepartureDate: '2026-09-12',
+      changeFee: 1800,
+      airlineFee: 1200,
+      collectedNow: true,
+      paymentMethod: 'Credit Card',
+      reason: 'Schedule shift'
+    }, { id: 'USR-1', name: 'Agent Sara', role: 'AGENT' });
+
+    assert.equal(mockPayments.length, initialPaymentsCount + 1, 'One payment record should be created');
+    const autoPayment = mockPayments[mockPayments.length - 1];
+    assert.equal(autoPayment.ticketId, payTicket.id);
+    assert.equal(autoPayment.amount, 1800);
+    assert.equal(autoPayment.method, 'Credit Card');
+  });
+
+  test('11. addRefundSchema & validateRefund enforce non-negative airlineRefundAmount and cost bounds', () => {
+    const validRefundPayload = {
+      amount: 5000,
+      airlineRefundAmount: 4000,
+      costPrice: 6000,
+      reason: 'Flight cancelled by passenger'
+    };
+    const parsed = addRefundSchema.safeParse(validRefundPayload);
+    assert.equal(parsed.success, true);
+    assert.equal(parsed.data.airlineRefundAmount, 4000);
+
+    const negativeAirRefund = {
+      amount: 5000,
+      airlineRefundAmount: -500,
+      reason: 'Invalid'
+    };
+    assert.equal(addRefundSchema.safeParse(negativeAirRefund).success, false);
+
+    // validateRefund checks cost price bounds
+    const ticketWithCost = {
+      id: 'TK-REF-1',
+      costPrice: 6000,
+      payments: [{ amount: 8000 }],
+      refunds: []
+    };
+
+    assert.throws(() => {
+      validateRefund(ticketWithCost, {
+        amount: 5000,
+        airlineRefundAmount: 7000, // exceeds costPrice 6000
+        reason: 'Over-refunded'
+      });
+    }, /cannot exceed ticket cost price/);
+  });
+
+  test('12. calculateRefundedNetProfit computes retained customer amount minus airline penalty', () => {
+    // Ticket Price: 10,000, Cost: 8,000 (Original Profit = 2,000)
+    // Customer paid 10,000. Customer refunded 7,000 (Deducted from customer: 3,000)
+    // Airline refunded 6,000 to agency (Airline penalty fee: 8,000 - 6,000 = 2,000)
+    // Net Agency Profit: 3,000 - 2,000 = 1,000
+    const netProfit = calculateRefundedNetProfit(10000, 7000, 8000, 6000);
+    assert.equal(netProfit, 1000);
+
+    // If airline refunded full cost (0 penalty) and customer paid 10,000 and refunded 8,000 (kept 2,000 markup):
+    const fullAirRefund = calculateRefundedNetProfit(10000, 8000, 8000, 8000);
+    assert.equal(fullAirRefund, 2000);
+  });
+
+  test('13. TicketService.addRefund updates status to REFUNDED and calculates net profit on refunded ticket', async () => {
+    const refundTicket = {
+      id: 'TK-REF-E2E-1',
+      customerId: 'CUST-REF-1',
+      passengerName: 'Mona Zaki',
+      flightNumber: 'MS 800',
+      origin: 'CAI',
+      destination: 'LHR',
+      departureDate: new Date('2026-10-01T10:00:00Z'),
+      ticketPrice: 12000,
+      costPrice: 9000,
+      currency: 'EGP',
+      status: 'CONFIRMED'
+    };
+    mockTickets.set(refundTicket.id, refundTicket);
+    mockPayments.push({ ticketId: refundTicket.id, amount: 12000 });
+
+    const adminUser = { id: 'USR-ADMIN', name: 'Admin', role: 'ADMIN' };
+
+    // Process refund: Customer gets 9,000 (3,000 kept by agency), Airline returns 7,500 (1,500 penalty)
+    const refundResult = await TicketService.addRefund(refundTicket.id, {
+      amount: 9000,
+      airlineRefundAmount: 7500,
+      isCompletedCancellation: true,
+      reason: 'Passenger requested cancellation'
+    }, adminUser);
+
+    assert.equal(refundResult.ticketId, refundTicket.id);
+    assert.equal(refundResult.amount, 9000);
+    assert.equal(refundResult.airlineRefundAmount, 7500);
+
+    const updated = await TicketService.getTicketById(refundTicket.id);
+    assert.equal(updated.status, 'REFUNDED');
+    // Financials check:
+    // Retained from customer: 12,000 - 9,000 = 3,000
+    // Airline penalty: 9,000 - 7,500 = 1,500
+    // Net profit = 3,000 - 1,500 = 1,500
+    assert.equal(updated.netProfit, 1500);
+    assert.equal(updated.financials.airlinePenalty, 1500);
+    assert.equal(updated.financials.customerDeduction, 3000);
+
+    // Role sanitization: Non-admin should not see airlineRefundAmount
+    const agentView = sanitizeTicketForRole(updated, 'AGENT');
+    assert.equal(agentView.refunds[0].airlineRefundAmount, undefined);
   });
 });

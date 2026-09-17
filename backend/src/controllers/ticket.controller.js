@@ -24,6 +24,13 @@ export function sanitizeTicketForRole(ticket, role) {
       return copy;
     });
   }
+  if (Array.isArray(sanitized.refunds)) {
+    sanitized.refunds = sanitized.refunds.map(r => {
+      const copy = { ...r };
+      delete copy.airlineRefundAmount;
+      return copy;
+    });
+  }
   return sanitized;
 }
 
@@ -105,9 +112,14 @@ export const TicketController = {
   async addRefund(req, res, next) {
     try {
       const refund = await TicketService.addRefund(req.params.id, req.body, req.user);
+      let responseData = refund;
+      if (req.user?.role !== 'ADMIN' && refund) {
+        responseData = { ...refund };
+        delete responseData.airlineRefundAmount;
+      }
       return res.status(201).json({
         success: true,
-        data: refund
+        data: responseData
       });
     } catch (err) {
       next(err);

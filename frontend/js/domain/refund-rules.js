@@ -33,6 +33,23 @@ export function validateRefund(ticket, refundData = {}) {
     );
   }
 
+  if (refundData.airlineRefundAmount !== undefined) {
+    const airlineRefund = Number(refundData.airlineRefundAmount);
+    if (isNaN(airlineRefund) || airlineRefund < 0) {
+      throw new ValidationError('Airline refund amount cannot be negative', 'airlineRefundAmount');
+    }
+    const effectiveCost = ticket.costPrice !== null && ticket.costPrice !== undefined
+      ? Number(ticket.costPrice)
+      : (refundData.costPrice !== undefined && refundData.costPrice !== null ? Number(refundData.costPrice) : null);
+    if (effectiveCost !== null && !isNaN(effectiveCost) && airlineRefund > effectiveCost) {
+      throw new BusinessRuleError(
+        'Airline refund amount cannot exceed ticket cost price.',
+        'AIRLINE_REFUND_EXCEEDS_COST',
+        { airlineRefund, costPrice: effectiveCost }
+      );
+    }
+  }
+
   if (refundData.reason !== undefined && typeof refundData.reason === 'string' && !refundData.reason.trim()) {
     throw new ValidationError('A refund reason must be specified', 'reason');
   }

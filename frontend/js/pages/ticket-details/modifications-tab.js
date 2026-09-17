@@ -39,6 +39,9 @@ export function renderModificationsTab(ticket) {
             <span class="stat-card-label">${escapeHtml(t('ticketDetails.modificationsTab.table.newSchedule'))}</span>
             <div class="font-bold mt-xs ltr-data" style="font-size: 18px;">${escapeHtml(m.newFlight.route || `${ticket.origin} ✈ ${ticket.destination}`)}</div>
             <div class="text-sm text-muted">${formatDateTime(m.newFlight.date)} • <span class="ltr-data">${escapeHtml(m.newFlight.flightNumber || ticket.flightNumber)}</span></div>
+            ${m.newFlight.returnDate ? `
+              <div class="text-xs text-muted mt-xxs">↩ ${formatDateTime(m.newFlight.returnDate)} • <span class="ltr-data">${escapeHtml(m.newFlight.returnFlightNumber || ticket.returnFlightNumber || '')}</span></div>
+            ` : ''}
             <div class="text-xs font-semibold text-warning">${escapeHtml(m.newFlight.note || '')}</div>
           </div>
         </div>
