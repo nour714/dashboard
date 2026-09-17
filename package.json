@@ -7,8 +7,9 @@
     "node": "24.x"
   },
   "scripts": {
-    "postinstall": "prisma generate --schema=database/prisma/schema.prisma",
-    "build": "prisma generate --schema=database/prisma/schema.prisma && node scripts/deployment/migrate-if-production.js",
+    "//": "NOTE: Migrations run in postinstall because vercel.json uses legacy 'builds' (@vercel/node), which bypasses npm 'build' on Vercel",
+    "postinstall": "prisma generate --schema=database/prisma/schema.prisma && node scripts/deployment/migrate-if-production.js",
+    "build": "prisma generate --schema=database/prisma/schema.prisma",
     "start": "node server.js",
     "prisma:generate": "prisma generate --schema=database/prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema=database/prisma/schema.prisma",

@@ -2,8 +2,9 @@
 /**
  * AfricaTravel — Production Database Migration Deployment Script
  *
- * Runs during the Vercel build step ONLY when VERCEL_ENV === 'production'.
- * Prevents race conditions between application deployment and schema updates.
+ * Invoked via "postinstall" in package.json during Vercel deployments.
+ * NOTE: Invoked via postinstall (rather than "build") because vercel.json uses legacy
+ * "builds" with @vercel/node, which bypasses package.json "build" script on Vercel.
  *
  * Rules:
  * 1. If VERCEL_ENV === 'production':
