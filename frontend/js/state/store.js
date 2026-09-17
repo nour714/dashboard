@@ -10,7 +10,7 @@
 
 import { apiClient } from '../services/api-client.js';
 import { getStoredUser, setSession, clearSession, hasSession, updateStoredUser } from '../services/api-client.js';
-import { calculateTotalPaid, derivePaymentStatus } from '../domain/ticket-rules.js';
+import { calculateTotalPaid, derivePaymentStatus, calculateTotalModificationFees } from '../domain/ticket-rules.js';
 import { INITIAL_SETTINGS } from '../data/mock-data.js';
 
 class Store {
@@ -225,7 +225,8 @@ class Store {
       if (!Array.isArray(ticket.payments)) ticket.payments = [];
       ticket.payments.unshift(res.data);
       const totalPaid = calculateTotalPaid(ticket.payments);
-      ticket.status = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status);
+      const modFees = calculateTotalModificationFees(ticket.modifications);
+      ticket.status = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status, modFees);
     }
 
     this.pushActivityLog({
@@ -246,9 +247,24 @@ class Store {
     const ticket = this.state.tickets.find(t => t.id === ticketId);
     if (ticket) {
       if (!Array.isArray(ticket.modifications)) ticket.modifications = [];
-      ticket.modifications.push(res.data);
+
+      const autoPayment = res.data?.autoPayment;
+      const modRecord = { ...res.data };
+      delete modRecord.autoPayment;
+
+      ticket.modifications.push(modRecord);
       if (modData.newDepartureDate) ticket.departureDate = modData.newDepartureDate;
       if (modData.newArrivalDate) ticket.arrivalDate = modData.newArrivalDate;
+      if (modData.newReturnDepartureDate) ticket.returnDepartureDate = modData.newReturnDepartureDate;
+      if (modData.newReturnArrivalDate) ticket.returnArrivalDate = modData.newReturnArrivalDate;
+
+      if (autoPayment) {
+        if (!Array.isArray(ticket.payments)) ticket.payments = [];
+        ticket.payments.unshift(autoPayment);
+        const totalPaid = calculateTotalPaid(ticket.payments);
+        const modFees = calculateTotalModificationFees(ticket.modifications);
+        ticket.status = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status, modFees);
+      }
     }
 
     this.pushActivityLog({

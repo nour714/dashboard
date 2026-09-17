@@ -844,9 +844,10 @@ export const TicketService = {
       }
 
       // Auto-record payment if change fee was collected immediately
+      let autoPaymentRecord = null;
       if (modData.collectedNow && changeFee > 0) {
         const newPaymentId = `PAY-${crypto.randomUUID()}`;
-        await tx.payment.create({
+        autoPaymentRecord = await tx.payment.create({
           data: {
             id: newPaymentId,
             ticketId: ticket.id,
@@ -877,6 +878,7 @@ export const TicketService = {
         });
       }
 
+      createdMod.autoPayment = autoPaymentRecord || null;
       return createdMod;
     };
 

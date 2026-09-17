@@ -347,7 +347,7 @@ describe('Flight Modification Fee Split & Date-Only Input Tests', () => {
     assert.equal(new Date(updated.departureDate).toISOString().slice(0, 10), '2026-09-01');
   });
 
-  test('10. addModification with collectedNow: true creates automatic payment record', async () => {
+  test('10. addModification with collectedNow: true creates automatic payment record and returns it in response', async () => {
     const payTicket = {
       id: 'TK-PAY-MOD-1',
       customerId: 'CUST-PAY',
@@ -363,9 +363,19 @@ describe('Flight Modification Fee Split & Date-Only Input Tests', () => {
     };
     mockTickets.set(payTicket.id, payTicket);
 
+    // Initial base ticket payment of 10,000 (fully paid before modification)
+    mockPayments.push({
+      id: 'PAY-INIT-1',
+      ticketId: payTicket.id,
+      amount: 10000,
+      currency: 'EGP',
+      method: 'Cash',
+      date: new Date()
+    });
+
     const initialPaymentsCount = mockPayments.length;
 
-    await TicketService.addModification(payTicket.id, {
+    const modResult = await TicketService.addModification(payTicket.id, {
       newDepartureDate: '2026-09-12',
       changeFee: 1800,
       airlineFee: 1200,
@@ -379,6 +389,20 @@ describe('Flight Modification Fee Split & Date-Only Input Tests', () => {
     assert.equal(autoPayment.ticketId, payTicket.id);
     assert.equal(autoPayment.amount, 1800);
     assert.equal(autoPayment.method, 'Credit Card');
+
+    // Verify response contains autoPayment
+    assert.ok(modResult.autoPayment, 'addModification response must include autoPayment object');
+    assert.equal(modResult.autoPayment.id, autoPayment.id);
+    assert.equal(modResult.autoPayment.amount, 1800);
+    assert.equal(modResult.autoPayment.method, 'Credit Card');
+
+    // Verify subsequent getTicketById shows remaining balance = 0 without needing manual refresh
+    const ticketAfter = await TicketService.getTicketById(payTicket.id);
+    assert.ok(ticketAfter, 'getTicketById returns updated ticket');
+    assert.equal(ticketAfter.financials.totalPaid, 11800, 'Total paid includes original 10000 + auto-payment 1800');
+    assert.equal(ticketAfter.financials.modificationFees, 1800, 'Modification fees recorded as 1800');
+    assert.equal(ticketAfter.financials.remaining, 0, 'Remaining balance is 0 without requiring manual refresh');
+    assert.equal(ticketAfter.financials.paymentStatus, 'CONFIRMED', 'Payment status remains CONFIRMED');
   });
 
   test('11. addRefundSchema & validateRefund enforce non-negative airlineRefundAmount and cost bounds', () => {

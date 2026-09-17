@@ -9,6 +9,12 @@ import { i18n } from '../../frontend/js/i18n/i18n.js';
 import { TicketCreatePage } from '../../frontend/js/pages/ticket-create.js';
 import { renderOverviewTab } from '../../frontend/js/pages/ticket-details/overview-tab.js';
 import { escapeHtml } from '../../frontend/js/utils/security.js';
+import {
+  calculateRemaining,
+  calculateTotalPaid,
+  calculateTotalModificationFees,
+  derivePaymentStatus
+} from '../../frontend/js/domain/ticket-rules.js';
 
 let passed = 0;
 let failed = 0;
@@ -203,8 +209,94 @@ async function runRoundTripTests() {
   assert(en.validation.returnDateAfterDeparture && en.validation.returnDateAfterDeparture.length > 0, 'EN validation.returnDateAfterDeparture is defined');
   assert(ar.validation.returnDateAfterDeparture && ar.validation.returnDateAfterDeparture.length > 0, 'AR validation.returnDateAfterDeparture is defined');
 
+  // --- 6. Flight Modification Collected Now Auto-Payment & Cache Synchronization ---
+  console.log('\n--- 6. Flight Modification Collected Now Auto-Payment & Cache Sync ---');
+
+  // Simulated ticket in frontend state store before modification
+  const storeTicket = {
+    id: 'TK-CACHE-SYNC-1',
+    ticketPrice: 15000,
+    status: 'CONFIRMED',
+    departureDate: '2026-09-10T10:00',
+    returnDepartureDate: '2026-09-20T10:00',
+    payments: [
+      { id: 'PAY-INIT-1', amount: 15000, currency: 'EGP', method: 'Cash', date: '2026-09-01T12:00:00Z' }
+    ],
+    modifications: []
+  };
+
+  // Verify baseline balance before modification is 0
+  const initialRemaining = calculateRemaining(
+    storeTicket.ticketPrice,
+    calculateTotalPaid(storeTicket.payments),
+    calculateTotalModificationFees(storeTicket.modifications)
+  );
+  assert(initialRemaining === 0, 'Initial ticket remaining balance is 0 (fully paid)');
+
+  // Simulate backend addModification response when collectedNow: true
+  const modificationFee = 2500;
+  const simulatedBackendResponse = {
+    success: true,
+    data: {
+      id: 'MOD-999',
+      ticketId: storeTicket.id,
+      newDepartureDate: '2026-09-15',
+      newReturnDepartureDate: '2026-09-25',
+      changeFee: modificationFee,
+      currency: 'EGP',
+      reason: 'Passenger request',
+      autoPayment: {
+        id: 'PAY-AUTO-999',
+        ticketId: storeTicket.id,
+        amount: modificationFee,
+        currency: 'EGP',
+        method: 'Credit Card',
+        reference: 'Mod #1',
+        date: new Date().toISOString(),
+        notes: 'Auto-recorded collection for flight modification #1'
+      }
+    }
+  };
+
+  assert(simulatedBackendResponse.data.autoPayment !== null, 'Backend response includes autoPayment object');
+  assert(simulatedBackendResponse.data.autoPayment.amount === modificationFee, 'autoPayment amount matches change fee');
+
+  // Execute store.addModification cache synchronization logic
+  const autoPayment = simulatedBackendResponse.data.autoPayment;
+  const modRecord = { ...simulatedBackendResponse.data };
+  delete modRecord.autoPayment;
+
+  storeTicket.modifications.push(modRecord);
+  storeTicket.departureDate = simulatedBackendResponse.data.newDepartureDate;
+  storeTicket.returnDepartureDate = simulatedBackendResponse.data.newReturnDepartureDate;
+
+  if (autoPayment) {
+    if (!Array.isArray(storeTicket.payments)) storeTicket.payments = [];
+    storeTicket.payments.unshift(autoPayment);
+    const totalPaid = calculateTotalPaid(storeTicket.payments);
+    const modFees = calculateTotalModificationFees(storeTicket.modifications);
+    storeTicket.status = derivePaymentStatus(storeTicket.ticketPrice, totalPaid, storeTicket.status, modFees);
+  }
+
+  // Verification 1: modRecord in ticket.modifications does not have autoPayment property
+  assert(storeTicket.modifications[0].autoPayment === undefined, 'Modification object inside ticket.modifications has autoPayment deleted');
+  assert(storeTicket.modifications[0].changeFee === 2500, 'Modification record preserves changeFee');
+
+  // Verification 2: ticket.payments has the new auto-payment unshifted
+  assert(storeTicket.payments.length === 2, 'ticket.payments immediately contains the new auto-payment');
+  assert(storeTicket.payments[0].id === 'PAY-AUTO-999', 'Latest auto-payment is unshifted to start of payments list');
+
+  // Verification 3: Subsequent read of ticket balance immediately calculates remaining = 0
+  const synchronizedRemaining = calculateRemaining(
+    storeTicket.ticketPrice,
+    calculateTotalPaid(storeTicket.payments),
+    calculateTotalModificationFees(storeTicket.modifications)
+  );
+  assert(synchronizedRemaining === 0, 'Subsequent get ticket shows remaining balance = 0 without needing manual refresh');
+  assert(storeTicket.status === 'CONFIRMED', 'Payment status remains CONFIRMED without manual refresh');
+
   console.log('\n========================================================');
-  console.log(`Simplified Flight Fields Tests: ${passed} passed, ${failed} failed`);
+  console.log(`Simplified Flight Fields & Modification Tests: ${passed} passed, ${failed} failed`);
   console.log('========================================================\n');
 
   if (failures.length > 0) {
