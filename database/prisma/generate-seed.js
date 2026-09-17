@@ -1,3 +1,8 @@
+import dotenv from 'dotenv';
+// Load .env so `node database/prisma/generate-seed.js` works standalone
+// without requiring BOOTSTRAP_ADMIN_PASSWORD to be exported manually.
+dotenv.config();
+
 import fs from 'fs';
 import { INITIAL_CUSTOMERS, INITIAL_EMPLOYEES, INITIAL_TICKETS, INITIAL_ACTIVITY_LOGS, INITIAL_SETTINGS } from '../../frontend/js/data/mock-data.js';
 

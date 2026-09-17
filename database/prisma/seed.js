@@ -5,6 +5,13 @@
  * Encrypts all passwords using bcrypt (cost factor >= 10).
  */
 
+import dotenv from 'dotenv';
+// Load .env so `node database/prisma/seed.js` works standalone (e.g. via
+// `npm run prisma:seed`) without requiring env vars to be exported manually.
+// Does not override variables already present in the process environment
+// (e.g. set by CI or a test harness), matching dotenv's default behavior.
+dotenv.config();
+
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 import {
