@@ -92,8 +92,24 @@ WHERE "deletedAt" IS NULL AND "pnr" IS NOT NULL;
 ### 4.2 Soft-Delete Patterns
 `Customer`, `Ticket`, and `Expense` implement soft-deletion via nullable `deletedAt DateTime?` timestamps. Database queries filter active records with `where: { deletedAt: null }`. Hard purging is restricted to administrators and validated via security tests.
 
-### 4.3 Cascading Deletion
-Child transaction tables (`payments`, `modifications`, `refunds`) define `onDelete: Cascade` with respect to their parent `Ticket`. Deleting or soft-deleting tickets appropriately cleans or maintains relational dependencies without orphaned records.
+### 4.3 Restrict Deletion of Financial Records
+Child transaction tables (`payments`, `modifications`, `refunds`) define `onDelete: Restrict` with respect to their parent `Ticket`: PostgreSQL blocks any attempt to hard-delete a `Ticket` row while payments, modifications, or refunds still reference it. Tickets are removed from view via the soft-delete `deletedAt` timestamp instead (see 4.2); the underlying row — and its full financial history — is never physically deleted while dependents exist. `User` relations on these tables (`addedById`, `processedById`, `createdById`) use `onDelete: SetNull` so removing a staff account never deletes their financial history.
+
+---
+
+## 4.4 Migration Chain Integrity
+
+The migration history under `database/prisma/migrations/` starts at `20260822000000_init_baseline`, which reconstructs the schema as it existed before the first ever migration was committed (the original schema was provisioned with `prisma db push`, which does not generate migration files). Every migration in the chain — including the baseline — is written to be idempotent (`IF NOT EXISTS` / existence-checked `DO $$` blocks), so:
+
+- **Fresh environments**: `npx prisma migrate deploy` replays the full chain from an empty database and produces a schema with **zero drift** from `schema.prisma` (verified with `npx prisma migrate diff --from-url <db> --to-schema-datamodel database/prisma/schema.prisma --script`).
+- **Existing environments provisioned with `db push`** (e.g. any database that predates this baseline migration): switching that database to `migrate deploy` requires a one-time bookkeeping step, because the tables already exist. Run, in migration order, for every migration older than the one that introduced this baseline:
+  ```bash
+  npx prisma migrate resolve --applied 20260822000000_init_baseline --schema=database/prisma/schema.prisma
+  npx prisma migrate resolve --applied 20260823000000_add_customer_passport_document --schema=database/prisma/schema.prisma
+  # ...repeat for each historical migration already reflected in that database's tables
+  ```
+  Then run `npx prisma migrate deploy` normally to apply any migrations newer than the database's actual state (e.g. `20260918000000_reconcile_fk_ondelete_and_missing_indexes`, which brings a `db push`-provisioned database's `onDelete` behavior and indexes in line with `schema.prisma` — it is idempotent, so it is also safe to run even if some of it was already applied by a previous `db push`).
+- **Never mix `db push` and `migrate deploy` against the same database going forward.** `db push` does not write to the `_prisma_migrations` table, so alternating between the two silently reintroduces drift. Use `migrate deploy` exclusively once a database has been bootstrapped with it.
 
 ---
 
