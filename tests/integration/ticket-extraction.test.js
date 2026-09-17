@@ -14,7 +14,7 @@
  * 10. Audit check: zero hardcoded API keys in codebase
  */
 
-import { TicketExtractionService, toAirportCode, toSingleFlightNumber } from '../../backend/src/services/ticket-extraction.service.js';
+import { TicketExtractionService, toAirportCode, toSingleFlightNumber, discoverAvailableModels } from '../../backend/src/services/ticket-extraction.service.js';
 import { env } from '../../backend/src/config/env.js';
 import { TicketCreatePage } from '../../frontend/js/pages/ticket-create.js';
 import { en } from '../../frontend/js/i18n/locales/en.js';
@@ -269,6 +269,54 @@ async function runExtractionTests() {
     assert(err.statusCode === 502, 'Malformed JSON returns 502');
     assert(err.code === 'AI_EXTRACTION_PARSE_ERROR' || err.rule === 'AI_EXTRACTION_PARSE_ERROR', 'Code is AI_EXTRACTION_PARSE_ERROR');
   }
+
+  // Scenario D: 4-attempt limit and Arabic error message
+  console.log('\n--- 5.1 Model Discovery & Attempt Limit Verification ---');
+  let attemptTracker = 0;
+  globalThis.fetch = async () => {
+    attemptTracker++;
+    return {
+      ok: false,
+      status: 404,
+      text: async () => 'Model not found'
+    };
+  };
+
+  try {
+    await TicketExtractionService.extractFromDocument(dummyPdfBuffer, 'application/pdf');
+    assert(false, 'Should throw after exhausting attempts');
+  } catch (err) {
+    assert(attemptTracker === 4, 'Service stops after exactly 4 failed attempts');
+    assert(err.message === 'الاستخراج مش متاح دلوقتي، إملى النموذج يدويًا', 'Exhausted attempts error message is Arabic manual fill instruction');
+    assert(err.statusCode === 502, 'Returns 502 status');
+  }
+
+  // Test discoverAvailableModels exclusions and v1 priority
+  const requestedDiscoveryUrls = [];
+  globalThis.fetch = async (url) => {
+    requestedDiscoveryUrls.push(url);
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        models: [
+          { name: 'models/gemini-2.5-pro-preview-tts', supportedGenerationMethods: ['generateContent'] },
+          { name: 'models/gemini-embedding-001', supportedGenerationMethods: ['generateContent'] },
+          { name: 'models/imagen-3.0-image-generation', supportedGenerationMethods: ['generateContent'] },
+          { name: 'models/gemini-audio-preview', supportedGenerationMethods: ['generateContent'] },
+          { name: 'models/gemini-3.6-flash', supportedGenerationMethods: ['generateContent'] }
+        ]
+      })
+    };
+  };
+
+  const discovered = await discoverAvailableModels('mock-api-key');
+  assert(requestedDiscoveryUrls[0].includes('/v1/models'), 'discoverAvailableModels attempts v1 first');
+  assert(!discovered.some(m => m.modelName.includes('tts')), 'discoverAvailableModels filters out TTS models');
+  assert(!discovered.some(m => m.modelName.includes('image-generation')), 'discoverAvailableModels filters out image-generation models');
+  assert(!discovered.some(m => m.modelName.includes('audio')), 'discoverAvailableModels filters out audio models');
+  assert(!discovered.some(m => m.modelName.includes('embedding')), 'discoverAvailableModels filters out embedding models');
+  assert(discovered.some(m => m.modelName === 'gemini-3.6-flash'), 'discoverAvailableModels retains text/image generation models');
 
   // Restore fetch and env
   globalThis.fetch = originalFetch;

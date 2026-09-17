@@ -6,7 +6,7 @@
  */
 
 import bcrypt from 'bcryptjs';
-import { getPrismaClient } from '../config/database.js';
+import { getPrismaClient, withDbRetry } from '../config/database.js';
 import {
   calculateTotalPaid,
   calculateRemaining,
@@ -24,38 +24,41 @@ export const EmployeeService = {
   async getEmployees() {
     const prisma = getPrismaClient();
 
-    const [users, tickets] = await Promise.all([
-      prisma.user.findMany({
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          title: true,
-          status: true,
-          lastActive: true,
-          createdAt: true
-        },
-        orderBy: { createdAt: 'asc' }
-      }),
-      prisma.ticket.findMany({
-        where: { deletedAt: null },
-        select: {
-          createdById: true,
-          createdBy: true,
-          ticketPrice: true,
-          payments: {
-            select: { amount: true }
+    const [users, tickets] = await withDbRetry(
+      () => Promise.all([
+        prisma.user.findMany({
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            title: true,
+            status: true,
+            lastActive: true,
+            createdAt: true
           },
-          refunds: {
-            select: { amount: true, status: true }
-          },
-          modifications: {
-            select: { changeFee: true }
+          orderBy: { createdAt: 'asc' }
+        }),
+        prisma.ticket.findMany({
+          where: { deletedAt: null },
+          select: {
+            createdById: true,
+            createdBy: true,
+            ticketPrice: true,
+            payments: {
+              select: { amount: true }
+            },
+            refunds: {
+              select: { amount: true, status: true }
+            },
+            modifications: {
+              select: { changeFee: true }
+            }
           }
-        }
-      })
-    ]);
+        })
+      ]),
+      { context: 'employee.getEmployees' }
+    );
 
     // Compute dynamic financial statistics for each employee
     return users.map(user => {
@@ -98,45 +101,51 @@ export const EmployeeService = {
    */
   async getEmployeeById(employeeId) {
     const prisma = getPrismaClient();
-    const user = await prisma.user.findUnique({
-      where: { id: employeeId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        title: true,
-        status: true,
-        lastActive: true,
-        createdAt: true
-      }
-    });
+    const user = await withDbRetry(
+      () => prisma.user.findUnique({
+        where: { id: employeeId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          title: true,
+          status: true,
+          lastActive: true,
+          createdAt: true
+        }
+      }),
+      { context: 'employee.getEmployeeById.findUser' }
+    );
 
     if (!user) {
       throw new NotFoundError('Employee', employeeId);
     }
 
-    const userTickets = await prisma.ticket.findMany({
-      where: {
-        deletedAt: null,
-        OR: [
-          { createdById: user.id },
-          { createdBy: user.name }
-        ]
-      },
-      select: {
-        ticketPrice: true,
-        payments: {
-          select: { amount: true }
+    const userTickets = await withDbRetry(
+      () => prisma.ticket.findMany({
+        where: {
+          deletedAt: null,
+          OR: [
+            { createdById: user.id },
+            { createdBy: user.name }
+          ]
         },
-        refunds: {
-          select: { amount: true, status: true }
-        },
-        modifications: {
-          select: { changeFee: true }
+        select: {
+          ticketPrice: true,
+          payments: {
+            select: { amount: true }
+          },
+          refunds: {
+            select: { amount: true, status: true }
+          },
+          modifications: {
+            select: { changeFee: true }
+          }
         }
-      }
-    });
+      }),
+      { context: 'employee.getEmployeeById.findTickets' }
+    );
 
     let salesDec = asDecimal(0);
     let collectedDec = asDecimal(0);
@@ -176,9 +185,12 @@ export const EmployeeService = {
     const prisma = getPrismaClient();
     const cleanEmail = data.email.toLowerCase().trim();
 
-    const existing = await prisma.user.findUnique({
-      where: { email: cleanEmail }
-    });
+    const existing = await withDbRetry(
+      () => prisma.user.findUnique({
+        where: { email: cleanEmail }
+      }),
+      { context: 'employee.createEmployee.checkExisting' }
+    );
 
     if (existing) {
       throw new BusinessRuleError('An employee with this email already exists', 'EMAIL_ALREADY_EXISTS', { email: cleanEmail });
@@ -188,28 +200,31 @@ export const EmployeeService = {
     const passwordHash = await bcrypt.hash(data.password, saltRounds);
     const newId = `EMP-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
 
-    const newUser = await prisma.user.create({
-      data: {
-        id: newId,
-        name: data.name.trim(),
-        email: cleanEmail,
-        role: ['ADMIN', 'AGENT', 'TICKET_ONLY'].includes(data.role) ? data.role : 'AGENT',
-        title: data.title || (data.role === 'ADMIN' ? 'Operations Director' : data.role === 'TICKET_ONLY' ? 'Ticket Creation Officer' : 'Ticketing Officer'),
-        passwordHash,
-        status: data.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
-        lastActive: new Date()
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        title: true,
-        status: true,
-        lastActive: true,
-        createdAt: true
-      }
-    });
+    const newUser = await withDbRetry(
+      () => prisma.user.create({
+        data: {
+          id: newId,
+          name: data.name.trim(),
+          email: cleanEmail,
+          role: ['ADMIN', 'AGENT', 'TICKET_ONLY'].includes(data.role) ? data.role : 'AGENT',
+          title: data.title || (data.role === 'ADMIN' ? 'Operations Director' : data.role === 'TICKET_ONLY' ? 'Ticket Creation Officer' : 'Ticketing Officer'),
+          passwordHash,
+          status: data.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
+          lastActive: new Date()
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          title: true,
+          status: true,
+          lastActive: true,
+          createdAt: true
+        }
+      }),
+      { context: 'employee.createEmployee.createUser' }
+    );
 
     await AuditService.recordLog({
       user: currentUser.name || 'Admin',
@@ -237,7 +252,10 @@ export const EmployeeService = {
    */
   async updateEmployee(employeeId, updates, currentUser = {}) {
     const prisma = getPrismaClient();
-    const existing = await prisma.user.findUnique({ where: { id: employeeId } });
+    const existing = await withDbRetry(
+      () => prisma.user.findUnique({ where: { id: employeeId } }),
+      { context: 'employee.updateEmployee.findExisting' }
+    );
     if (!existing) {
       throw new NotFoundError('Employee', employeeId);
     }
@@ -254,9 +272,12 @@ export const EmployeeService = {
     const isDemotingAdmin = existing.role === 'ADMIN' && updates.role && updates.role !== 'ADMIN';
     const isDeactivatingAdmin = existing.role === 'ADMIN' && updates.status === 'INACTIVE';
     if (isDemotingAdmin || isDeactivatingAdmin) {
-      const activeAdminCount = await prisma.user.count({
-        where: { role: 'ADMIN', status: 'ACTIVE' }
-      });
+      const activeAdminCount = await withDbRetry(
+        () => prisma.user.count({
+          where: { role: 'ADMIN', status: 'ACTIVE' }
+        }),
+        { context: 'employee.updateEmployee.countActiveAdmins' }
+      );
       if (activeAdminCount <= 1) {
         throw new BusinessRuleError(
           'Cannot demote or deactivate the last remaining active Administrator.',
@@ -274,7 +295,10 @@ export const EmployeeService = {
     if (updates.email) {
       const cleanEmail = updates.email.toLowerCase().trim();
       if (cleanEmail !== existing.email) {
-        const emailTaken = await prisma.user.findUnique({ where: { email: cleanEmail } });
+        const emailTaken = await withDbRetry(
+          () => prisma.user.findUnique({ where: { email: cleanEmail } }),
+          { context: 'employee.updateEmployee.checkEmailTaken' }
+        );
         if (emailTaken) {
           throw new BusinessRuleError('Email is already in use by another user', 'EMAIL_ALREADY_EXISTS');
         }
@@ -286,20 +310,23 @@ export const EmployeeService = {
     const isRoleChange = Boolean(data.role && data.role !== oldRole);
     const isStatusChange = Boolean(data.status && data.status !== existing.status);
 
-    const updated = await prisma.user.update({
-      where: { id: employeeId },
-      data,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        title: true,
-        status: true,
-        lastActive: true,
-        createdAt: true
-      }
-    });
+    const updated = await withDbRetry(
+      () => prisma.user.update({
+        where: { id: employeeId },
+        data,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          title: true,
+          status: true,
+          lastActive: true,
+          createdAt: true
+        }
+      }),
+      { context: 'employee.updateEmployee.updateUser' }
+    );
 
     // Immediately revoke all refresh tokens if role was modified or employee was deactivated/modified
     if (isRoleChange || isStatusChange) {
@@ -358,7 +385,10 @@ export const EmployeeService = {
   async deleteEmployee(employeeId, currentUser = {}, confirmEmployeeId) {
     const prisma = getPrismaClient();
 
-    const existing = await prisma.user.findUnique({ where: { id: employeeId } });
+    const existing = await withDbRetry(
+      () => prisma.user.findUnique({ where: { id: employeeId } }),
+      { context: 'employee.deleteEmployee.findExisting' }
+    );
     if (!existing) {
       throw new NotFoundError('Employee', employeeId);
     }
@@ -373,9 +403,12 @@ export const EmployeeService = {
 
     // Safety Guard: Prevent deleting the last remaining active Administrator
     if (existing.role === 'ADMIN') {
-      const activeAdminCount = await prisma.user.count({
-        where: { role: 'ADMIN', status: 'ACTIVE' }
-      });
+      const activeAdminCount = await withDbRetry(
+        () => prisma.user.count({
+          where: { role: 'ADMIN', status: 'ACTIVE' }
+        }),
+        { context: 'employee.deleteEmployee.countActiveAdmins' }
+      );
       if (activeAdminCount <= 1) {
         throw new BusinessRuleError(
           'Cannot delete the last remaining active Administrator.',
@@ -423,9 +456,15 @@ export const EmployeeService = {
 
     let result;
     if (typeof prisma.$transaction === 'function') {
-      result = await prisma.$transaction(executeDeletion);
+      result = await withDbRetry(
+        () => prisma.$transaction(executeDeletion),
+        { context: 'employee.deleteEmployee.transaction' }
+      );
     } else {
-      result = await executeDeletion(prisma);
+      result = await withDbRetry(
+        () => executeDeletion(prisma),
+        { context: 'employee.deleteEmployee.execute' }
+      );
     }
 
     return result;

@@ -13,7 +13,7 @@ import { BusinessRuleError } from '../domain/errors.js';
 import { findAirline } from '../constants/airlines.js';
 import { normalizeValidatedAirportCode } from '../constants/airports.js';
 
-const GEMINI_REQUEST_TIMEOUT_MS = 30000;
+const GEMINI_REQUEST_TIMEOUT_MS = 14000;
 
 export function toAirportCode(raw) {
   if (!raw || typeof raw !== 'string') return raw;
@@ -66,7 +66,9 @@ const EXTRACTION_SCHEMA = {
 
 export async function discoverAvailableModels(apiKey) {
   if (!apiKey) return [];
-  const versions = ['v1beta', 'v1'];
+  const versions = ['v1', 'v1beta'];
+  const EXCLUDED_PATTERNS = ['tts', 'image-generation', 'audio', 'embedding'];
+
   for (const ver of versions) {
     try {
       const url = `https://generativelanguage.googleapis.com/${ver}/models?key=${encodeURIComponent(apiKey)}`;
@@ -76,7 +78,13 @@ export async function discoverAvailableModels(apiKey) {
       if (!res.ok) continue;
       const data = await res.json();
       const models = (data.models || [])
-        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+        .filter(m => {
+          if (!Array.isArray(m.supportedGenerationMethods) || !m.supportedGenerationMethods.includes('generateContent')) {
+            return false;
+          }
+          const lowerName = (m.name || '').toLowerCase();
+          return !EXCLUDED_PATTERNS.some(pat => lowerName.includes(pat));
+        })
         .map(m => ({
           version: ver,
           modelName: m.name.replace(/^models\//, '')
@@ -123,19 +131,16 @@ Worked example: outbound segments are TK123 CAI→IST departing 10 Jan, then TK4
 
 Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Standardize airline names and their 2-letter IATA codes (e.g., EgyptAir MS, Air Cairo SM, Emirates EK, Etihad Airways EY, Qatar Airways QR, Turkish Airlines TK, Saudia SV, Flynas XY, flydubai FZ, Air Arabia G9, British Airways BA, Air France AF, Lufthansa LH, KLM KL, Iberia IB, ITA Airways AZ, Aegean Airlines A3, American Airlines AA, Delta Air Lines DL, United Airlines UA, Air Canada AC, Air China CA, China Eastern MU, China Southern CZ, Singapore Airlines SQ, Ethiopian Airlines ET, Kenya Airways KQ, Royal Air Maroc AT, Tunisair TU, Air Algérie AH). For "origin" and "destination", return ONLY the 3-letter IATA airport code (e.g. "CAI", "DXB") — never the city name, country name, or full airport name. Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
 
-    const primaryModel = env.GEMINI_MODEL || 'gemini-2.5-flash';
-    const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-2.0-flash';
+    const primaryModel = env.GEMINI_MODEL || 'gemini-3.6-flash';
+    const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-3.1-pro-preview';
     const candidateModels = Array.from(new Set([
       primaryModel,
       fallbackModel,
-      'gemini-1.5-flash-latest',
-      'gemini-1.5-flash',
-      'gemini-1.5-flash-001',
-      'gemini-1.5-flash-002',
-      'gemini-2.0-flash-lite',
-      'gemini-1.5-pro'
+      'gemini-3.5-flash-lite'
     ])).filter(Boolean);
 
+    const MAX_EXTRACTION_ATTEMPTS = 4;
+    let attemptCount = 0;
     let lastError = null;
     let result = null;
 
@@ -154,6 +159,11 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
     });
 
     const tryCallEndpoint = async (apiVersion, modelName) => {
+      if (attemptCount >= MAX_EXTRACTION_ATTEMPTS) {
+        return { ok: false, exhausted: true };
+      }
+      attemptCount++;
+
       const apiUrl = `https://generativelanguage.googleapis.com/${apiVersion}/models/${encodeURIComponent(modelName)}:generateContent`;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), GEMINI_REQUEST_TIMEOUT_MS);
@@ -188,31 +198,33 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
 
         const friendlyMsg = googleErrMsg
           ? `Gemini API (${modelName}): ${googleErrMsg}`
-          : 'Failed to extract data from document. Please fill the form manually.';
+          : 'الاستخراج مش متاح دلوقتي، إملى النموذج يدويًا';
         lastError = new BusinessRuleError(friendlyMsg, 'AI_EXTRACTION_FAILED', 502);
         return { ok: false, status: response.status };
       } catch (networkErr) {
         console.error(`[TicketExtraction] Network error with ${apiVersion}/${modelName}:`, networkErr.message);
-        lastError = new BusinessRuleError('Unable to connect to AI extraction service. Please fill the form manually.', 'AI_EXTRACTION_FAILED', 502);
+        lastError = new BusinessRuleError('الاستخراج مش متاح دلوقتي، إملى النموذج يدويًا', 'AI_EXTRACTION_FAILED', 502);
         return { ok: false, status: 0 };
       } finally {
         clearTimeout(timeoutId);
       }
     };
 
-    // Phase 1: Try candidate models on v1beta (fast path)
+    // Phase 1: Try candidate models on v1 (GA path first)
     for (const modelName of candidateModels) {
-      const res = await tryCallEndpoint('v1beta', modelName);
+      if (attemptCount >= MAX_EXTRACTION_ATTEMPTS) break;
+      const res = await tryCallEndpoint('v1', modelName);
       if (res.ok) {
         result = res.json;
         break;
       }
     }
 
-    // Phase 2: If all candidate models on v1beta failed, try candidate models on v1 (GA path)
-    if (!result) {
+    // Phase 2: If candidate models on v1 failed, try candidate models on v1beta
+    if (!result && attemptCount < MAX_EXTRACTION_ATTEMPTS) {
       for (const modelName of candidateModels) {
-        const res = await tryCallEndpoint('v1', modelName);
+        if (attemptCount >= MAX_EXTRACTION_ATTEMPTS) break;
+        const res = await tryCallEndpoint('v1beta', modelName);
         if (res.ok) {
           result = res.json;
           break;
@@ -220,11 +232,12 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
       }
     }
 
-    // Phase 3: If still not found, discover active models via ListModels
-    if (!result) {
+    // Phase 3: If still not resolved and attempts remain, discover active models via ListModels
+    if (!result && attemptCount < MAX_EXTRACTION_ATTEMPTS) {
       try {
         const discovered = await discoverAvailableModels(env.GEMINI_API_KEY);
         for (const { version, modelName } of discovered) {
+          if (attemptCount >= MAX_EXTRACTION_ATTEMPTS) break;
           if (candidateModels.includes(modelName)) continue;
           const res = await tryCallEndpoint(version, modelName);
           if (res.ok) {
@@ -238,7 +251,10 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
     }
 
     if (!result) {
-      throw lastError || new BusinessRuleError('Failed to extract data from document. Please fill the form manually.', 'AI_EXTRACTION_FAILED', 502);
+      if (attemptCount >= MAX_EXTRACTION_ATTEMPTS) {
+        throw new BusinessRuleError('الاستخراج مش متاح دلوقتي، إملى النموذج يدويًا', 'AI_EXTRACTION_FAILED', 502);
+      }
+      throw lastError || new BusinessRuleError('الاستخراج مش متاح دلوقتي، إملى النموذج يدويًا', 'AI_EXTRACTION_FAILED', 502);
     }
     const textPart = result?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!textPart) {

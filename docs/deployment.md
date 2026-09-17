@@ -16,7 +16,7 @@ Create `.env` based on `.env.example`:
 |---|---|---|---|
 | `NODE_ENV` | Yes | Application environment | `production` / `development` |
 | `PORT` | No | HTTP listening port (defaults to 3000) | `3000` |
-| `DATABASE_URL` | Yes | PostgreSQL connection string (pooled) | `postgresql://user:pass@host:6543/postgres?pgbouncer=true` |
+| `DATABASE_URL` | Yes | PostgreSQL connection string (pooled) | `postgresql://user:pass@host:6543/postgres?pgbouncer=true&connection_limit=1&pool_timeout=20` |
 | `DIRECT_URL` | Yes | Direct PostgreSQL connection string | `postgresql://user:pass@host:5432/postgres` |
 | `JWT_SECRET` | Yes | Secret key for signing access tokens (min 32 chars) | `<secure_random_string>` |
 | `JWT_REFRESH_SECRET` | Yes | Secret key for signing refresh tokens (min 32 chars) | `<secure_random_string>` |
@@ -78,6 +78,17 @@ vercel --prod
 ```
 
 Configure environment variables in the Vercel Dashboard under **Project Settings > Environment Variables**.
+
+#### Supabase Connection Pooling & PgBouncer Configuration on Vercel:
+When deploying on Vercel (Serverless Edge/Node Runtime), every function invocation runs in an isolated container with an independent Prisma Client instance. With standard connection defaults, concurrent serverless invocations can rapidly exhaust the database connection pool, leading to connection pool timeouts (`P2024`) and `"can't reach database server"` errors.
+
+To avoid this, you must configure `DATABASE_URL` on Vercel to connect through Supabase's **PgBouncer connection pooler (port 6543, Transaction mode)** with these exact parameters:
+```bash
+DATABASE_URL="postgresql://user:pass@host:6543/postgres?pgbouncer=true&connection_limit=1&pool_timeout=20"
+```
+- **`connection_limit=1` is strictly required on Vercel** (not the default of 5 or higher) so that each serverless function instance allocates exactly 1 connection slot, allowing PgBouncer to efficiently multiplex connections across concurrent function instances without starving the pool.
+- **`pool_timeout=20`** provides a resilient 20-second timeout window before failing, allowing transient traffic spikes to settle.
+- **`pgbouncer=true`** ensures Prisma disables prepared statements which are incompatible with transaction-mode pooling.
 
 ---
 

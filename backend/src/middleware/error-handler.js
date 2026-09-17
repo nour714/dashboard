@@ -129,7 +129,7 @@ export function errorHandler(err, req, res, next) {
     err.name === 'PrismaClientInitializationError' ||
     err.name === 'PrismaClientRustPanicError' ||
     err.name === 'PrismaClientUnknownRequestError' ||
-    ['P1000', 'P1001', 'P1002', 'P1003', 'P1008', 'P1011', 'P1017', 'P2021', 'P2022'].includes(err.code) ||
+    ['P1000', 'P1001', 'P1002', 'P1003', 'P1008', 'P1011', 'P1017', 'P2021', 'P2022', 'P2024'].includes(err.code) ||
     err.message?.includes("Can't reach database server") ||
     err.message?.includes('database server') ||
     err.message?.includes('Connection pool') ||

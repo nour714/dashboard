@@ -6,7 +6,7 @@
 
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
-import { getPrismaClient } from '../config/database.js';
+import { getPrismaClient, withDbRetry } from '../config/database.js';
 import { UnauthorizedError, ForbiddenError } from '../domain/errors.js';
 
 /**
@@ -69,10 +69,13 @@ export function authenticate(req, res, next) {
       const prisma = getPrismaClient();
       let dbUser = null;
       if (prisma?.user?.findUnique) {
-        dbUser = await prisma.user.findUnique({
-          where: { id: decoded.id },
-          select: { role: true, status: true }
-        });
+        dbUser = await withDbRetry(
+          () => prisma.user.findUnique({
+            where: { id: decoded.id },
+            select: { role: true, status: true }
+          }),
+          { context: 'authMiddleware.verifyUser' }
+        );
       }
 
       if (!dbUser || dbUser.status !== 'ACTIVE') {

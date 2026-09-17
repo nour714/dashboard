@@ -29,6 +29,7 @@ const UNIT_TESTS = [
   'tests/unit/ticket-schema-nullables.test.js',
   'tests/unit/flight-modification-fee-split.test.js',
   'tests/unit/dark-mode-html-integrity.test.js',
+  'tests/unit/db-transient-retry.test.js',
   // Frontend unit tests run using node built-in test runner
   { file: 'tests/unit/frontend/calculations.test.js', isNodeTest: true },
   { file: 'tests/unit/frontend/dom-utils.test.js', isNodeTest: true },

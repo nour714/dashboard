@@ -7,7 +7,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { getPrismaClient } from '../config/database.js';
+import { getPrismaClient, withDbRetry } from '../config/database.js';
 import { env } from '../config/env.js';
 import { UnauthorizedError, NotFoundError, BusinessRuleError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
@@ -24,7 +24,7 @@ export const AuthService = {
   },
 
   /**
-   * Compares a plaintext password with a bcrypt hash
+   * Compares a plaintext password against a bcrypt hash
    * @param {string} password
    * @param {string} hash
    * @returns {Promise<boolean>}
@@ -53,7 +53,7 @@ export const AuthService = {
   },
 
   /**
-   * Generates a cryptographically secure refresh token
+   * Generates an opaque cryptographically secure refresh token
    * @returns {string}
    */
   generateRefreshTokenString() {
@@ -82,14 +82,17 @@ export const AuthService = {
     const cleanEmail = email.trim();
     const rememberMe = options.rememberMe !== undefined ? Boolean(options.rememberMe) : true;
 
-    const user = await prisma.user.findFirst({
-      where: {
-        email: {
-          equals: cleanEmail,
-          mode: 'insensitive'
+    const user = await withDbRetry(
+      () => prisma.user.findFirst({
+        where: {
+          email: {
+            equals: cleanEmail,
+            mode: 'insensitive'
+          }
         }
-      }
-    });
+      }),
+      { context: 'auth.login.findUser' }
+    );
 
     // Mitigate user enumeration & timing side-channels:
     // When user is not found, perform a dummy bcrypt comparison against a valid constant hash
@@ -115,20 +118,26 @@ export const AuthService = {
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     // Store hashed refresh token in database
-    await prisma.refreshToken.create({
-      data: {
-        tokenHash,
-        userId: user.id,
-        rememberMe,
-        expiresAt
-      }
-    });
+    await withDbRetry(
+      () => prisma.refreshToken.create({
+        data: {
+          tokenHash,
+          userId: user.id,
+          rememberMe,
+          expiresAt
+        }
+      }),
+      { context: 'auth.login.createRefreshToken' }
+    );
 
     // Update user's lastActive timestamp safely
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastActive: new Date() }
-    }).catch(e => console.warn('Could not update lastActive:', e.message));
+    await withDbRetry(
+      () => prisma.user.update({
+        where: { id: user.id },
+        data: { lastActive: new Date() }
+      }),
+      { context: 'auth.login.updateLastActive' }
+    ).catch(e => console.warn('Could not update lastActive:', e.message));
 
     // Record audit event safely
     await AuditService.recordLog({
@@ -174,10 +183,13 @@ export const AuthService = {
     const prisma = getPrismaClient();
     const tokenHash = this.hashToken(rawRefreshToken);
 
-    const tokenRecord = await prisma.refreshToken.findUnique({
-      where: { tokenHash },
-      include: { user: true }
-    });
+    const tokenRecord = await withDbRetry(
+      () => prisma.refreshToken.findUnique({
+        where: { tokenHash },
+        include: { user: true }
+      }),
+      { context: 'auth.refresh.findToken' }
+    );
 
     if (!tokenRecord) {
       throw new UnauthorizedError('Refresh token is invalid or expired', 'INVALID_REFRESH_TOKEN');
@@ -288,19 +300,22 @@ export const AuthService = {
    */
   async getCurrentUserProfile(userId) {
     const prisma = getPrismaClient();
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        title: true,
-        status: true,
-        lastActive: true,
-        createdAt: true
-      }
-    });
+    const user = await withDbRetry(
+      () => prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          title: true,
+          status: true,
+          lastActive: true,
+          createdAt: true
+        }
+      }),
+      { context: 'auth.getCurrentUserProfile' }
+    );
 
     if (!user) {
       throw new NotFoundError('User', userId);
