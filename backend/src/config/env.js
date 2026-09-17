@@ -21,8 +21,21 @@ const envSchema = z.object({
   RATE_LIMIT_MAX_AUTH: z.coerce.number().default(10),
   RATE_LIMIT_MAX_API: z.coerce.number().default(500),
   RATE_LIMIT_MAX_REFRESH: z.coerce.number().default(30),
-  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
-  UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
+  // `.optional()` alone only accepts `undefined` — it does NOT accept an empty
+  // string. Deployment templates (including this repo's own .env.example) ship
+  // these as blank placeholders (`UPSTASH_REDIS_REST_URL=`), which previously
+  // failed `.url()` / `.min(1)` validation and crashed the whole server at boot
+  // in production (the schema is strict there — see the `process.exit(1)` below).
+  // Treat an empty string the same as "not configured" by normalizing it to
+  // `undefined` before the format-specific check runs.
+  UPSTASH_REDIS_REST_URL: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().url().optional()
+  ),
+  UPSTASH_REDIS_REST_TOKEN: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().min(1).optional()
+  ),
   DEFAULT_ADMIN_PASSWORD: z.string().min(12),
   BOOTSTRAP_ADMIN_PASSWORD: z.string().optional(),
   SUPABASE_URL: z.string().default(''),
