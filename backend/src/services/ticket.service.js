@@ -147,9 +147,9 @@ export const TicketService = {
       prisma.ticket.findMany({
         where,
         include: {
-          payments: { select: { amount: true, date: true } },
-          modifications: { select: { changeFee: true, airlineFee: true, date: true } },
-          refunds: { select: { amount: true, requestedDate: true } },
+          payments: { orderBy: { date: 'asc' } },
+          modifications: { orderBy: { date: 'asc' } },
+          refunds: { orderBy: { requestedDate: 'asc' } },
           customer: { select: { id: true, name: true, phone: true, email: true } }
         },
         orderBy: { createdAt: 'desc' },

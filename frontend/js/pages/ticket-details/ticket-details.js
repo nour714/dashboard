@@ -22,6 +22,8 @@ import {
 import { formatCurrency, formatDate } from '../../utils/calculations.js';
 import { escapeHtml } from '../../utils/security.js';
 import { t } from '../../i18n/i18n.js';
+import { apiClient } from '../../services/api-client.js';
+import { store } from '../../state/store.js';
 
 export const TicketDetailsPage = {
   render(params = {}, query = {}) {
@@ -178,8 +180,25 @@ export const TicketDetailsPage = {
 
   afterRender(container, params, query = {}) {
     const ticketId = params.id;
-    const ticket = TicketService.getTicketById(ticketId);
-    if (!ticket) return;
+    let ticket = TicketService.getTicketById(ticketId);
+    if (!ticket) {
+      apiClient.get(`/tickets/${ticketId}`).then(res => {
+        if (res && res.success && res.data) {
+          const { tickets } = store.getState();
+          const idx = tickets.findIndex(t => t.id === ticketId);
+          if (idx !== -1) {
+            tickets[idx] = res.data;
+          } else {
+            tickets.unshift(res.data);
+          }
+          if (container && container.isConnected) {
+            container.innerHTML = TicketDetailsPage.render(params, query);
+            TicketDetailsPage.afterRender(container, params, query);
+          }
+        }
+      }).catch(() => {});
+      return;
+    }
 
     const initialTab = query.tab || 'overview';
     const tabNav = container.querySelector('#ticket-tab-container');

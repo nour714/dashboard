@@ -15,6 +15,7 @@ global.localStorage = dom.window.localStorage;
 
 // Dynamic import or regular import now that globals exist
 const { openModifyFlightModal, openEditTicketModal } = await import('../../../frontend/js/pages/ticket-details/ticket-actions.js');
+const { renderModificationsTab } = await import('../../../frontend/js/pages/ticket-details/modifications-tab.js');
 const { closeModal } = await import('../../../frontend/js/components/modal.js');
 
 describe('Frontend Modal Rendering: modal-rendering.test.js', () => {
@@ -107,5 +108,59 @@ describe('Frontend Modal Rendering: modal-rendering.test.js', () => {
     assert.ok(arrDateInput, '#mod-arr-date exists');
     assert.strictEqual(depDateInput.value, '2026-10-15');
     assert.strictEqual(arrDateInput.value, '2026-10-15');
+  });
+
+  test('renderModificationsTab renders safely when originalFlight or newFlight are undefined (no route TypeError)', () => {
+    // Ticket with modification where originalFlight and newFlight are undefined/missing
+    const ticketWithRawMod = {
+      ...mockTicket,
+      modifications: [
+        {
+          id: 'MOD-1',
+          title: 'Modification #1',
+          changeFee: 500,
+          date: '2026-10-10T12:00:00.000Z',
+          reason: 'Schedule change'
+          // originalFlight and newFlight are intentionally omitted/undefined
+        }
+      ]
+    };
+
+    let html = '';
+    assert.doesNotThrow(() => {
+      html = renderModificationsTab(ticketWithRawMod);
+    }, 'renderModificationsTab must not throw when originalFlight is undefined');
+
+    assert.ok(html.includes('tab-pane-modifications'), 'Tab pane is rendered');
+    assert.ok(html.includes('CAI ✈ JED'), 'Falls back to ticket origin ✈ destination route');
+    assert.ok(html.includes('MS 901'), 'Falls back to ticket flightNumber');
+    assert.ok(html.includes('Schedule change'), 'Renders reason safely');
+  });
+
+  test('renderModificationsTab parses stringified JSON originalFlight and newFlight safely', () => {
+    const ticketWithStringJsonMod = {
+      ...mockTicket,
+      modifications: [
+        {
+          id: 'MOD-2',
+          title: 'Modification #2',
+          changeFee: 1200,
+          originalFlight: JSON.stringify({ route: 'Cairo ➔ Jeddah', flightNumber: 'MS 901', date: '2026-10-15' }),
+          newFlight: JSON.stringify({ route: 'Cairo ➔ Riyadh', flightNumber: 'SV 302', date: '2026-10-18', note: '+3 Days' }),
+          date: '2026-10-10T12:00:00.000Z',
+          reason: 'Destination change'
+        }
+      ]
+    };
+
+    let html = '';
+    assert.doesNotThrow(() => {
+      html = renderModificationsTab(ticketWithStringJsonMod);
+    });
+
+    assert.ok(html.includes('Cairo ➔ Jeddah'), 'Parsed originalFlight route');
+    assert.ok(html.includes('Cairo ➔ Riyadh'), 'Parsed newFlight route');
+    assert.ok(html.includes('SV 302'), 'Parsed newFlight flightNumber');
+    assert.ok(html.includes('+3 Days'), 'Parsed newFlight note');
   });
 });
