@@ -2,10 +2,40 @@
  * AfricaTravel - Database Connection & Prisma Client Singleton
  */
 
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
 import { env } from './env.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 let prismaInstance = null;
+
+/**
+ * Returns the sorted list of local migration directory names
+ * @returns {string[]}
+ */
+export function getLocalMigrationNames() {
+  try {
+    const candidateDirs = [
+      path.resolve(process.cwd(), 'database/prisma/migrations'),
+      path.resolve(__dirname, '../../../database/prisma/migrations')
+    ];
+    for (const dir of candidateDirs) {
+      if (fs.existsSync(dir)) {
+        return fs.readdirSync(dir, { withFileTypes: true })
+          .filter(entry => entry.isDirectory())
+          .map(entry => entry.name)
+          .sort();
+      }
+    }
+  } catch (e) {
+    console.warn('[DatabaseHealth] Could not read local migrations directory:', e.message);
+  }
+  return [];
+}
 
 /**
  * Returns the PrismaClient singleton instance
@@ -87,14 +117,58 @@ export async function withDbRetry(operation, options = {}) {
 }
 
 /**
- * Checks connection health to PostgreSQL database
+ * Checks connection health to PostgreSQL database and detects schema/migration drift
  * @returns {Promise<object>}
  */
 export async function checkDatabaseHealth() {
   try {
     const client = getPrismaClient();
     await withDbRetry(() => client.$queryRaw`SELECT 1`, { context: 'healthCheck', delayMs: 150 });
-    return { ok: true };
+
+    let schemaDrift = false;
+    let pendingMigrations = [];
+    let appliedCount = 0;
+    const localMigrations = getLocalMigrationNames();
+
+    try {
+      // Query Prisma's internal migrations tracking table to detect schema drift
+      let rows = null;
+      if (typeof client.$queryRawUnsafe === 'function') {
+        rows = await client.$queryRawUnsafe('SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL');
+      } else if (typeof client.$queryRaw === 'function') {
+        rows = await client.$queryRaw`SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL`;
+      }
+
+      if (Array.isArray(rows)) {
+        const appliedSet = new Set(rows.map(r => r.migration_name));
+        appliedCount = appliedSet.size;
+        pendingMigrations = localMigrations.filter(m => !appliedSet.has(m));
+
+        if (pendingMigrations.length > 0) {
+          schemaDrift = true;
+          console.warn('\n⚠️  ======================= DATABASE SCHEMA DRIFT WARNING =======================');
+          console.warn(`[DatabaseHealth] Schema drift detected! ${pendingMigrations.length} pending migration(s) not applied to database:`);
+          pendingMigrations.forEach(m => console.warn(`   • ${m}`));
+          console.warn('Incoming queries expecting new schema columns/tables may fail with P2021/P2022 errors.');
+          console.warn('Run "npx prisma migrate deploy" to apply pending migrations to the database.');
+          console.warn('=================================================================================\n');
+        }
+      }
+    } catch (migErr) {
+      // If table _prisma_migrations does not exist (e.g. fresh DB before first migration or mock client in tests)
+      // do not fail connectivity check, but log debug info
+      if (migErr.code === 'P2021' || migErr.message?.includes('_prisma_migrations')) {
+        console.warn('ℹ️  [DatabaseHealth] _prisma_migrations table not found in current database. Migrations may not have been initialized.');
+      }
+    }
+
+    return {
+      ok: true,
+      schemaDrift,
+      pendingMigrations: schemaDrift ? pendingMigrations : undefined,
+      appliedMigrationsCount: appliedCount,
+      totalMigrationsCount: localMigrations.length
+    };
   } catch (err) {
     const maskedUrl = env.DATABASE_URL ? env.DATABASE_URL.replace(/:[^:@]+@/, ':****@') : 'NOT_SET';
     return { 
