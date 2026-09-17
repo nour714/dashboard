@@ -123,7 +123,12 @@ export const en = {
     inactive: 'Inactive',
     enabled: 'Enabled',
     disabled: 'Disabled',
-    notAvailable: 'Currently Unavailable'
+    notAvailable: 'Currently Unavailable',
+    error: 'Something went wrong. Please try again.',
+    exportSuccess: 'Exported successfully',
+    noDataToExport: 'No data to export',
+    noRecords: 'No records found',
+    price: 'Price'
   },
 
   // User Roles
@@ -701,7 +706,8 @@ export const en = {
     rememberMe: 'Remember this device',
     signInBtn: 'Sign In',
     signingIn: 'Authenticating...',
-    switchLanguage: 'العربية'
+    switchLanguage: 'العربية',
+    enterCredentials: 'Please enter your email and password'
   },
 
   // Modals & Action Dialogs
@@ -759,6 +765,11 @@ export const en = {
       explanationPermanent: 'The ticket along with all associated payments and refunds will be permanently deleted. This cannot be recovered, and only a summary record will be retained in the audit log.',
       typeToConfirm: 'Type the ticket number to confirm'
     },
+    deleteCustomer: {
+      title: 'Delete Customer',
+      warning: 'Are you sure you want to delete this customer?',
+      explanation: 'The customer will be marked as deleted and will no longer appear in the main lists. This action cannot be completed if the customer has any active tickets.'
+    },
     notifications: {
       title: 'Notifications & Alerts',
       subtitle: 'Recent system operations and ticketing updates',
@@ -801,13 +812,16 @@ export const en = {
 
   // Toast Notification Messages
   toasts: {
+    signedIn: 'Signed in successfully',
     ticketCreated: 'Ticket created successfully.',
     ticketUpdated: 'Ticket updated successfully.',
+    ticketDeleted: 'Ticket deleted successfully.',
     paymentAdded: 'Payment added successfully.',
     flightModified: 'Flight modification saved.',
     refundCreated: 'Refund request created.',
     customerCreated: 'Customer profile registered successfully.',
     customerUpdated: 'Customer updated successfully.',
+    customerDeleted: 'Customer deleted successfully.',
     noteAdded: 'Note added successfully.',
     profileUpdated: 'Profile updated successfully!',
     passwordChanged: 'Password changed successfully!',

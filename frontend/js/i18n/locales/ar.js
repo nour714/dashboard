@@ -123,7 +123,12 @@ export const ar = {
     inactive: 'غير نشط',
     enabled: 'مفعّل',
     disabled: 'معطّل',
-    notAvailable: 'غير متاح حاليًا'
+    notAvailable: 'غير متاح حاليًا',
+    error: 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
+    exportSuccess: 'تم التصدير بنجاح',
+    noDataToExport: 'لا توجد بيانات للتصدير',
+    noRecords: 'لا توجد سجلات',
+    price: 'السعر'
   },
 
   // User Roles
@@ -701,7 +706,8 @@ export const ar = {
     rememberMe: 'تذكر هذا الجهاز',
     signInBtn: 'تسجيل الدخول',
     signingIn: 'جاري التحقق...',
-    switchLanguage: 'English'
+    switchLanguage: 'English',
+    enterCredentials: 'يرجى إدخال البريد الإلكتروني وكلمة المرور'
   },
 
   // Modals & Action Dialogs
@@ -759,6 +765,11 @@ export const ar = {
       explanationPermanent: 'سيتم حذف التذكرة نهائيًا بالإضافة إلى جميع المدفوعات والاستردادات المرتبطة بها. لن يمكن استرجاعها بعد ذلك، وسيتم الاحتفاظ فقط بسجل مختصر في سجل النشاط.',
       typeToConfirm: 'اكتب رقم التذكرة للتأكيد'
     },
+    deleteCustomer: {
+      title: 'حذف العميل',
+      warning: 'هل أنت متأكد من رغبتك في حذف هذا العميل؟',
+      explanation: 'سيتم وضع علامة على العميل كمحذوف ولن يظهر بعد ذلك في القوائم الرئيسية. لا يمكن تنفيذ هذا الإجراء إذا كان لدى العميل تذاكر نشطة.'
+    },
     notifications: {
       title: 'الإشعارات والتنبيهات',
       subtitle: 'أحدث العمليات التشغيلية وتحديثات التذاكر في النظام',
@@ -801,13 +812,16 @@ export const ar = {
 
   // Toast Notification Messages
   toasts: {
+    signedIn: 'تم تسجيل الدخول بنجاح',
     ticketCreated: 'تم إنشاء التذكرة بنجاح.',
     ticketUpdated: 'تم تحديث بيانات التذكرة بنجاح.',
+    ticketDeleted: 'تم حذف التذكرة بنجاح.',
     paymentAdded: 'تمت إضافة الدفعة بنجاح.',
     flightModified: 'تم حفظ تعديل الرحلة.',
     refundCreated: 'تم إنشاء طلب الاسترداد.',
     customerCreated: 'تم تسجيل ملف العميل بنجاح.',
     customerUpdated: 'تم تحديث بيانات العميل بنجاح.',
+    customerDeleted: 'تم حذف العميل بنجاح.',
     noteAdded: 'تمت إضافة الملاحظة بنجاح.',
     profileUpdated: 'تم تحديث الملف الشخصي بنجاح!',
     passwordChanged: 'تم تغيير كلمة المرور بنجاح!',
