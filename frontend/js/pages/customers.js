@@ -26,7 +26,7 @@ function renderCustomerRows(customers, ticketsByCustomerMap = null) {
     const initials = (c.name || 'C').split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || 'C';
 
     return `
-      <tr>
+      <tr class="clickable-row" data-href="/customers/${escapeHtml(c.id)}" style="cursor: pointer;">
         <td>
           <div class="d-flex items-center gap-sm">
             <div class="sidebar-user-avatar" style="width: 36px; height: 36px; font-size: 13px; background-color: ${c.isVip ? 'var(--color-avatar-vip)' : 'var(--color-avatar-agent)'};">
@@ -260,6 +260,24 @@ export const CustomersPage = {
             }
           }
         });
+      });
+    }
+
+    // Clickable rows — delegate on the card container so it works across search re-renders
+    const cardContainer = container.querySelector('#customers-card-container');
+    if (cardContainer) {
+      cardContainer.addEventListener('click', (e) => {
+        // Skip if clicked directly on an interactive element (a or button)
+        if (e.target.closest('a[data-link]') || e.target.closest('button')) return;
+
+        const row = e.target.closest('tr.clickable-row[data-href]');
+        if (row) {
+          const href = row.getAttribute('data-href');
+          if (href) {
+            window.history.pushState(null, null, href);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }
+        }
       });
     }
   }

@@ -76,7 +76,7 @@ export const PaymentsPage = {
     });
 
     const rowsHtml = allPayments.map(p => `
-      <tr>
+      <tr class="clickable-row" data-href="/tickets/${escapeHtml(p.ticketId)}?tab=payments" style="cursor: pointer;">
         <td>
           <div class="cell-main">${formatDateTime(p.date)}</div>
           <a href="/tickets/${escapeHtml(p.ticketId)}" class="cell-sub font-medium text-accent ltr-data" data-link>
@@ -131,7 +131,7 @@ export const PaymentsPage = {
       </div>
 
       <!-- Main Payments Table Card -->
-      <div class="card">
+      <div class="card" id="payments-card-container">
         <div class="table-responsive">
           <table class="data-table">
             <thead>
@@ -153,7 +153,20 @@ export const PaymentsPage = {
     `;
   },
 
-  afterRender(_container) {
-    // Event bindings if needed
+  afterRender(container) {
+    const cardContainer = container.querySelector('#payments-card-container');
+    if (cardContainer) {
+      cardContainer.addEventListener('click', (e) => {
+        if (e.target.closest('a[data-link]') || e.target.closest('button')) return;
+        const row = e.target.closest('tr.clickable-row[data-href]');
+        if (row) {
+          const href = row.getAttribute('data-href');
+          if (href) {
+            window.history.pushState(null, null, href);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }
+        }
+      });
+    }
   }
 };

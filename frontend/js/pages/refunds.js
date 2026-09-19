@@ -64,7 +64,7 @@ export const RefundsPage = {
     });
 
     const rowsHtml = allRefunds.map(r => `
-      <tr>
+      <tr class="clickable-row" data-href="/tickets/${escapeHtml(r.ticketId)}/refunds/${escapeHtml(r.id)}" style="cursor: pointer;">
         <td><strong class="cell-main ltr-data">${escapeHtml(r.id)}</strong></td>
         <td>
           <a href="/tickets/${escapeHtml(r.ticketId)}" class="cell-main text-accent ltr-data" data-link>${escapeHtml(r.ticketId)}</a>
@@ -115,7 +115,7 @@ export const RefundsPage = {
       </div>
 
       <!-- Main Refunds Table -->
-      <div class="card">
+      <div class="card" id="refunds-card-container">
         <div class="table-responsive">
           <table class="data-table">
             <thead>
@@ -139,7 +139,20 @@ export const RefundsPage = {
     `;
   },
 
-  afterRender(_container) {
-    // Event listeners if needed
+  afterRender(container) {
+    const cardContainer = container.querySelector('#refunds-card-container');
+    if (cardContainer) {
+      cardContainer.addEventListener('click', (e) => {
+        if (e.target.closest('a[data-link]') || e.target.closest('button')) return;
+        const row = e.target.closest('tr.clickable-row[data-href]');
+        if (row) {
+          const href = row.getAttribute('data-href');
+          if (href) {
+            window.history.pushState(null, null, href);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }
+        }
+      });
+    }
   }
 };
