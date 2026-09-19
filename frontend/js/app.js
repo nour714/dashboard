@@ -15,6 +15,7 @@ import { showToast } from './components/toast.js';
 import { createElement, clearElement } from './utils/dom.js';
 import { escapeHtml } from './utils/security.js';
 import { getUpcomingFlightReminders } from './utils/flight-reminders.js';
+import { icons } from './components/icons.js';
 import { i18n, t, getUserRoleLabel } from './i18n/i18n.js';
 
 function markBootStep(id, state) {
@@ -246,6 +247,32 @@ class App {
     if (langToggleBtn) {
       langToggleBtn.addEventListener('click', () => {
         i18n.toggleLanguage();
+      });
+    }
+
+    // Quick Theme Switcher in Topbar
+    const themeToggleBtn = document.getElementById('topbar-theme-toggle-btn');
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener('click', () => {
+        const isCurrentlyDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const nextTheme = isCurrentlyDark ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', nextTheme);
+        localStorage.setItem('africatravel.theme', nextTheme);
+
+        const isAr = i18n.getLanguage() === 'ar';
+        const isNowDark = nextTheme === 'dark';
+        const label = isNowDark
+          ? (t('common.lightMode') || (isAr ? 'الوضع الفاتح' : 'Light Mode'))
+          : (t('common.darkMode') || (isAr ? 'الوضع الداكن' : 'Dark Mode'));
+        themeToggleBtn.setAttribute('title', label);
+        themeToggleBtn.setAttribute('aria-label', label);
+        themeToggleBtn.innerHTML = isNowDark ? icons.sun('w-4 h-4') : icons.moon('w-4 h-4');
+
+        // Sync settings checkbox if page is open
+        const settingsToggle = document.getElementById('dark-mode-toggle');
+        if (settingsToggle) {
+          settingsToggle.checked = isNowDark;
+        }
       });
     }
 

@@ -72,7 +72,7 @@ export function renderSidebar(activePath = '/dashboard') {
       </div>
 
       <div class="sidebar-action-wrap">
-        <a href="/tickets/new" class="sidebar-new-btn" data-link>
+        <a href="/tickets/new" class="sidebar-new-btn" data-link title="${escapeHtml(t('nav.newTicket'))}" aria-label="${escapeHtml(t('nav.newTicket'))}">
           ${icons.plus('w-4 h-4')}
           <span>${escapeHtml(t('nav.newTicket'))}</span>
         </a>

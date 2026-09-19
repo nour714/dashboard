@@ -41,24 +41,25 @@
   --color-neutral-border: #cbd5e1;
 
   /* Colors - Surfaces */
-  --color-background: #f7f9fb;
-  --color-surface: #f7f9fb;
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
   --color-surface-card: #ffffff;
-  --color-surface-soft: #f2f4f6;
-  --color-surface-container: #eceef0;
-  --color-surface-container-high: #e6e8ea;
-  --color-surface-hover: #f8fafc;
-  --color-surface-selected: #f1f5f9;
+  --color-surface-soft: #f1f5f9;
+  --color-surface-container: #f8fafc;
+  --color-surface-container-high: #edf2f7;
+  --color-surface-hover: #f1f5f9;
+  --color-surface-selected: #e2e8f0;
 
   /* Colors - Text */
-  --color-text: #191c1e;
-  --color-text-secondary: #45464d;
+  --color-text: #0f172a;
+  --color-text-secondary: #334155;
   --color-text-muted: #64748b;
   --color-text-inverse: #ffffff;
 
   /* Colors - Borders */
-  --color-border: #c6c6cd;
-  --color-border-soft: #e2e8f0;
+  --color-border: #e2e8f0;
+  --color-border-soft: #f1f5f9;
+  --color-border-strong: #cbd5e1;
   --color-border-dark: #94a3b8;
   --color-border-danger: #fecaca;
 
@@ -130,21 +131,28 @@
   --container-margin: 24px;
   --container-margin-mobile: 16px;
 
-  /* Radius */
-  --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
+  /* Radius Scale - Enhanced Modern Curvature */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-2xl: 28px;
   --radius-full: 9999px;
 
   /* Elevation & Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
-  --shadow-floating: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-  --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --shadow-sheet: 0 -8px 24px -4px rgb(0 0 0 / 0.12);
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-card-hover: 0 6px 12px -2px rgba(15, 23, 42, 0.08), 0 3px 6px -3px rgba(15, 23, 42, 0.05);
+  --shadow-floating: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
+  --shadow-modal: 0 20px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
+  --shadow-sheet: 0 -8px 24px -4px rgba(15, 23, 42, 0.12);
+
+  /* Focus Rings & Accessibility */
+  --focus-ring: 0 0 0 3px rgba(15, 23, 42, 0.12);
+  --focus-ring-accent: 0 0 0 3px rgba(212, 43, 43, 0.2);
+  --focus-ring-primary: 0 0 0 3px rgba(15, 23, 42, 0.15);
 
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -227,8 +235,9 @@
 
   /* Colors - Borders */
   --color-border: #334155;
-  --color-border-soft: #253347;
-  --color-border-dark: #475569;
+  --color-border-soft: #1e293b;
+  --color-border-strong: #475569;
+  --color-border-dark: #64748b;
   --color-border-danger: #7f1d1d;
 
   /* Components, Avatars & Icons */
@@ -239,11 +248,18 @@
   --color-avatar-vip: #854d0e;
 
   /* Elevation & Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
-  --shadow-floating: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
-  --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.35), 0 1px 2px -1px rgb(0 0 0 / 0.35);
+  --shadow-card-hover: 0 6px 12px -2px rgb(0 0 0 / 0.5), 0 3px 6px -3px rgb(0 0 0 / 0.3);
+  --shadow-floating: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.6), 0 8px 10px -6px rgb(0 0 0 / 0.4);
   --shadow-sheet: 0 -8px 24px -4px rgb(0 0 0 / 0.5);
+
+  /* Focus Rings & Accessibility */
+  --focus-ring: 0 0 0 3px rgba(56, 189, 248, 0.25);
+  --focus-ring-accent: 0 0 0 3px rgba(239, 68, 68, 0.3);
+  --focus-ring-primary: 0 0 0 3px rgba(56, 189, 248, 0.25);
 }
 
 /* RTL Typography & Direction Overrides */

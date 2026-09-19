@@ -328,6 +328,18 @@ export const SettingsPage = {
       const isDark = darkModeToggle.checked;
       document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
       localStorage.setItem('africatravel.theme', isDark ? 'dark' : 'light');
+
+      // Sync topbar button if present
+      const topbarThemeBtn = document.getElementById('topbar-theme-toggle-btn');
+      if (topbarThemeBtn) {
+        const isAr = i18n.getLanguage() === 'ar';
+        const label = isDark
+          ? (t('common.lightMode') || (isAr ? 'الوضع الفاتح' : 'Light Mode'))
+          : (t('common.darkMode') || (isAr ? 'الوضع الداكن' : 'Dark Mode'));
+        topbarThemeBtn.setAttribute('title', label);
+        topbarThemeBtn.setAttribute('aria-label', label);
+        topbarThemeBtn.innerHTML = isDark ? icons.sun('w-4 h-4') : icons.moon('w-4 h-4');
+      }
     });
 
     const profileForm = container.querySelector('#profile-form');

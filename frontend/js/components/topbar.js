@@ -16,6 +16,13 @@ export function renderTopbar(upcomingCount = 0) {
   const currentLang = i18n.getLanguage();
   const nextLangLabel = currentLang === 'ar' ? 'English' : 'العربية';
 
+  const isDark = (typeof document !== 'undefined') &&
+    document.documentElement.getAttribute('data-theme') === 'dark';
+  const themeLabel = isDark
+    ? (t('common.lightMode') || (isAr ? 'الوضع الفاتح' : 'Light Mode'))
+    : (t('common.darkMode') || (isAr ? 'الوضع الداكن' : 'Dark Mode'));
+  const themeIcon = isDark ? icons.sun('w-4 h-4') : icons.moon('w-4 h-4');
+
   return `
     <header class="app-topbar">
       <div class="topbar-left">
@@ -49,6 +56,17 @@ export function renderTopbar(upcomingCount = 0) {
           title="${escapeHtml(t('common.searchPlaceholder'))}"
           aria-label="${escapeHtml(t('common.searchPlaceholder'))}"
         >${icons.search('w-5 h-5')}</button>
+
+        <!-- Quick Theme Toggle Button -->
+        <button
+          type="button"
+          class="topbar-icon-btn topbar-theme-btn"
+          id="topbar-theme-toggle-btn"
+          title="${escapeHtml(themeLabel)}"
+          aria-label="${escapeHtml(themeLabel)}"
+        >
+          ${themeIcon}
+        </button>
 
         <!-- Language Switcher Pill -->
         <button
