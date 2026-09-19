@@ -399,7 +399,7 @@ describe('Flight Modification Fee Split & Date-Only Input Tests', () => {
     // Verify subsequent getTicketById shows remaining balance = 0 without needing manual refresh
     const ticketAfter = await TicketService.getTicketById(payTicket.id);
     assert.ok(ticketAfter, 'getTicketById returns updated ticket');
-    assert.equal(ticketAfter.financials.totalPaid, 11800, 'Total paid includes original 10000 + auto-payment 1800');
+    assert.equal(ticketAfter.financials.totalPaid, 10000, 'Ticket totalPaid remains 10000 for ticket, modification fee is independent');
     assert.equal(ticketAfter.financials.modificationFees, 1800, 'Modification fees recorded as 1800');
     assert.equal(ticketAfter.financials.remaining, 0, 'Remaining balance is 0 without requiring manual refresh');
     assert.equal(ticketAfter.financials.paymentStatus, 'CONFIRMED', 'Payment status remains CONFIRMED');

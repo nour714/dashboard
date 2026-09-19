@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel - Calculations & Formatting Utilities
  *
  * Re-exports domain formulas and provides locale-aware UI formatting utilities.
@@ -13,7 +13,9 @@ export {
   calculateTotalRefunded,
   calculateAvailableRefund,
   calculateNetValue,
-  derivePaymentStatus
+  derivePaymentStatus,
+  isModificationPayment,
+  calculateModificationPaid
 } from '../domain/ticket-rules.js';
 
 /**

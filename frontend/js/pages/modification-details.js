@@ -9,7 +9,7 @@ import { TicketService } from '../services/ticket-service.js';
 import { AuthService } from '../services/auth-service.js';
 import { icons } from '../components/icons.js';
 import { renderStatusBadge } from '../components/status-badge.js';
-import { formatCurrency, formatDateTime } from '../utils/calculations.js';
+import { formatCurrency, formatDateTime, isModificationPayment } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
 import { t } from '../i18n/i18n.js';
 
@@ -65,6 +65,9 @@ export const ModificationDetailsPage = {
 
     const currentUser = AuthService.getCurrentUser();
     const isAdmin = (currentUser?.role || '').toUpperCase() === 'ADMIN';
+
+    const modPayments = (ticket.payments || []).filter(p => isModificationPayment(p));
+    const isCollected = modPayments.length > 0 || mod.status === 'COMPLETED';
 
     return `
       <!-- Page Header -->
@@ -140,6 +143,12 @@ export const ModificationDetailsPage = {
               </span>
             </div>
           ` : ''}
+          <div class="financial-item">
+            <span class="financial-item-label">${escapeHtml(t('ticketDetails.overview.totalPaid') || 'Collection')}</span>
+            <span class="financial-item-value tabular-nums" style="font-size: 20px; color: ${isCollected ? 'var(--color-success)' : 'var(--color-warning)'};">
+              ${isCollected ? (t('status.PAID') || 'Collected') : (t('status.UNPAID') || 'Pending')}
+            </span>
+          </div>
           <div class="financial-item">
             <span class="financial-item-label">${escapeHtml(t('common.status') || 'Status')}</span>
             <div class="mt-xs">

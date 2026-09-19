@@ -1,9 +1,10 @@
-﻿/**
+/**
  * AfricaTravel - Ticket Details: Payments Tab Component
  */
 
 import { icons } from '../../components/icons.js';
 import { formatCurrency, formatDateTime } from '../../utils/calculations.js';
+import { isModificationPayment } from '../../domain/ticket-rules.js';
 import { escapeHtml } from '../../utils/security.js';
 import { t } from '../../i18n/i18n.js';
 
@@ -14,7 +15,9 @@ export function renderPaymentsTab(ticket) {
         <p>${escapeHtml(t('ticketDetails.paymentsTab.empty'))}</p>
       </td>
     </tr>
-  ` : ticket.payments.map(p => `
+  ` : ticket.payments.map(p => {
+    const isMod = isModificationPayment(p);
+    return `
     <tr>
       <td><span class="text-sm font-medium tabular-nums">${formatDateTime(p.date)}</span></td>
       <td>
@@ -23,11 +26,15 @@ export function renderPaymentsTab(ticket) {
         </span>
       </td>
       <td><span class="badge badge-neutral">${escapeHtml(p.method)}</span></td>
-      <td><span class="font-mono text-xs ltr-data">${escapeHtml(p.reference || '-')}</span></td>
+      <td>
+        <span class="font-mono text-xs ltr-data">${escapeHtml(p.reference || '-')}</span>
+        ${isMod ? `<span class="badge badge-accent ms-xs" style="font-size: 11px;">${escapeHtml(t('ticketDetails.tabs.modifications') || 'Modification')}</span>` : ''}
+      </td>
       <td><span class="text-sm text-muted">${escapeHtml(p.receivedBy || p.addedBy || 'Agent')}</span></td>
       <td><span class="text-sm text-secondary">${escapeHtml(p.notes || '-')}</span></td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 
   return `
     <div class="tab-pane" id="tab-pane-payments">

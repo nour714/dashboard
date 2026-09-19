@@ -7,13 +7,42 @@
 import { ValidationError, BusinessRuleError } from './errors.js';
 
 /**
- * Calculates total sum of recorded payments
+ * Determines whether a payment was recorded specifically for a flight modification fee.
+ * @param {object} p
+ * @returns {boolean}
+ */
+export function isModificationPayment(p = {}) {
+  if (!p) return false;
+  if (p.type === 'MODIFICATION') return true;
+  if (typeof p.reference === 'string' && /^Mod\s*#/i.test(p.reference.trim())) return true;
+  if (typeof p.notes === 'string' && (p.notes.includes('flight modification') || p.notes.includes('تعديل الرحلة'))) return true;
+  return false;
+}
+
+/**
+ * Calculates total sum of recorded payments for the ticket.
+ * Excludes modification fee payments unless includeModifications is explicitly true.
+ * @param {Array<{amount: number|string}>} payments
+ * @param {boolean} [includeModifications=false]
+ * @returns {number}
+ */
+export function calculateTotalPaid(payments = [], includeModifications = false) {
+  if (!Array.isArray(payments)) return 0;
+  return payments
+    .filter(p => includeModifications || !isModificationPayment(p))
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+}
+
+/**
+ * Calculates sum of modification fee payments.
  * @param {Array<{amount: number|string}>} payments
  * @returns {number}
  */
-export function calculateTotalPaid(payments = []) {
+export function calculateModificationPaid(payments = []) {
   if (!Array.isArray(payments)) return 0;
-  return payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  return payments
+    .filter(p => isModificationPayment(p))
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 }
 
 /**
