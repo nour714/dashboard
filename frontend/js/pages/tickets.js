@@ -13,7 +13,8 @@ import {
   calculateRemaining,
   calculateTotalModificationFees,
   formatCurrency,
-  formatDate
+  formatDate,
+  formatDateTime
 } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
 import { debounce } from '../utils/dom.js';
@@ -27,6 +28,75 @@ let currentFilters = {
   travelDate: ''
 };
 
+function renderSubRows(tData) {
+  let rows = '';
+
+  // Modification sub-rows
+  const mods = Array.isArray(tData.modifications) ? tData.modifications : [];
+  mods.forEach(m => {
+    let nw = m.newFlight;
+    if (typeof nw === 'string') {
+      try { nw = JSON.parse(nw); } catch { nw = {}; }
+    }
+    nw = nw && typeof nw === 'object' ? nw : {};
+
+    const defaultRoute = `${tData.origin || ''} ✈ ${tData.destination || ''}`.trim() || '-';
+    const nwRoute = nw.route || defaultRoute;
+
+    rows += `
+      <tr class="clickable-row sub-row sub-row-modification" data-href="/tickets/${escapeHtml(tData.id)}?tab=modifications" style="cursor: pointer; background-color: var(--color-surface);">
+        <td style="padding-inline-start: 32px;">
+          <div class="d-flex items-center gap-xs">
+            ${icons.shuffle('w-4 h-4 text-accent')}
+            <span class="text-sm font-semibold text-accent">${escapeHtml(t('ticketDetails.tabs.modifications') || 'Modification')}</span>
+          </div>
+        </td>
+        <td>
+          <div class="text-sm text-muted">${formatDateTime(m.date)}</div>
+        </td>
+        <td>
+          <div class="text-sm ltr-data">${escapeHtml(nwRoute)}</div>
+        </td>
+        <td></td>
+        <td>
+          <div class="tabular-nums font-semibold text-danger text-sm">${formatCurrency(m.changeFee, m.currency || tData.currency)}</div>
+        </td>
+        <td></td>
+        <td>${renderStatusBadge(m.status || 'COMPLETED')}</td>
+      </tr>
+    `;
+  });
+
+  // Refund sub-rows
+  const refunds = Array.isArray(tData.refunds) ? tData.refunds : [];
+  refunds.forEach(r => {
+    rows += `
+      <tr class="clickable-row sub-row sub-row-refund" data-href="/tickets/${escapeHtml(tData.id)}?tab=refunds" style="cursor: pointer; background-color: var(--color-surface);">
+        <td style="padding-inline-start: 32px;">
+          <div class="d-flex items-center gap-xs">
+            ${icons.refunds('w-4 h-4 text-danger')}
+            <span class="text-sm font-semibold text-danger">${escapeHtml(t('ticketDetails.tabs.refunds') || 'Refund')}</span>
+          </div>
+        </td>
+        <td>
+          <div class="text-sm text-muted">${formatDateTime(r.requestedDate)}</div>
+        </td>
+        <td>
+          <div class="text-sm">${escapeHtml(r.reason || '-')}</div>
+        </td>
+        <td></td>
+        <td>
+          <div class="tabular-nums font-semibold text-danger text-sm">${formatCurrency(r.amount, r.currency || tData.currency)}</div>
+        </td>
+        <td></td>
+        <td>${renderStatusBadge(r.status)}</td>
+      </tr>
+    `;
+  });
+
+  return rows;
+}
+
 function renderTicketRows(tickets) {
   if (tickets.length === 0) return '';
   return tickets.map(tData => {
@@ -35,7 +105,7 @@ function renderTicketRows(tickets) {
     const remaining = calculateRemaining(tData.ticketPrice, totalPaid, modFees);
     const isPaid = remaining === 0;
 
-    return `
+    const mainRow = `
       <tr class="clickable-row" data-href="/tickets/${escapeHtml(tData.id)}" style="cursor: pointer;">
         <td>
           <a href="/tickets/${escapeHtml(tData.id)}" class="cell-main ltr-data" data-link>${tData.ticketNumber ? escapeHtml(tData.ticketNumber) : `<span class="text-muted">—</span>`}</a>
@@ -69,6 +139,8 @@ function renderTicketRows(tickets) {
         </td>
       </tr>
     `;
+
+    return mainRow + renderSubRows(tData);
   }).join('');
 }
 
