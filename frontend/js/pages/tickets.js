@@ -36,7 +36,7 @@ function renderTicketRows(tickets) {
     const isPaid = remaining === 0;
 
     return `
-      <tr>
+      <tr class="clickable-row" data-href="/tickets/${escapeHtml(tData.id)}" style="cursor: pointer;">
         <td>
           <a href="/tickets/${escapeHtml(tData.id)}" class="cell-main ltr-data" data-link>${tData.ticketNumber ? escapeHtml(tData.ticketNumber) : `<span class="text-muted">—</span>`}</a>
           <div class="cell-sub font-medium">PNR: <strong class="ltr-data" style="color: var(--color-primary);">${escapeHtml(tData.pnr)}</strong></div>
@@ -349,6 +349,24 @@ export const TicketsPage = {
         }
         exportTicketsToCsv(tickets);
         showToast(t('common.exportSuccess') || 'Exported successfully', 'success');
+      });
+    }
+
+    // Clickable rows — delegate on the card container so it works after filter re-renders
+    if (cardContainer) {
+      cardContainer.addEventListener('click', (e) => {
+        // Skip if the user clicked on an existing <a> link (it already navigates)
+        if (e.target.closest('a[data-link]')) return;
+
+        const row = e.target.closest('tr.clickable-row[data-href]');
+        if (row) {
+          const href = row.getAttribute('data-href');
+          if (href) {
+            // Use the SPA router (same as a[data-link])
+            window.history.pushState(null, null, href);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }
+        }
       });
     }
   }
