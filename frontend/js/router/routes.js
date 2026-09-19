@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AfricaTravel — Route Definitions
  */
 
@@ -7,6 +7,8 @@ import { DashboardPage } from '../pages/dashboard.js';
 import { TicketsPage } from '../pages/tickets.js';
 import { TicketCreatePage } from '../pages/ticket-create.js';
 import { TicketDetailsPage } from '../pages/ticket-details.js';
+import { ModificationDetailsPage } from '../pages/modification-details.js';
+import { RefundDetailsPage } from '../pages/refund-details.js';
 import { CustomersPage } from '../pages/customers.js';
 import { CustomerDetailsPage } from '../pages/customer-details.js';
 import { PaymentsPage } from '../pages/payments.js';
@@ -21,6 +23,8 @@ export const routes = [
   { path: '/login', ...LoginPage, isAuthOnly: true },
   { path: '/dashboard', ...DashboardPage },
   { path: '/tickets/new', ...TicketCreatePage },
+  { path: '/tickets/:id/modifications/:modIndex', ...ModificationDetailsPage },
+  { path: '/tickets/:id/refunds/:refundIndex', ...RefundDetailsPage },
   { path: '/tickets/:id/payments', ...TicketDetailsPage },
   { path: '/tickets/:id/modifications', ...TicketDetailsPage },
   { path: '/tickets/:id/refunds', ...TicketDetailsPage },

@@ -97,7 +97,7 @@ assert(calculateTotalRefunded(sampleRefunds) === 8000, 'calculateTotalRefunded s
 assert(calculateAvailableRefund(18500, 8000) === 10500, 'calculateAvailableRefund returns totalPaid - totalRefunded');
 assert(calculateAvailableRefund(5000, 8000) === 0, 'calculateAvailableRefund caps at 0');
 
-assert(calculateNetValue(18500, 1500, 8000) === 12000, 'calculateNetValue = price + modFees - refunded');
+assert(calculateNetValue(18500, 1500, 8000) === 10500, 'calculateNetValue = price - refunded (modification fees decoupled)');
 
 // Net Profit Calculation (Single Source of Truth)
 assert(calculateNetProfit(41000, 35000) === 6000, 'calculateNetProfit(41000, 35000) returns 6000 profit');
@@ -144,7 +144,7 @@ assertThrows(() => validatePayment(testTicket, { amount: 0 }), ValidationError, 
 assertThrows(() => validatePayment(testTicket, { amount: -500 }), ValidationError, 'Negative payment amount rejected');
 assertThrows(() => validatePayment(null, { amount: 1000 }), NotFoundError, 'Payment against non-existent ticket throws NotFoundError');
 
-// 4.1 Payment on ticket with modification fees when base price is fully paid
+// 4.1 Payment on ticket when base price is fully paid (modification fees are decoupled from ticket balance)
 const fullyPaidWithModTicket = {
   id: 'TK-TEST-MOD-1',
   ticketPrice: 10000,
@@ -152,8 +152,7 @@ const fullyPaidWithModTicket = {
   modifications: [{ changeFee: 750, airlineFee: 250 }],
   currency: 'EGP'
 };
-assert(validatePayment(fullyPaidWithModTicket, { amount: 750, method: 'Cash' }), 'Payment equal to modification fee (750) allowed on fully paid base ticket');
-assertThrows(() => validatePayment(fullyPaidWithModTicket, { amount: 800, method: 'Cash' }), BusinessRuleError, 'Payment exceeding modification fee (800 > 750) blocked by BusinessRuleError');
+assertThrows(() => validatePayment(fullyPaidWithModTicket, { amount: 750, method: 'Cash' }), BusinessRuleError, 'Payment on fully paid base ticket rejected (modification fees are decoupled and tracked independently)');
 
 // 5. Refund Domain Rules (Over-refund Prevention)
 console.log('\n--- 5. Refund Domain Validation ---');

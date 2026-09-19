@@ -15,9 +15,13 @@ export function renderRefundsTab(ticket) {
         <p>${escapeHtml(t('ticketDetails.refundsTab.empty'))}</p>
       </td>
     </tr>
-  ` : ticket.refunds.map(r => `
+  ` : ticket.refunds.map((r, idx) => `
     <tr>
-      <td><strong class="cell-main ltr-data">${escapeHtml(r.id)}</strong></td>
+      <td>
+        <a href="/tickets/${escapeHtml(ticket.id)}/refunds/${escapeHtml(String(r.id || idx))}" class="cell-main ltr-data text-accent font-bold" data-link style="text-decoration: none;">
+          ${escapeHtml(r.id)}
+        </a>
+      </td>
       <td>
         <span class="tabular-nums font-bold text-danger">
           ${formatCurrency(r.amount, r.currency || ticket.currency)}

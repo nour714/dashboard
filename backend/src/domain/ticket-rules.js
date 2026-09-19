@@ -20,14 +20,14 @@ export function calculateTotalPaid(payments = []) {
 
 /**
  * Calculates remaining balance
- * remaining = max(0, (ticketPrice + modificationFees) - totalPaid)
+ * remaining = max(0, ticketPrice - totalPaid)
  * @param {number|string} ticketPrice
  * @param {number|string} totalPaid
- * @param {number|string} modificationFees
+ * @param {number|string} [_modificationFees] - Deprecated/ignored: modification fees are tracked independently
  * @returns {number}
  */
-export function calculateRemaining(ticketPrice = 0, totalPaid = 0, modificationFees = 0) {
-  return moneyNumber(Decimal.max(0, asDecimal(ticketPrice).plus(asDecimal(modificationFees)).minus(asDecimal(totalPaid))));
+export function calculateRemaining(ticketPrice = 0, totalPaid = 0, _modificationFees = 0) {
+  return moneyNumber(Decimal.max(0, asDecimal(ticketPrice).minus(asDecimal(totalPaid))));
 }
 
 /**
@@ -93,14 +93,14 @@ export function calculateAvailableRefund(totalPaid = 0, totalRefunded = 0) {
 
 /**
  * Calculates Net Ticket Value
- * netValue = max(0, ticketPrice + totalModificationFees - totalRefunded)
+ * netValue = max(0, ticketPrice - totalRefunded)
  * @param {number|string} ticketPrice
- * @param {number|string} modificationFees
+ * @param {number|string} [_modificationFees] - Deprecated/ignored: modification fees are tracked independently
  * @param {number|string} totalRefunded
  * @returns {number}
  */
-export function calculateNetValue(ticketPrice = 0, modificationFees = 0, totalRefunded = 0) {
-  return moneyNumber(Decimal.max(0, asDecimal(ticketPrice).plus(asDecimal(modificationFees)).minus(asDecimal(totalRefunded))));
+export function calculateNetValue(ticketPrice = 0, _modificationFees = 0, totalRefunded = 0) {
+  return moneyNumber(Decimal.max(0, asDecimal(ticketPrice).minus(asDecimal(totalRefunded))));
 }
 
 /**
@@ -138,14 +138,14 @@ export function calculateRefundedNetProfit(totalPaid = 0, totalCustomerRefunded 
  * @param {number|string} ticketPrice
  * @param {number|string} totalPaid
  * @param {string} currentStatus
- * @param {number|string} modificationFees
+ * @param {number|string} [_modificationFees] - Deprecated/ignored: modification fees are tracked independently
  * @returns {string} 'CONFIRMED' | 'PARTIALLY PAID' | 'UNPAID' | 'CANCELLED' | 'REFUNDED' | 'PARTIALLY_REFUNDED'
  */
-export function derivePaymentStatus(ticketPrice = 0, totalPaid = 0, currentStatus = 'UNPAID', modificationFees = 0) {
+export function derivePaymentStatus(ticketPrice = 0, totalPaid = 0, currentStatus = 'UNPAID', _modificationFees = 0) {
   if (currentStatus === 'CANCELLED') return 'CANCELLED';
   if (currentStatus === 'REFUNDED') return 'REFUNDED';
   if (currentStatus === 'PARTIALLY_REFUNDED') return 'PARTIALLY_REFUNDED';
-  const price = asDecimal(ticketPrice).plus(asDecimal(modificationFees));
+  const price = asDecimal(ticketPrice);
   const paid = asDecimal(totalPaid);
   if (paid.greaterThanOrEqualTo(price) && price.greaterThan(0)) return 'CONFIRMED';
   if (paid.greaterThan(0) && paid.lessThan(price)) return 'PARTIALLY PAID';

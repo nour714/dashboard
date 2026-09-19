@@ -433,7 +433,7 @@ async function runSecurityHardeningRound3Tests() {
     assert(availableRefund === 75.20, `calculateAvailableRefund(100.30, 25.10) equals 75.20 exactly (received: ${availableRefund})`);
 
     const netVal = calculateNetValue(100.50, 20.25, 10.15);
-    assert(netVal === 110.60, `calculateNetValue(100.50 + 20.25 - 10.15) equals 110.60 exactly (received: ${netVal})`);
+    assert(netVal === 90.35, `calculateNetValue(100.50 - 10.15) equals 90.35 exactly (received: ${netVal})`);
   }
 
   // =========================================================================

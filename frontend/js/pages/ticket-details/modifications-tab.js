@@ -45,7 +45,12 @@ export function renderModificationsTab(ticket) {
           <strong class="card-title" style="font-size: 15px;">${escapeHtml(m.title || t('ticketDetails.tabs.modifications') || 'Modification')}</strong>
           <span class="text-sm text-muted">${formatDateTime(m.date)}</span>
         </div>
-        ${renderStatusBadge(m.status || 'COMPLETED')}
+        <div class="d-flex items-center gap-xs">
+          <a href="/tickets/${escapeHtml(ticket?.id)}/modifications/${escapeHtml(String(m.id || '0'))}" class="btn btn-sm btn-ghost text-accent" data-link style="padding: 2px 8px; font-size: 12px;">
+            ${escapeHtml(t('common.details') || 'Details')} ›
+          </a>
+          ${renderStatusBadge(m.status || 'COMPLETED')}
+        </div>
       </div>
       <div class="card-body">
         <div class="d-flex items-center justify-between gap-md mb-md p-md" style="background-color: var(--color-surface); border-radius: var(--radius-lg); flex-wrap: wrap;">

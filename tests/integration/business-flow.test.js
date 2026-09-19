@@ -92,7 +92,7 @@ assert(calculateAvailableRefund(18500, 7000) === 11500, 'calculateAvailableRefun
 assert(calculateAvailableRefund(7000, 7000) === 0, 'calculateAvailableRefund: fully refunded');
 assert(calculateAvailableRefund(5000, 10000) === 0, 'calculateAvailableRefund: no negative');
 
-assert(calculateNetValue(18500, 1200, 7000) === 12700, 'calculateNetValue(18500, 1200, 7000) = 12700');
+assert(calculateNetValue(18500, 1200, 7000) === 11500, 'calculateNetValue(18500, 1200, 7000) = 11500 (modification fees decoupled)');
 
 assert(derivePaymentStatus(18500, 18500) === 'CONFIRMED', 'derivePaymentStatus: fully paid');
 assert(derivePaymentStatus(18500, 10000) === 'PARTIALLY PAID', 'derivePaymentStatus: partial');

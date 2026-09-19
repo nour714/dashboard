@@ -33,7 +33,7 @@ function renderSubRows(tData) {
 
   // Modification sub-rows
   const mods = Array.isArray(tData.modifications) ? tData.modifications : [];
-  mods.forEach(m => {
+  mods.forEach((m, idx) => {
     let nw = m.newFlight;
     if (typeof nw === 'string') {
       try { nw = JSON.parse(nw); } catch { nw = {}; }
@@ -42,9 +42,10 @@ function renderSubRows(tData) {
 
     const defaultRoute = `${tData.origin || ''} ✈ ${tData.destination || ''}`.trim() || '-';
     const nwRoute = nw.route || defaultRoute;
+    const modKey = m.id || idx;
 
     rows += `
-      <tr class="clickable-row sub-row sub-row-modification" data-href="/tickets/${escapeHtml(tData.id)}?tab=modifications" style="cursor: pointer; background-color: var(--color-surface);">
+      <tr class="clickable-row sub-row sub-row-modification" data-href="/tickets/${escapeHtml(tData.id)}/modifications/${escapeHtml(String(modKey))}" style="cursor: pointer; background-color: var(--color-surface);">
         <td style="padding-inline-start: 32px;">
           <div class="d-flex items-center gap-xs">
             ${icons.shuffle('w-4 h-4 text-accent')}
@@ -69,9 +70,11 @@ function renderSubRows(tData) {
 
   // Refund sub-rows
   const refunds = Array.isArray(tData.refunds) ? tData.refunds : [];
-  refunds.forEach(r => {
+  refunds.forEach((r, idx) => {
+    const refKey = r.id || idx;
+
     rows += `
-      <tr class="clickable-row sub-row sub-row-refund" data-href="/tickets/${escapeHtml(tData.id)}?tab=refunds" style="cursor: pointer; background-color: var(--color-surface);">
+      <tr class="clickable-row sub-row sub-row-refund" data-href="/tickets/${escapeHtml(tData.id)}/refunds/${escapeHtml(String(refKey))}" style="cursor: pointer; background-color: var(--color-surface);">
         <td style="padding-inline-start: 32px;">
           <div class="d-flex items-center gap-xs">
             ${icons.refunds('w-4 h-4 text-danger')}

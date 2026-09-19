@@ -50,7 +50,7 @@ export function enrichTicketFinancials(ticket) {
   const baseProfit = isRefunded
     ? calculateRefundedNetProfit(totalPaid, totalRefunded, costPrice, totalAirlineRefunded)
     : calculateNetProfit(ticket.ticketPrice, costPrice);
-  const netProfit = baseProfit !== null ? moneyNumber(asDecimal(baseProfit).plus(asDecimal(modificationProfit))) : null;
+  const netProfit = baseProfit !== null ? moneyNumber(asDecimal(baseProfit)) : null;
 
   return {
     ...ticket,
