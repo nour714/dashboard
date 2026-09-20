@@ -187,10 +187,10 @@ describe('Flight Modification Fee Split & Date-Only Input Tests', () => {
     assert.equal(calculateTotalModificationProfit(null), 0);
   });
 
-  test('5. enrichTicketFinancials tracks base netProfit with modification profit tracked independently', () => {
-    // Ticket: selling 10000, cost 8000 => base netProfit = 2000
+  test('5. enrichTicketFinancials calculates netProfit including modification profit', () => {
+    // Ticket: selling 10000, cost 8000 => base = 2000
     // Modification: changeFee 1200, airlineFee 800 => modificationProfit = 400
-    // Base ticket netProfit remains 2000
+    // Net profit = price - cost + modificationProfit = 2400
     const ticket = {
       id: 'TK-PROFIT-1',
       ticketPrice: 10000,
@@ -206,10 +206,10 @@ describe('Flight Modification Fee Split & Date-Only Input Tests', () => {
 
     const enriched = enrichTicketFinancials(ticket);
     assert.equal(enriched.costPrice, 8000);
-    assert.equal(enriched.netProfit, 2000, 'netProfit should be base profit (2000) - modification profit is independent');
+    assert.equal(enriched.netProfit, 2400, 'netProfit includes base profit (2000) + modification profit (400)');
     assert.equal(enriched.financials.modificationFees, 1200);
     assert.equal(enriched.financials.modificationProfit, 400);
-    assert.equal(enriched.financials.netProfit, 2000);
+    assert.equal(enriched.financials.netProfit, 2400);
   });
 
   test('6. enrichTicketFinancials preserves null netProfit if ticket has no costPrice', () => {
@@ -299,8 +299,8 @@ describe('Flight Modification Fee Split & Date-Only Input Tests', () => {
     // Verify enriched financials reflect modification profit:
     // Base profit: 15000 - 12000 = 3000
     // Modification profit: 1200 - 800 = 400
-    // Base netProfit: 3000 (modification profit is tracked separately)
-    assert.equal(updatedTicket.netProfit, 3000);
+    // Total netProfit: 3400
+    assert.equal(updatedTicket.netProfit, 3400);
     assert.equal(updatedTicket.financials.modificationProfit, 400);
   });
 

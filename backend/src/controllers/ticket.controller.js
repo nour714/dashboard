@@ -12,15 +12,20 @@ export function sanitizeTicketForRole(ticket, role) {
   const sanitized = { ...ticket };
   delete sanitized.costPrice;
   delete sanitized.netProfit;
+  delete sanitized.grossProfit;
   if (sanitized.financials) {
     sanitized.financials = { ...sanitized.financials };
     delete sanitized.financials.costPrice;
     delete sanitized.financials.netProfit;
+    delete sanitized.financials.grossProfit;
+    delete sanitized.financials.modificationProfit;
+    delete sanitized.financials.airlinePenalty;
   }
   if (Array.isArray(sanitized.modifications)) {
     sanitized.modifications = sanitized.modifications.map(m => {
       const copy = { ...m };
       delete copy.airlineFee;
+      delete copy.profit;
       return copy;
     });
   }

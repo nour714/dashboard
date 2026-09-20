@@ -22,6 +22,7 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '../../');
 
 const UNIT_TESTS = [
+  'tests/unit/ledger-domain.test.js',
   'tests/unit/backend-domain.test.js',
   'tests/unit/ticket-payment-status.test.js',
   'tests/unit/sidebar-collapse-listener.test.js',

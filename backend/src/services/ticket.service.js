@@ -6,21 +6,16 @@
  */
 
 import crypto from 'crypto';
+import Decimal from 'decimal.js';
 import { getPrismaClient } from '../config/database.js';
 import {
   calculateTotalPaid,
-  calculateRemaining,
   calculateTotalModificationFees,
-  calculateTotalModificationProfit,
   calculateTotalRefunded,
-  calculateTotalAirlineRefunded,
-  calculateAvailableRefund,
-  calculateNetValue,
-  calculateNetProfit,
-  calculateRefundedNetProfit,
   derivePaymentStatus,
   validateTicketCreation
 } from '../domain/ticket-rules.js';
+import { computeTicketLedger } from '../domain/ledger.js';
 import { asDecimal, moneyNumber } from '../utils/money.js';
 import { validatePayment } from '../domain/payment-rules.js';
 import { validateRefund } from '../domain/refund-rules.js';
@@ -36,43 +31,37 @@ import { AuditService } from './audit.service.js';
 export function enrichTicketFinancials(ticket) {
   if (!ticket) return null;
 
-  const totalPaid = calculateTotalPaid(ticket.payments || []);
-  const modificationFees = calculateTotalModificationFees(ticket.modifications || []);
-  const remaining = calculateRemaining(ticket.ticketPrice, totalPaid, modificationFees);
-  const modificationProfit = calculateTotalModificationProfit(ticket.modifications || []);
-  const totalRefunded = calculateTotalRefunded(ticket.refunds || []);
-  const totalAirlineRefunded = calculateTotalAirlineRefunded(ticket.refunds || []);
-  const availableRefund = calculateAvailableRefund(totalPaid, totalRefunded);
-  const netValue = calculateNetValue(ticket.ticketPrice, modificationFees, totalRefunded);
-  const paymentStatus = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status, modificationFees);
-  const costPrice = ticket.costPrice !== null && ticket.costPrice !== undefined ? Number(ticket.costPrice) : null;
-  const isRefunded = ticket.status === 'REFUNDED';
-  const baseProfit = isRefunded
-    ? calculateRefundedNetProfit(totalPaid, totalRefunded, costPrice, totalAirlineRefunded)
-    : calculateNetProfit(ticket.ticketPrice, costPrice);
-  const netProfit = baseProfit !== null ? moneyNumber(asDecimal(baseProfit)) : null;
+  const ledger = computeTicketLedger(ticket);
+  const costPrice = ticket.costPrice !== null && ticket.costPrice !== undefined ? moneyNumber(ticket.costPrice) : null;
+  const airlinePenalty = costPrice !== null
+    ? moneyNumber(Decimal.max(0, asDecimal(ticket.costPrice).minus(asDecimal(ledger.totalAirlineRefunded))))
+    : 0;
+  const customerDeduction = moneyNumber(Decimal.max(0, asDecimal(ledger.totalPaid).minus(asDecimal(ledger.totalRefunded))));
 
   return {
     ...ticket,
-    ticketPrice: Number(ticket.ticketPrice),
+    ticketPrice: moneyNumber(ticket.ticketPrice),
     costPrice,
-    netProfit,
+    netProfit: ledger.netProfit,
     financials: {
-      ticketPrice: Number(ticket.ticketPrice),
+      ticketPrice: moneyNumber(ticket.ticketPrice),
       costPrice,
-      netProfit,
-      totalPaid,
-      remaining,
-      modificationFees,
-      modificationProfit,
-      totalRefunded,
-      totalAirlineRefunded,
-      airlinePenalty: costPrice !== null ? Math.max(0, costPrice - totalAirlineRefunded) : 0,
-      customerDeduction: Math.max(0, totalPaid - totalRefunded),
-      availableRefund,
-      netValue,
-      paymentStatus,
-      currency: ticket.currency || 'EGP'
+      netProfit: ledger.netProfit,
+      totalPaid: ledger.totalPaid,
+      remaining: ledger.remaining,
+      modificationFees: ledger.modificationFees,
+      modificationPaid: ledger.modificationPaid,
+      modificationOutstanding: ledger.modificationOutstanding,
+      modificationProfit: ledger.modificationProfit,
+      totalRefunded: ledger.totalRefunded,
+      pendingRefunds: ledger.pendingRefunds,
+      availableRefund: ledger.availableRefund,
+      totalAirlineRefunded: ledger.totalAirlineRefunded,
+      airlinePenalty,
+      customerDeduction,
+      netValue: ledger.netValue,
+      paymentStatus: ledger.paymentStatus,
+      currency: ledger.currency
     }
   };
 }
