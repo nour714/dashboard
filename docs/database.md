@@ -72,7 +72,7 @@ datasource db {
 - **`Role`**: `ADMIN`, `AGENT`, `TICKET_ONLY`
 - **`EmployeeStatus`**: `ACTIVE`, `INACTIVE`
 - **`ExpenseCategory`**: `SERVICES`, `TRANSFERS`
-- **`PaymentType`**: `TICKET`, `MODIFICATION`
+- **`PaymentType`**: `TICKET` (default, base ticket payment), `MODIFICATION` (change fee payment)
 
 ---
 

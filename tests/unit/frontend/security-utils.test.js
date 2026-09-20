@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test, describe } from 'node:test';
-import { escapeHtml, sanitizeText } from '../../../frontend/js/utils/security.js';
+import { escapeHtml, sanitizeText, sanitizeCsvCell } from '../../../frontend/js/utils/security.js';
 
 describe('Frontend Security Utilities: security.js', () => {
   describe('escapeHtml', () => {
@@ -46,6 +46,26 @@ describe('Frontend Security Utilities: security.js', () => {
     test('handles null and undefined safely', () => {
       assert.strictEqual(sanitizeText(null), '');
       assert.strictEqual(sanitizeText(undefined), '');
+    });
+  });
+
+  describe('sanitizeCsvCell (CSV Formula Injection Protection)', () => {
+    test('neutralizes formula injection triggers (=, +, -, @, \\t, \\r)', () => {
+      assert.strictEqual(sanitizeCsvCell('=1+2'), '"\'=1+2"');
+      assert.strictEqual(sanitizeCsvCell("+cmd|' /C calc'!A0"), '"\'+cmd|\' /C calc\'!A0"');
+      assert.strictEqual(sanitizeCsvCell('-5'), '"\'-5"');
+      assert.strictEqual(sanitizeCsvCell('@SUM(A1:A10)'), '"\'@SUM(A1:A10)"');
+      assert.strictEqual(sanitizeCsvCell('\ttabbed'), '"\'\ttabbed"');
+      assert.strictEqual(sanitizeCsvCell('\rcarriage'), '"\'\rcarriage"');
+    });
+
+    test('properly escapes quotes for safe text', () => {
+      assert.strictEqual(sanitizeCsvCell('Normal "Quoted" Text'), '"Normal ""Quoted"" Text"');
+    });
+
+    test('handles null and undefined without throwing', () => {
+      assert.strictEqual(sanitizeCsvCell(null), '""');
+      assert.strictEqual(sanitizeCsvCell(undefined), '""');
     });
   });
 });

@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.6.0] - 2026-09-20 — Financial Audit Remediation
+
+### Added
+- **Canonical Financial Ledger (`backend/src/domain/ledger.js`)**: Single source of truth for all ticket financial calculations (`computeTicketLedger`, `aggregateLedgers`) using `decimal.js` end-to-end to prevent float rounding errors.
+- **Payment Classification Enum (`PaymentType`)**: Added `PaymentType` enum (`TICKET`, `MODIFICATION`) to decouple base ticket payments from modification fee collections and prevent cross-allocation.
+- **Legacy Uncosted Ticket Audit Tool (`scripts/database/report-zero-cost-tickets.js`)**: Diagnostic tool to audit and list legacy tickets with `costPrice = 0` and `ticketPrice > 0` requiring cost attribution.
+- **PostgreSQL Financial CHECK Constraints**: Added non-validating then validated CHECK constraints preventing negative prices, non-positive payments/refunds/expenses, and non-negative modification fees.
+- **Agency Net Profit Calculation**: Integrated total operational expenses into agency profit reporting in `GET /reports/summary` (`agencyNetProfit = totalGrossProfit - totalExpenses`).
+- **Comprehensive Audit Test Suite (`tests/unit/financial-audit-scenarios.test.js`)**: 14 automated test scenarios covering the complete financial audit matrix.
+
+### Changed
+- **Nullable Ticket Cost Price**: Schema updated so `Ticket.costPrice` is nullable without default; tickets with unknown costs yield `netProfit = null` (rendered as `"N/A"` in the UI) instead of treating cost as free ($0).
+- **Modification Cost and Profit Accounting**: Included `modificationProfit` (`changeFee - airlineFee`) into overall ticket net profit and reporting aggregations.
+- **Expenses Full-Dataset Aggregation**: `ExpenseService.getExpenses` computes currency totals across the entire filtered database query rather than only the active pagination slice.
+- **Cohort-Consistent Weekly Trends**: Decoupled weekly trends into cohort-based ticket metrics and transaction-time collections and modifications.
+- **Frontend Minor-Unit Calculations**: Refactored `frontend/js/domain/ticket-rules.js` to compute money in integer minor units (cents) to eradicate client-side floating point drift.
+- **Multi-Currency UI Display**: Updated dashboard, reports, customers, and employee views to present financials categorized per currency via `formatMultiCurrency` without cross-currency summation.
+
+### Security
+- **Strict Role-Based Access Control (RBAC)**: Sanitized all ticket, modification, refund, and report responses to completely strip `costPrice`, `netProfit`, `grossProfit`, `modificationProfit`, `airlineFee`, and `airlineRefundAmount` for non-`ADMIN` users.
+- **CSV Formula Injection Neutralization**: Added `sanitizeCsvCell` in `frontend/js/utils/security.js` escaping leading `=`, `+`, `-`, `@`, `\t`, and `\r` characters with single apostrophes across all CSV exports.
+- **Concurrency & Race Condition Hardening**: Wrapped payment and refund transaction handlers in `withSerializableRetry` with PostgreSQL serializable isolation and exponential backoff retry on conflict.
+- **Schema Input Bounds**: Enforced strict upper bounds (`max(100_000_000)`) and strict boolean parsing across all Zod schema validation boundaries.
+
+### Fixed
+- **Partial Refund on Underpaid Tickets**: Prevented issuing refunds exceeding the actual net customer cash collected (`totalCollected - totalRefunds`).
+- **Revenue Inclusions on Refunded Tickets**: Corrected sales and revenue aggregations to exclude fully refunded tickets and net out partial customer refunds.
+- **Payment Modal Classification**: Added `TICKET` vs `MODIFICATION` selector with real-time balance validation preventing overpayment.
+- **Refund Modal Cost Defaulting**: Removed unsafe default of airline refund amount to ticket cost price; set default to 0 with manual review, status selection, and dynamic ticket closure toggle.
+
+---
+
 ## [2.5.0] - 2026-09-15
 
 ### Added
