@@ -24,6 +24,12 @@ EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;
 
+DO $$ BEGIN
+  CREATE TYPE "PaymentType" AS ENUM ('TICKET', 'MODIFICATION');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
 -- Create Tables
 CREATE TABLE IF NOT EXISTS "users" (
     "id" TEXT NOT NULL,
@@ -110,6 +116,7 @@ CREATE TABLE IF NOT EXISTS "payments" (
     "id" TEXT NOT NULL,
     "ticketId" TEXT NOT NULL,
     "amount" DECIMAL(12,2) NOT NULL,
+    "type" "PaymentType" NOT NULL DEFAULT 'TICKET',
     "currency" TEXT NOT NULL DEFAULT 'EGP',
     "method" TEXT NOT NULL DEFAULT 'Credit Card',
     "reference" TEXT,
@@ -274,6 +281,36 @@ EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- Make arrivalDate optional on existing tables
 ALTER TABLE "tickets" ALTER COLUMN "arrivalDate" DROP NOT NULL;
+
+-- Financial CHECK Constraints
+DO $$ BEGIN
+  ALTER TABLE "payments" ADD CONSTRAINT "chk_payments_amount_positive" CHECK ("amount" > 0);
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "refunds" ADD CONSTRAINT "chk_refunds_amount_positive" CHECK ("amount" > 0);
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "expenses" ADD CONSTRAINT "chk_expenses_amount_positive" CHECK ("amount" > 0);
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "tickets" ADD CONSTRAINT "chk_tickets_price_non_negative" CHECK ("ticketPrice" >= 0);
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "tickets" ADD CONSTRAINT "chk_tickets_cost_price_bounds" CHECK ("costPrice" IS NULL OR "costPrice" >= 0);
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "modifications" ADD CONSTRAINT "chk_modifications_change_fee_non_negative" CHECK ("changeFee" >= 0);
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "modifications" ADD CONSTRAINT "chk_modifications_airline_fee_non_negative" CHECK ("airlineFee" >= 0);
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
 
 -- ========================================================
 -- Storage Buckets Configuration

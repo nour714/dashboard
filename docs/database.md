@@ -72,6 +72,7 @@ datasource db {
 - **`Role`**: `ADMIN`, `AGENT`, `TICKET_ONLY`
 - **`EmployeeStatus`**: `ACTIVE`, `INACTIVE`
 - **`ExpenseCategory`**: `SERVICES`, `TRANSFERS`
+- **`PaymentType`**: `TICKET`, `MODIFICATION`
 
 ---
 
@@ -97,7 +98,20 @@ Child transaction tables (`payments`, `modifications`, `refunds`) define `onDele
 
 ---
 
-## 4.4 Migration Chain Integrity
+### 4.4 Financial CHECK Constraints
+PostgreSQL CHECK constraints enforce domain financial invariants at the database level:
+- `payments.amount > 0`: Prevents recording non-positive payments.
+- `refunds.amount > 0`: Prevents recording non-positive customer refunds.
+- `expenses.amount > 0`: Prevents recording non-positive operational expenses.
+- `tickets.ticketPrice >= 0`: Non-negative ticket selling price.
+- `tickets.costPrice IS NULL OR >= 0`: Cost price is nullable with no default (legacy uncosted tickets stay `NULL`); when present, it must be non-negative.
+- `modifications.changeFee >= 0` and `modifications.airlineFee >= 0`: Non-negative modification fees.
+
+These constraints are added `NOT VALID` first to prevent blocking active write operations, followed by immediate asynchronous validation after preflight verification.
+
+---
+
+## 4.5 Migration Chain Integrity
 
 The migration history under `database/prisma/migrations/` starts at `20260822000000_init_baseline`, which reconstructs the schema as it existed before the first ever migration was committed (the original schema was provisioned with `prisma db push`, which does not generate migration files). Every migration in the chain — including the baseline — is written to be idempotent (`IF NOT EXISTS` / existence-checked `DO $$` blocks), so:
 
@@ -141,3 +155,5 @@ npm run reset:passwords
 | `npm run prisma:check-drift` | Inspects schema diffs to identify uncommitted database drift |
 | `npm run prisma:seed` | Seeds database with initial system users |
 | `npm run db:check-unique-integrity` | Audits tickets and customers for duplicate or conflicting records |
+| `node scripts/database/preflight-check-constraints.js` | Audits tables for violations of financial CHECK constraints |
+| `node scripts/database/report-zero-cost-tickets.js` | Audits and lists legacy tickets with costPrice = 0 and ticketPrice > 0 |

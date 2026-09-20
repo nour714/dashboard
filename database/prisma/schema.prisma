@@ -27,6 +27,11 @@ enum ExpenseCategory {
   TRANSFERS
 }
 
+enum PaymentType {
+  TICKET
+  MODIFICATION
+}
+
 model User {
   id            String          @id
   name          String
@@ -142,11 +147,12 @@ model Ticket {
 }
 
 model Payment {
-  id        String   @id
+  id        String      @id
   ticketId  String
-  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Restrict)
-  amount    Decimal  @db.Decimal(12, 2)
-  currency  String   @default("EGP")
+  ticket    Ticket      @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  amount    Decimal     @db.Decimal(12, 2)
+  type      PaymentType @default(TICKET)
+  currency  String      @default("EGP")
   method    String   @default("Credit Card")
   reference String?
   date      DateTime @default(now())
