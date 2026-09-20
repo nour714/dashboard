@@ -176,11 +176,14 @@ async function runAuditFixesTests() {
   const invalidStatusParse = updateTicketSchema.safeParse({ status: 'INVALID_RANDOM_STATUS' });
   assert(!invalidStatusParse.success, 'updateTicketSchema rejects arbitrary string statuses');
 
-  const validStatusParse = updateTicketSchema.safeParse({ status: 'PARTIALLY_REFUNDED' });
-  assert(validStatusParse.success, 'updateTicketSchema accepts valid domain status PARTIALLY_REFUNDED');
+  const validStatusParse = updateTicketSchema.safeParse({ status: 'CANCELLED' });
+  assert(validStatusParse.success, 'updateTicketSchema accepts valid manual status CANCELLED');
 
-  const validConfirmedParse = updateTicketSchema.safeParse({ status: 'CONFIRMED' });
-  assert(validConfirmedParse.success, 'updateTicketSchema accepts valid domain status CONFIRMED');
+  const validModifiedParse = updateTicketSchema.safeParse({ status: 'MODIFIED' });
+  assert(validModifiedParse.success, 'updateTicketSchema accepts valid manual status MODIFIED');
+
+  const nonManualStatusParse = updateTicketSchema.safeParse({ status: 'PARTIALLY_REFUNDED' });
+  assert(!nonManualStatusParse.success, 'updateTicketSchema rejects non-manual status PARTIALLY_REFUNDED (only via refund flow)');
 
   // 6. Employee ID Collision Resistance
   console.log('\n--- 6. Employee ID Collision Resistance ---');

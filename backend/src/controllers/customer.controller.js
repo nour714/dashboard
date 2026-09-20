@@ -4,6 +4,7 @@
 
 import { CustomerService } from '../services/customer.service.js';
 import { NotFoundError } from '../domain/errors.js';
+import { sanitizeTicketForRole } from './ticket.controller.js';
 
 export const CustomerController = {
   async getCustomers(req, res, next) {
@@ -28,9 +29,27 @@ export const CustomerController = {
       if (!customer) {
         throw new NotFoundError('Customer', req.params.id);
       }
+      let data = customer;
+      if (req.user?.role !== 'ADMIN') {
+        data = { ...customer };
+        if (Array.isArray(data.tickets)) {
+          data.tickets = data.tickets.map(t => sanitizeTicketForRole(t, req.user?.role));
+        }
+        if (data.stats?.byCurrency) {
+          const cleanedByCurr = {};
+          for (const [c, s] of Object.entries(data.stats.byCurrency)) {
+            const sc = { ...s };
+            delete sc.grossProfit;
+            delete sc.netProfit;
+            delete sc.modificationProfit;
+            cleanedByCurr[c] = sc;
+          }
+          data.stats = { ...data.stats, byCurrency: cleanedByCurr };
+        }
+      }
       return res.status(200).json({
         success: true,
-        data: customer
+        data
       });
     } catch (err) {
       next(err);

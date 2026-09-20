@@ -10,6 +10,7 @@
 import { getPrismaClient } from '../config/database.js';
 import { NotFoundError, ForbiddenError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
+import { asDecimal, moneyNumber } from '../utils/money.js';
 
 export const ExpenseService = {
   /**
@@ -92,6 +93,97 @@ export const ExpenseService = {
       }
     }
 
+    // Compute totals over the FULL filtered set (Prisma aggregate/groupBy, with fallback)
+    let totalsByGroup = [];
+    if (typeof prisma?.expense?.groupBy === 'function') {
+      try {
+        totalsByGroup = await prisma.expense.groupBy({
+          by: ['category', 'currency'],
+          where,
+          _sum: {
+            amount: true
+          }
+        });
+      } catch {
+        totalsByGroup = [];
+      }
+    }
+
+    // Fallback if groupBy is not supported or mock
+    if (totalsByGroup.length === 0 && typeof prisma?.expense?.findMany === 'function') {
+      try {
+        const allMatching = await prisma.expense.findMany({
+          where,
+          select: { amount: true, category: true, currency: true }
+        });
+        const map = {};
+        for (const item of allMatching) {
+          const curr = item.currency || 'EGP';
+          const key = `${item.category}:${curr}`;
+          if (!map[key]) {
+            map[key] = { category: item.category, currency: curr, sum: asDecimal(0) };
+          }
+          map[key].sum = map[key].sum.plus(asDecimal(item.amount || 0));
+        }
+        totalsByGroup = Object.values(map).map(m => ({
+          category: m.category,
+          currency: m.currency,
+          _sum: { amount: moneyNumber(m.sum) }
+        }));
+      } catch {
+        totalsByGroup = [];
+      }
+    }
+
+    const byCurrency = {};
+    for (const group of totalsByGroup) {
+      const curr = group.currency || 'EGP';
+      const cat = (group.category || '').toUpperCase();
+      const sumDec = asDecimal(group._sum?.amount || 0);
+
+      if (!byCurrency[curr]) {
+        byCurrency[curr] = {
+          servicesDec: asDecimal(0),
+          transfersDec: asDecimal(0)
+        };
+      }
+
+      if (cat === 'SERVICES') {
+        byCurrency[curr].servicesDec = byCurrency[curr].servicesDec.plus(sumDec);
+      } else if (cat === 'TRANSFERS') {
+        byCurrency[curr].transfersDec = byCurrency[curr].transfersDec.plus(sumDec);
+      }
+    }
+
+    if (Object.keys(byCurrency).length === 0) {
+      byCurrency['EGP'] = {
+        servicesDec: asDecimal(0),
+        transfersDec: asDecimal(0)
+      };
+    }
+
+    const finalizedByCurrency = {};
+    const currencies = Object.keys(byCurrency);
+
+    for (const curr of currencies) {
+      const b = byCurrency[curr];
+      const services = moneyNumber(b.servicesDec);
+      const transfers = moneyNumber(b.transfersDec);
+      const grand = moneyNumber(b.servicesDec.plus(b.transfersDec));
+      finalizedByCurrency[curr] = { services, transfers, grand, currency: curr };
+    }
+
+    const primaryCurr = currencies[0] || 'EGP';
+    const primary = finalizedByCurrency[primaryCurr];
+
+    const totals = {
+      services: primary.services,
+      transfers: primary.transfers,
+      grand: primary.grand,
+      currency: primaryCurr,
+      byCurrency: finalizedByCurrency
+    };
+
     const [expenses, total] = await Promise.all([
       prisma.expense.findMany({
         where,
@@ -109,7 +201,8 @@ export const ExpenseService = {
         pageSize,
         total,
         totalPages: Math.max(1, Math.ceil(total / pageSize))
-      }
+      },
+      totals
     };
   },
 

@@ -24,6 +24,13 @@ export function computeWeeklyTrends(tickets = []) {
   const now = new Date();
   const weeks = [];
 
+  // Determine all currencies across tickets
+  const currencySet = new Set();
+  tickets.forEach(t => {
+    if (t.currency) currencySet.add(t.currency);
+  });
+  const allCurrencies = currencySet.size > 0 ? Array.from(currencySet) : ['EGP'];
+
   // Generate 4 rolling 7-day intervals ending at current time
   for (let i = 3; i >= 0; i--) {
     const end = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
@@ -32,14 +39,27 @@ export function computeWeeklyTrends(tickets = []) {
     const startLabel = `${start.toLocaleString('default', { month: 'short' })} ${start.getDate()}`;
     const weekIndex = 4 - i;
 
-    let salesTotal = asDecimal(0);
-    let collectionsTotal = asDecimal(0);
-    let modificationCollectionsTotal = asDecimal(0);
-    let refundsTotal = asDecimal(0);
-    let grossProfitTotal = asDecimal(0);
-    let outstandingTotal = asDecimal(0);
+    const byCurrencyData = {};
+    const ensureCurrData = (curr) => {
+      if (!byCurrencyData[curr]) {
+        byCurrencyData[curr] = {
+          currency: curr,
+          salesTotal: asDecimal(0),
+          collectionsTotal: asDecimal(0),
+          modificationCollectionsTotal: asDecimal(0),
+          refundsTotal: asDecimal(0),
+          grossProfitTotal: asDecimal(0),
+          outstandingTotal: asDecimal(0)
+        };
+      }
+      return byCurrencyData[curr];
+    };
+
+    allCurrencies.forEach(c => ensureCurrData(c));
 
     tickets.forEach(t => {
+      const curr = t.currency || 'EGP';
+      const group = ensureCurrData(curr);
       const ledger = computeTicketLedger(t);
       const ticketDate = new Date(t.createdAt || t.departureDate);
       const status = (t.status || '').toUpperCase();
@@ -47,10 +67,10 @@ export function computeWeeklyTrends(tickets = []) {
 
       // Sales in window (active tickets only)
       if (ticketDate >= start && ticketDate < end && !isCancelledOrRefunded) {
-        salesTotal = salesTotal.plus(asDecimal(t.ticketPrice || 0));
+        group.salesTotal = group.salesTotal.plus(asDecimal(t.ticketPrice || 0));
         if (ledger.netProfit !== null) {
           const costPriceDec = asDecimal(t.costPrice || 0);
-          grossProfitTotal = grossProfitTotal.plus(asDecimal(t.ticketPrice || 0).minus(costPriceDec));
+          group.grossProfitTotal = group.grossProfitTotal.plus(asDecimal(t.ticketPrice || 0).minus(costPriceDec));
         }
       }
 
@@ -61,7 +81,7 @@ export function computeWeeklyTrends(tickets = []) {
           if (mDate >= start && mDate < end) {
             const mChangeFee = asDecimal(m.changeFee || 0);
             const mAirlineFee = asDecimal(m.airlineFee || 0);
-            grossProfitTotal = grossProfitTotal.plus(mChangeFee.minus(mAirlineFee));
+            group.grossProfitTotal = group.grossProfitTotal.plus(mChangeFee.minus(mAirlineFee));
           }
         });
       }
@@ -73,9 +93,9 @@ export function computeWeeklyTrends(tickets = []) {
           if (pDate >= start && pDate < end) {
             const pAmt = asDecimal(p.amount || 0);
             if (isModificationPayment(p)) {
-              modificationCollectionsTotal = modificationCollectionsTotal.plus(pAmt);
+              group.modificationCollectionsTotal = group.modificationCollectionsTotal.plus(pAmt);
             } else {
-              collectionsTotal = collectionsTotal.plus(pAmt);
+              group.collectionsTotal = group.collectionsTotal.plus(pAmt);
             }
           }
         });
@@ -88,7 +108,7 @@ export function computeWeeklyTrends(tickets = []) {
           if (rStatus === 'COMPLETED' || rStatus === 'REFUNDED' || rStatus === 'APPROVED') {
             const rDate = new Date(r.processedDate || r.requestedDate || r.createdAt);
             if (rDate >= start && rDate < end) {
-              refundsTotal = refundsTotal.plus(asDecimal(r.amount || 0));
+              group.refundsTotal = group.refundsTotal.plus(asDecimal(r.amount || 0));
             }
           }
         });
@@ -107,27 +127,47 @@ export function computeWeeklyTrends(tickets = []) {
           });
         }
         const remAtEnd = Decimal.max(0, asDecimal(t.ticketPrice || 0).minus(paidUpToEnd));
-        outstandingTotal = outstandingTotal.plus(remAtEnd);
+        group.outstandingTotal = group.outstandingTotal.plus(remAtEnd);
       }
     });
 
-    const sales = moneyNumber(salesTotal);
-    const collections = moneyNumber(collectionsTotal);
-    const modificationCollections = moneyNumber(modificationCollectionsTotal);
-    const refunds = moneyNumber(refundsTotal);
-    const outstanding = moneyNumber(outstandingTotal);
-    const grossProfit = moneyNumber(grossProfitTotal);
+    const finalizedByCurrency = {};
+    for (const [curr, d] of Object.entries(byCurrencyData)) {
+      finalizedByCurrency[curr] = {
+        currency: curr,
+        sales: moneyNumber(d.salesTotal),
+        collections: moneyNumber(d.collectionsTotal),
+        modificationCollections: moneyNumber(d.modificationCollectionsTotal),
+        refunds: moneyNumber(d.refundsTotal),
+        outstanding: moneyNumber(d.outstandingTotal),
+        grossProfit: moneyNumber(d.grossProfitTotal),
+        netProfit: moneyNumber(d.grossProfitTotal)
+      };
+    }
+
+    const primaryCurr = allCurrencies[0] || 'EGP';
+    const primary = finalizedByCurrency[primaryCurr] || {
+      sales: 0,
+      collections: 0,
+      modificationCollections: 0,
+      refunds: 0,
+      outstanding: 0,
+      grossProfit: 0,
+      netProfit: 0
+    };
 
     weeks.push({
       label: `${startLabel}-${end.getDate()}`,
       week: `W${weekIndex}`,
-      sales,
-      collections,
-      modificationCollections,
-      refunds,
-      outstanding,
-      netProfit: grossProfit,
-      grossProfit
+      sales: primary.sales,
+      collections: primary.collections,
+      modificationCollections: primary.modificationCollections,
+      refunds: primary.refunds,
+      outstanding: primary.outstanding,
+      netProfit: primary.grossProfit,
+      grossProfit: primary.grossProfit,
+      currency: primaryCurr,
+      byCurrency: finalizedByCurrency
     });
   }
 
@@ -179,6 +219,44 @@ export const ReportService = {
     kpis.archivedUnrefundedByCurrency = Object.fromEntries(
       Object.entries(archivedByCurrency).map(([k, v]) => [k, moneyNumber(v)])
     );
+
+    // Compute totalExpenses from Office Expenses (Phase D)
+    let totalExpensesDec = asDecimal(0);
+    const expensesByCurrency = {};
+
+    if (prisma?.expense?.findMany) {
+      try {
+        const expenses = await prisma.expense.findMany({
+          where: { deletedAt: null },
+          select: { amount: true, currency: true }
+        });
+        for (const exp of expenses) {
+          const curr = exp.currency || 'EGP';
+          const amt = asDecimal(exp.amount || 0);
+          totalExpensesDec = totalExpensesDec.plus(amt);
+          expensesByCurrency[curr] = (expensesByCurrency[curr] || asDecimal(0)).plus(amt);
+        }
+      } catch {
+        // Fallback for mock environments / offline tests
+      }
+    }
+
+    // Attach expenses and compute netProfit = grossProfit - expenses per currency
+    for (const curr of Object.keys(kpis.byCurrency)) {
+      const expDec = expensesByCurrency[curr] || asDecimal(0);
+      const grossDec = asDecimal(kpis.byCurrency[curr].grossProfit);
+      kpis.byCurrency[curr].totalExpenses = moneyNumber(expDec);
+      kpis.byCurrency[curr].netProfit = moneyNumber(grossDec.minus(expDec));
+    }
+
+    const primaryCurr = kpis.currency || 'EGP';
+    const primaryExpensesDec = expensesByCurrency[primaryCurr] || asDecimal(0);
+    const primaryGrossDec = asDecimal(kpis.grossProfit);
+    const primaryNetProfitDec = primaryGrossDec.minus(primaryExpensesDec);
+
+    kpis.totalExpenses = moneyNumber(primaryExpensesDec);
+    kpis.netProfit = moneyNumber(primaryNetProfitDec);
+    kpis.totalNetProfit = kpis.grossProfit; // Keep old field name for backward compatibility
 
     return kpis;
   },

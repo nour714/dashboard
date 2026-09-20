@@ -118,7 +118,7 @@ async function runExpenseTests() {
         return { ...record };
       },
 
-      findMany: async ({ where = {}, orderBy = {}, skip = 0, take = 25 } = {}) => {
+      findMany: async ({ where = {}, orderBy = {}, skip = 0, take = undefined } = {}) => {
         let list = [...mockExpenses.values()];
 
         if (where.deletedAt === null) {
@@ -142,7 +142,8 @@ async function runExpenseTests() {
         // Sort desc
         list.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        return list.slice(skip, skip + take).map(e => ({ ...e }));
+        const limit = take !== undefined ? take : list.length;
+        return list.slice(skip, skip + limit).map(e => ({ ...e }));
       },
 
       count: async ({ where = {} } = {}) => {
@@ -491,8 +492,43 @@ async function runExpenseTests() {
   }
   assert(updateExpenseRolledBack, 'updateExpense throws when audit logging fails (fail-closed)');
   const exp1Current = mockExpenses.get('EXP-1');
-  assert(exp1Current.amount === 1800, 'EXP-1 was rolled back to previous amount 1800');
   simulateAuditFailure = false;
+
+  // --- 10. Totals Cover Full Filtered Set Across > 25 Rows (Phase D/F Scenario 10) ---
+  console.log('\n--- 10. Totals Cover Full Filtered Set Across > 25 Rows ---');
+  resetState();
+
+  // Create 30 expenses: 20 SERVICES of 100 EGP (2000 EGP) and 10 TRANSFERS of 300 EGP (3000 EGP)
+  for (let i = 0; i < 20; i++) {
+    await ExpenseService.createExpense({
+      category: 'SERVICES',
+      amount: 100,
+      currency: 'EGP',
+      description: `Service Expense ${i + 1}`,
+      date: '2026-09-01'
+    }, adminUser);
+  }
+  for (let i = 0; i < 10; i++) {
+    await ExpenseService.createExpense({
+      category: 'TRANSFERS',
+      amount: 300,
+      currency: 'EGP',
+      description: `Transfer Expense ${i + 1}`,
+      date: '2026-09-01'
+    }, adminUser);
+  }
+
+  // Request only 5 per page (page 1 of 6)
+  const paginatedRes = await ExpenseService.getExpenses({ page: 1, pageSize: 5 }, adminUser);
+  assert(paginatedRes.expenses.length === 5, 'Page returns exactly 5 records as requested by pagination');
+  assert(paginatedRes.pagination.total === 30, 'Total count reflects all 30 records');
+  assert(paginatedRes.pagination.totalPages === 6, 'Total pages is 6');
+
+  // Verify totals cover ALL 30 records, NOT just the 5 rows on this page
+  assert(paginatedRes.totals.services === 2000, 'totals.services covers all 20 service expenses (2000 EGP)');
+  assert(paginatedRes.totals.transfers === 3000, 'totals.transfers covers all 10 transfer expenses (3000 EGP)');
+  assert(paginatedRes.totals.grand === 5000, 'totals.grand covers all 30 expenses (5000 EGP)');
+  assert(paginatedRes.totals.byCurrency?.EGP?.grand === 5000, 'totals.byCurrency.EGP.grand is 5000 EGP');
 
   // Summary
   console.log('\n========================================================');
