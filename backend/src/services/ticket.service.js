@@ -7,12 +7,12 @@
 
 import crypto from 'crypto';
 import Decimal from 'decimal.js';
-import { getPrismaClient } from '../config/database.js';
+import { getPrismaClient, withSerializableRetry } from '../config/database.js';
 import {
   calculateTotalPaid,
-  calculateTotalModificationFees,
   calculateTotalRefunded,
   derivePaymentStatus,
+  deriveTicketStatus,
   validateTicketCreation
 } from '../domain/ticket-rules.js';
 import { computeTicketLedger } from '../domain/ledger.js';
@@ -291,9 +291,9 @@ export const TicketService = {
       }
     }
 
-    const price = Number(data.ticketPrice) || 0;
-    const initialPaymentAmount = Number(data.initialPayment) || 0;
-    const paymentStatus = derivePaymentStatus(price, initialPaymentAmount, 'UNPAID');
+    const priceDec = asDecimal(data.ticketPrice || 0);
+    const initialPaymentDec = asDecimal(data.initialPayment || 0);
+    const paymentStatus = derivePaymentStatus(priceDec, initialPaymentDec, 'UNPAID');
 
     // Create ticket in database
     let newTicket;
@@ -329,18 +329,19 @@ export const TicketService = {
         cabinClass: data.cabinClass || 'Economy (Y)',
         seat: data.seat || null,
         baggage: data.baggage || null,
-        ticketPrice: price,
-        costPrice: currentUser?.role === 'ADMIN'
-          ? (data.costPrice !== undefined && data.costPrice !== null && data.costPrice !== '' ? Number(data.costPrice) : 0)
-          : 0,
+        ticketPrice: moneyNumber(priceDec),
+        costPrice: currentUser?.role === 'ADMIN' && data.costPrice !== undefined && data.costPrice !== null && data.costPrice !== ''
+          ? moneyNumber(data.costPrice)
+          : null,
         currency: data.currency || 'EGP',
         status: paymentStatus,
         createdBy: currentUser.name || 'Agent',
         createdById: currentUser.id || null,
-        payments: initialPaymentAmount > 0 ? {
+        payments: initialPaymentDec.greaterThan(0) ? {
           create: {
             id: `PAY-${crypto.randomUUID().substring(0, 8).toUpperCase()}`,
-            amount: initialPaymentAmount,
+            amount: moneyNumber(initialPaymentDec),
+            type: 'TICKET',
             currency: data.currency || 'EGP',
             method: data.paymentMethod || 'Credit Card',
             reference: data.paymentReference || `INIT-${pnr}`,
@@ -378,7 +379,7 @@ export const TicketService = {
       action: 'CREATE_TICKET',
       ticketId: newTicket.id,
       customerId: newTicket.customerId,
-      description: `Created ticket ${newTicket.id} (${newTicket.origin} ✈ ${newTicket.destination}) for ${newTicket.passengerName}. Total: ${price} ${newTicket.currency}.`
+      description: `Created ticket ${newTicket.id} (${newTicket.origin} ✈ ${newTicket.destination}) for ${newTicket.passengerName}. Total: ${priceDec.toFixed(2)} ${newTicket.currency}.`
     });
 
     return enrichTicketFinancials(newTicket);
@@ -403,7 +404,7 @@ export const TicketService = {
       'airline', 'airlineCode', 'flightNumber', 'returnFlightNumber',
       'origin', 'originTerminal', 'originAirportName',
       'destination', 'destinationTerminal', 'destinationAirportName',
-      'tripType', 'flightDuration', 'cabinClass', 'seat', 'baggage', 'costPrice', 'ticketPrice', 'status'
+      'tripType', 'flightDuration', 'cabinClass', 'seat', 'baggage'
     ];
 
     if (updates.ticketNumber && updates.ticketNumber.trim() && updates.ticketNumber.trim() !== existing.ticketNumber) {
@@ -431,37 +432,60 @@ export const TicketService = {
       }
     }
 
-    // Guard: warn (don't silently clamp) if the corrected ticketPrice would be
-    // lower than what the customer has already paid. Requires explicit
-    // confirmation from the client before proceeding.
+    // RBAC & Status update guards: only ADMIN can set status manually, and only to CANCELLED or MODIFIED
+    if (updates.status !== undefined) {
+      if (currentUser?.role !== 'ADMIN') {
+        throw new ForbiddenError('Only administrators can update ticket status', 'FORBIDDEN');
+      }
+      if (!['CANCELLED', 'MODIFIED'].includes(updates.status)) {
+        throw new BusinessRuleError(
+          'Status can only be set to CANCELLED or MODIFIED manually.',
+          'INVALID_STATUS_UPDATE'
+        );
+      }
+      data.status = updates.status;
+    }
+
+    // RBAC & Cost price guard: only ADMIN can modify costPrice
+    if (updates.costPrice !== undefined) {
+      if (currentUser?.role !== 'ADMIN') {
+        throw new ForbiddenError('Only administrators can modify ticket cost price', 'FORBIDDEN');
+      }
+      data.costPrice = updates.costPrice !== null && updates.costPrice !== ''
+        ? moneyNumber(updates.costPrice)
+        : null;
+    }
+
+    // RBAC & Ticket price guard: only ADMIN can modify ticketPrice
     if (updates.ticketPrice !== undefined && updates.ticketPrice !== null && updates.ticketPrice !== '') {
       if (currentUser?.role !== 'ADMIN') {
         throw new ForbiddenError('Only administrators can modify the ticket price', 'FORBIDDEN');
       }
-      const totalPaidSoFar = calculateTotalPaid(existing.payments || []);
-      const newPrice = Number(updates.ticketPrice);
-      if (newPrice < totalPaidSoFar && !updates.confirmPriceBelowPaid) {
+      const totalPaidSoFarDec = asDecimal(calculateTotalPaid(existing.payments || []));
+      const newPriceDec = asDecimal(updates.ticketPrice);
+      if (newPriceDec.lessThan(totalPaidSoFarDec) && !updates.confirmPriceBelowPaid) {
         throw new BusinessRuleError(
-          `Customer has already paid ${totalPaidSoFar}, which is more than the new price of ${newPrice}. Confirm to proceed anyway.`,
+          `Customer has already paid ${totalPaidSoFarDec.toFixed(2)}, which is more than the new price of ${newPriceDec.toFixed(2)}. Confirm to proceed anyway.`,
           'PRICE_BELOW_PAID',
           409
         );
+      }
+      data.ticketPrice = moneyNumber(newPriceDec);
+
+      // Recompute status when ticketPrice changes (unless status is explicitly set in request)
+      if (updates.status === undefined) {
+        const hypotheticalTicket = {
+          ...existing,
+          ...data,
+          ticketPrice: moneyNumber(newPriceDec)
+        };
+        data.status = deriveTicketStatus(hypotheticalTicket);
       }
     }
 
     allowedFields.forEach(f => {
       if (updates[f] !== undefined) {
-        if (f === 'costPrice') {
-          if (currentUser?.role !== 'ADMIN') {
-            throw new ForbiddenError('Only administrators can modify ticket cost price', 'FORBIDDEN');
-          }
-          data[f] = updates[f] !== null && updates[f] !== '' ? Number(updates[f]) : null;
-        } else if (f === 'ticketPrice') {
-          // Role check and below-paid confirmation already enforced above.
-          data[f] = Number(updates[f]);
-        } else if (f === 'ticketNumber') {
-          data[f] = updates[f] && String(updates[f]).trim() ? String(updates[f]).trim() : null;
-        } else if (f === 'pnr') {
+        if (f === 'ticketNumber' || f === 'pnr') {
           data[f] = updates[f] && String(updates[f]).trim() ? String(updates[f]).trim() : null;
         } else {
           data[f] = updates[f];
@@ -560,7 +584,7 @@ export const TicketService = {
       // 2. Enforce domain validation against fresh transaction snapshot
       validatePayment(ticket, paymentData);
 
-      const paymentAmount = Number(paymentData.amount);
+      const paymentAmountDec = asDecimal(paymentData.amount);
       const newPaymentId = `PAY-${crypto.randomUUID()}`;
 
       // 3. Insert payment record in DB
@@ -568,7 +592,8 @@ export const TicketService = {
         data: {
           id: newPaymentId,
           ticketId: ticket.id,
-          amount: paymentAmount,
+          amount: moneyNumber(paymentAmountDec),
+          type: paymentData.type || 'TICKET',
           currency: paymentData.currency || ticket.currency || 'EGP',
           method: paymentData.method || 'Credit Card',
           reference: paymentData.reference || `REF-${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
@@ -579,13 +604,12 @@ export const TicketService = {
         }
       });
 
-      // 4. Recalculate ledger status inside transaction
+      // 4. Recalculate ledger status inside transaction using deriveTicketStatus
       const updatedPayments = [...(ticket.payments || []), createdPayment];
-      const totalPaid = calculateTotalPaid(updatedPayments);
-      const modFees = calculateTotalModificationFees(ticket.modifications || []);
-      const newStatus = derivePaymentStatus(ticket.ticketPrice, totalPaid, ticket.status, modFees);
+      const updatedTicket = { ...ticket, payments: updatedPayments };
+      const newStatus = deriveTicketStatus(updatedTicket);
 
-      if (newStatus !== ticket.status) {
+      if (newStatus !== ticket.status && ticket.status !== 'MODIFIED') {
         await tx.ticket.update({
           where: { id: ticket.id },
           data: { status: newStatus }
@@ -602,7 +626,7 @@ export const TicketService = {
             action: 'ADD_PAYMENT',
             ticketId: ticket.id,
             customerId: ticket.customerId,
-            description: `Recorded payment of ${paymentAmount.toLocaleString()} ${createdPayment.currency} via ${createdPayment.method} (${createdPayment.reference || newPaymentId}).`
+            description: `Recorded payment of ${paymentAmountDec.toFixed(2)} ${createdPayment.currency} via ${createdPayment.method} (${createdPayment.reference || newPaymentId}).`
           }
         });
       }
@@ -610,10 +634,12 @@ export const TicketService = {
       return createdPayment;
     };
 
-    if (typeof prisma.$transaction === 'function') {
-      return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
-    }
-    return await executeInTransaction(prisma);
+    return await withSerializableRetry(async () => {
+      if (typeof prisma.$transaction === 'function') {
+        return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
+      }
+      return await executeInTransaction(prisma);
+    }, { context: 'addPayment' });
   },
 
   /**
@@ -650,21 +676,21 @@ export const TicketService = {
       // 2. Enforce domain validation against fresh transaction snapshot
       validateRefund(ticket, refundData);
 
-      const refundAmount = Number(refundData.amount);
+      const refundAmountDec = asDecimal(refundData.amount);
       const totalPaid = calculateTotalPaid(ticket.payments || []);
       const newRefundId = `RF-${crypto.randomUUID()}`;
       const status = refundData.status || 'COMPLETED';
 
       // 3. Insert refund record in DB
-      const airlineRefundAmount = Number(refundData.airlineRefundAmount) || 0;
+      const airlineRefundAmountDec = asDecimal(refundData.airlineRefundAmount || 0);
       const createdRefund = await tx.refund.create({
         data: {
           id: newRefundId,
           ticketId: ticket.id,
-          originalAmount: Number(ticket.ticketPrice),
-          totalPaid: totalPaid,
-          amount: refundAmount,
-          airlineRefundAmount,
+          originalAmount: moneyNumber(ticket.ticketPrice),
+          totalPaid: moneyNumber(totalPaid),
+          amount: moneyNumber(refundAmountDec),
+          airlineRefundAmount: moneyNumber(airlineRefundAmountDec),
           currency: refundData.currency || ticket.currency || 'EGP',
           reason: (refundData.reason || '').trim(),
           status: status,
@@ -675,23 +701,14 @@ export const TicketService = {
         }
       });
 
-      // 4. Update ticket status and optional cost price
-      const updatedRefunds = [...(ticket.refunds || []), createdRefund];
-      const newTotalRefunded = calculateTotalRefunded(updatedRefunds);
-      let newTicketStatus = ticket.status;
-      if (status === 'COMPLETED') {
-        if (refundData.isCompletedCancellation === true || (newTotalRefunded >= totalPaid && totalPaid > 0)) {
-          newTicketStatus = 'REFUNDED';
-        } else {
-          newTicketStatus = 'PARTIALLY_REFUNDED';
-        }
-      } else {
-        newTicketStatus = 'REFUND REQUESTED';
-      }
+      // 4. Update ticket status using deriveTicketStatus and optional cost price
+      const updatedRefunds = [...(ticket.refunds || []), { ...createdRefund, isCompletedCancellation: refundData.isCompletedCancellation === true }];
+      const updatedTicket = { ...ticket, refunds: updatedRefunds };
+      const newTicketStatus = deriveTicketStatus(updatedTicket);
 
       const ticketUpdates = { status: newTicketStatus };
-      if (refundData.costPrice !== undefined && refundData.costPrice !== null && (ticket.costPrice === null || ticket.costPrice === undefined)) {
-        ticketUpdates.costPrice = Number(refundData.costPrice);
+      if (refundData.costPrice !== undefined && refundData.costPrice !== null && ticket.costPrice == null) {
+        ticketUpdates.costPrice = moneyNumber(refundData.costPrice);
       }
 
       await tx.ticket.update({
@@ -709,7 +726,7 @@ export const TicketService = {
             action: status === 'COMPLETED' ? 'COMPLETE_REFUND' : 'ADD_REFUND',
             ticketId: ticket.id,
             customerId: ticket.customerId,
-            description: `Processed refund of ${refundAmount.toLocaleString()} ${createdRefund.currency} for ${ticket.id}. Reason: ${createdRefund.reason}`
+            description: `Processed refund of ${refundAmountDec.toFixed(2)} ${createdRefund.currency} for ${ticket.id}. Reason: ${createdRefund.reason}`
           }
         });
       }
@@ -717,10 +734,12 @@ export const TicketService = {
       return createdRefund;
     };
 
-    if (typeof prisma.$transaction === 'function') {
-      return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
-    }
-    return await executeInTransaction(prisma);
+    return await withSerializableRetry(async () => {
+      if (typeof prisma.$transaction === 'function') {
+        return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
+      }
+      return await executeInTransaction(prisma);
+    }, { context: 'addRefund' });
   },
 
   /**
@@ -758,8 +777,8 @@ export const TicketService = {
 
       const modIndex = (ticket.modifications?.length || 0) + 1;
       const newModId = `MOD-${crypto.randomUUID()}`;
-      const changeFee = Number(modData.changeFee) || 0;
-      const airlineFee = Number(modData.airlineFee) || 0;
+      const changeFeeDec = asDecimal(modData.changeFee || 0);
+      const airlineFeeDec = asDecimal(modData.airlineFee || 0);
 
       const isRoundTrip = ticket.tripType === 'Round Trip' || Boolean(ticket.returnDepartureDate || ticket.returnFlightNumber);
 
@@ -792,8 +811,8 @@ export const TicketService = {
           title: `Modification #${modIndex}`,
           originalFlight,
           newFlight,
-          changeFee,
-          airlineFee,
+          changeFee: moneyNumber(changeFeeDec),
+          airlineFee: moneyNumber(airlineFeeDec),
           currency: ticket.currency || 'EGP',
           reason: modData.reason || 'Customer requested schedule adjustment',
           requestedBy: modData.requestedBy || ticket.passengerName,
@@ -825,22 +844,16 @@ export const TicketService = {
         ticketUpdates.returnArrivalDate = new Date(modData.newReturnArrivalDate);
       }
 
-      if (Object.keys(ticketUpdates).length > 0) {
-        await tx.ticket.update({
-          where: { id: ticket.id },
-          data: ticketUpdates
-        });
-      }
-
       // Auto-record payment if change fee was collected immediately
       let autoPaymentRecord = null;
-      if (modData.collectedNow && changeFee > 0) {
+      if (modData.collectedNow && changeFeeDec.greaterThan(0)) {
         const newPaymentId = `PAY-${crypto.randomUUID()}`;
         autoPaymentRecord = await tx.payment.create({
           data: {
             id: newPaymentId,
             ticketId: ticket.id,
-            amount: changeFee,
+            amount: moneyNumber(changeFeeDec),
+            type: 'MODIFICATION',
             currency: ticket.currency || 'EGP',
             method: modData.paymentMethod || 'Cash',
             reference: `Mod #${modIndex}`,
@@ -849,6 +862,22 @@ export const TicketService = {
             addedById: currentUser.id || null,
             notes: `Auto-recorded collection for flight modification #${modIndex}`
           }
+        });
+      }
+
+      // Maintain status consistency
+      const updatedModifications = [...(ticket.modifications || []), createdMod];
+      const updatedPayments = autoPaymentRecord ? [...(ticket.payments || []), autoPaymentRecord] : (ticket.payments || []);
+      const updatedTicket = { ...ticket, modifications: updatedModifications, payments: updatedPayments };
+      const derivedStatus = deriveTicketStatus(updatedTicket);
+      if (derivedStatus !== ticket.status && ticket.status !== 'MODIFIED') {
+        ticketUpdates.status = derivedStatus;
+      }
+
+      if (Object.keys(ticketUpdates).length > 0) {
+        await tx.ticket.update({
+          where: { id: ticket.id },
+          data: ticketUpdates
         });
       }
 
@@ -862,7 +891,7 @@ export const TicketService = {
             action: 'MODIFY_FLIGHT',
             ticketId: ticket.id,
             customerId: ticket.customerId,
-            description: `Modified flight for ticket ${ticket.id}. Change fee: ${changeFee} ${ticket.currency}. Reason: ${createdMod.reason}`
+            description: `Modified flight for ticket ${ticket.id}. Change fee: ${changeFeeDec.toFixed(2)} ${ticket.currency}. Reason: ${createdMod.reason}`
           }
         });
       }
@@ -871,10 +900,111 @@ export const TicketService = {
       return createdMod;
     };
 
-    if (typeof prisma.$transaction === 'function') {
-      return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
+    return await withSerializableRetry(async () => {
+      if (typeof prisma.$transaction === 'function') {
+        return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
+      }
+      return await executeInTransaction(prisma);
+    }, { context: 'addModification' });
+  },
+
+  /**
+   * Updates refund status (ADMIN only): PENDING -> APPROVED/COMPLETED/REJECTED.
+   * Runs in a Serializable transaction with retry and audit logging.
+   * @param {string} ticketId
+   * @param {string} refundId
+   * @param {object} updateData
+   * @param {object} currentUser
+   */
+  async updateRefund(ticketId, refundId, updateData, currentUser = {}) {
+    if (currentUser?.role !== 'ADMIN') {
+      throw new ForbiddenError('Only administrators can update refund status');
     }
-    return await executeInTransaction(prisma);
+
+    const prisma = getPrismaClient();
+
+    const executeInTransaction = async (tx) => {
+      const ticket = await tx.ticket.findFirst({
+        where: {
+          OR: [
+            { id: ticketId },
+            { ticketNumber: ticketId },
+            { pnr: ticketId }
+          ],
+          deletedAt: null
+        },
+        include: {
+          payments: true,
+          modifications: true,
+          refunds: true
+        }
+      });
+
+      if (!ticket) {
+        throw new NotFoundError('Ticket', ticketId);
+      }
+
+      const existingRefund = (ticket.refunds || []).find(r => r.id === refundId);
+      if (!existingRefund) {
+        throw new NotFoundError('Refund', refundId);
+      }
+
+      if (existingRefund.status !== 'PENDING' && existingRefund.status !== 'REQUESTED') {
+        throw new BusinessRuleError(
+          `Only PENDING refunds can be updated. Current status is ${existingRefund.status}.`,
+          'INVALID_REFUND_STATUS'
+        );
+      }
+
+      const targetStatus = updateData.status;
+      if (!['APPROVED', 'COMPLETED', 'REJECTED'].includes(targetStatus)) {
+        throw new ValidationError('Status must be APPROVED, COMPLETED, or REJECTED', 'status');
+      }
+
+      const updatedRefund = await tx.refund.update({
+        where: { id: existingRefund.id },
+        data: {
+          status: targetStatus,
+          processedDate: targetStatus === 'COMPLETED' ? new Date() : existingRefund.processedDate,
+          processedBy: currentUser.name || 'Admin',
+          processedById: currentUser.id || null
+        }
+      });
+
+      const updatedRefunds = (ticket.refunds || []).map(r => r.id === refundId ? updatedRefund : r);
+      const updatedTicket = { ...ticket, refunds: updatedRefunds };
+      const newTicketStatus = deriveTicketStatus(updatedTicket);
+
+      if (newTicketStatus !== ticket.status) {
+        await tx.ticket.update({
+          where: { id: ticket.id },
+          data: { status: newTicketStatus }
+        });
+      }
+
+      if (tx.auditLog && typeof tx.auditLog.create === 'function') {
+        await tx.auditLog.create({
+          data: {
+            id: `ACT-${crypto.randomUUID()}`,
+            user: currentUser.name || 'Admin',
+            userId: currentUser.id || null,
+            action: 'UPDATE_REFUND_STATUS',
+            ticketId: ticket.id,
+            customerId: ticket.customerId,
+            description: `Updated refund ${refundId} status from ${existingRefund.status} to ${targetStatus}`
+          }
+        });
+      }
+
+      return updatedRefund;
+    };
+
+    return await withSerializableRetry(async () => {
+      if (typeof prisma.$transaction === 'function') {
+        return await prisma.$transaction(executeInTransaction, { isolationLevel: 'Serializable' });
+      }
+      return await executeInTransaction(prisma);
+    }, { context: 'updateRefund' });
   },
 
   /**
@@ -882,8 +1012,10 @@ export const TicketService = {
    * Use purgeTicket() for permanent removal of clean records. (ADMIN only)
    * @param {string} ticketId
    * @param {object} currentUser
+   * @param {object} [options]
+   * @param {boolean} [options.confirmUnrefundedBalance]
    */
-  async deleteTicket(ticketId, currentUser = {}) {
+  async deleteTicket(ticketId, currentUser = {}, options = {}) {
     const prisma = getPrismaClient();
 
     const existing = await prisma.ticket.findFirst({
@@ -900,9 +1032,22 @@ export const TicketService = {
 
     const totalPaid = calculateTotalPaid(existing.payments || []);
     const totalRefunded = calculateTotalRefunded(existing.refunds || []);
+    const unrefundedBalanceDec = asDecimal(totalPaid).minus(asDecimal(totalRefunded));
+
+    if (unrefundedBalanceDec.greaterThan(0) && !options.confirmUnrefundedBalance) {
+      throw new BusinessRuleError(
+        `Cannot delete ticket with unrefunded balance (${unrefundedBalanceDec.toFixed(2)} ${existing.currency}) without explicit confirmation.`,
+        'UNREFUNDED_BALANCE_REQUIRES_CONFIRMATION',
+        {
+          unrefundedBalance: unrefundedBalanceDec.toNumber(),
+          currency: existing.currency,
+          totalPaid,
+          totalRefunded
+        }
+      );
+    }
 
     const result = await prisma.$transaction(async (tx) => {
-      // سجّل كل التفاصيل المالية قبل الحذف — ده الأثر الوحيد اللي هيفضل موجود
       await tx.auditLog.create({
         data: {
           user: currentUser.name || currentUser.email || 'System',
@@ -922,10 +1067,10 @@ export const TicketService = {
             destination: existing.destination,
             totalPaid,
             totalRefunded,
-            unrefundedBalance: totalPaid - totalRefunded,
+            unrefundedBalance: unrefundedBalanceDec.toNumber(),
             currency: existing.currency,
-            payments: (existing.payments || []).map(p => ({ id: p.id, amount: Number(p.amount), method: p.method, createdAt: p.createdAt })),
-            refunds: (existing.refunds || []).map(r => ({ id: r.id, amount: Number(r.amount), reason: r.reason, createdAt: r.createdAt })),
+            payments: (existing.payments || []).map(p => ({ id: p.id, amount: asDecimal(p.amount).toNumber(), method: p.method, createdAt: p.createdAt })),
+            refunds: (existing.refunds || []).map(r => ({ id: r.id, amount: asDecimal(r.amount).toNumber(), reason: r.reason, createdAt: r.createdAt })),
             modificationsCount: (existing.modifications || []).length,
             deletedAt: new Date().toISOString()
           }

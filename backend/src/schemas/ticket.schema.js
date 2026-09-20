@@ -3,6 +3,7 @@
  */
 
 import { z } from 'zod';
+import { money } from './common.schema.js';
 
 export const createTicketSchema = z.object({
   customerId: z.string().max(100).optional().nullable().transform(v => v ?? undefined),
@@ -33,10 +34,10 @@ export const createTicketSchema = z.object({
   cabinClass: z.enum(['Economy (Y)', 'Business (J)', 'First (F)']).default('Economy (Y)'),
   seat: z.string().max(20).optional().nullable().transform(v => v ?? undefined),
   baggage: z.string().max(50).optional().nullable().transform(v => v ?? undefined),
-  ticketPrice: z.coerce.number().nonnegative('Ticket price cannot be negative').default(0),
-  costPrice: z.coerce.number().nonnegative('Cost price cannot be negative').default(0).optional(),
+  ticketPrice: money({ min: 0 }).default(0),
+  costPrice: money({ min: 0 }).optional().nullable(),
   currency: z.string().max(10).default('EGP'),
-  initialPayment: z.coerce.number().nonnegative('Initial payment cannot be negative').optional(),
+  initialPayment: money({ min: 0 }).optional().nullable(),
   paymentMethod: z.string().max(50).optional().nullable().transform(v => v ?? undefined),
   paymentReference: z.string().max(100).optional().nullable().transform(v => v ?? undefined),
   paymentDate: z.string().max(50).optional().nullable().transform(v => v ?? undefined)
@@ -80,26 +81,10 @@ export const updateTicketSchema = z.object({
   cabinClass: z.enum(['Economy (Y)', 'Business (J)', 'First (F)']).optional(),
   seat: z.string().max(20).optional().nullable().transform(v => v ?? undefined),
   baggage: z.string().max(50).optional().nullable().transform(v => v ?? undefined),
-  costPrice: z.coerce.number().nonnegative('Cost price cannot be negative').optional(),
-  ticketPrice: z.coerce.number().positive('Ticket price must be greater than zero').optional(),
+  costPrice: money({ min: 0 }).optional().nullable(),
+  ticketPrice: money({ positive: true }).optional(),
   confirmPriceBelowPaid: z.boolean().optional(),
-  status: z.enum([
-    'CONFIRMED',
-    'PARTIALLY PAID',
-    'UNPAID',
-    'PAID',
-    'PAID IN FULL',
-    'PENDING',
-    'PENDING PAY',
-    'PENDING PAYMENT',
-    'ISSUED',
-    'BOOKED',
-    'MODIFIED',
-    'REFUND REQUESTED',
-    'PARTIALLY_REFUNDED',
-    'REFUNDED',
-    'CANCELLED'
-  ]).optional()
+  status: z.enum(['CANCELLED', 'MODIFIED']).optional()
 });
 
 export const queryTicketsSchema = z.object({
@@ -116,3 +101,8 @@ export const addPurgeConfirmSchema = z.object({
 });
 
 export const purgeTicketConfirmSchema = addPurgeConfirmSchema;
+
+export const deleteTicketSchema = z.object({
+  confirmUnrefundedBalance: z.boolean().optional()
+});
+

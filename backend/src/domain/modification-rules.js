@@ -3,6 +3,7 @@
  */
 
 import { ValidationError, BusinessRuleError, NotFoundError } from './errors.js';
+import { asDecimal } from '../utils/money.js';
 
 /**
  * Validates a flight schedule modification
@@ -15,13 +16,21 @@ export function validateModification(ticket, modData = {}) {
     throw new NotFoundError('Ticket');
   }
 
-  const changeFee = Number(modData.changeFee);
-  if (isNaN(changeFee) || changeFee < 0) {
+  const status = (ticket.status || '').toUpperCase();
+  if (status === 'CANCELLED' || status === 'REFUNDED') {
+    throw new BusinessRuleError(
+      `Cannot modify a ${status} ticket.`,
+      'INVALID_TICKET_STATUS'
+    );
+  }
+
+  const changeFeeDec = asDecimal(modData.changeFee || 0);
+  if (!changeFeeDec.isFinite() || changeFeeDec.lessThan(0)) {
     throw new ValidationError('Change fee cannot be negative', 'changeFee');
   }
 
-  const airlineFee = modData.airlineFee !== undefined ? Number(modData.airlineFee) : 0;
-  if (isNaN(airlineFee) || airlineFee < 0) {
+  const airlineFeeDec = asDecimal(modData.airlineFee || 0);
+  if (!airlineFeeDec.isFinite() || airlineFeeDec.lessThan(0)) {
     throw new ValidationError('Airline fee cannot be negative', 'airlineFee');
   }
 

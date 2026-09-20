@@ -148,9 +148,24 @@ export const TicketController = {
     }
   },
 
+  async updateRefund(req, res, next) {
+    try {
+      const result = await TicketService.updateRefund(req.params.id, req.params.refundId, req.body, req.user);
+      return res.status(200).json({
+        success: true,
+        message: 'Refund status updated successfully',
+        data: result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async deleteTicket(req, res, next) {
     try {
-      const result = await TicketService.deleteTicket(req.params.id, req.user);
+      const confirmUnrefundedBalance = req.body?.confirmUnrefundedBalance === true ||
+        req.query?.confirmUnrefundedBalance === 'true';
+      const result = await TicketService.deleteTicket(req.params.id, req.user, { confirmUnrefundedBalance });
       return res.status(200).json({
         success: true,
         message: 'Ticket archived successfully',

@@ -13,7 +13,7 @@ import {
   addPurgeConfirmSchema
 } from '../schemas/ticket.schema.js';
 import { addPaymentSchema } from '../schemas/payment.schema.js';
-import { addRefundSchema } from '../schemas/refund.schema.js';
+import { addRefundSchema, updateRefundSchema } from '../schemas/refund.schema.js';
 import { addModificationSchema } from '../schemas/modification.schema.js';
 import { passportDocUpload, uploadConcurrencyBudget, aiExtractionConcurrencyBudget } from '../middleware/upload.js';
 import { uploadRateLimiter } from '../middleware/rate-limiter.js';
@@ -56,6 +56,7 @@ router.delete('/:id/purge', requireRole('ADMIN'), validate({ body: addPurgeConfi
 // Financial & Operational Ledger Sub-resources (Enforce Domain Validation Layer)
 router.post('/:id/payments', requireRole('ADMIN', 'AGENT'), validate({ body: addPaymentSchema }), TicketController.addPayment);
 router.post('/:id/refunds', requireRole('ADMIN'), validate({ body: addRefundSchema }), TicketController.addRefund);
+router.patch('/:id/refunds/:refundId', requireRole('ADMIN'), validate({ body: updateRefundSchema }), TicketController.updateRefund);
 router.post('/:id/modifications', requireRole('ADMIN', 'AGENT'), validate({ body: addModificationSchema }), TicketController.addModification);
 
 export default router;

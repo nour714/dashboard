@@ -426,7 +426,8 @@ async function runApiTests() {
       }
     });
     assert(omittedCostRes.statusCode === 201, 'POST /api/tickets without costPrice succeeds (201)');
-    assert(omittedCostRes.json?.data?.costPrice === 0, 'Omitted costPrice defaults to 0');
+    assert(omittedCostRes.json?.data?.costPrice === null, 'Omitted costPrice defaults to null');
+    assert(omittedCostRes.json?.data?.netProfit === null, 'netProfit is null when costPrice is omitted');
 
     // B) Creating ticket with valid costPrice succeeds and calculates netProfit
     const validCostRes = await makeRequest(server, {

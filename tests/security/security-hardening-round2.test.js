@@ -490,7 +490,7 @@ async function runSecurityHardeningRound2Tests() {
 
     assert(toTicket.costPrice === null || toTicket.costPrice === 0, 'TICKET_ONLY created ticket sanitizes returned costPrice to 0/null');
     const rawStoredToTicket = mockTickets.get(toTicket.id);
-    assert(rawStoredToTicket.costPrice === 0, 'TICKET_ONLY created ticket stored in DB with costPrice: 0 (not 99999)');
+    assert(rawStoredToTicket.costPrice === null, 'TICKET_ONLY created ticket stored in DB with costPrice: null (not 99999)');
 
     // AGENT attempts to create ticket with costPrice: 12000
     const agentTicket = await TicketService.createTicket({
@@ -504,7 +504,7 @@ async function runSecurityHardeningRound2Tests() {
       flightNumber: 'EK 924'
     }, agentUser);
     const rawStoredAgentTicket = mockTickets.get(agentTicket.id);
-    assert(rawStoredAgentTicket.costPrice === 0, 'AGENT created ticket stored in DB with costPrice: 0');
+    assert(rawStoredAgentTicket.costPrice === null, 'AGENT created ticket stored in DB with costPrice: null');
 
     // ADMIN creates ticket with costPrice: 14000
     const adminCreatedTicket = await TicketService.createTicket({

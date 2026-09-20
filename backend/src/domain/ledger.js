@@ -14,13 +14,7 @@ import { asDecimal, moneyNumber } from '../utils/money.js';
  * @returns {boolean}
  */
 export function isModificationPayment(p = {}) {
-  if (!p) return false;
-  if (p.type === 'MODIFICATION') return true;
-  if (p.type === 'TICKET') return false;
-  // Legacy reference/notes heuristic (maintained for unmigrated data)
-  if (typeof p.reference === 'string' && /^Mod\s*#/i.test(p.reference.trim())) return true;
-  if (typeof p.notes === 'string' && (p.notes.includes('flight modification') || p.notes.includes('تعديل الرحلة'))) return true;
-  return false;
+  return p?.type === 'MODIFICATION';
 }
 
 /**

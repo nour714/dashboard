@@ -10,15 +10,12 @@ import { asDecimal, moneyNumber } from '../utils/money.js';
 
 /**
  * Determines whether a payment was recorded specifically for a flight modification fee.
+ * Strictly checks type === 'MODIFICATION'.
  * @param {object} p
  * @returns {boolean}
  */
 export function isModificationPayment(p = {}) {
-  if (!p) return false;
-  if (p.type === 'MODIFICATION') return true;
-  if (typeof p.reference === 'string' && /^Mod\s*#/i.test(p.reference.trim())) return true;
-  if (typeof p.notes === 'string' && (p.notes.includes('flight modification') || p.notes.includes('تعديل الرحلة'))) return true;
-  return false;
+  return p?.type === 'MODIFICATION';
 }
 
 /**
@@ -97,7 +94,10 @@ export function calculateTotalModificationProfit(modifications = []) {
 export function calculateTotalRefunded(refunds = []) {
   if (!Array.isArray(refunds)) return 0;
   return refunds
-    .filter(r => r.status === 'COMPLETED' || r.status === 'Refunded' || r.status === 'APPROVED')
+    .filter(r => {
+      const st = (r.status || '').toUpperCase();
+      return st === 'COMPLETED' || st === 'REFUNDED' || st === 'APPROVED';
+    })
     .reduce((sum, r) => sum.plus(asDecimal(r.amount)), asDecimal(0)).toDecimalPlaces(2).toNumber();
 }
 
@@ -109,7 +109,10 @@ export function calculateTotalRefunded(refunds = []) {
 export function calculateTotalAirlineRefunded(refunds = []) {
   if (!Array.isArray(refunds)) return 0;
   return refunds
-    .filter(r => r.status === 'COMPLETED' || r.status === 'Refunded' || r.status === 'APPROVED')
+    .filter(r => {
+      const st = (r.status || '').toUpperCase();
+      return st === 'COMPLETED' || st === 'REFUNDED' || st === 'APPROVED';
+    })
     .reduce((sum, r) => sum.plus(asDecimal(r.airlineRefundAmount || 0)), asDecimal(0)).toDecimalPlaces(2).toNumber();
 }
 
@@ -172,17 +175,74 @@ export function calculateRefundedNetProfit(totalPaid = 0, totalCustomerRefunded 
  * @param {number|string} totalPaid
  * @param {string} currentStatus
  * @param {number|string} [_modificationFees] - Deprecated/ignored: modification fees are tracked independently
- * @returns {string} 'CONFIRMED' | 'PARTIALLY PAID' | 'UNPAID' | 'CANCELLED' | 'REFUNDED' | 'PARTIALLY_REFUNDED'
+ * @returns {string} 'CONFIRMED' | 'PARTIALLY PAID' | 'UNPAID' | 'CANCELLED' | 'REFUNDED' | 'PARTIALLY_REFUNDED' | 'REFUND REQUESTED'
  */
 export function derivePaymentStatus(ticketPrice = 0, totalPaid = 0, currentStatus = 'UNPAID', _modificationFees = 0) {
-  if (currentStatus === 'CANCELLED') return 'CANCELLED';
-  if (currentStatus === 'REFUNDED') return 'REFUNDED';
-  if (currentStatus === 'PARTIALLY_REFUNDED') return 'PARTIALLY_REFUNDED';
+  const normStatus = (currentStatus || '').toUpperCase();
+  if (normStatus === 'CANCELLED') return 'CANCELLED';
+  if (normStatus === 'REFUNDED') return 'REFUNDED';
+  if (normStatus === 'PARTIALLY_REFUNDED') return 'PARTIALLY_REFUNDED';
+  if (normStatus === 'REFUND REQUESTED') return 'REFUND REQUESTED';
+
   const price = asDecimal(ticketPrice);
   const paid = asDecimal(totalPaid);
-  if (paid.greaterThanOrEqualTo(price) && price.greaterThan(0)) return 'CONFIRMED';
+
+  if (price.lessThanOrEqualTo(0)) return 'CONFIRMED';
+  if (paid.greaterThanOrEqualTo(price)) return 'CONFIRMED';
   if (paid.greaterThan(0) && paid.lessThan(price)) return 'PARTIALLY PAID';
   return 'UNPAID';
+}
+
+/**
+ * Unified ticket status derivation based on DB record state and financial ledger.
+ * Single source of truth called after payment, refund, price edit, and modification.
+ *
+ * @param {object} ticket
+ * @returns {string}
+ */
+export function deriveTicketStatus(ticket = {}) {
+  const currentStatus = (ticket.status || 'UNPAID').toUpperCase();
+  if (currentStatus === 'CANCELLED') return 'CANCELLED';
+
+  const refunds = Array.isArray(ticket.refunds) ? ticket.refunds : [];
+
+  // Completed/approved refunds
+  const completedRefunds = refunds.filter(r => {
+    const st = (r.status || '').toUpperCase();
+    return st === 'COMPLETED' || st === 'APPROVED' || st === 'REFUNDED';
+  });
+
+  // Pending refunds
+  const pendingRefunds = refunds.filter(r => {
+    const st = (r.status || '').toUpperCase();
+    return st === 'PENDING' || st === 'REQUESTED';
+  });
+
+  if (completedRefunds.length > 0) {
+    const totalPaid = calculateTotalPaid(ticket.payments || []);
+    const totalPaidDec = asDecimal(totalPaid);
+    const totalRefundedDec = completedRefunds.reduce(
+      (sum, r) => sum.plus(asDecimal(r.amount || 0)),
+      asDecimal(0)
+    );
+    const isCompletedCancellation = completedRefunds.some(r => r.isCompletedCancellation === true);
+
+    if (isCompletedCancellation || (totalPaidDec.greaterThan(0) && totalRefundedDec.greaterThanOrEqualTo(totalPaidDec))) {
+      return 'REFUNDED';
+    }
+    return 'PARTIALLY_REFUNDED';
+  }
+
+  if (pendingRefunds.length > 0) {
+    return 'REFUND REQUESTED';
+  }
+
+  if (currentStatus === 'MODIFIED') {
+    return 'MODIFIED';
+  }
+
+  const totalPaid = calculateTotalPaid(ticket.payments || []);
+  return derivePaymentStatus(ticket.ticketPrice, totalPaid, currentStatus);
 }
 
 /**
