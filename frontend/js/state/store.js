@@ -37,6 +37,7 @@ class Store {
       activityLogs: [],
       settings: INITIAL_SETTINGS,
       currentUser,
+      summaryKPIs: null,
       isAuthenticated: hasSession()
     };
   }
@@ -102,12 +103,13 @@ class Store {
   async hydrate() {
     if (!hasSession()) return;
 
-    const [tickets, customersRes, employeesRes, activityRes, settingsRes] = await Promise.all([
+    const [tickets, customersRes, employeesRes, activityRes, settingsRes, summaryRes] = await Promise.all([
       this.fetchAllTickets(),
       apiClient.get('/customers'),
       apiClient.get('/employees'),
       apiClient.get('/activity', { limit: 100 }),
-      apiClient.get('/settings')
+      apiClient.get('/settings'),
+      apiClient.get('/reports/summary')
     ]);
 
     this.state.tickets = tickets;
@@ -121,6 +123,9 @@ class Store {
         ...settingsRes.data
       };
     }
+    if (summaryRes && summaryRes.success) {
+      this.state.summaryKPIs = summaryRes.data;
+    }
 
     this.hydrated = true;
     this.notify();
@@ -131,6 +136,19 @@ class Store {
     this.state.tickets = tickets;
     this.notify();
     return { success: true, data: { tickets } };
+  }
+
+  async refreshSummaryKPIs() {
+    try {
+      const res = await apiClient.get('/reports/summary');
+      if (res && res.success && res.data) {
+        this.state.summaryKPIs = res.data;
+        this.notify();
+      }
+      return res;
+    } catch {
+      return null;
+    }
   }
 
   async refreshEmployees() {
@@ -195,6 +213,7 @@ class Store {
       description: `Created ticket ${res.data.id} (${res.data.origin} ✈ ${res.data.destination}) for ${res.data.passengerName}.`
     });
     this.notify();
+    this.refreshSummaryKPIs().catch(() => {});
     return res;
   }
 
@@ -212,6 +231,7 @@ class Store {
       description: `Updated details for ticket ${ticketId}.`
     });
     this.notify();
+    this.refreshSummaryKPIs().catch(() => {});
     return res;
   }
 
@@ -236,6 +256,7 @@ class Store {
       description: `Recorded payment of ${Number(res.data.amount).toLocaleString()} ${res.data.currency} via ${res.data.method} (${res.data.reference}).`
     });
     this.notify();
+    this.refreshSummaryKPIs().catch(() => {});
     return res;
   }
 
@@ -274,6 +295,7 @@ class Store {
       description: `Added flight modification for ${ticketId} with change fee ${res.data.changeFee} ${res.data.currency}. Reason: ${res.data.reason}`
     });
     this.notify();
+    this.refreshSummaryKPIs().catch(() => {});
     return res;
   }
 
@@ -296,6 +318,7 @@ class Store {
       description: `Processed refund of ${Number(res.data.amount).toLocaleString()} ${res.data.currency} for ${ticketId}. Reason: ${res.data.reason}`
     });
     this.notify();
+    this.refreshSummaryKPIs().catch(() => {});
     return res;
   }
 
@@ -304,6 +327,7 @@ class Store {
     if (!res.success) return res;
     this.state.tickets = this.state.tickets.filter(t => t.id !== ticketId && t.ticketNumber !== ticketId && t.pnr !== ticketId);
     this.notify();
+    this.refreshSummaryKPIs().catch(() => {});
     return res;
   }
 
@@ -312,6 +336,7 @@ class Store {
     if (!res.success) return res;
     this.state.tickets = this.state.tickets.filter(t => t.id !== ticketId && t.ticketNumber !== ticketId && t.pnr !== ticketId);
     this.notify();
+    this.refreshSummaryKPIs().catch(() => {});
     return res;
   }
 

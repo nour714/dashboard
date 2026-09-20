@@ -715,13 +715,17 @@ export const en = {
     addPayment: {
       title: 'Record Payment',
       subtitle: 'Add a verified customer payment to this ticket reservation.',
-      amount: 'Payment Amount (EGP)',
+      amount: 'Payment Amount',
+      type: 'Payment Classification',
+      typeTicket: 'Ticket Payment',
+      typeModification: 'Flight Modification Fee',
       method: 'Payment Method',
       ref: 'Transaction / Receipt Reference',
       refPlaceholder: 'e.g. CASH-992 or POS-1188',
       notes: 'Internal Notes (Optional)',
       submit: 'Record Payment',
-      remainingIs: 'Remaining balance due:'
+      remainingIs: 'Remaining balance due:',
+      modificationOutstandingIs: 'Outstanding modification fee balance:'
     },
     modifyFlight: {
       title: 'Modify Flight Schedule',
@@ -755,8 +759,11 @@ export const en = {
       customerDeduction: 'Deducted from Customer:',
       netAgencyImpact: 'Net Agency Profit / Loss Impact:',
       closeTicketRefunded: 'Mark ticket as fully REFUNDED',
-      penaltyFee: 'Agency Penalty / Cancellation Fee (EGP)',
+      penaltyFee: 'Agency Penalty / Cancellation Fee',
       reason: 'Refund Reason',
+      status: 'Refund Status',
+      statusCompleted: 'COMPLETED (Processed)',
+      statusPending: 'PENDING (Under Review)',
       submit: 'Process Refund'
     },
     deleteTicket: {

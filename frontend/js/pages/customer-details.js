@@ -12,6 +12,7 @@ import { showToast } from '../components/toast.js';
 import {
   calculateTotalPaid,
   formatCurrency,
+  formatMultiCurrency,
   formatDate,
   formatDateTime
 } from '../utils/calculations.js';
@@ -269,11 +270,11 @@ export const CustomerDetailsPage = {
             </div>
             <div class="stat-card">
               <span class="stat-card-label">${escapeHtml(t('customerDetails.totalSpent'))}</span>
-              <div class="stat-card-value font-bold">${formatCurrency(stats.totalSpent, 'EGP')}</div>
+              <div class="stat-card-value font-bold">${formatMultiCurrency(stats.byCurrency, 'totalSpent', stats.currency || 'EGP', stats.totalSpent)}</div>
             </div>
             <div class="stat-card">
               <span class="stat-card-label">${escapeHtml(t('dashboard.kpi.totalCollected'))}</span>
-              <div class="stat-card-value text-success font-bold">${formatCurrency(stats.totalPaid, 'EGP')}</div>
+              <div class="stat-card-value text-success font-bold">${formatMultiCurrency(stats.byCurrency, 'totalPaid', stats.currency || 'EGP', stats.totalPaid)}</div>
             </div>
           </div>
         </div>

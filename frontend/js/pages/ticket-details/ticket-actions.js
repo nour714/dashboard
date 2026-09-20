@@ -12,12 +12,28 @@ import { t, i18n } from '../../i18n/i18n.js';
 
 export function openAddPaymentModal(ticket, onSuccess) {
   const financials = TicketService.getTicketFinancials(ticket);
+  const modOutstanding = financials.modificationOutstanding || 0;
+  const hasModOutstanding = modOutstanding > 0;
+  const remaining = financials.remaining || 0;
+  const defaultType = remaining > 0 ? 'TICKET' : (hasModOutstanding ? 'MODIFICATION' : 'TICKET');
+  const initialMax = defaultType === 'TICKET' ? remaining : modOutstanding;
+  const initialVal = defaultType === 'TICKET' ? (remaining > 0 ? remaining : '') : (modOutstanding > 0 ? modOutstanding : '');
 
   openModal({
     title: `${t('modals.addPayment.title')} #${ticket.id}`,
     subtitle: `${t('modals.addPayment.remainingIs')} ${formatCurrency(financials.remaining, financials.currency)}`,
     contentHtml: `
       <form id="record-payment-form" class="d-flex flex-column gap-md">
+        ${hasModOutstanding ? `
+        <div class="form-group">
+          <label class="form-label" for="pay-type">${escapeHtml(t('modals.addPayment.type'))} *</label>
+          <select id="pay-type" class="form-control" required>
+            <option value="TICKET" ${defaultType === 'TICKET' ? 'selected' : ''}>${escapeHtml(t('modals.addPayment.typeTicket'))}</option>
+            <option value="MODIFICATION" ${defaultType === 'MODIFICATION' ? 'selected' : ''}>${escapeHtml(t('modals.addPayment.typeModification'))} (${formatCurrency(modOutstanding, financials.currency)})</option>
+          </select>
+        </div>
+        ` : ''}
+
         <div class="form-grid-2">
           <div class="form-group">
             <label class="form-label" for="pay-amount">${escapeHtml(t('modals.addPayment.amount'))} *</label>
@@ -26,13 +42,17 @@ export function openAddPaymentModal(ticket, onSuccess) {
               id="pay-amount"
               class="form-control tabular-nums"
               placeholder="0.00"
-              value="${financials.remaining > 0 ? financials.remaining : ''}"
-              max="${financials.remaining}"
-              min="1"
+              value="${initialVal}"
+              max="${initialMax}"
+              min="0.01"
               step="0.01"
               required
             />
-            <span class="text-xs text-muted mt-xxs">${escapeHtml(t('modals.addPayment.remainingIs'))} ${formatCurrency(financials.remaining, financials.currency)}</span>
+            <span class="text-xs text-muted mt-xxs" id="pay-amount-hint">
+              ${defaultType === 'TICKET'
+                ? `${escapeHtml(t('modals.addPayment.remainingIs'))} ${formatCurrency(remaining, financials.currency)}`
+                : `${escapeHtml(t('modals.addPayment.modificationOutstandingIs'))} ${formatCurrency(modOutstanding, financials.currency)}`}
+            </span>
           </div>
 
           <div class="form-group">
@@ -73,12 +93,35 @@ export function openAddPaymentModal(ticket, onSuccess) {
     onOpen: (modalEl) => {
       const cancelBtn = modalEl.querySelector('#modal-cancel-pay');
       const submitBtn = modalEl.querySelector('#modal-submit-pay');
+      const payTypeSelect = modalEl.querySelector('#pay-type');
+      const amountInput = modalEl.querySelector('#pay-amount');
+      const amountHint = modalEl.querySelector('#pay-amount-hint');
+
+      if (payTypeSelect) {
+        payTypeSelect.addEventListener('change', () => {
+          const selected = payTypeSelect.value;
+          if (selected === 'MODIFICATION') {
+            amountInput.max = modOutstanding;
+            amountInput.value = modOutstanding > 0 ? modOutstanding : '';
+            if (amountHint) {
+              amountHint.textContent = `${t('modals.addPayment.modificationOutstandingIs')} ${formatCurrency(modOutstanding, financials.currency)}`;
+            }
+          } else {
+            amountInput.max = remaining;
+            amountInput.value = remaining > 0 ? remaining : '';
+            if (amountHint) {
+              amountHint.textContent = `${t('modals.addPayment.remainingIs')} ${formatCurrency(remaining, financials.currency)}`;
+            }
+          }
+        });
+      }
 
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
       if (submitBtn) {
         submitBtn.addEventListener('click', async () => {
           const amount = Number(modalEl.querySelector('#pay-amount').value);
+          const paymentType = payTypeSelect ? payTypeSelect.value : 'TICKET';
           const method = modalEl.querySelector('#pay-method').value;
           const date = modalEl.querySelector('#pay-date').value;
           const reference = modalEl.querySelector('#pay-ref').value.trim();
@@ -87,6 +130,7 @@ export function openAddPaymentModal(ticket, onSuccess) {
           submitBtn.disabled = true;
           const result = await TicketService.addPayment(ticket.id, {
             amount,
+            type: paymentType,
             method,
             date,
             reference,
@@ -292,7 +336,8 @@ export function openAddRefundModal(ticket, onSuccess) {
   const costPriceVal = ticket.costPrice !== null && ticket.costPrice !== undefined ? Number(ticket.costPrice) : null;
   const availableRefund = financials.availableRefund || 0;
   const defaultCustomerRefund = availableRefund > 0 ? availableRefund : 0;
-  const defaultAirlineRefund = costPriceVal !== null ? costPriceVal : 0;
+  const defaultAirlineRefund = 0;
+  const isFullRefund = availableRefund > 0 && Math.abs(defaultCustomerRefund - availableRefund) < 0.001;
 
   openModal({
     title: `${t('modals.processRefund.title')} #${ticket.id}`,
@@ -340,7 +385,7 @@ export function openAddRefundModal(ticket, onSuccess) {
               id="refund-airline-amount"
               class="form-control tabular-nums"
               placeholder="0.00"
-              value="${defaultAirlineRefund || '0'}"
+              value="${defaultAirlineRefund}"
               min="0"
               step="0.01"
               required
@@ -382,15 +427,15 @@ export function openAddRefundModal(ticket, onSuccess) {
           <div class="form-group">
             <label class="form-label" for="refund-status">${escapeHtml(t('common.status'))}</label>
             <select id="refund-status" class="form-control">
-              <option value="COMPLETED">COMPLETED (مكتمل)</option>
-              <option value="REQUESTED">REQUESTED (طلب استرداد)</option>
+              <option value="COMPLETED">${escapeHtml(t('modals.processRefund.statusCompleted') || 'COMPLETED (Processed)')}</option>
+              <option value="PENDING">${escapeHtml(t('modals.processRefund.statusPending') || 'PENDING (Under Review)')}</option>
             </select>
           </div>
         </div>
 
         <div class="form-check">
           <label class="d-flex items-center gap-xs cursor-pointer mb-0">
-            <input type="checkbox" id="refund-close-ticket" checked />
+            <input type="checkbox" id="refund-close-ticket" ${isFullRefund ? 'checked' : ''} />
             <span class="font-medium text-sm">${escapeHtml(t('modals.processRefund.closeTicketRefunded'))}</span>
           </label>
         </div>
@@ -406,8 +451,13 @@ export function openAddRefundModal(ticket, onSuccess) {
       const custInput = modalEl.querySelector('#refund-customer-amount');
       const airInput = modalEl.querySelector('#refund-airline-amount');
       const costInput = modalEl.querySelector('#refund-cost-price');
+      const closeTicketCheckbox = modalEl.querySelector('#refund-close-ticket');
 
       const updateSummary = () => {
+        if (closeTicketCheckbox && custInput) {
+          const currentRefund = Number(custInput.value) || 0;
+          closeTicketCheckbox.checked = availableRefund > 0 && Math.abs(currentRefund - availableRefund) < 0.001;
+        }
         const cost = costInput ? (Number(costInput.value) || 0) : (costPriceVal || 0);
         const customerRefund = Number(custInput?.value) || 0;
         const airlineRefund = Number(airInput?.value) || 0;
@@ -444,7 +494,7 @@ export function openAddRefundModal(ticket, onSuccess) {
           const costPrice = costInput ? Number(costInput.value) : undefined;
           const reason = modalEl.querySelector('#refund-reason').value;
           const status = modalEl.querySelector('#refund-status').value;
-          const isCompletedCancellation = modalEl.querySelector('#refund-close-ticket')?.checked ?? true;
+          const isCompletedCancellation = modalEl.querySelector('#refund-close-ticket')?.checked ?? false;
 
           submitBtn.disabled = true;
           const payload = {
@@ -455,7 +505,7 @@ export function openAddRefundModal(ticket, onSuccess) {
             isCompletedCancellation,
             currency: ticket.currency
           };
-          if (costPrice !== undefined && !isNaN(costPrice) && costPrice > 0) {
+          if (costPrice !== undefined && !isNaN(costPrice) && costPrice >= 0) {
             payload.costPrice = costPrice;
           }
 

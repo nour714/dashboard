@@ -715,13 +715,17 @@ export const ar = {
     addPayment: {
       title: 'تسجيل دفعة',
       subtitle: 'إضافة دفعة مالية محققة من العميل لحجز هذه التذكرة.',
-      amount: 'مبلغ الدفعة (جنيه مصري)',
+      amount: 'مبلغ الدفعة',
+      type: 'تصنيف الدفعة',
+      typeTicket: 'دفعة تذكرة',
+      typeModification: 'رسوم تعديل الرحلة',
       method: 'طريقة الدفع',
       ref: 'مرجع المعاملة / رقم الإيصال',
       refPlaceholder: 'مثال: CASH-992 أو POS-1188',
       notes: 'ملاحظات داخلية (اختياري)',
       submit: 'تسجيل الدفعة',
-      remainingIs: 'الرصيد المتبقي المستحق:'
+      remainingIs: 'الرصيد المتبقي المستحق:',
+      modificationOutstandingIs: 'المتبقي من رسوم التعديل:'
     },
     modifyFlight: {
       title: 'تعديل جدول الرحلة',
@@ -755,8 +759,11 @@ export const ar = {
       customerDeduction: 'المخصوم على العميل:',
       netAgencyImpact: 'صافي أثر العملية على أرباح المكتب:',
       closeTicketRefunded: 'اعتبار التذكرة مستردة بالكامل (REFUNDED)',
-      penaltyFee: 'رسوم الإلغاء / غرامة الوكالة (جنيه مصري)',
+      penaltyFee: 'رسوم الإلغاء / غرامة الوكالة',
       reason: 'سبب الاسترداد',
+      status: 'حالة الاسترداد',
+      statusCompleted: 'مكتمل (COMPLETED)',
+      statusPending: 'قيد المراجعة (PENDING)',
       submit: 'إجراء الاسترداد'
     },
     deleteTicket: {

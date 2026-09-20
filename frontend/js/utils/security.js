@@ -1,5 +1,5 @@
 /**
- * AfricaTravel — Security & Safe DOM Utilities
+ * AfricaTravel - Security & Safe DOM Utilities
  *
  * Prevents Cross-Site Scripting (XSS) when rendering dynamic user data.
  */
@@ -27,4 +27,19 @@ export function escapeHtml(str) {
  */
 export function sanitizeText(text) {
   return escapeHtml(text).trim();
+}
+
+/**
+ * Neutralizes CSV formula injection vulnerabilities for spreadsheet applications.
+ * If cell starts with '=', '+', '-', '@', '\t', or '\r', prefixes with a single quote.
+ * @param {any} value
+ * @returns {string}
+ */
+export function sanitizeCsvCell(value) {
+  if (value === null || value === undefined) return '""';
+  let str = String(value);
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = "'" + str;
+  }
+  return '"' + str.replace(/"/g, '""') + '"';
 }

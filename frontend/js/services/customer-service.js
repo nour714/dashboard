@@ -7,7 +7,7 @@
 
 import { store } from '../state/store.js';
 import { apiClient } from './api-client.js';
-import { calculateTotalPaid, calculateRemaining, calculateTotalRefunded } from '../domain/ticket-rules.js';
+import { TicketService } from './ticket-service.js';
 
 export const CustomerService = {
   getAllCustomers(query = '') {
@@ -61,14 +61,27 @@ export const CustomerService = {
     let totalPaid = 0;
     let totalRefunded = 0;
     let totalOutstanding = 0;
+    const byCurrency = {};
 
     customerTickets.forEach(t => {
-      totalSpent += (Number(t.ticketPrice) || 0);
-      const paid = calculateTotalPaid(t.payments);
-      totalPaid += paid;
-      totalRefunded += calculateTotalRefunded(t.refunds);
-      totalOutstanding += calculateRemaining(t.ticketPrice, paid);
+      const fin = t.financials || TicketService.getTicketFinancials(t);
+      const curr = fin.currency || t.currency || 'EGP';
+      if (!byCurrency[curr]) {
+        byCurrency[curr] = { totalSpent: 0, totalPaid: 0, totalRefunded: 0, totalOutstanding: 0 };
+      }
+      byCurrency[curr].totalSpent += fin.ticketPrice;
+      byCurrency[curr].totalPaid += fin.totalPaid;
+      byCurrency[curr].totalRefunded += fin.totalRefunded;
+      byCurrency[curr].totalOutstanding += fin.remaining;
+
+      totalSpent += fin.ticketPrice;
+      totalPaid += fin.totalPaid;
+      totalRefunded += fin.totalRefunded;
+      totalOutstanding += fin.remaining;
     });
+
+    const currencies = Object.keys(byCurrency);
+    const currency = currencies.length === 1 ? currencies[0] : (currencies[0] || 'EGP');
 
     return {
       ticketCount: customerTickets.length,
@@ -76,6 +89,8 @@ export const CustomerService = {
       totalPaid,
       totalRefunded,
       totalOutstanding,
+      currency,
+      byCurrency,
       tickets: customerTickets
     };
   },

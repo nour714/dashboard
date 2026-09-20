@@ -16,6 +16,17 @@ export function isModificationPayment(p = {}) {
   return p?.type === 'MODIFICATION';
 }
 
+function toCents(v) {
+  if (v === null || v === undefined || v === '') return 0;
+  const num = Number(v);
+  if (isNaN(num)) return 0;
+  return Math.round(num * 100);
+}
+
+function fromCents(c) {
+  return c / 100;
+}
+
 /**
  * Calculates total sum of recorded payments for the ticket.
  * Excludes modification fee payments unless includeModifications is explicitly true.
@@ -25,9 +36,10 @@ export function isModificationPayment(p = {}) {
  */
 export function calculateTotalPaid(payments = [], includeModifications = false) {
   if (!Array.isArray(payments)) return 0;
-  return payments
+  const cents = payments
     .filter(p => includeModifications || !isModificationPayment(p))
-    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    .reduce((sum, p) => sum + toCents(p.amount), 0);
+  return fromCents(cents);
 }
 
 /**
@@ -37,9 +49,10 @@ export function calculateTotalPaid(payments = [], includeModifications = false) 
  */
 export function calculateModificationPaid(payments = []) {
   if (!Array.isArray(payments)) return 0;
-  return payments
+  const cents = payments
     .filter(p => isModificationPayment(p))
-    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    .reduce((sum, p) => sum + toCents(p.amount), 0);
+  return fromCents(cents);
 }
 
 /**
@@ -51,10 +64,8 @@ export function calculateModificationPaid(payments = []) {
  * @returns {number}
  */
 export function calculateRemaining(ticketPrice = 0, totalPaid = 0, _modificationFees = 0) {
-  const price = Number(ticketPrice) || 0;
-  const paid = Number(totalPaid) || 0;
-  const rem = price - paid;
-  return rem > 0 ? Math.round(rem * 100) / 100 : 0;
+  const remCents = Math.max(0, toCents(ticketPrice) - toCents(totalPaid));
+  return fromCents(remCents);
 }
 
 /**
@@ -64,7 +75,8 @@ export function calculateRemaining(ticketPrice = 0, totalPaid = 0, _modification
  */
 export function calculateTotalModificationFees(modifications = []) {
   if (!Array.isArray(modifications)) return 0;
-  return modifications.reduce((sum, m) => sum + (Number(m.changeFee) || 0), 0);
+  const cents = modifications.reduce((sum, m) => sum + toCents(m.changeFee), 0);
+  return fromCents(cents);
 }
 
 /**
@@ -75,10 +87,11 @@ export function calculateTotalModificationFees(modifications = []) {
  */
 export function calculateTotalModificationProfit(modifications = []) {
   if (!Array.isArray(modifications)) return 0;
-  return modifications.reduce(
-    (sum, m) => sum + ((Number(m.changeFee) || 0) - (Number(m.airlineFee) || 0)),
+  const cents = modifications.reduce(
+    (sum, m) => sum + (toCents(m.changeFee) - toCents(m.airlineFee)),
     0
   );
+  return fromCents(cents);
 }
 
 /**
@@ -88,12 +101,13 @@ export function calculateTotalModificationProfit(modifications = []) {
  */
 export function calculateTotalRefunded(refunds = []) {
   if (!Array.isArray(refunds)) return 0;
-  return refunds
+  const cents = refunds
     .filter(r => {
       const st = (r.status || '').toUpperCase();
       return st === 'COMPLETED' || st === 'REFUNDED' || st === 'APPROVED';
     })
-    .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    .reduce((sum, r) => sum + toCents(r.amount), 0);
+  return fromCents(cents);
 }
 
 /**
@@ -103,26 +117,26 @@ export function calculateTotalRefunded(refunds = []) {
  */
 export function calculateTotalAirlineRefunded(refunds = []) {
   if (!Array.isArray(refunds)) return 0;
-  return refunds
+  const cents = refunds
     .filter(r => {
       const st = (r.status || '').toUpperCase();
       return st === 'COMPLETED' || st === 'REFUNDED' || st === 'APPROVED';
     })
-    .reduce((sum, r) => sum + (Number(r.airlineRefundAmount) || 0), 0);
+    .reduce((sum, r) => sum + toCents(r.airlineRefundAmount), 0);
+  return fromCents(cents);
 }
 
 /**
  * Calculates available refundable balance
- * availableRefund = max(0, totalPaid - totalRefunded)
+ * availableRefund = max(0, totalPaid - totalRefunded - pendingRefunds)
  * @param {number|string} totalPaid
  * @param {number|string} totalRefunded
+ * @param {number|string} [pendingRefunds=0]
  * @returns {number}
  */
-export function calculateAvailableRefund(totalPaid = 0, totalRefunded = 0) {
-  const paid = Number(totalPaid) || 0;
-  const refunded = Number(totalRefunded) || 0;
-  const avail = paid - refunded;
-  return avail > 0 ? avail : 0;
+export function calculateAvailableRefund(totalPaid = 0, totalRefunded = 0, pendingRefunds = 0) {
+  const availCents = Math.max(0, toCents(totalPaid) - toCents(totalRefunded) - toCents(pendingRefunds));
+  return fromCents(availCents);
 }
 
 /**
@@ -134,9 +148,8 @@ export function calculateAvailableRefund(totalPaid = 0, totalRefunded = 0) {
  * @returns {number}
  */
 export function calculateNetValue(ticketPrice = 0, _modificationFees = 0, totalRefunded = 0) {
-  const price = Number(ticketPrice) || 0;
-  const ref = Number(totalRefunded) || 0;
-  return Math.max(0, price - ref);
+  const netCents = Math.max(0, toCents(ticketPrice) - toCents(totalRefunded));
+  return fromCents(netCents);
 }
 
 /**
@@ -148,7 +161,8 @@ export function calculateNetValue(ticketPrice = 0, _modificationFees = 0, totalR
  */
 export function calculateNetProfit(ticketPrice = 0, costPrice = null) {
   if (costPrice === null || costPrice === undefined) return null;
-  return Number(ticketPrice) - Number(costPrice);
+  const diffCents = toCents(ticketPrice) - toCents(costPrice);
+  return fromCents(diffCents);
 }
 
 /**
@@ -161,16 +175,12 @@ export function calculateNetProfit(ticketPrice = 0, costPrice = null) {
  * @returns {number|null}
  */
 export function calculateRefundedNetProfit(totalPaid = 0, totalCustomerRefunded = 0, costPrice = null, totalAirlineRefunded = 0) {
-  const paid = Number(totalPaid) || 0;
-  const custRef = Number(totalCustomerRefunded) || 0;
-  const retainedCustomer = Math.max(0, paid - custRef);
+  const retainedCents = Math.max(0, toCents(totalPaid) - toCents(totalCustomerRefunded));
   if (costPrice === null || costPrice === undefined) {
-    return retainedCustomer;
+    return fromCents(retainedCents);
   }
-  const cost = Number(costPrice) || 0;
-  const airRef = Number(totalAirlineRefunded) || 0;
-  const netAirlineCost = Math.max(0, cost - airRef);
-  return retainedCustomer - netAirlineCost;
+  const netAirlineCostCents = Math.max(0, toCents(costPrice) - toCents(totalAirlineRefunded));
+  return fromCents(retainedCents - netAirlineCostCents);
 }
 
 /**

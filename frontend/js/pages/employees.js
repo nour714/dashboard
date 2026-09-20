@@ -8,7 +8,7 @@ import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
-import { formatCurrency } from '../utils/calculations.js';
+import { formatMultiCurrency } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
 import { isEmployeeOnline, formatLastSeen } from '../utils/online-status.js';
 import { t } from '../i18n/i18n.js';
@@ -196,9 +196,9 @@ export const EmployeesPage = {
           <span class="badge ${e.role === 'ADMIN' ? 'badge-admin' : 'badge-agent'}">${escapeHtml(e.role)}</span>
         </td>
         <td class="tabular-nums font-semibold">${e.ticketsCount}</td>
-        <td class="tabular-nums font-semibold">${formatCurrency(e.sales, 'EGP')}</td>
-        <td class="tabular-nums font-semibold text-success">${formatCurrency(e.collected, 'EGP')}</td>
-        <td class="tabular-nums text-muted">${formatCurrency(e.refunds, 'EGP')}</td>
+        <td class="tabular-nums font-semibold">${formatMultiCurrency(e.byCurrency, 'sales', e.currency || 'EGP', e.sales)}</td>
+        <td class="tabular-nums font-semibold text-success">${formatMultiCurrency(e.byCurrency, 'collected', e.currency || 'EGP', e.collected)}</td>
+        <td class="tabular-nums text-muted">${formatMultiCurrency(e.byCurrency, 'refunds', e.currency || 'EGP', e.refunds)}</td>
         <td>
           <span class="online-indicator ${online ? 'online' : 'offline'}">
             <span class="online-dot"></span>

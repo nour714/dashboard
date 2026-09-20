@@ -29,6 +29,36 @@ export function formatCurrency(amount = 0, currency = 'EGP') {
 }
 
 /**
+ * Formats a multi-currency breakdown or single amount.
+ * If byCurrency is provided, formats each currency and joins them with '  |  '.
+ * Never sums across currencies.
+ * @param {Record<string, object|number>|null} byCurrency
+ * @param {string} field
+ * @param {string} [fallbackCurrency='EGP']
+ * @returns {string}
+ */
+export function formatMultiCurrency(byCurrency, field, fallbackCurrency = 'EGP', fallbackValue = 0) {
+  if (!byCurrency || typeof byCurrency !== 'object' || Object.keys(byCurrency).length === 0) {
+    if (fallbackValue === null || fallbackValue === undefined) return 'N/A';
+    return formatCurrency(fallbackValue, fallbackCurrency);
+  }
+  const entries = Object.entries(byCurrency);
+  if (entries.length === 1) {
+    const [curr, data] = entries[0];
+    const val = typeof data === 'object' && data !== null ? data[field] : data;
+    if (val === null || val === undefined) return 'N/A';
+    return formatCurrency(val, curr);
+  }
+  return entries
+    .map(([curr, data]) => {
+      const val = typeof data === 'object' && data !== null ? data[field] : data;
+      if (val === null || val === undefined) return `N/A ${curr}`;
+      return formatCurrency(val, curr);
+    })
+    .join('  |  ');
+}
+
+/**
  * Format Compact Number for KPI Cards (e.g. 1.25M, 980K, 248)
  * @param {number} num
  * @returns {string}
