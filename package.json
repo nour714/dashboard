@@ -34,6 +34,7 @@
     "test:purge": "node tests/security/purge-actions.test.js",
     "test:employee-delete": "node tests/integration/employee-delete.test.js",
     "test:expenses": "node tests/integration/expenses.test.js",
+    "test:visas": "node tests/integration/visas.test.js",
     "test:ai-extract": "node tests/integration/ticket-extraction.test.js",
     "test:airlines": "node tests/integration/airlines-catalog.test.js",
     "test:pwa": "node tests/integration/pwa-install.test.js",
