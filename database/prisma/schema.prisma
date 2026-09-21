@@ -52,6 +52,7 @@ model User {
   auditLogs     AuditLog[]      @relation("AuditUser")
   refreshTokens RefreshToken[]
   expenses      Expense[]       @relation("ExpenseCreatedBy")
+  visas         Visa[]          @relation("VisaCreatedBy")
 
   @@map("users")
 }
@@ -279,3 +280,40 @@ model Expense {
   @@map("expenses")
 }
 
+enum VisaType {
+  TOURIST
+  WORK
+  STUDY
+  UMRAH_HAJJ
+  MEDICAL
+}
+
+enum VisaPaymentStatus {
+  PAID
+  UNPAID
+}
+
+model Visa {
+  id                String            @id @default(cuid())
+  clientName        String
+  phone             String?
+  visaType          VisaType
+  country           String
+  submissionDate    DateTime          @default(now())
+  price             Decimal           @db.Decimal(12, 2)
+  costPrice         Decimal?          @db.Decimal(12, 2)
+  currency          String            @default("EGP")
+  paymentStatus     VisaPaymentStatus @default(UNPAID)
+  notes             String?
+  createdBy         String
+  createdById       String?
+  user              User?             @relation("VisaCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedAt         DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([createdById])
+  @@index([visaType])
+  @@index([deletedAt])
+  @@map("visas")
+}

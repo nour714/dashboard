@@ -40,6 +40,7 @@ export const en = {
     refunds: 'Refunds',
     reports: 'Reports',
     expenses: 'Office Expenses',
+    visas: 'Visas',
     administration: 'Administration',
     employees: 'Employees',
     activity: 'Activity Log',
@@ -612,6 +613,83 @@ export const en = {
     updatedSuccessfully: 'Expense record updated successfully.',
     deletedSuccessfully: 'Expense record deleted successfully.',
     emptyState: 'No expense records found matching the criteria.'
+  },
+
+  // Visas Page
+  visas: {
+    title: 'Visas',
+    subtitle: 'Manage and track visa applications, types, and payment status.',
+    addVisa: 'Add Visa',
+    newVisaModalTitle: 'New Visa Application',
+    newVisaModalSubtitle: 'Record a new visa application entry.',
+    editVisaModalTitle: 'Edit Visa',
+    editVisaModalSubtitle: 'Update details for this visa record.',
+    totalPrice: 'Total Revenue',
+    totalCost: 'Total Cost',
+    totalCount: 'Total Visas',
+    profit: 'Profit',
+    filterType: 'All Types',
+    filterPayment: 'All Payment Status',
+    types: {
+      TOURIST: 'Tourist',
+      WORK: 'Work',
+      STUDY: 'Study',
+      UMRAH_HAJJ: 'Umrah / Hajj',
+      MEDICAL: 'Medical'
+    },
+    paymentStatus: {
+      PAID: 'Paid',
+      UNPAID: 'Unpaid'
+    },
+    payment: {
+      PAID: 'Paid',
+      UNPAID: 'Unpaid'
+    },
+    table: {
+      clientName: 'Client Name',
+      phone: 'Phone',
+      visaType: 'Visa Type',
+      country: 'Country',
+      submissionDate: 'Submission Date',
+      price: 'Price',
+      costPrice: 'Cost Price',
+      paymentStatus: 'Payment',
+      actions: 'Actions'
+    },
+    form: {
+      clientName: 'Client Name',
+      clientNamePlaceholder: 'Enter client full name',
+      phone: 'Phone Number',
+      phonePlaceholder: 'e.g. +20 1XX XXX XXXX',
+      visaType: 'Visa Type',
+      country: 'Country',
+      countryPlaceholder: 'e.g. Saudi Arabia, Turkey, USA...',
+      submissionDate: 'Submission Date',
+      price: 'Price (Client)',
+      costPrice: 'Cost Price (Office)',
+      currency: 'Currency',
+      paymentStatus: 'Payment Status',
+      notes: 'Notes',
+      notesPlaceholder: 'Additional notes about this visa application...'
+    },
+    details: {
+      title: 'Visa Details',
+      breadcrumb: 'Visas',
+      clientInfo: 'Client Information',
+      visaInfo: 'Visa Information',
+      financialInfo: 'Financial Information',
+      changePaymentStatus: 'Change Payment Status',
+      markAsPaid: 'Mark as Paid',
+      markAsUnpaid: 'Mark as Unpaid'
+    },
+    deleteConfirmTitle: 'Delete Visa Record',
+    deleteConfirmMessage: 'Are you sure you want to delete this visa record? This action will remove it from the system.',
+    createdSuccessfully: 'Visa record created successfully.',
+    updatedSuccessfully: 'Visa record updated successfully.',
+    deletedSuccessfully: 'Visa record deleted successfully.',
+    paymentUpdated: 'Payment status updated successfully.',
+    emptyState: 'No visa records found matching the criteria.',
+    searchPlaceholder: 'Search by client name or country...'
   },
 
   // Activity Page

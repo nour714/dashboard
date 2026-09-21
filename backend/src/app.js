@@ -62,7 +62,7 @@ export function mountApiRoutes(app, { isServerless = false } = {}) {
   app.use('/api', apiRouter);
   if (isServerless) {
     app.use((req, res, next) => {
-      const isApiSubpath = ['/auth', '/tickets', '/customers', '/employees', '/reports', '/activity', '/settings', '/expenses', '/health'].some(p => req.path.startsWith(p));
+      const isApiSubpath = ['/auth', '/tickets', '/customers', '/employees', '/reports', '/activity', '/settings', '/expenses', '/visas', '/health'].some(p => req.path.startsWith(p));
       return isApiSubpath ? apiRouter(req, res, next) : next();
     });
   }
