@@ -50,8 +50,14 @@ describe('Ticket Payment Status Lifecycle and Financial Transitions', () => {
     assert.strictEqual(status, 'CONFIRMED', 'State after full balance paid off is CONFIRMED');
   });
 
-  test('Ticket status schema validation accepts all valid statuses', () => {
-    const validStatuses = [
+  test('Ticket status schema validation accepts only manual statuses (CANCELLED, MODIFIED)', () => {
+    const validManualStatuses = ['CANCELLED', 'MODIFIED'];
+    for (const st of validManualStatuses) {
+      const res = updateTicketSchema.safeParse({ status: st });
+      assert.strictEqual(res.success, true, `Schema should accept manual status: ${st}`);
+    }
+
+    const invalidManualStatuses = [
       'CONFIRMED',
       'PARTIALLY PAID',
       'UNPAID',
@@ -60,14 +66,12 @@ describe('Ticket Payment Status Lifecycle and Financial Transitions', () => {
       'PENDING',
       'PENDING PAY',
       'PENDING PAYMENT',
-      'CANCELLED',
       'REFUNDED',
       'PARTIALLY_REFUNDED'
     ];
-
-    for (const st of validStatuses) {
+    for (const st of invalidManualStatuses) {
       const res = updateTicketSchema.safeParse({ status: st });
-      assert.strictEqual(res.success, true, `Schema should accept status: ${st}`);
+      assert.strictEqual(res.success, false, `Schema should reject non-manual status: ${st}`);
     }
   });
 

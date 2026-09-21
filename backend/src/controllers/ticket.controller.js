@@ -12,15 +12,20 @@ export function sanitizeTicketForRole(ticket, role) {
   const sanitized = { ...ticket };
   delete sanitized.costPrice;
   delete sanitized.netProfit;
+  delete sanitized.grossProfit;
   if (sanitized.financials) {
     sanitized.financials = { ...sanitized.financials };
     delete sanitized.financials.costPrice;
     delete sanitized.financials.netProfit;
+    delete sanitized.financials.grossProfit;
+    delete sanitized.financials.modificationProfit;
+    delete sanitized.financials.airlinePenalty;
   }
   if (Array.isArray(sanitized.modifications)) {
     sanitized.modifications = sanitized.modifications.map(m => {
       const copy = { ...m };
       delete copy.airlineFee;
+      delete copy.profit;
       return copy;
     });
   }
@@ -143,9 +148,24 @@ export const TicketController = {
     }
   },
 
+  async updateRefund(req, res, next) {
+    try {
+      const result = await TicketService.updateRefund(req.params.id, req.params.refundId, req.body, req.user);
+      return res.status(200).json({
+        success: true,
+        message: 'Refund status updated successfully',
+        data: result
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async deleteTicket(req, res, next) {
     try {
-      const result = await TicketService.deleteTicket(req.params.id, req.user);
+      const confirmUnrefundedBalance = req.body?.confirmUnrefundedBalance === true ||
+        req.query?.confirmUnrefundedBalance === 'true';
+      const result = await TicketService.deleteTicket(req.params.id, req.user, { confirmUnrefundedBalance });
       return res.status(200).json({
         success: true,
         message: 'Ticket archived successfully',

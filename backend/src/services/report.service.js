@@ -6,15 +6,8 @@
 
 import Decimal from 'decimal.js';
 import { getPrismaClient } from '../config/database.js';
-import {
-  calculateTotalPaid,
-  calculateRemaining,
-  calculateTotalRefunded,
-  calculateNetValue,
-  calculateTotalModificationFees,
-  calculateTotalModificationProfit,
-  calculateNetProfit
-} from '../domain/ticket-rules.js';
+import { computeTicketLedger, aggregateLedgers, isModificationPayment } from '../domain/ledger.js';
+import { calculateTotalPaid, calculateTotalRefunded } from '../domain/ticket-rules.js';
 import { asDecimal, moneyNumber } from '../utils/money.js';
 import { EmployeeService } from './employee.service.js';
 
@@ -28,9 +21,15 @@ export function computeWeeklyTrends(tickets = []) {
     return [];
   }
 
-  // Find range of dates in tickets / payments
   const now = new Date();
   const weeks = [];
+
+  // Determine all currencies across tickets
+  const currencySet = new Set();
+  tickets.forEach(t => {
+    if (t.currency) currencySet.add(t.currency);
+  });
+  const allCurrencies = currencySet.size > 0 ? Array.from(currencySet) : ['EGP'];
 
   // Generate 4 rolling 7-day intervals ending at current time
   for (let i = 3; i >= 0; i--) {
@@ -40,57 +39,135 @@ export function computeWeeklyTrends(tickets = []) {
     const startLabel = `${start.toLocaleString('default', { month: 'short' })} ${start.getDate()}`;
     const weekIndex = 4 - i;
 
-    let salesTotal = asDecimal(0);
-    let collectionsTotal = asDecimal(0);
-    let refundsTotal = asDecimal(0);
-    let netProfitTotal = asDecimal(0);
+    const byCurrencyData = {};
+    const ensureCurrData = (curr) => {
+      if (!byCurrencyData[curr]) {
+        byCurrencyData[curr] = {
+          currency: curr,
+          salesTotal: asDecimal(0),
+          collectionsTotal: asDecimal(0),
+          modificationCollectionsTotal: asDecimal(0),
+          refundsTotal: asDecimal(0),
+          grossProfitTotal: asDecimal(0),
+          outstandingTotal: asDecimal(0)
+        };
+      }
+      return byCurrencyData[curr];
+    };
+
+    allCurrencies.forEach(c => ensureCurrData(c));
 
     tickets.forEach(t => {
+      const curr = t.currency || 'EGP';
+      const group = ensureCurrData(curr);
+      const ledger = computeTicketLedger(t);
       const ticketDate = new Date(t.createdAt || t.departureDate);
-      if (ticketDate >= start && ticketDate < end) {
-        salesTotal = salesTotal.plus(asDecimal(t.ticketPrice));
-        const profit = calculateNetProfit(t.ticketPrice, t.costPrice);
-        if (profit !== null) {
-          const modProfit = calculateTotalModificationProfit(t.modifications || []);
-          netProfitTotal = netProfitTotal.plus(asDecimal(profit).plus(asDecimal(modProfit)));
+      const status = (t.status || '').toUpperCase();
+      const isCancelledOrRefunded = status === 'CANCELLED' || status === 'REFUNDED';
+
+      // Sales in window (active tickets only)
+      if (ticketDate >= start && ticketDate < end && !isCancelledOrRefunded) {
+        group.salesTotal = group.salesTotal.plus(asDecimal(t.ticketPrice || 0));
+        if (ledger.netProfit !== null) {
+          const costPriceDec = asDecimal(t.costPrice || 0);
+          group.grossProfitTotal = group.grossProfitTotal.plus(asDecimal(t.ticketPrice || 0).minus(costPriceDec));
         }
       }
 
+      // Modification profit attributed to modification date
+      if (Array.isArray(t.modifications)) {
+        t.modifications.forEach(m => {
+          const mDate = new Date(m.date || m.createdAt);
+          if (mDate >= start && mDate < end) {
+            const mChangeFee = asDecimal(m.changeFee || 0);
+            const mAirlineFee = asDecimal(m.airlineFee || 0);
+            group.grossProfitTotal = group.grossProfitTotal.plus(mChangeFee.minus(mAirlineFee));
+          }
+        });
+      }
+
+      // Collections in window (ticket payments vs modification payments)
       if (Array.isArray(t.payments)) {
         t.payments.forEach(p => {
           const pDate = new Date(p.date || p.createdAt);
           if (pDate >= start && pDate < end) {
-            collectionsTotal = collectionsTotal.plus(asDecimal(p.amount));
-          }
-        });
-      }
-
-      if (Array.isArray(t.refunds)) {
-        t.refunds.forEach(r => {
-          if (r.status === 'COMPLETED' || r.status === 'Refunded' || r.status === 'APPROVED') {
-            const rDate = new Date(r.processedDate || r.requestedDate || r.createdAt);
-            if (rDate >= start && rDate < end) {
-              refundsTotal = refundsTotal.plus(asDecimal(r.amount));
+            const pAmt = asDecimal(p.amount || 0);
+            if (isModificationPayment(p)) {
+              group.modificationCollectionsTotal = group.modificationCollectionsTotal.plus(pAmt);
+            } else {
+              group.collectionsTotal = group.collectionsTotal.plus(pAmt);
             }
           }
         });
       }
+
+      // Refunds in window
+      if (Array.isArray(t.refunds)) {
+        t.refunds.forEach(r => {
+          const rStatus = (r.status || '').toUpperCase();
+          if (rStatus === 'COMPLETED' || rStatus === 'REFUNDED' || rStatus === 'APPROVED') {
+            const rDate = new Date(r.processedDate || r.requestedDate || r.createdAt);
+            if (rDate >= start && rDate < end) {
+              group.refundsTotal = group.refundsTotal.plus(asDecimal(r.amount || 0));
+            }
+          }
+        });
+      }
+
+      // Outstanding snapshot at window end:
+      // Active ticket created before or at window end: price minus payments made up to window end
+      if (ticketDate <= end && !isCancelledOrRefunded) {
+        let paidUpToEnd = asDecimal(0);
+        if (Array.isArray(t.payments)) {
+          t.payments.forEach(p => {
+            const pDate = new Date(p.date || p.createdAt);
+            if (pDate <= end && !isModificationPayment(p)) {
+              paidUpToEnd = paidUpToEnd.plus(asDecimal(p.amount || 0));
+            }
+          });
+        }
+        const remAtEnd = Decimal.max(0, asDecimal(t.ticketPrice || 0).minus(paidUpToEnd));
+        group.outstandingTotal = group.outstandingTotal.plus(remAtEnd);
+      }
     });
 
-    const sales = moneyNumber(salesTotal);
-    const collections = moneyNumber(collectionsTotal);
-    const refunds = moneyNumber(refundsTotal);
-    const netProfit = moneyNumber(netProfitTotal);
-    const outstanding = moneyNumber(Decimal.max(0, salesTotal.minus(collectionsTotal)));
+    const finalizedByCurrency = {};
+    for (const [curr, d] of Object.entries(byCurrencyData)) {
+      finalizedByCurrency[curr] = {
+        currency: curr,
+        sales: moneyNumber(d.salesTotal),
+        collections: moneyNumber(d.collectionsTotal),
+        modificationCollections: moneyNumber(d.modificationCollectionsTotal),
+        refunds: moneyNumber(d.refundsTotal),
+        outstanding: moneyNumber(d.outstandingTotal),
+        grossProfit: moneyNumber(d.grossProfitTotal),
+        netProfit: moneyNumber(d.grossProfitTotal)
+      };
+    }
+
+    const primaryCurr = allCurrencies[0] || 'EGP';
+    const primary = finalizedByCurrency[primaryCurr] || {
+      sales: 0,
+      collections: 0,
+      modificationCollections: 0,
+      refunds: 0,
+      outstanding: 0,
+      grossProfit: 0,
+      netProfit: 0
+    };
 
     weeks.push({
       label: `${startLabel}-${end.getDate()}`,
       week: `W${weekIndex}`,
-      sales,
-      collections,
-      refunds,
-      outstanding,
-      netProfit
+      sales: primary.sales,
+      collections: primary.collections,
+      modificationCollections: primary.modificationCollections,
+      refunds: primary.refunds,
+      outstanding: primary.outstanding,
+      netProfit: primary.grossProfit,
+      grossProfit: primary.grossProfit,
+      currency: primaryCurr,
+      byCurrency: finalizedByCurrency
     });
   }
 
@@ -113,54 +190,75 @@ export const ReportService = {
       }
     });
 
-    let totalTickets = tickets.length;
-    let totalSalesDec = asDecimal(0);
-    let totalCollectedDec = asDecimal(0);
-    let totalOutstandingDec = asDecimal(0);
-    let totalRefundsDec = asDecimal(0);
-    let totalModFeesDec = asDecimal(0);
-    let totalNetProfitDec = asDecimal(0);
+    const kpis = aggregateLedgers(tickets);
 
-    tickets.forEach(t => {
-      const price = asDecimal(t.ticketPrice);
-      totalSalesDec = totalSalesDec.plus(price);
-      const paid = asDecimal(calculateTotalPaid(t.payments || []));
-      totalCollectedDec = totalCollectedDec.plus(paid);
-      const modFees = asDecimal(calculateTotalModificationFees(t.modifications || []));
-      totalModFeesDec = totalModFeesDec.plus(modFees);
-      totalOutstandingDec = totalOutstandingDec.plus(asDecimal(calculateRemaining(t.ticketPrice, paid, modFees)));
-      totalRefundsDec = totalRefundsDec.plus(asDecimal(calculateTotalRefunded(t.refunds || [])));
-      const profit = calculateNetProfit(t.ticketPrice, t.costPrice);
-      if (profit !== null) {
-        const modProfit = calculateTotalModificationProfit(t.modifications || []);
-        totalNetProfitDec = totalNetProfitDec.plus(asDecimal(profit).plus(asDecimal(modProfit)));
+    // Compute archivedUnrefundedBalance from soft-deleted tickets (C9)
+    let archivedUnrefundedDec = asDecimal(0);
+    const archivedByCurrency = {};
+
+    if (prisma?.ticket?.findMany) {
+      try {
+        const archivedTickets = await prisma.ticket.findMany({
+          where: { deletedAt: { not: null } },
+          include: { payments: true, refunds: true }
+        });
+        for (const at of archivedTickets) {
+          const atCurr = at.currency || 'EGP';
+          const atPaid = calculateTotalPaid(at.payments || []);
+          const atRefunded = calculateTotalRefunded(at.refunds || []);
+          const atUnref = Decimal.max(0, asDecimal(atPaid).minus(asDecimal(atRefunded)));
+          archivedUnrefundedDec = archivedUnrefundedDec.plus(atUnref);
+          archivedByCurrency[atCurr] = (archivedByCurrency[atCurr] || asDecimal(0)).plus(atUnref);
+        }
+      } catch {
+        // Fallback for mock environments / offline tests
       }
-    });
+    }
 
-    const totalSales = moneyNumber(totalSalesDec);
-    const totalCollected = moneyNumber(totalCollectedDec);
-    const totalOutstanding = moneyNumber(totalOutstandingDec);
-    const totalRefunds = moneyNumber(totalRefundsDec);
-    const totalModFees = moneyNumber(totalModFeesDec);
-    const totalNetProfit = moneyNumber(totalNetProfitDec);
+    kpis.archivedUnrefundedBalance = moneyNumber(archivedUnrefundedDec);
+    kpis.archivedUnrefundedByCurrency = Object.fromEntries(
+      Object.entries(archivedByCurrency).map(([k, v]) => [k, moneyNumber(v)])
+    );
 
-    const netValue = calculateNetValue(totalSales, totalModFees, totalRefunds);
-    const collectionRate = totalSalesDec.greaterThan(0)
-      ? Math.round(totalCollectedDec.dividedBy(totalSalesDec).times(100).toNumber())
-      : 0;
+    // Compute totalExpenses from Office Expenses (Phase D)
+    let totalExpensesDec = asDecimal(0);
+    const expensesByCurrency = {};
 
-    return {
-      totalTickets,
-      totalSales,
-      totalCollected,
-      totalOutstanding,
-      totalRefunds,
-      totalModFees,
-      totalNetProfit,
-      netValue,
-      collectionRate,
-      isCalculated: true
-    };
+    if (prisma?.expense?.findMany) {
+      try {
+        const expenses = await prisma.expense.findMany({
+          where: { deletedAt: null },
+          select: { amount: true, currency: true }
+        });
+        for (const exp of expenses) {
+          const curr = exp.currency || 'EGP';
+          const amt = asDecimal(exp.amount || 0);
+          totalExpensesDec = totalExpensesDec.plus(amt);
+          expensesByCurrency[curr] = (expensesByCurrency[curr] || asDecimal(0)).plus(amt);
+        }
+      } catch {
+        // Fallback for mock environments / offline tests
+      }
+    }
+
+    // Attach expenses and compute netProfit = grossProfit - expenses per currency
+    for (const curr of Object.keys(kpis.byCurrency)) {
+      const expDec = expensesByCurrency[curr] || asDecimal(0);
+      const grossDec = asDecimal(kpis.byCurrency[curr].grossProfit);
+      kpis.byCurrency[curr].totalExpenses = moneyNumber(expDec);
+      kpis.byCurrency[curr].netProfit = moneyNumber(grossDec.minus(expDec));
+    }
+
+    const primaryCurr = kpis.currency || 'EGP';
+    const primaryExpensesDec = expensesByCurrency[primaryCurr] || asDecimal(0);
+    const primaryGrossDec = asDecimal(kpis.grossProfit);
+    const primaryNetProfitDec = primaryGrossDec.minus(primaryExpensesDec);
+
+    kpis.totalExpenses = moneyNumber(primaryExpensesDec);
+    kpis.netProfit = moneyNumber(primaryNetProfitDec);
+    kpis.totalNetProfit = kpis.grossProfit; // Keep old field name for backward compatibility
+
+    return kpis;
   },
 
   /**
@@ -172,6 +270,7 @@ export const ReportService = {
     const tickets = preloadedTickets || await prisma.ticket.findMany({
       where: { deletedAt: null },
       include: {
+        payments: true,
         refunds: true,
         modifications: true
       }
@@ -191,16 +290,22 @@ export const ReportService = {
           ticketsSold: 0,
           totalRevenueDec: asDecimal(0),
           totalRefundedDec: asDecimal(0),
-          totalNetProfitDec: asDecimal(0)
+          totalNetProfitDec: asDecimal(0),
+          ticketsWithoutCost: 0
         };
       }
       airlineMap[airline].ticketsSold += 1;
-      airlineMap[airline].totalRevenueDec = airlineMap[airline].totalRevenueDec.plus(asDecimal(t.ticketPrice));
-      airlineMap[airline].totalRefundedDec = airlineMap[airline].totalRefundedDec.plus(asDecimal(calculateTotalRefunded(t.refunds || [])));
-      const profit = calculateNetProfit(t.ticketPrice, t.costPrice);
-      if (profit !== null) {
-        const modProfit = calculateTotalModificationProfit(t.modifications || []);
-        airlineMap[airline].totalNetProfitDec = airlineMap[airline].totalNetProfitDec.plus(asDecimal(profit).plus(asDecimal(modProfit)));
+
+      const ledger = computeTicketLedger(t);
+      const status = (t.status || '').toUpperCase();
+      if (status !== 'CANCELLED' && status !== 'REFUNDED') {
+        airlineMap[airline].totalRevenueDec = airlineMap[airline].totalRevenueDec.plus(asDecimal(t.ticketPrice || 0));
+      }
+      airlineMap[airline].totalRefundedDec = airlineMap[airline].totalRefundedDec.plus(asDecimal(ledger.totalRefunded));
+      if (ledger.netProfit !== null) {
+        airlineMap[airline].totalNetProfitDec = airlineMap[airline].totalNetProfitDec.plus(asDecimal(ledger.netProfit));
+      } else {
+        airlineMap[airline].ticketsWithoutCost += 1;
       }
     });
 
@@ -218,6 +323,7 @@ export const ReportService = {
         totalRevenue,
         totalRefunded,
         totalNetProfit,
+        grossProfit: totalNetProfit,
         refundRate: rate,
         isFallback: false
       };
@@ -295,6 +401,7 @@ export const ReportService = {
       include: {
         payments: true,
         modifications: true,
+        refunds: true,
         customer: true
       },
       orderBy: {
@@ -303,10 +410,8 @@ export const ReportService = {
     });
 
     const rows = tickets.map(t => {
+      const ledger = computeTicketLedger(t);
       const price = moneyNumber(asDecimal(t.ticketPrice));
-      const paid = calculateTotalPaid(t.payments || []);
-      const modFees = calculateTotalModificationFees(t.modifications || []);
-      const remaining = calculateRemaining(price, paid, modFees);
 
       return {
         ticketId: t.id,
@@ -314,15 +419,17 @@ export const ReportService = {
         customerId: t.customerId,
         customerName: t.customer?.name || t.passengerName || 'Unknown',
         ticketPrice: price,
-        totalPaid: paid,
-        totalRemaining: remaining,
-        tripType: t.tripType || 'One Way'
+        totalPaid: ledger.totalPaid,
+        totalRemaining: ledger.remaining,
+        tripType: t.tripType || 'One Way',
+        modificationFees: ledger.modificationFees,
+        modificationPaid: ledger.modificationPaid,
+        modificationOutstanding: ledger.modificationOutstanding,
+        currency: ledger.currency
       };
     });
 
-    // Secondary safe sort by customerName in case customer is null/fallback
     rows.sort((a, b) => a.customerName.localeCompare(b.customerName));
     return rows;
   }
 };
-

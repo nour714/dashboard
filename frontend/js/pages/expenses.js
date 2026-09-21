@@ -8,7 +8,7 @@ import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
-import { formatCurrency, formatDateTime } from '../utils/calculations.js';
+import { formatCurrency, formatMultiCurrency, formatDateTime } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
 import { t } from '../i18n/i18n.js';
 
@@ -22,6 +22,7 @@ let currentFilters = {
 
 let cachedExpenses = [];
 let cachedPagination = { page: 1, pageSize: 25, total: 0, totalPages: 1 };
+let cachedTotals = null;
 let isInitialLoaded = false;
 
 function getCategoryBadge(category) {
@@ -299,16 +300,10 @@ export const ExpensesPage = {
       `;
     }
 
-    let servicesTotal = 0;
-    let transfersTotal = 0;
-    let grandTotal = 0;
-
-    cachedExpenses.forEach(exp => {
-      const amt = Number(exp.amount) || 0;
-      grandTotal += amt;
-      if (exp.category === 'SERVICES') servicesTotal += amt;
-      if (exp.category === 'TRANSFERS') transfersTotal += amt;
-    });
+    // Use server totals computed across full dataset
+    const servicesDisplay = formatMultiCurrency(cachedTotals?.byCurrency, 'services', cachedTotals?.currency || 'EGP', cachedTotals?.services ?? 0);
+    const transfersDisplay = formatMultiCurrency(cachedTotals?.byCurrency, 'transfers', cachedTotals?.currency || 'EGP', cachedTotals?.transfers ?? 0);
+    const grandDisplay = formatMultiCurrency(cachedTotals?.byCurrency, 'grand', cachedTotals?.currency || 'EGP', cachedTotals?.grand ?? 0);
 
     const headerHtml = renderPageHeader({
       title: t('expenses.title'),
@@ -369,17 +364,17 @@ export const ExpensesPage = {
       <div class="stat-card-grid mb-lg">
         <div class="stat-card">
           <span class="stat-card-label">${escapeHtml(t('expenses.totalServices'))}</span>
-          <div class="stat-card-value tabular-nums">${formatCurrency(servicesTotal, 'EGP')}</div>
+          <div class="stat-card-value tabular-nums">${servicesDisplay}</div>
         </div>
 
         <div class="stat-card">
           <span class="stat-card-label">${escapeHtml(t('expenses.totalTransfers'))}</span>
-          <div class="stat-card-value tabular-nums">${formatCurrency(transfersTotal, 'EGP')}</div>
+          <div class="stat-card-value tabular-nums">${transfersDisplay}</div>
         </div>
 
         <div class="stat-card">
           <span class="stat-card-label">${escapeHtml(t('expenses.grandTotal'))}</span>
-          <div class="stat-card-value tabular-nums text-accent">${formatCurrency(grandTotal, 'EGP')}</div>
+          <div class="stat-card-value tabular-nums text-accent">${grandDisplay}</div>
         </div>
       </div>
 
@@ -454,6 +449,7 @@ export const ExpensesPage = {
       if (res.success && Array.isArray(res.data)) {
         cachedExpenses = res.data;
         if (res.pagination) cachedPagination = res.pagination;
+        if (res.totals) cachedTotals = res.totals;
       }
       isInitialLoaded = true;
       container.innerHTML = ExpensesPage.render();

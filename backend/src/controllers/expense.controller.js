@@ -23,7 +23,8 @@ export const ExpenseController = {
       return res.status(200).json({
         success: true,
         data: result.expenses,
-        pagination: result.pagination
+        pagination: result.pagination,
+        totals: result.totals
       });
     } catch (err) {
       next(err);

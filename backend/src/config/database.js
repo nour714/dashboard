@@ -117,6 +117,46 @@ export async function withDbRetry(operation, options = {}) {
 }
 
 /**
+ * Executes a serializable transaction with automatic exponential retry on serialization
+ * conflicts / deadlock errors (Prisma error P2034 or PostgreSQL 40001).
+ *
+ * @template T
+ * @param {() => Promise<T>} operation
+ * @param {object} [options]
+ * @param {number} [options.maxRetries=3]
+ * @param {number} [options.baseDelayMs=50]
+ * @param {string} [options.context='Serializable Transaction']
+ * @returns {Promise<T>}
+ */
+export async function withSerializableRetry(operation, options = {}) {
+  const maxRetries = options.maxRetries ?? 3;
+  const baseDelayMs = options.baseDelayMs ?? 50;
+  const context = options.context || 'Serializable Transaction';
+
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (err) {
+      lastError = err;
+      const isSerializationFailure = err?.code === 'P2034' ||
+        err?.message?.includes('P2034') ||
+        err?.message?.includes('could not serialize access') ||
+        err?.message?.includes('Transaction failed due to a write conflict or a deadlock');
+
+      if (isSerializationFailure && attempt < maxRetries) {
+        const delay = baseDelayMs * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 25);
+        console.warn(`[SerializableRetry] Conflict in ${context} (attempt ${attempt}/${maxRetries}). Retrying after ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastError;
+}
+
+/**
  * Checks connection health to PostgreSQL database and detects schema/migration drift
  * @returns {Promise<object>}
  */

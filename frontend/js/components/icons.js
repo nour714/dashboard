@@ -279,5 +279,12 @@ export const icons = {
 
   moon: (cls = '') => svgWrapper(`
     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+  `, cls, 18),
+
+  visa: (cls = '') => svgWrapper(`
+    <path d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/>
+    <circle cx="12" cy="10" r="3"/>
+    <path d="M8 17h8"/>
+    <path d="M8 14h8"/>
   `, cls, 18)
 };

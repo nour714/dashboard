@@ -142,8 +142,8 @@ export const TicketDetailsPage = {
             </div>
             <div class="financial-item">
               <span class="financial-item-label">${escapeHtml(t('ticketDetails.overview.netProfit'))}</span>
-              <span class="financial-item-value tabular-nums" style="color: ${financials.netProfit >= 0 ? 'var(--color-success)' : 'var(--color-danger)'};">
-                ${financials.netProfit != null ? formatCurrency(financials.netProfit, financials.currency) : '—'}
+              <span class="financial-item-value tabular-nums" style="color: ${financials.netProfit != null ? (financials.netProfit >= 0 ? 'var(--color-success)' : 'var(--color-danger)') : 'inherit'};">
+                ${financials.netProfit != null ? formatCurrency(financials.netProfit, financials.currency) : 'N/A'}
               </span>
             </div>
           ` : ''}

@@ -5,13 +5,7 @@
  */
 
 import { getPrismaClient } from '../config/database.js';
-import {
-  calculateTotalPaid,
-  calculateRemaining,
-  calculateTotalRefunded,
-  calculateTotalModificationFees
-} from '../domain/ticket-rules.js';
-import { asDecimal, moneyNumber } from '../utils/money.js';
+import { aggregateLedgers } from '../domain/ledger.js';
 import { ValidationError, NotFoundError, BusinessRuleError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
 import { enrichTicketFinancials } from './ticket.service.js';
@@ -103,35 +97,21 @@ export const CustomerService = {
     if (!customer) return null;
     if (!includeDeleted && customer.deletedAt !== null) return null;
 
-    let totalSpentDec = asDecimal(0);
-    let totalPaidDec = asDecimal(0);
-    let totalRefundedDec = asDecimal(0);
-    let totalOutstandingDec = asDecimal(0);
-
-    const enrichedTickets = (customer.tickets || []).map(t => {
-      const enriched = enrichTicketFinancials(t);
-      const price = asDecimal(t.ticketPrice);
-      const paid = asDecimal(calculateTotalPaid(t.payments || []));
-      const ref = asDecimal(calculateTotalRefunded(t.refunds || []));
-      const modFees = asDecimal(calculateTotalModificationFees(t.modifications || []));
-      const rem = asDecimal(calculateRemaining(t.ticketPrice, paid, modFees));
-
-      totalSpentDec = totalSpentDec.plus(price).plus(modFees);
-      totalPaidDec = totalPaidDec.plus(paid);
-      totalRefundedDec = totalRefundedDec.plus(ref);
-      totalOutstandingDec = totalOutstandingDec.plus(rem);
-
-      return enriched;
-    });
+    const enrichedTickets = (customer.tickets || []).map(t => enrichTicketFinancials(t));
+    const agg = aggregateLedgers(customer.tickets || []);
 
     return {
       ...customer,
       stats: {
         ticketCount: enrichedTickets.length,
-        totalSpent: moneyNumber(totalSpentDec),
-        totalPaid: moneyNumber(totalPaidDec),
-        totalRefunded: moneyNumber(totalRefundedDec),
-        totalOutstanding: moneyNumber(totalOutstandingDec)
+        totalSpent: agg.totalSales,
+        totalPaid: agg.totalCollected,
+        totalRefunded: agg.totalRefunds,
+        totalOutstanding: agg.totalOutstanding,
+        modificationFees: agg.totalModFees,
+        modificationPaid: agg.modificationCollected,
+        modificationOutstanding: agg.modificationOutstanding,
+        byCurrency: agg.byCurrency
       },
       tickets: enrichedTickets
     };

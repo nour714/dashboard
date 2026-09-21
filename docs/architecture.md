@@ -181,3 +181,49 @@ Africiatravel/
    - Mounts the router (`router.js`).
 3. Hash router examines current window location (`#dashboard`, `#tickets`, etc.) and renders the corresponding view into the main DOM container.
 4. Navigation guards verify user authentication state; unauthenticated users are seamlessly routed to `#login`.
+
+---
+
+## 5. Financial Ledger & Profit Rules (Single Source of Truth)
+
+All ticket financials, balances, refunds, and business-wide KPI aggregations are governed centrally by `backend/src/domain/ledger.js`.
+
+### 5.1 Ledger Principles
+- **End-to-End Decimal Precision**: All currency math uses `Decimal.js` with 2 decimal places (`asDecimal()`, `moneyNumber()`). Float math and JavaScript native `Number()` arithmetic are forbidden in money calculations.
+- **Strict Separation of Sales and Modification Fees**: Ticket sales represent the base ticket price of active tickets (`ticketPrice`). Modification fees (`changeFee`) and modification payments are segregated into dedicated accounting streams across all reports, employee statistics, and customer analytics.
+- **Active Sales Cohorts**: Cancelled (`CANCELLED`) and refunded (`REFUNDED`) tickets are excluded from sales, remaining balance (`outstanding = 0`), and collection rate calculations. Collections and customer refunds remain gross.
+- **Multi-Currency Isolation**: All KPIs and aggregations are partitioned strictly by currency (e.g. `EGP`, `USD`, `SAR`). Cross-currency summing without conversion is explicitly disallowed.
+
+### 5.2 Profit Calculation Rules
+1. **Active Tickets** (`CONFIRMED`, `PARTIALLY PAID`, `UNPAID`, `MODIFIED`):
+   $$\text{netProfit} = \text{ticketPrice} - \text{costPrice} + \text{modificationProfit}$$
+   where $\text{modificationProfit} = \sum (\text{changeFee} - \text{airlineFee})$.
+2. **Cancelled & Refunded Tickets** (`CANCELLED`, `REFUNDED`, `PARTIALLY_REFUNDED`):
+   $$\text{netProfit} = \max(0, \text{totalPaid} - \text{totalCustomerRefunded}) - \max(0, \text{costPrice} - \text{totalAirlineRefunded}) + \text{modificationProfit}$$
+   This accounts for retained customer funds against retained airline costs/cancellation penalties.
+3. **Tickets Without Cost Price** (`costPrice === null`):
+   - $\text{netProfit} = \text{null}$.
+   - Excluded from profit calculations and counted separately in `ticketsWithoutCost`.
+4. **Ledger Invariant**:
+   $$\sum_{\text{tickets with cost}} \text{netProfit} \equiv \text{grossProfit}_{\text{Report}}$$
+
+### 5.3 Operating Expenses & Executive Net Profit
+- **Office Expenses**: Services and transfers logged under `Office Expenses` represent agency operating costs.
+- **Agency Net Profit**:
+  $$\text{Agency netProfit} = \text{grossProfit} - \text{totalExpenses}$$
+  computed strictly per currency (`byCurrency[curr].netProfit`).
+
+### 5.4 Financial RBAC & Sensitive Data Sanitization
+- Strict Role-Based Access Control governs all financial disclosures.
+- Non-ADMIN users (AGENT role) are forbidden from viewing:
+  - `costPrice` on tickets
+  - `netProfit`, `grossProfit`, `totalNetProfit`, and `totalExpenses` on KPI reports and summaries
+  - `modificationProfit` and `airlineFee` on modifications
+  - `airlineRefundAmount` on refunds
+- Sanitization occurs at controller exit before sending JSON responses across all controllers (`ReportController`, `EmployeeController`, `CustomerController`, `TicketController`).
+
+### 5.5 Frontend Financial Architecture & Formula Sanitization
+- **Server-Driven Financials**: Client-side float KPI summing is deleted. Dashboard and Reports consume authoritative KPIs from `GET /reports/summary`.
+- **Integer Minor Units**: Form utilities in `frontend/js/domain/ticket-rules.js` operate on integer minor units (cents) to eliminate IEEE 754 float drift.
+- **Multi-Currency UI**: Display values format per-currency buckets (`formatMultiCurrency`) and never label multi-currency datasets blindly as EGP.
+- **CSV Formula Injection Neutralization**: All spreadsheet export cells beginning with `=`, `+`, `-`, `@`, `\t`, or `\r` are neutralized (`sanitizeCsvCell`) by prefixing a single quote.

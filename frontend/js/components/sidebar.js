@@ -19,6 +19,7 @@ export function renderSidebar(activePath = '/dashboard') {
   const mainNav = [
     { path: '/dashboard', label: t('nav.dashboard'), icon: 'dashboard' },
     { path: '/tickets', label: t('nav.tickets'), icon: 'ticket' },
+    { path: '/visas', label: t('nav.visas'), icon: 'visa' },
     { path: '/customers', label: t('nav.customers'), icon: 'customers' },
     { path: '/payments', label: t('nav.payments'), icon: 'payments' },
     { path: '/refunds', label: t('nav.refunds'), icon: 'refunds' },

@@ -4,13 +4,36 @@
 
 import { EmployeeService } from '../services/employee.service.js';
 
+function sanitizeEmployee(emp, isAdmin) {
+  if (!emp || isAdmin) return emp;
+  const sanitized = { ...emp };
+  delete sanitized.grossProfit;
+  delete sanitized.netProfit;
+  delete sanitized.totalNetProfit;
+  delete sanitized.modificationProfit;
+  if (sanitized.byCurrency) {
+    const cleanedByCurrency = {};
+    for (const [curr, grp] of Object.entries(sanitized.byCurrency)) {
+      const cleanedGrp = { ...grp };
+      delete cleanedGrp.grossProfit;
+      delete cleanedGrp.netProfit;
+      delete cleanedGrp.modificationProfit;
+      cleanedByCurrency[curr] = cleanedGrp;
+    }
+    sanitized.byCurrency = cleanedByCurrency;
+  }
+  return sanitized;
+}
+
 export const EmployeeController = {
   async getEmployees(req, res, next) {
     try {
       const employees = await EmployeeService.getEmployees();
+      const isAdmin = req.user?.role === 'ADMIN';
+      const data = employees.map(e => sanitizeEmployee(e, isAdmin));
       return res.status(200).json({
         success: true,
-        data: employees
+        data
       });
     } catch (err) {
       next(err);
@@ -20,9 +43,11 @@ export const EmployeeController = {
   async getEmployeeById(req, res, next) {
     try {
       const employee = await EmployeeService.getEmployeeById(req.params.id);
+      const isAdmin = req.user?.role === 'ADMIN';
+      const data = sanitizeEmployee(employee, isAdmin);
       return res.status(200).json({
         success: true,
-        data: employee
+        data
       });
     } catch (err) {
       next(err);

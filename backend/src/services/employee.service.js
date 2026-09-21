@@ -7,13 +7,7 @@
 
 import bcrypt from 'bcryptjs';
 import { getPrismaClient, withDbRetry } from '../config/database.js';
-import {
-  calculateTotalPaid,
-  calculateRemaining,
-  calculateTotalRefunded,
-  calculateTotalModificationFees
-} from '../domain/ticket-rules.js';
-import { asDecimal, moneyNumber } from '../utils/money.js';
+import { aggregateLedgers } from '../domain/ledger.js';
 import { ValidationError, NotFoundError, BusinessRuleError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
 
@@ -24,6 +18,7 @@ export const EmployeeService = {
   async getEmployees() {
     const prisma = getPrismaClient();
 
+    // Fetch active/all employees alongside tickets to aggregate real stats
     const [users, tickets] = await withDbRetry(
       () => Promise.all([
         prisma.user.findMany({
@@ -42,17 +37,21 @@ export const EmployeeService = {
         prisma.ticket.findMany({
           where: { deletedAt: null },
           select: {
+            id: true,
             createdById: true,
             createdBy: true,
             ticketPrice: true,
+            costPrice: true,
+            status: true,
+            currency: true,
             payments: {
-              select: { amount: true }
+              select: { amount: true, type: true, reference: true, notes: true }
             },
             refunds: {
-              select: { amount: true, status: true }
+              select: { amount: true, airlineRefundAmount: true, status: true }
             },
             modifications: {
-              select: { changeFee: true }
+              select: { changeFee: true, airlineFee: true }
             }
           }
         })
@@ -60,35 +59,23 @@ export const EmployeeService = {
       { context: 'employee.getEmployees' }
     );
 
-    // Compute dynamic financial statistics for each employee
+    // Compute dynamic financial statistics for each employee using the single source of truth ledger
     return users.map(user => {
       const userTickets = tickets.filter(t => t.createdById === user.id || t.createdBy === user.name);
-
-      let salesDec = asDecimal(0);
-      let collectedDec = asDecimal(0);
-      let refundsDec = asDecimal(0);
-      let outstandingDec = asDecimal(0);
-
-      userTickets.forEach(t => {
-        const price = asDecimal(t.ticketPrice);
-        const paid = asDecimal(calculateTotalPaid(t.payments || []));
-        const ref = asDecimal(calculateTotalRefunded(t.refunds || []));
-        const modFees = asDecimal(calculateTotalModificationFees(t.modifications || []));
-        const rem = asDecimal(calculateRemaining(t.ticketPrice, paid, modFees));
-
-        salesDec = salesDec.plus(price).plus(modFees);
-        collectedDec = collectedDec.plus(paid);
-        refundsDec = refundsDec.plus(ref);
-        outstandingDec = outstandingDec.plus(rem);
-      });
+      const agg = aggregateLedgers(userTickets);
 
       return {
         ...user,
         ticketsCount: userTickets.length,
-        sales: moneyNumber(salesDec),
-        collected: moneyNumber(collectedDec),
-        refunds: moneyNumber(refundsDec),
-        outstanding: moneyNumber(outstandingDec),
+        sales: agg.totalSales,
+        collected: agg.totalCollected,
+        refunds: agg.totalRefunds,
+        outstanding: agg.totalOutstanding,
+        modificationFees: agg.totalModFees,
+        modificationCollected: agg.modificationCollected,
+        modificationOutstanding: agg.modificationOutstanding,
+        grossProfit: agg.grossProfit,
+        byCurrency: agg.byCurrency,
         isCalculated: true
       };
     });
@@ -132,46 +119,39 @@ export const EmployeeService = {
           ]
         },
         select: {
+          id: true,
           ticketPrice: true,
+          costPrice: true,
+          status: true,
+          currency: true,
           payments: {
-            select: { amount: true }
+            select: { amount: true, type: true, reference: true, notes: true }
           },
           refunds: {
-            select: { amount: true, status: true }
+            select: { amount: true, airlineRefundAmount: true, status: true }
           },
           modifications: {
-            select: { changeFee: true }
+            select: { changeFee: true, airlineFee: true }
           }
         }
       }),
       { context: 'employee.getEmployeeById.findTickets' }
     );
 
-    let salesDec = asDecimal(0);
-    let collectedDec = asDecimal(0);
-    let refundsDec = asDecimal(0);
-    let outstandingDec = asDecimal(0);
-
-    userTickets.forEach(t => {
-      const price = asDecimal(t.ticketPrice);
-      const paid = asDecimal(calculateTotalPaid(t.payments || []));
-      const ref = asDecimal(calculateTotalRefunded(t.refunds || []));
-      const modFees = asDecimal(calculateTotalModificationFees(t.modifications || []));
-      const rem = asDecimal(calculateRemaining(t.ticketPrice, paid, modFees));
-
-      salesDec = salesDec.plus(price).plus(modFees);
-      collectedDec = collectedDec.plus(paid);
-      refundsDec = refundsDec.plus(ref);
-      outstandingDec = outstandingDec.plus(rem);
-    });
+    const agg = aggregateLedgers(userTickets);
 
     return {
       ...user,
       ticketsCount: userTickets.length,
-      sales: moneyNumber(salesDec),
-      collected: moneyNumber(collectedDec),
-      refunds: moneyNumber(refundsDec),
-      outstanding: moneyNumber(outstandingDec),
+      sales: agg.totalSales,
+      collected: agg.totalCollected,
+      refunds: agg.totalRefunds,
+      outstanding: agg.totalOutstanding,
+      modificationFees: agg.totalModFees,
+      modificationCollected: agg.modificationCollected,
+      modificationOutstanding: agg.modificationOutstanding,
+      grossProfit: agg.grossProfit,
+      byCurrency: agg.byCurrency,
       isCalculated: true
     };
   },

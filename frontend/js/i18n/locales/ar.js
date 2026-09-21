@@ -40,6 +40,7 @@ export const ar = {
     refunds: 'الاستردادات',
     reports: 'التقارير',
     expenses: 'مصروفات المكتب',
+    visas: 'التأشيرات',
     administration: 'الإدارة',
     employees: 'الموظفون',
     activity: 'سجل النشاط',
@@ -614,6 +615,83 @@ export const ar = {
     emptyState: 'لا توجد مصروفات مسجلة تطابق معايير البحث.'
   },
 
+  // Visas Page
+  visas: {
+    title: 'التأشيرات',
+    subtitle: 'إدارة ومتابعة طلبات التأشيرات وأنواعها وحالة الدفع.',
+    addVisa: 'إضافة تأشيرة',
+    newVisaModalTitle: 'طلب تأشيرة جديد',
+    newVisaModalSubtitle: 'تسجيل بيانات طلب تأشيرة جديد.',
+    editVisaModalTitle: 'تعديل التأشيرة',
+    editVisaModalSubtitle: 'تحديث بيانات هذه التأشيرة.',
+    totalPrice: 'إجمالي الإيرادات',
+    totalCost: 'إجمالي التكاليف',
+    totalCount: 'عدد التأشيرات',
+    profit: 'الربح',
+    filterType: 'جميع الأنواع',
+    filterPayment: 'جميع حالات الدفع',
+    types: {
+      TOURIST: 'سياحية',
+      WORK: 'عمل',
+      STUDY: 'دراسة',
+      UMRAH_HAJJ: 'عمرة / حج',
+      MEDICAL: 'علاجية'
+    },
+    paymentStatus: {
+      PAID: 'مدفوع',
+      UNPAID: 'غير مدفوع'
+    },
+    payment: {
+      PAID: 'مدفوع',
+      UNPAID: 'غير مدفوع'
+    },
+    table: {
+      clientName: 'اسم العميل',
+      phone: 'الهاتف',
+      visaType: 'نوع التأشيرة',
+      country: 'الدولة',
+      submissionDate: 'تاريخ التقديم',
+      price: 'السعر',
+      costPrice: 'سعر التكلفة',
+      paymentStatus: 'الدفع',
+      actions: 'إجراءات'
+    },
+    form: {
+      clientName: 'اسم العميل',
+      clientNamePlaceholder: 'أدخل اسم العميل بالكامل',
+      phone: 'رقم الهاتف',
+      phonePlaceholder: 'مثال: 01XX XXX XXXX',
+      visaType: 'نوع التأشيرة',
+      country: 'الدولة',
+      countryPlaceholder: 'مثال: السعودية، تركيا، أمريكا...',
+      submissionDate: 'تاريخ التقديم',
+      price: 'السعر (للعميل)',
+      costPrice: 'سعر التكلفة (للمكتب)',
+      currency: 'العملة',
+      paymentStatus: 'حالة الدفع',
+      notes: 'ملاحظات',
+      notesPlaceholder: 'ملاحظات إضافية عن طلب التأشيرة...'
+    },
+    details: {
+      title: 'تفاصيل التأشيرة',
+      breadcrumb: 'التأشيرات',
+      clientInfo: 'بيانات العميل',
+      visaInfo: 'بيانات التأشيرة',
+      financialInfo: 'البيانات المالية',
+      changePaymentStatus: 'تغيير حالة الدفع',
+      markAsPaid: 'تحديد كمدفوع',
+      markAsUnpaid: 'تحديد كغير مدفوع'
+    },
+    deleteConfirmTitle: 'حذف سجل التأشيرة',
+    deleteConfirmMessage: 'هل أنت متأكد من حذف سجل هذه التأشيرة؟ سيتم إزالته من النظام.',
+    createdSuccessfully: 'تم إنشاء سجل التأشيرة بنجاح.',
+    updatedSuccessfully: 'تم تحديث سجل التأشيرة بنجاح.',
+    deletedSuccessfully: 'تم حذف سجل التأشيرة بنجاح.',
+    paymentUpdated: 'تم تحديث حالة الدفع بنجاح.',
+    emptyState: 'لم يتم العثور على سجلات تأشيرات مطابقة.',
+    searchPlaceholder: 'بحث باسم العميل أو الدولة...'
+  },
+
   // Activity Page
   activity: {
     title: 'سجل النشاط',
@@ -715,13 +793,17 @@ export const ar = {
     addPayment: {
       title: 'تسجيل دفعة',
       subtitle: 'إضافة دفعة مالية محققة من العميل لحجز هذه التذكرة.',
-      amount: 'مبلغ الدفعة (جنيه مصري)',
+      amount: 'مبلغ الدفعة',
+      type: 'تصنيف الدفعة',
+      typeTicket: 'دفعة تذكرة',
+      typeModification: 'رسوم تعديل الرحلة',
       method: 'طريقة الدفع',
       ref: 'مرجع المعاملة / رقم الإيصال',
       refPlaceholder: 'مثال: CASH-992 أو POS-1188',
       notes: 'ملاحظات داخلية (اختياري)',
       submit: 'تسجيل الدفعة',
-      remainingIs: 'الرصيد المتبقي المستحق:'
+      remainingIs: 'الرصيد المتبقي المستحق:',
+      modificationOutstandingIs: 'المتبقي من رسوم التعديل:'
     },
     modifyFlight: {
       title: 'تعديل جدول الرحلة',
@@ -755,8 +837,11 @@ export const ar = {
       customerDeduction: 'المخصوم على العميل:',
       netAgencyImpact: 'صافي أثر العملية على أرباح المكتب:',
       closeTicketRefunded: 'اعتبار التذكرة مستردة بالكامل (REFUNDED)',
-      penaltyFee: 'رسوم الإلغاء / غرامة الوكالة (جنيه مصري)',
+      penaltyFee: 'رسوم الإلغاء / غرامة الوكالة',
       reason: 'سبب الاسترداد',
+      status: 'حالة الاسترداد',
+      statusCompleted: 'مكتمل (COMPLETED)',
+      statusPending: 'قيد المراجعة (PENDING)',
       submit: 'إجراء الاسترداد'
     },
     deleteTicket: {

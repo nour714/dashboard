@@ -7,7 +7,7 @@ import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { openModal, closeModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
-import { formatCurrency } from '../utils/calculations.js';
+import { formatMultiCurrency } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
 import { debounce } from '../utils/dom.js';
 import { t } from '../i18n/i18n.js';
@@ -55,8 +55,8 @@ function renderCustomerRows(customers, ticketsByCustomerMap = null) {
           <span class="tabular-nums font-bold" style="font-size: 15px;">${stats.ticketCount}</span>
         </td>
         <td>
-          <div class="tabular-nums font-bold">${formatCurrency(stats.totalSpent, 'EGP')}</div>
-          <div class="cell-sub text-success">${escapeHtml(t('common.paid'))}: ${formatCurrency(stats.totalPaid, 'EGP')}</div>
+          <div class="tabular-nums font-bold">${formatMultiCurrency(stats.byCurrency, 'totalSpent', stats.currency || 'EGP', stats.totalSpent)}</div>
+          <div class="cell-sub text-success">${escapeHtml(t('common.paid'))}: ${formatMultiCurrency(stats.byCurrency, 'totalPaid', stats.currency || 'EGP', stats.totalPaid)}</div>
         </td>
         <td>
           <a href="/customers/${escapeHtml(c.id)}" class="btn btn-sm btn-ghost text-accent" data-link>
@@ -90,7 +90,7 @@ function renderCustomerCards(customers, ticketsByCustomerMap = null) {
         <div class="mobile-card-meta">
           <div>
             <div class="text-xs text-muted">${escapeHtml(t('customerDetails.totalTickets'))} / ${escapeHtml(t('customerDetails.totalSpent'))}</div>
-            <div class="font-bold tabular-nums">${stats.ticketCount} • ${formatCurrency(stats.totalSpent, 'EGP')}</div>
+            <div class="font-bold tabular-nums">${stats.ticketCount} • ${formatMultiCurrency(stats.byCurrency, 'totalSpent', stats.currency || 'EGP', stats.totalSpent)}</div>
           </div>
           <span class="text-accent font-semibold text-sm">${escapeHtml(t('common.details'))} ›</span>
         </div>

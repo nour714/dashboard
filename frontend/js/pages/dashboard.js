@@ -6,11 +6,10 @@ import { store } from '../state/store.js';
 import { icons } from '../components/icons.js';
 import { renderStatCard } from '../components/stat-card.js';
 import { renderStatusBadge } from '../components/status-badge.js';
+import { TicketService } from '../services/ticket-service.js';
 import {
-  calculateTotalPaid,
-  calculateRemaining,
-  calculateTotalModificationFees,
   formatCurrency,
+  formatMultiCurrency,
   formatDateTime,
   formatRelativeTime
 } from '../utils/calculations.js';
@@ -19,24 +18,11 @@ import { t } from '../i18n/i18n.js';
 
 export const DashboardPage = {
   render() {
-    const { tickets = [], activityLogs = [] } = store.getState();
+    const { tickets = [], activityLogs = [], summaryKPIs } = store.getState();
+    const kpis = summaryKPIs || {};
 
-    // Financial KPIs
-    let totalTickets = tickets.length;
-    let totalSales = 0;
-    let totalCollected = 0;
-    let totalOutstanding = 0;
-
-    tickets.forEach(tk => {
-      const price = Number(tk.ticketPrice) || 0;
-      totalSales += price;
-      const paid = calculateTotalPaid(tk.payments);
-      totalCollected += paid;
-      const modFees = calculateTotalModificationFees(tk.modifications);
-      totalOutstanding += calculateRemaining(price, paid, modFees);
-    });
-
-    const collectionRate = totalSales > 0 ? Math.round((totalCollected / totalSales) * 100) : 0;
+    const totalTickets = kpis.totalTickets ?? tickets.length;
+    const collectionRate = kpis.collectionRate ?? 0;
 
     // Recent Tickets (Top 5)
     const recentTickets = tickets.slice(0, 5);
@@ -50,10 +36,8 @@ export const DashboardPage = {
     const recentActivities = activityLogs.slice(0, 5);
 
     const recentTicketsHtml = recentTickets.map(tk => {
-      const totalPaid = calculateTotalPaid(tk.payments);
-      const modFees = calculateTotalModificationFees(tk.modifications);
-      const remaining = calculateRemaining(tk.ticketPrice, totalPaid, modFees);
-      const isPaid = remaining === 0;
+      const fin = tk.financials || TicketService.getTicketFinancials(tk);
+      const isPaid = (fin.remaining || 0) === 0;
 
       return `
         <tr>
@@ -72,13 +56,13 @@ export const DashboardPage = {
             </div>
           </td>
           <td>
-            <div class="tabular-nums font-semibold">${formatCurrency(tk.ticketPrice, tk.currency)}</div>
+            <div class="tabular-nums font-semibold">${formatCurrency(fin.ticketPrice, fin.currency)}</div>
             <div class="cell-sub ${isPaid ? 'text-success' : 'text-danger'}">
-              ${isPaid ? `${escapeHtml(t('common.paid'))}: ${formatCurrency(totalPaid, tk.currency)}` : `${escapeHtml(t('common.remaining'))}: ${formatCurrency(remaining, tk.currency)}`}
+              ${isPaid ? `${escapeHtml(t('common.paid'))}: ${formatCurrency(fin.totalPaid, fin.currency)}` : `${escapeHtml(t('common.remaining'))}: ${formatCurrency(fin.remaining, fin.currency)}`}
             </div>
           </td>
           <td>
-            ${renderStatusBadge(tk.status)}
+            ${renderStatusBadge(fin.paymentStatus || tk.status)}
           </td>
         </tr>
       `;
@@ -133,7 +117,7 @@ export const DashboardPage = {
 
         ${renderStatCard({
           label: t('dashboard.kpi.totalSales'),
-          value: formatCurrency(totalSales),
+          value: formatMultiCurrency(kpis.byCurrency, 'totalSales', kpis.currency || 'EGP', kpis.totalSales ?? 0),
           icon: 'dollarSign',
           iconStyle: 'accent',
           subtext: t('dashboard.kpi.salesSubtitle')
@@ -141,7 +125,7 @@ export const DashboardPage = {
 
         ${renderStatCard({
           label: t('dashboard.kpi.totalCollected'),
-          value: formatCurrency(totalCollected),
+          value: formatMultiCurrency(kpis.byCurrency, 'totalCollected', kpis.currency || 'EGP', kpis.totalCollected ?? 0),
           icon: 'check',
           iconStyle: 'success',
           progress: collectionRate,
@@ -150,10 +134,10 @@ export const DashboardPage = {
 
         ${renderStatCard({
           label: t('dashboard.kpi.remainingBalance'),
-          value: formatCurrency(totalOutstanding),
+          value: formatMultiCurrency(kpis.byCurrency, 'totalOutstanding', kpis.currency || 'EGP', kpis.totalOutstanding ?? 0),
           icon: 'alertTriangle',
           iconStyle: 'danger',
-          alertPill: totalOutstanding > 0 ? t('common.remaining') : '',
+          alertPill: (kpis.totalOutstanding || 0) > 0 ? t('common.remaining') : '',
           subtext: t('dashboard.kpi.remainingSubtitle')
         })}
       </div>
@@ -214,6 +198,8 @@ export const DashboardPage = {
   },
 
   afterRender(_container) {
-    // Dynamic bindings if any
+    if (!store.getState().summaryKPIs) {
+      store.refreshSummaryKPIs().catch(() => {});
+    }
   }
 };
