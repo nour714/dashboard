@@ -157,12 +157,14 @@ export const TicketDetailsPage = {
           </div>
           <div class="financial-item">
             <span class="financial-item-label">${escapeHtml(t('reports.kpi.refundsTotal'))}</span>
-            <span class="financial-item-value tabular-nums" style="color: #cbd5e1;">${formatCurrency(financials.totalRefunded, financials.currency)}</span>
+            <span class="financial-item-value tabular-nums" style="color: ${financials.totalRefunded > 0 ? 'var(--color-danger)' : '#cbd5e1'};">${formatCurrency(financials.totalRefunded, financials.currency)}</span>
           </div>
-          <div class="financial-item">
-            <span class="financial-item-label">${escapeHtml(t('ticketDetails.overview.netAmount'))}</span>
-            <span class="financial-item-value net tabular-nums">${formatCurrency(financials.netValue, financials.currency)}</span>
-          </div>
+          ${financials.modificationFees > 0 ? `
+            <div class="financial-item">
+              <span class="financial-item-label">${escapeHtml(t('ticketDetails.tabs.modifications') || 'Modifications')}</span>
+              <span class="financial-item-value tabular-nums text-accent">${formatCurrency(financials.modificationFees, financials.currency)}</span>
+            </div>
+          ` : ''}
         </div>
       </div>
 

@@ -88,10 +88,12 @@ function renderSubRows(tData) {
           <div class="text-sm">${escapeHtml(r.reason || '-')}</div>
         </td>
         <td></td>
-        <td>
-          <div class="tabular-nums font-semibold text-danger text-sm">${formatCurrency(r.amount, r.currency || tData.currency)}</div>
-        </td>
         <td></td>
+        <td>
+          <div class="tabular-nums font-semibold text-danger text-sm">
+            ${escapeHtml(t('ticketDetails.tabs.refunds') || 'Refund')}: ${formatCurrency(r.amount, r.currency || tData.currency)}
+          </div>
+        </td>
         <td>${renderStatusBadge(r.status)}</td>
       </tr>
     `;
