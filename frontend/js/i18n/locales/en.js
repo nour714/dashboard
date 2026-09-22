@@ -635,6 +635,7 @@ export const en = {
     filterType: 'All Types',
     filterPayment: 'All Payment Status',
     filterStatus: 'All Status',
+    filterCurrency: 'All Currencies',
     types: {
       TOURIST: 'Tourist',
       WORK: 'Work',
@@ -658,6 +659,7 @@ export const en = {
       visaType: 'Visa Type',
       country: 'Country',
       submissionDate: 'Submission Date',
+      currency: 'Currency',
       price: 'Price',
       paidAmount: 'Collected',
       remainingAmount: 'Remaining',

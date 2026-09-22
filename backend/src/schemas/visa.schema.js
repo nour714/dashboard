@@ -39,6 +39,7 @@ export const queryVisasSchema = z.object({
   pageSize: z.coerce.number().int().positive().max(100).default(25),
   visaType: z.enum(visaTypes).optional(),
   paymentStatus: z.enum(paymentStatuses).optional(),
+  currency: z.string().max(10).optional(),
   search: z.string().optional(),
   startDate: optionalValidDateString,
   endDate: optionalValidDateString

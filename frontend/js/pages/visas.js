@@ -8,7 +8,7 @@ import { formatCurrency, formatDateTime } from '../utils/calculations.js';
 import { escapeHtml } from '../utils/security.js';
 import { t } from '../i18n/i18n.js';
 
-let currentFilters = { search: '', visaType: '', paymentStatus: '', startDate: '', endDate: '', page: 1, pageSize: 25 };
+let currentFilters = { search: '', visaType: '', paymentStatus: '', currency: '', startDate: '', endDate: '', page: 1, pageSize: 25 };
 let cachedVisas = [];
 let cachedPagination = { page: 1, pageSize: 25, total: 0, totalPages: 1 };
 let cachedTotals = null;
@@ -76,7 +76,7 @@ function openAddVisaModal(onSuccess) {
           </div>
         </div>
 
-        <div class="form-grid-2">
+        <div class="form-grid-3">
           <div class="form-group">
             <label class="form-label" for="new-visa-price">${escapeHtml(t('visas.form.price') || 'Price')} *</label>
             <input type="number" id="new-visa-price" class="form-control tabular-nums" min="0" step="any" required />
@@ -84,6 +84,18 @@ function openAddVisaModal(onSuccess) {
           <div class="form-group">
             <label class="form-label" for="new-visa-paidAmount">${escapeHtml(t('visas.form.paidAmount') || 'Collected Amount')}</label>
             <input type="number" id="new-visa-paidAmount" class="form-control tabular-nums" min="0" step="any" value="0" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="new-visa-currency">${escapeHtml(t('visas.form.currency') || 'Currency')}</label>
+            <select id="new-visa-currency" class="form-control">
+              <option value="EGP" selected>EGP (جنيه مصري)</option>
+              <option value="USD">USD (دولار أمريكي)</option>
+              <option value="EUR">EUR (يورو)</option>
+              <option value="SAR">SAR (ريال سعودي)</option>
+              <option value="AED">AED (درهم إماراتي)</option>
+              <option value="QAR">QAR (ريال قطري)</option>
+              <option value="KWD">KWD (دينار كويتي)</option>
+            </select>
           </div>
         </div>
 
@@ -133,6 +145,7 @@ function openAddVisaModal(onSuccess) {
       const errorBox = modalEl.querySelector('#new-visa-error-box');
       const priceInput = modalEl.querySelector('#new-visa-price');
       const paidInput = modalEl.querySelector('#new-visa-paidAmount');
+      const currencySelect = modalEl.querySelector('#new-visa-currency');
       const statusSelect = modalEl.querySelector('#new-visa-status');
       const remainingPreview = modalEl.querySelector('#new-visa-remaining-preview');
 
@@ -147,8 +160,9 @@ function openAddVisaModal(onSuccess) {
         const p = Number(priceInput?.value) || 0;
         const pd = Number(paidInput?.value) || 0;
         const rem = Math.max(0, p - pd);
+        const curr = currencySelect?.value || 'EGP';
         if (remainingPreview) {
-          remainingPreview.textContent = formatCurrency(rem);
+          remainingPreview.textContent = formatCurrency(rem, curr);
           if (rem === 0 && p > 0) {
             remainingPreview.style.color = 'var(--color-success, #16a34a)';
           } else {
@@ -168,6 +182,7 @@ function openAddVisaModal(onSuccess) {
 
       if (priceInput) priceInput.addEventListener('input', syncRemaining);
       if (paidInput) paidInput.addEventListener('input', syncRemaining);
+      if (currencySelect) currencySelect.addEventListener('change', syncRemaining);
 
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
@@ -180,6 +195,7 @@ function openAddVisaModal(onSuccess) {
           const submissionDate = modalEl.querySelector('#new-visa-date').value;
           const price = Number(modalEl.querySelector('#new-visa-price').value);
           const paidAmount = Number(modalEl.querySelector('#new-visa-paidAmount').value) || 0;
+          const currency = modalEl.querySelector('#new-visa-currency')?.value || 'EGP';
           const paymentStatus = modalEl.querySelector('#new-visa-status').value;
           const notes = modalEl.querySelector('#new-visa-notes').value.trim();
           
@@ -209,6 +225,7 @@ function openAddVisaModal(onSuccess) {
             price,
             paidAmount,
             costPrice,
+            currency,
             paymentStatus,
             notes
           });
@@ -283,7 +300,7 @@ function openEditVisaModal(visa, onSuccess) {
           </div>
         </div>
 
-        <div class="form-grid-2">
+        <div class="form-grid-3">
           <div class="form-group">
             <label class="form-label" for="edit-visa-price">${escapeHtml(t('visas.form.price') || 'Price')} *</label>
             <input type="number" id="edit-visa-price" class="form-control tabular-nums" min="0" step="any" value="${escapeHtml(String(visa.price || ''))}" required />
@@ -292,12 +309,24 @@ function openEditVisaModal(visa, onSuccess) {
             <label class="form-label" for="edit-visa-paidAmount">${escapeHtml(t('visas.form.paidAmount') || 'Collected Amount')}</label>
             <input type="number" id="edit-visa-paidAmount" class="form-control tabular-nums" min="0" step="any" value="${escapeHtml(String(visa.paidAmount ?? 0))}" />
           </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-visa-currency">${escapeHtml(t('visas.form.currency') || 'Currency')}</label>
+            <select id="edit-visa-currency" class="form-control">
+              <option value="EGP" ${visa.currency === 'EGP' ? 'selected' : ''}>EGP (جنيه مصري)</option>
+              <option value="USD" ${visa.currency === 'USD' ? 'selected' : ''}>USD (دولار أمريكي)</option>
+              <option value="EUR" ${visa.currency === 'EUR' ? 'selected' : ''}>EUR (يورو)</option>
+              <option value="SAR" ${visa.currency === 'SAR' ? 'selected' : ''}>SAR (ريال سعودي)</option>
+              <option value="AED" ${visa.currency === 'AED' ? 'selected' : ''}>AED (درهم إماراتي)</option>
+              <option value="QAR" ${visa.currency === 'QAR' ? 'selected' : ''}>QAR (ريال قطري)</option>
+              <option value="KWD" ${visa.currency === 'KWD' ? 'selected' : ''}>KWD (دينار كويتي)</option>
+            </select>
+          </div>
         </div>
 
         <!-- Dynamic Remaining Calculation Banner -->
         <div class="p-sm d-flex items-center justify-between" style="background: var(--color-bg-secondary, #f8fafc); border-radius: var(--radius-md); border: 1px dashed var(--color-border-soft);">
           <span class="text-sm font-medium text-muted">${escapeHtml(t('visas.form.remainingAmount') || 'Remaining Balance')}:</span>
-          <span id="edit-visa-remaining-preview" class="tabular-nums font-bold" style="font-size: 15px; color: ${initialRem === 0 && initialPrice > 0 ? 'var(--color-success, #16a34a)' : 'var(--color-warning, #d97706)'};">${formatCurrency(initialRem)}</span>
+          <span id="edit-visa-remaining-preview" class="tabular-nums font-bold" style="font-size: 15px; color: ${initialRem === 0 && initialPrice > 0 ? 'var(--color-success, #16a34a)' : 'var(--color-warning, #d97706)'};">${formatCurrency(initialRem, visa.currency || 'EGP')}</span>
         </div>
 
         <div class="form-grid-2">
@@ -340,6 +369,7 @@ function openEditVisaModal(visa, onSuccess) {
       const errorBox = modalEl.querySelector('#edit-visa-error-box');
       const priceInput = modalEl.querySelector('#edit-visa-price');
       const paidInput = modalEl.querySelector('#edit-visa-paidAmount');
+      const currencySelect = modalEl.querySelector('#edit-visa-currency');
       const statusSelect = modalEl.querySelector('#edit-visa-status');
       const remainingPreview = modalEl.querySelector('#edit-visa-remaining-preview');
 
@@ -354,8 +384,9 @@ function openEditVisaModal(visa, onSuccess) {
         const p = Number(priceInput?.value) || 0;
         const pd = Number(paidInput?.value) || 0;
         const rem = Math.max(0, p - pd);
+        const curr = currencySelect?.value || visa.currency || 'EGP';
         if (remainingPreview) {
-          remainingPreview.textContent = formatCurrency(rem);
+          remainingPreview.textContent = formatCurrency(rem, curr);
           if (rem === 0 && p > 0) {
             remainingPreview.style.color = 'var(--color-success, #16a34a)';
           } else {
@@ -375,6 +406,7 @@ function openEditVisaModal(visa, onSuccess) {
 
       if (priceInput) priceInput.addEventListener('input', syncRemaining);
       if (paidInput) paidInput.addEventListener('input', syncRemaining);
+      if (currencySelect) currencySelect.addEventListener('change', syncRemaining);
 
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
@@ -387,6 +419,7 @@ function openEditVisaModal(visa, onSuccess) {
           const submissionDate = modalEl.querySelector('#edit-visa-date').value;
           const price = Number(modalEl.querySelector('#edit-visa-price').value);
           const paidAmount = Number(modalEl.querySelector('#edit-visa-paidAmount').value) || 0;
+          const currency = modalEl.querySelector('#edit-visa-currency')?.value || 'EGP';
           const paymentStatus = modalEl.querySelector('#edit-visa-status').value;
           const notes = modalEl.querySelector('#edit-visa-notes').value.trim();
           
@@ -416,6 +449,7 @@ function openEditVisaModal(visa, onSuccess) {
             price,
             paidAmount,
             costPrice,
+            currency,
             paymentStatus,
             notes
           });
@@ -526,18 +560,21 @@ export const VisasPage = {
           <div class="cell-main ltr-data">${formatDateTime(visa.submissionDate)}</div>
         </td>
         <td>
+          <span class="badge badge-secondary ltr-data font-medium">${escapeHtml(visa.currency || 'EGP')}</span>
+        </td>
+        <td>
           <span class="tabular-nums font-bold" style="font-size: 15px;">
-            ${formatCurrency(visa.price)}
+            ${formatCurrency(visa.price, visa.currency || 'EGP')}
           </span>
         </td>
         <td>
           <span class="tabular-nums font-medium text-success" style="font-size: 14px;">
-            ${formatCurrency(paid)}
+            ${formatCurrency(paid, visa.currency || 'EGP')}
           </span>
         </td>
         <td>
           <span class="tabular-nums font-bold ${isPaidInFull ? 'text-muted' : 'text-warning'}" style="font-size: 14px;">
-            ${formatCurrency(remaining)}
+            ${formatCurrency(remaining, visa.currency || 'EGP')}
           </span>
         </td>
         <td>${getPaymentBadge(visa.paymentStatus)}</td>
@@ -618,6 +655,19 @@ export const VisasPage = {
               </select>
             </div>
 
+            <div style="min-width: 130px;">
+              <select id="visa-filter-currency" class="form-control">
+                <option value="">${escapeHtml(t('visas.filterCurrency') || 'All Currencies')}</option>
+                <option value="EGP" ${currentFilters.currency === 'EGP' ? 'selected' : ''}>EGP</option>
+                <option value="USD" ${currentFilters.currency === 'USD' ? 'selected' : ''}>USD</option>
+                <option value="EUR" ${currentFilters.currency === 'EUR' ? 'selected' : ''}>EUR</option>
+                <option value="SAR" ${currentFilters.currency === 'SAR' ? 'selected' : ''}>SAR</option>
+                <option value="AED" ${currentFilters.currency === 'AED' ? 'selected' : ''}>AED</option>
+                <option value="QAR" ${currentFilters.currency === 'QAR' ? 'selected' : ''}>QAR</option>
+                <option value="KWD" ${currentFilters.currency === 'KWD' ? 'selected' : ''}>KWD</option>
+              </select>
+            </div>
+
             <div class="d-flex items-center gap-xs">
               <input type="date" id="visa-filter-start-date" class="form-control" value="${escapeHtml(currentFilters.startDate || '')}" placeholder="${escapeHtml(t('common.fromDate'))}" />
               <span class="text-muted">—</span>
@@ -641,6 +691,7 @@ export const VisasPage = {
                 <th>${escapeHtml(t('visas.table.type') || 'Type')}</th>
                 <th>${escapeHtml(t('visas.table.country') || 'Country')}</th>
                 <th>${escapeHtml(t('visas.table.submissionDate') || 'Submission Date')}</th>
+                <th>${escapeHtml(t('visas.table.currency') || 'Currency')}</th>
                 <th>${escapeHtml(t('visas.table.price') || 'Price')}</th>
                 <th>${escapeHtml(t('visas.table.paidAmount') || 'Collected')}</th>
                 <th>${escapeHtml(t('visas.table.remainingAmount') || 'Remaining')}</th>
@@ -649,7 +700,7 @@ export const VisasPage = {
               </tr>
             </thead>
             <tbody id="visas-table-body">
-              ${rowsHtml || `<tr><td colspan="9" class="text-center text-muted p-lg">${escapeHtml(t('visas.emptyState') || 'No visas found.')}</td></tr>`}
+              ${rowsHtml || `<tr><td colspan="10" class="text-center text-muted p-lg">${escapeHtml(t('visas.emptyState') || 'No visas found.')}</td></tr>`}
             </tbody>
           </table>
         </div>
@@ -742,6 +793,16 @@ export const VisasPage = {
       });
     }
 
+    // Currency Filter Change
+    const currencyFilterSelect = container.querySelector('#visa-filter-currency');
+    if (currencyFilterSelect) {
+      currencyFilterSelect.addEventListener('change', (e) => {
+        currentFilters.currency = e.target.value;
+        currentFilters.page = 1;
+        fetchAndRefresh();
+      });
+    }
+
     // Date Filters
     const startDateInput = container.querySelector('#visa-filter-start-date');
     const endDateInput = container.querySelector('#visa-filter-end-date');
@@ -768,6 +829,7 @@ export const VisasPage = {
         currentFilters.search = '';
         currentFilters.visaType = '';
         currentFilters.paymentStatus = '';
+        currentFilters.currency = '';
         currentFilters.startDate = '';
         currentFilters.endDate = '';
         currentFilters.page = 1;

@@ -635,6 +635,7 @@ export const ar = {
     filterType: 'جميع الأنواع',
     filterPayment: 'جميع حالات الدفع',
     filterStatus: 'جميع الحالات',
+    filterCurrency: 'جميع العملات',
     types: {
       TOURIST: 'سياحية',
       WORK: 'عمل',
@@ -658,6 +659,7 @@ export const ar = {
       visaType: 'نوع التأشيرة',
       country: 'الدولة',
       submissionDate: 'تاريخ التقديم',
+      currency: 'العملة',
       price: 'السعر',
       paidAmount: 'المحصل',
       remainingAmount: 'باقي عليه',

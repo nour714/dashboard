@@ -90,6 +90,9 @@ async function runVisaTests() {
   const updatePaid = updateVisaSchema.safeParse({ paidAmount: 800, paymentStatus: 'PARTIAL' });
   assert(updatePaid.success, 'updateVisaSchema accepts paidAmount and PARTIAL status');
 
+  const queryCurrencyResult = queryVisasSchema.safeParse({ currency: 'USD' });
+  assert(queryCurrencyResult.success, 'queryVisasSchema accepts currency filter');
+
   // 2. Service Logic with Mock Prisma
   console.log('\n⚙️ Test Suite 2: Service CRUD & Role Scoping');
 
@@ -150,6 +153,7 @@ async function runVisaTests() {
           if (where.createdById && record.createdById !== where.createdById) return false;
           if (where.visaType && record.visaType !== where.visaType) return false;
           if (where.paymentStatus && record.paymentStatus !== where.paymentStatus) return false;
+          if (where.currency && record.currency !== where.currency) return false;
           if (where.OR) {
             const matches = where.OR.some(cond => {
               if (cond.clientName?.contains) {
@@ -213,7 +217,7 @@ async function runVisaTests() {
     submissionDate: new Date(),
     price: 8000,
     costPrice: 6500,
-    currency: 'EGP',
+    currency: 'SAR',
     paymentStatus: 'UNPAID'
   }, agent2);
 
@@ -235,6 +239,9 @@ async function runVisaTests() {
 
   const paidVisas = await VisaService.getVisas({ paymentStatus: 'PAID' }, adminUser);
   assert(paidVisas.visas.length === 1 && paidVisas.visas[0].paymentStatus === 'PAID', 'Filter by paymentStatus works');
+
+  const sarVisas = await VisaService.getVisas({ currency: 'SAR' }, adminUser);
+  assert(sarVisas.visas.length === 1 && sarVisas.visas[0].currency === 'SAR', 'Filter by currency works');
 
   // Search test
   const searchResult = await VisaService.getVisas({ search: 'Saudi' }, adminUser);

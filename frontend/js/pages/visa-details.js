@@ -113,10 +113,13 @@ function openEditVisaModal(visa, onSuccess) {
           <div class="form-group">
             <label class="form-label">${escapeHtml(t('visas.table.currency') || 'Currency')}</label>
             <select id="edit-visa-currency" class="form-control">
-              <option value="EGP" ${visa.currency === 'EGP' ? 'selected' : ''}>EGP</option>
-              <option value="USD" ${visa.currency === 'USD' ? 'selected' : ''}>USD</option>
-              <option value="EUR" ${visa.currency === 'EUR' ? 'selected' : ''}>EUR</option>
-              <option value="SAR" ${visa.currency === 'SAR' ? 'selected' : ''}>SAR</option>
+              <option value="EGP" ${visa.currency === 'EGP' ? 'selected' : ''}>EGP (جنيه مصري)</option>
+              <option value="USD" ${visa.currency === 'USD' ? 'selected' : ''}>USD (دولار أمريكي)</option>
+              <option value="EUR" ${visa.currency === 'EUR' ? 'selected' : ''}>EUR (يورو)</option>
+              <option value="SAR" ${visa.currency === 'SAR' ? 'selected' : ''}>SAR (ريال سعودي)</option>
+              <option value="AED" ${visa.currency === 'AED' ? 'selected' : ''}>AED (درهم إماراتي)</option>
+              <option value="QAR" ${visa.currency === 'QAR' ? 'selected' : ''}>QAR (ريال قطري)</option>
+              <option value="KWD" ${visa.currency === 'KWD' ? 'selected' : ''}>KWD (دينار كويتي)</option>
             </select>
           </div>
         </div>
@@ -421,6 +424,10 @@ export const VisaDetailsPage = {
             <div class="detail-row d-flex justify-between items-center" style="padding-bottom: 12px; border-bottom: 1px solid var(--color-border-soft);">
               <span class="detail-label text-muted">${escapeHtml(t('visas.table.paymentStatus') || 'Payment Status')}</span>
               <span class="detail-value">${getPaymentStatusBadge(visa.paymentStatus)}</span>
+            </div>
+            <div class="detail-row d-flex justify-between items-center" style="padding-bottom: 12px; border-bottom: 1px solid var(--color-border-soft);">
+              <span class="detail-label text-muted">${escapeHtml(t('visas.table.currency') || 'Currency')}</span>
+              <span class="detail-value"><span class="badge badge-secondary ltr-data font-medium">${escapeHtml(visa.currency || 'EGP')}</span></span>
             </div>
             <div class="detail-row d-flex justify-between items-center" style="padding-bottom: 12px; border-bottom: 1px solid var(--color-border-soft);">
               <span class="detail-label text-muted">${escapeHtml(t('visas.table.price') || 'Price (Client)')}</span>

@@ -95,7 +95,7 @@ export const VisaService = {
     const prisma = getPrismaClient();
     const page = Number(filters.page) || 1;
     const pageSize = Number(filters.pageSize) || 25;
-    const { visaType, paymentStatus, search, startDate, endDate } = filters;
+    const { visaType, paymentStatus, currency, search, startDate, endDate } = filters;
 
     const where = { deletedAt: null };
 
@@ -110,6 +110,10 @@ export const VisaService = {
 
     if (paymentStatus) {
       where.paymentStatus = paymentStatus;
+    }
+
+    if (currency) {
+      where.currency = currency;
     }
 
     if (search) {
@@ -214,13 +218,25 @@ export const VisaService = {
       };
     }
 
-    const primaryCurr = Object.keys(byCurrency)[0] || 'EGP';
+    const primaryCurr = (filters?.currency && byCurrency[filters.currency])
+      ? filters.currency
+      : (byCurrency['EGP'] ? 'EGP' : (Object.keys(byCurrency)[0] || 'EGP'));
+
+    const activeStats = byCurrency[primaryCurr] || {
+      totalPrice: 0,
+      totalPaidAmount: 0,
+      totalRemainingAmount: 0,
+      totalCostPrice: 0,
+      count: 0,
+      currency: primaryCurr
+    };
+
     const totals = {
-      totalPrice: byCurrency[primaryCurr].totalPrice,
-      totalPaidAmount: byCurrency[primaryCurr].totalPaidAmount,
-      totalRemainingAmount: byCurrency[primaryCurr].totalRemainingAmount,
-      totalCostPrice: byCurrency[primaryCurr].totalCostPrice,
-      count: byCurrency[primaryCurr].count,
+      totalPrice: activeStats.totalPrice,
+      totalPaidAmount: activeStats.totalPaidAmount,
+      totalRemainingAmount: activeStats.totalRemainingAmount,
+      totalCostPrice: activeStats.totalCostPrice,
+      count: activeStats.count,
       currency: primaryCurr,
       byCurrency
     };
