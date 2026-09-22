@@ -94,7 +94,6 @@ export function computeWeeklyTrends(tickets = []) {
             const pAmt = asDecimal(p.amount || 0);
             if (isModificationPayment(p)) {
               group.modificationCollectionsTotal = group.modificationCollectionsTotal.plus(pAmt);
-              group.collectionsTotal = group.collectionsTotal.plus(pAmt);
             } else {
               group.collectionsTotal = group.collectionsTotal.plus(pAmt);
             }
@@ -139,6 +138,7 @@ export function computeWeeklyTrends(tickets = []) {
         sales: moneyNumber(d.salesTotal),
         collections: moneyNumber(d.collectionsTotal),
         modificationCollections: moneyNumber(d.modificationCollectionsTotal),
+        totalCollections: moneyNumber(d.collectionsTotal.plus(d.modificationCollectionsTotal)),
         refunds: moneyNumber(d.refundsTotal),
         outstanding: moneyNumber(d.outstandingTotal),
         grossProfit: moneyNumber(d.grossProfitTotal),
@@ -151,6 +151,7 @@ export function computeWeeklyTrends(tickets = []) {
       sales: 0,
       collections: 0,
       modificationCollections: 0,
+      totalCollections: 0,
       refunds: 0,
       outstanding: 0,
       grossProfit: 0,
@@ -163,6 +164,7 @@ export function computeWeeklyTrends(tickets = []) {
       sales: primary.sales,
       collections: primary.collections,
       modificationCollections: primary.modificationCollections,
+      totalCollections: primary.totalCollections || (primary.collections + primary.modificationCollections),
       refunds: primary.refunds,
       outstanding: primary.outstanding,
       netProfit: primary.grossProfit,
