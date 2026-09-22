@@ -2,10 +2,28 @@
  * AfricaTravel — Visa Management Service
  */
 
+import Decimal from 'decimal.js';
 import { getPrismaClient } from '../config/database.js';
 import { NotFoundError, ForbiddenError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
 import { asDecimal, moneyNumber } from '../utils/money.js';
+
+export function deriveVisaPaymentStatus(price, paidAmount, currentStatus) {
+  if (currentStatus && ['PAID', 'PARTIAL', 'UNPAID'].includes(currentStatus)) {
+    return currentStatus;
+  }
+  const priceDec = asDecimal(price || 0);
+  const paidDec = asDecimal(paidAmount || 0);
+  if (paidDec.isZero() || paidDec.lessThan(0)) return 'UNPAID';
+  if (paidDec.greaterThanOrEqualTo(priceDec) && priceDec.greaterThan(0)) return 'PAID';
+  return 'PARTIAL';
+}
+
+export function calculateVisaRemaining(price, paidAmount) {
+  const priceDec = asDecimal(price || 0);
+  const paidDec = asDecimal(paidAmount || 0);
+  return moneyNumber(Decimal.max(0, priceDec.minus(paidDec)));
+}
 
 export const VisaService = {
   /**
@@ -15,6 +33,10 @@ export const VisaService = {
     const prisma = getPrismaClient();
 
     const executeCreation = async (tx) => {
+      const priceVal = data.price;
+      const paidVal = data.paidAmount !== undefined && data.paidAmount !== null ? data.paidAmount : 0;
+      const statusVal = data.paymentStatus || deriveVisaPaymentStatus(priceVal, paidVal);
+
       const newVisa = await tx.visa.create({
         data: {
           clientName: data.clientName,
@@ -22,15 +44,18 @@ export const VisaService = {
           visaType: data.visaType,
           country: data.country,
           submissionDate: new Date(data.submissionDate),
-          price: data.price,
+          price: priceVal,
+          paidAmount: paidVal,
           costPrice: data.costPrice || null,
           currency: data.currency || 'EGP',
-          paymentStatus: data.paymentStatus || 'UNPAID',
+          paymentStatus: statusVal,
           notes: data.notes || null,
           createdBy: currentUser?.name || currentUser?.email || 'Staff',
           createdById: currentUser?.id || null
         }
       });
+
+      const remainingAmount = calculateVisaRemaining(newVisa.price, newVisa.paidAmount);
 
       await AuditService.recordCriticalLog({
         user: currentUser?.name || currentUser?.email || 'Staff',
@@ -43,12 +68,18 @@ export const VisaService = {
           visaType: newVisa.visaType,
           country: newVisa.country,
           price: Number(newVisa.price),
+          paidAmount: Number(newVisa.paidAmount || 0),
+          remainingAmount,
           currency: newVisa.currency,
+          paymentStatus: newVisa.paymentStatus,
           createdById: currentUser?.id || null
         }
       }, { tx });
 
-      return newVisa;
+      return {
+        ...newVisa,
+        remainingAmount
+      };
     };
 
     if (typeof prisma.$transaction === 'function') {
@@ -109,6 +140,7 @@ export const VisaService = {
           where,
           _sum: {
             price: true,
+            paidAmount: true,
             costPrice: true
           },
           _count: {
@@ -125,21 +157,26 @@ export const VisaService = {
       try {
         const allMatching = await prisma.visa.findMany({
           where,
-          select: { price: true, costPrice: true, currency: true }
+          select: { price: true, paidAmount: true, costPrice: true, currency: true }
         });
         const map = {};
         for (const item of allMatching) {
           const curr = item.currency || 'EGP';
           if (!map[curr]) {
-            map[curr] = { currency: curr, sumPrice: asDecimal(0), sumCost: asDecimal(0), count: 0 };
+            map[curr] = { currency: curr, sumPrice: asDecimal(0), sumPaid: asDecimal(0), sumCost: asDecimal(0), count: 0 };
           }
           map[curr].sumPrice = map[curr].sumPrice.plus(asDecimal(item.price || 0));
+          map[curr].sumPaid = map[curr].sumPaid.plus(asDecimal(item.paidAmount || 0));
           map[curr].sumCost = map[curr].sumCost.plus(asDecimal(item.costPrice || 0));
           map[curr].count += 1;
         }
         totalsByGroup = Object.values(map).map(m => ({
           currency: m.currency,
-          _sum: { price: moneyNumber(m.sumPrice), costPrice: moneyNumber(m.sumCost) },
+          _sum: {
+            price: moneyNumber(m.sumPrice),
+            paidAmount: moneyNumber(m.sumPaid),
+            costPrice: moneyNumber(m.sumCost)
+          },
           _count: { _all: m.count }
         }));
       } catch {
@@ -151,11 +188,15 @@ export const VisaService = {
     for (const group of totalsByGroup) {
       const curr = group.currency || 'EGP';
       const sumPriceDec = asDecimal(group._sum?.price || 0);
+      const sumPaidDec = asDecimal(group._sum?.paidAmount || 0);
+      const sumRemainingDec = Decimal.max(0, sumPriceDec.minus(sumPaidDec));
       const sumCostDec = asDecimal(group._sum?.costPrice || 0);
       const count = group._count?._all || 0;
       
       byCurrency[curr] = {
         totalPrice: moneyNumber(sumPriceDec),
+        totalPaidAmount: moneyNumber(sumPaidDec),
+        totalRemainingAmount: moneyNumber(sumRemainingDec),
         totalCostPrice: moneyNumber(sumCostDec),
         count,
         currency: curr
@@ -165,6 +206,8 @@ export const VisaService = {
     if (Object.keys(byCurrency).length === 0) {
       byCurrency['EGP'] = {
         totalPrice: 0,
+        totalPaidAmount: 0,
+        totalRemainingAmount: 0,
         totalCostPrice: 0,
         count: 0,
         currency: 'EGP'
@@ -174,6 +217,8 @@ export const VisaService = {
     const primaryCurr = Object.keys(byCurrency)[0] || 'EGP';
     const totals = {
       totalPrice: byCurrency[primaryCurr].totalPrice,
+      totalPaidAmount: byCurrency[primaryCurr].totalPaidAmount,
+      totalRemainingAmount: byCurrency[primaryCurr].totalRemainingAmount,
       totalCostPrice: byCurrency[primaryCurr].totalCostPrice,
       count: byCurrency[primaryCurr].count,
       currency: primaryCurr,
@@ -190,8 +235,13 @@ export const VisaService = {
       prisma.visa.count({ where })
     ]);
 
+    const formattedVisas = visas.map(v => ({
+      ...v,
+      remainingAmount: calculateVisaRemaining(v.price, v.paidAmount)
+    }));
+
     return {
-      visas,
+      visas: formattedVisas,
       pagination: {
         page,
         pageSize,
@@ -220,7 +270,10 @@ export const VisaService = {
       throw new ForbiddenError('You can only view visas you created');
     }
     
-    return visa;
+    return {
+      ...visa,
+      remainingAmount: calculateVisaRemaining(visa.price, visa.paidAmount)
+    };
   },
 
   /**
@@ -249,15 +302,25 @@ export const VisaService = {
       if (data.country !== undefined) updateData.country = data.country.trim();
       if (data.submissionDate !== undefined) updateData.submissionDate = new Date(data.submissionDate);
       if (data.price !== undefined) updateData.price = data.price;
+      if (data.paidAmount !== undefined) updateData.paidAmount = data.paidAmount;
       if (data.costPrice !== undefined) updateData.costPrice = data.costPrice;
       if (data.currency !== undefined) updateData.currency = data.currency;
-      if (data.paymentStatus !== undefined) updateData.paymentStatus = data.paymentStatus;
       if (data.notes !== undefined) updateData.notes = data.notes;
+
+      if (data.paymentStatus !== undefined) {
+        updateData.paymentStatus = data.paymentStatus;
+      } else if (data.paidAmount !== undefined || data.price !== undefined) {
+        const finalPrice = data.price !== undefined ? data.price : existing.price;
+        const finalPaid = data.paidAmount !== undefined ? data.paidAmount : existing.paidAmount;
+        updateData.paymentStatus = deriveVisaPaymentStatus(finalPrice, finalPaid);
+      }
 
       const updated = await tx.visa.update({
         where: { id: existing.id },
         data: updateData
       });
+
+      const remainingAmount = calculateVisaRemaining(updated.price, updated.paidAmount);
 
       await AuditService.recordCriticalLog({
         user: currentUser?.name || currentUser?.email || 'Staff',
@@ -267,11 +330,15 @@ export const VisaService = {
         metadata: {
           userId: currentUser?.id || null,
           visaId: existing.id,
-          changes: updateData
+          changes: updateData,
+          remainingAmount
         }
       }, { tx });
 
-      return updated;
+      return {
+        ...updated,
+        remainingAmount
+      };
     };
 
     if (typeof prisma.$transaction === 'function') {

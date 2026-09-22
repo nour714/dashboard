@@ -26,9 +26,13 @@ function getVisaTypeBadge(visaType) {
 }
 
 function getPaymentBadge(status) {
-  const isPaid = status === 'PAID';
-  const label = isPaid ? (t('visas.payment.PAID') || 'PAID') : (t('visas.payment.UNPAID') || 'UNPAID');
-  const bgClass = isPaid ? 'badge-success' : 'badge-danger';
+  const label = t('visas.payment.' + status) || status;
+  let bgClass = 'badge-danger';
+  if (status === 'PAID') {
+    bgClass = 'badge-success';
+  } else if (status === 'PARTIAL') {
+    bgClass = 'badge-warning';
+  }
   return `<span class="badge ${bgClass}">${escapeHtml(label)}</span>`;
 }
 
@@ -77,12 +81,16 @@ function openAddVisaModal(onSuccess) {
             <label class="form-label" for="new-visa-price">${escapeHtml(t('visas.form.price') || 'Price')} *</label>
             <input type="number" id="new-visa-price" class="form-control tabular-nums" min="0" step="any" required />
           </div>
-          ${isAdmin ? `
           <div class="form-group">
-            <label class="form-label" for="new-visa-costPrice">${escapeHtml(t('visas.form.costPrice') || 'Cost Price')}</label>
-            <input type="number" id="new-visa-costPrice" class="form-control tabular-nums" min="0" step="any" />
+            <label class="form-label" for="new-visa-paidAmount">${escapeHtml(t('visas.form.paidAmount') || 'Collected Amount')}</label>
+            <input type="number" id="new-visa-paidAmount" class="form-control tabular-nums" min="0" step="any" value="0" />
           </div>
-          ` : ''}
+        </div>
+
+        <!-- Dynamic Remaining Calculation Banner -->
+        <div class="p-sm d-flex items-center justify-between" style="background: var(--color-bg-secondary, #f8fafc); border-radius: var(--radius-md); border: 1px dashed var(--color-border-soft);">
+          <span class="text-sm font-medium text-muted">${escapeHtml(t('visas.form.remainingAmount') || 'Remaining Balance')}:</span>
+          <span id="new-visa-remaining-preview" class="tabular-nums font-bold" style="font-size: 15px; color: var(--color-warning, #d97706);">0 EGP</span>
         </div>
 
         <div class="form-grid-2">
@@ -90,6 +98,7 @@ function openAddVisaModal(onSuccess) {
             <label class="form-label" for="new-visa-status">${escapeHtml(t('visas.form.paymentStatus') || 'Payment Status')} *</label>
             <select id="new-visa-status" class="form-control" required>
               <option value="UNPAID">${escapeHtml(t('visas.payment.UNPAID') || 'UNPAID')}</option>
+              <option value="PARTIAL">${escapeHtml(t('visas.payment.PARTIAL') || 'PARTIAL')}</option>
               <option value="PAID">${escapeHtml(t('visas.payment.PAID') || 'PAID')}</option>
             </select>
           </div>
@@ -98,6 +107,13 @@ function openAddVisaModal(onSuccess) {
             <input type="datetime-local" id="new-visa-date" class="form-control ltr-field" value="${localIsoDate}" required />
           </div>
         </div>
+
+        ${isAdmin ? `
+        <div class="form-group">
+          <label class="form-label" for="new-visa-costPrice">${escapeHtml(t('visas.form.costPrice') || 'Cost Price')}</label>
+          <input type="number" id="new-visa-costPrice" class="form-control tabular-nums" min="0" step="any" />
+        </div>
+        ` : ''}
 
         <div class="form-group">
           <label class="form-label" for="new-visa-notes">${escapeHtml(t('visas.form.notes') || 'Notes')}</label>
@@ -115,6 +131,43 @@ function openAddVisaModal(onSuccess) {
       const cancelBtn = modalEl.querySelector('#cancel-new-visa');
       const submitBtn = modalEl.querySelector('#submit-new-visa');
       const errorBox = modalEl.querySelector('#new-visa-error-box');
+      const priceInput = modalEl.querySelector('#new-visa-price');
+      const paidInput = modalEl.querySelector('#new-visa-paidAmount');
+      const statusSelect = modalEl.querySelector('#new-visa-status');
+      const remainingPreview = modalEl.querySelector('#new-visa-remaining-preview');
+
+      let userOverrodeStatus = false;
+      if (statusSelect) {
+        statusSelect.addEventListener('change', () => {
+          userOverrodeStatus = true;
+        });
+      }
+
+      const syncRemaining = () => {
+        const p = Number(priceInput?.value) || 0;
+        const pd = Number(paidInput?.value) || 0;
+        const rem = Math.max(0, p - pd);
+        if (remainingPreview) {
+          remainingPreview.textContent = formatCurrency(rem);
+          if (rem === 0 && p > 0) {
+            remainingPreview.style.color = 'var(--color-success, #16a34a)';
+          } else {
+            remainingPreview.style.color = 'var(--color-warning, #d97706)';
+          }
+        }
+        if (!userOverrodeStatus && statusSelect) {
+          if (pd >= p && p > 0) {
+            statusSelect.value = 'PAID';
+          } else if (pd > 0) {
+            statusSelect.value = 'PARTIAL';
+          } else {
+            statusSelect.value = 'UNPAID';
+          }
+        }
+      };
+
+      if (priceInput) priceInput.addEventListener('input', syncRemaining);
+      if (paidInput) paidInput.addEventListener('input', syncRemaining);
 
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
@@ -126,12 +179,13 @@ function openAddVisaModal(onSuccess) {
           const country = modalEl.querySelector('#new-visa-country').value.trim();
           const submissionDate = modalEl.querySelector('#new-visa-date').value;
           const price = Number(modalEl.querySelector('#new-visa-price').value);
+          const paidAmount = Number(modalEl.querySelector('#new-visa-paidAmount').value) || 0;
           const paymentStatus = modalEl.querySelector('#new-visa-status').value;
           const notes = modalEl.querySelector('#new-visa-notes').value.trim();
           
           let costPrice = null;
           if (isAdmin) {
-            const costVal = modalEl.querySelector('#new-visa-costPrice').value;
+            const costVal = modalEl.querySelector('#new-visa-costPrice')?.value;
             if (costVal) costPrice = Number(costVal);
           }
 
@@ -153,6 +207,7 @@ function openAddVisaModal(onSuccess) {
             country,
             submissionDate,
             price,
+            paidAmount,
             costPrice,
             paymentStatus,
             notes
@@ -190,6 +245,10 @@ function openEditVisaModal(visa, onSuccess) {
       localIsoDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     }
   }
+
+  const initialPrice = Number(visa.price) || 0;
+  const initialPaid = Number(visa.paidAmount) || 0;
+  const initialRem = Math.max(0, initialPrice - initialPaid);
 
   openModal({
     title: t('visas.editVisaModalTitle') || 'Edit Visa',
@@ -229,12 +288,16 @@ function openEditVisaModal(visa, onSuccess) {
             <label class="form-label" for="edit-visa-price">${escapeHtml(t('visas.form.price') || 'Price')} *</label>
             <input type="number" id="edit-visa-price" class="form-control tabular-nums" min="0" step="any" value="${escapeHtml(String(visa.price || ''))}" required />
           </div>
-          ${isAdmin ? `
           <div class="form-group">
-            <label class="form-label" for="edit-visa-costPrice">${escapeHtml(t('visas.form.costPrice') || 'Cost Price')}</label>
-            <input type="number" id="edit-visa-costPrice" class="form-control tabular-nums" min="0" step="any" value="${escapeHtml(String(visa.costPrice || ''))}" />
+            <label class="form-label" for="edit-visa-paidAmount">${escapeHtml(t('visas.form.paidAmount') || 'Collected Amount')}</label>
+            <input type="number" id="edit-visa-paidAmount" class="form-control tabular-nums" min="0" step="any" value="${escapeHtml(String(visa.paidAmount ?? 0))}" />
           </div>
-          ` : ''}
+        </div>
+
+        <!-- Dynamic Remaining Calculation Banner -->
+        <div class="p-sm d-flex items-center justify-between" style="background: var(--color-bg-secondary, #f8fafc); border-radius: var(--radius-md); border: 1px dashed var(--color-border-soft);">
+          <span class="text-sm font-medium text-muted">${escapeHtml(t('visas.form.remainingAmount') || 'Remaining Balance')}:</span>
+          <span id="edit-visa-remaining-preview" class="tabular-nums font-bold" style="font-size: 15px; color: ${initialRem === 0 && initialPrice > 0 ? 'var(--color-success, #16a34a)' : 'var(--color-warning, #d97706)'};">${formatCurrency(initialRem)}</span>
         </div>
 
         <div class="form-grid-2">
@@ -242,6 +305,7 @@ function openEditVisaModal(visa, onSuccess) {
             <label class="form-label" for="edit-visa-status">${escapeHtml(t('visas.form.paymentStatus') || 'Payment Status')} *</label>
             <select id="edit-visa-status" class="form-control" required>
               <option value="UNPAID" ${visa.paymentStatus === 'UNPAID' ? 'selected' : ''}>${escapeHtml(t('visas.payment.UNPAID') || 'UNPAID')}</option>
+              <option value="PARTIAL" ${visa.paymentStatus === 'PARTIAL' ? 'selected' : ''}>${escapeHtml(t('visas.payment.PARTIAL') || 'PARTIAL')}</option>
               <option value="PAID" ${visa.paymentStatus === 'PAID' ? 'selected' : ''}>${escapeHtml(t('visas.payment.PAID') || 'PAID')}</option>
             </select>
           </div>
@@ -250,6 +314,13 @@ function openEditVisaModal(visa, onSuccess) {
             <input type="datetime-local" id="edit-visa-date" class="form-control ltr-field" value="${escapeHtml(localIsoDate)}" required />
           </div>
         </div>
+
+        ${isAdmin ? `
+        <div class="form-group">
+          <label class="form-label" for="edit-visa-costPrice">${escapeHtml(t('visas.form.costPrice') || 'Cost Price')}</label>
+          <input type="number" id="edit-visa-costPrice" class="form-control tabular-nums" min="0" step="any" value="${escapeHtml(String(visa.costPrice || ''))}" />
+        </div>
+        ` : ''}
 
         <div class="form-group">
           <label class="form-label" for="edit-visa-notes">${escapeHtml(t('visas.form.notes') || 'Notes')}</label>
@@ -267,6 +338,43 @@ function openEditVisaModal(visa, onSuccess) {
       const cancelBtn = modalEl.querySelector('#cancel-edit-visa');
       const submitBtn = modalEl.querySelector('#submit-edit-visa');
       const errorBox = modalEl.querySelector('#edit-visa-error-box');
+      const priceInput = modalEl.querySelector('#edit-visa-price');
+      const paidInput = modalEl.querySelector('#edit-visa-paidAmount');
+      const statusSelect = modalEl.querySelector('#edit-visa-status');
+      const remainingPreview = modalEl.querySelector('#edit-visa-remaining-preview');
+
+      let userOverrodeStatus = false;
+      if (statusSelect) {
+        statusSelect.addEventListener('change', () => {
+          userOverrodeStatus = true;
+        });
+      }
+
+      const syncRemaining = () => {
+        const p = Number(priceInput?.value) || 0;
+        const pd = Number(paidInput?.value) || 0;
+        const rem = Math.max(0, p - pd);
+        if (remainingPreview) {
+          remainingPreview.textContent = formatCurrency(rem);
+          if (rem === 0 && p > 0) {
+            remainingPreview.style.color = 'var(--color-success, #16a34a)';
+          } else {
+            remainingPreview.style.color = 'var(--color-warning, #d97706)';
+          }
+        }
+        if (!userOverrodeStatus && statusSelect) {
+          if (pd >= p && p > 0) {
+            statusSelect.value = 'PAID';
+          } else if (pd > 0) {
+            statusSelect.value = 'PARTIAL';
+          } else {
+            statusSelect.value = 'UNPAID';
+          }
+        }
+      };
+
+      if (priceInput) priceInput.addEventListener('input', syncRemaining);
+      if (paidInput) paidInput.addEventListener('input', syncRemaining);
 
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
@@ -278,12 +386,13 @@ function openEditVisaModal(visa, onSuccess) {
           const country = modalEl.querySelector('#edit-visa-country').value.trim();
           const submissionDate = modalEl.querySelector('#edit-visa-date').value;
           const price = Number(modalEl.querySelector('#edit-visa-price').value);
+          const paidAmount = Number(modalEl.querySelector('#edit-visa-paidAmount').value) || 0;
           const paymentStatus = modalEl.querySelector('#edit-visa-status').value;
           const notes = modalEl.querySelector('#edit-visa-notes').value.trim();
           
           let costPrice = visa.costPrice;
           if (isAdmin) {
-            const costVal = modalEl.querySelector('#edit-visa-costPrice').value;
+            const costVal = modalEl.querySelector('#edit-visa-costPrice')?.value;
             costPrice = costVal ? Number(costVal) : null;
           }
 
@@ -305,6 +414,7 @@ function openEditVisaModal(visa, onSuccess) {
             country,
             submissionDate,
             price,
+            paidAmount,
             costPrice,
             paymentStatus,
             notes
@@ -398,7 +508,13 @@ export const VisasPage = {
       `
     });
 
-    const rowsHtml = cachedVisas.map(visa => `
+    const rowsHtml = cachedVisas.map(visa => {
+      const price = Number(visa.price) || 0;
+      const paid = Number(visa.paidAmount) || 0;
+      const remaining = visa.remainingAmount !== undefined ? Number(visa.remainingAmount) : Math.max(0, price - paid);
+      const isPaidInFull = remaining <= 0 && price > 0;
+
+      return `
       <tr class="clickable-row" data-href="/visas/${escapeHtml(visa.id)}" style="cursor: pointer;">
         <td>
           <div class="cell-main">${escapeHtml(visa.clientName)}</div>
@@ -412,6 +528,16 @@ export const VisasPage = {
         <td>
           <span class="tabular-nums font-bold" style="font-size: 15px;">
             ${formatCurrency(visa.price)}
+          </span>
+        </td>
+        <td>
+          <span class="tabular-nums font-medium text-success" style="font-size: 14px;">
+            ${formatCurrency(paid)}
+          </span>
+        </td>
+        <td>
+          <span class="tabular-nums font-bold ${isPaidInFull ? 'text-muted' : 'text-warning'}" style="font-size: 14px;">
+            ${formatCurrency(remaining)}
           </span>
         </td>
         <td>${getPaymentBadge(visa.paymentStatus)}</td>
@@ -428,7 +554,8 @@ export const VisasPage = {
           </div>
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
     return `
       ${headerHtml}
@@ -437,7 +564,17 @@ export const VisasPage = {
       <div class="stat-card-grid mb-lg">
         <div class="stat-card">
           <span class="stat-card-label">${escapeHtml(t('visas.totalRevenue') || 'Total Revenue')}</span>
-          <div class="stat-card-value tabular-nums text-success">${formatCurrency(cachedTotals?.totalPrice || 0)}</div>
+          <div class="stat-card-value tabular-nums text-primary">${formatCurrency(cachedTotals?.totalPrice || 0)}</div>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-card-label">${escapeHtml(t('visas.totalPaid') || 'Total Collected')}</span>
+          <div class="stat-card-value tabular-nums text-success">${formatCurrency(cachedTotals?.totalPaidAmount || 0)}</div>
+        </div>
+
+        <div class="stat-card">
+          <span class="stat-card-label">${escapeHtml(t('visas.totalRemaining') || 'Total Remaining')}</span>
+          <div class="stat-card-value tabular-nums text-warning">${formatCurrency(cachedTotals?.totalRemainingAmount || 0)}</div>
         </div>
         
         ${isAdmin ? `
@@ -476,6 +613,7 @@ export const VisasPage = {
               <select id="visa-filter-status" class="form-control">
                 <option value="">${escapeHtml(t('visas.filterStatus') || 'All Status')}</option>
                 <option value="PAID" ${currentFilters.paymentStatus === 'PAID' ? 'selected' : ''}>${escapeHtml(t('visas.payment.PAID') || 'PAID')}</option>
+                <option value="PARTIAL" ${currentFilters.paymentStatus === 'PARTIAL' ? 'selected' : ''}>${escapeHtml(t('visas.payment.PARTIAL') || 'PARTIAL')}</option>
                 <option value="UNPAID" ${currentFilters.paymentStatus === 'UNPAID' ? 'selected' : ''}>${escapeHtml(t('visas.payment.UNPAID') || 'UNPAID')}</option>
               </select>
             </div>
@@ -504,12 +642,14 @@ export const VisasPage = {
                 <th>${escapeHtml(t('visas.table.country') || 'Country')}</th>
                 <th>${escapeHtml(t('visas.table.submissionDate') || 'Submission Date')}</th>
                 <th>${escapeHtml(t('visas.table.price') || 'Price')}</th>
+                <th>${escapeHtml(t('visas.table.paidAmount') || 'Collected')}</th>
+                <th>${escapeHtml(t('visas.table.remainingAmount') || 'Remaining')}</th>
                 <th>${escapeHtml(t('visas.table.status') || 'Status')}</th>
                 <th>${escapeHtml(t('visas.table.actions') || 'Actions')}</th>
               </tr>
             </thead>
             <tbody id="visas-table-body">
-              ${rowsHtml || `<tr><td colspan="7" class="text-center text-muted p-lg">${escapeHtml(t('visas.emptyState') || 'No visas found.')}</td></tr>`}
+              ${rowsHtml || `<tr><td colspan="9" class="text-center text-muted p-lg">${escapeHtml(t('visas.emptyState') || 'No visas found.')}</td></tr>`}
             </tbody>
           </table>
         </div>
