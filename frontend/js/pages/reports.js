@@ -37,8 +37,22 @@ export const ReportsPage = {
           <strong class="cell-main">${escapeHtml(row.customerName)}</strong>
           <div class="cell-sub ltr-data">${row.ticketNumber ? escapeHtml(row.ticketNumber) : '<span class="text-muted">—</span>'}</div>
         </td>
-        <td class="tabular-nums font-bold text-success">${formatCurrency(row.totalPaid, row.currency || 'EGP')}</td>
-        <td class="tabular-nums font-bold ${row.totalRemaining > 0 ? 'text-danger' : 'text-success'}">${formatCurrency(row.totalRemaining, row.currency || 'EGP')}</td>
+        <td>
+          <span class="tabular-nums font-bold text-success">${formatCurrency(row.totalPaid, row.currency || 'EGP')}</span>
+          ${row.modificationPaid > 0 ? `
+            <div class="cell-sub text-muted" style="font-size: 11px;">
+              ${escapeHtml(t('ticketDetails.tabs.modifications') || 'Mod')}: +${formatCurrency(row.modificationPaid, row.currency || 'EGP')}
+            </div>
+          ` : ''}
+        </td>
+        <td>
+          <span class="tabular-nums font-bold ${row.totalRemaining > 0 ? 'text-danger' : 'text-success'}">${formatCurrency(row.totalRemaining, row.currency || 'EGP')}</span>
+          ${row.modificationOutstanding > 0 ? `
+            <div class="cell-sub text-danger" style="font-size: 11px;">
+              ${escapeHtml(t('ticketDetails.tabs.modifications') || 'Mod')}: +${formatCurrency(row.modificationOutstanding, row.currency || 'EGP')}
+            </div>
+          ` : ''}
+        </td>
         <td>
           <span class="badge ${row.tripType === 'Round Trip' ? 'badge-accent' : 'badge-neutral'}">
             ${escapeHtml(row.tripType === 'Round Trip' ? t('reports.customerPayments.roundTrip') : t('reports.customerPayments.oneWay'))}
@@ -131,16 +145,17 @@ export const ReportsPage = {
           showToast(t('common.noData'), 'warning');
           return;
         }
-        const headers = ['Customer Name', 'Ticket Number', 'Currency', 'Total Paid', 'Total Remaining', 'Trip Type'];
+        const headers = ['Customer Name', 'Ticket Number', 'Currency', 'Total Paid', 'Modification Paid', 'Total Remaining', 'Trip Type'];
         const csvRows = [headers.map(h => sanitizeCsvCell(h)).join(',')];
         customerPayments.forEach(row => {
           const safeName = sanitizeCsvCell(row.customerName || '');
           const safeTicket = sanitizeCsvCell(row.ticketNumber || '');
           const safeCurrency = sanitizeCsvCell(row.currency || 'EGP');
           const safePaid = sanitizeCsvCell(row.totalPaid ?? 0);
+          const safeModPaid = sanitizeCsvCell(row.modificationPaid ?? 0);
           const safeRemaining = sanitizeCsvCell(row.totalRemaining ?? 0);
           const safeTrip = sanitizeCsvCell(row.tripType || '');
-          csvRows.push([safeName, safeTicket, safeCurrency, safePaid, safeRemaining, safeTrip].join(','));
+          csvRows.push([safeName, safeTicket, safeCurrency, safePaid, safeModPaid, safeRemaining, safeTrip].join(','));
         });
         const blob = new Blob(['\uFEFF' + csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);

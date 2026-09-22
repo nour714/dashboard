@@ -16,7 +16,7 @@ const optionalValidDateString = z.string().max(50).optional()
   });
 
 const visaTypes = ['TOURIST', 'WORK', 'STUDY', 'UMRAH_HAJJ', 'MEDICAL'];
-const paymentStatuses = ['PAID', 'UNPAID'];
+const paymentStatuses = ['PAID', 'PARTIAL', 'UNPAID'];
 
 export const createVisaSchema = z.object({
   clientName: z.string().trim().min(1, 'Client name is required').max(200, 'Client name is too long'),
@@ -27,6 +27,7 @@ export const createVisaSchema = z.object({
   country: z.string().trim().min(1, 'Country is required').max(100, 'Country is too long'),
   submissionDate: validDateString,
   price: money({ positive: true }),
+  paidAmount: money({ min: 0 }).optional().default(0),
   costPrice: money({ positive: true }).optional(),
   currency: z.string().max(10).optional(),
   paymentStatus: z.enum(paymentStatuses).optional(),
@@ -38,6 +39,7 @@ export const queryVisasSchema = z.object({
   pageSize: z.coerce.number().int().positive().max(100).default(25),
   visaType: z.enum(visaTypes).optional(),
   paymentStatus: z.enum(paymentStatuses).optional(),
+  currency: z.string().max(10).optional(),
   search: z.string().optional(),
   startDate: optionalValidDateString,
   endDate: optionalValidDateString
@@ -50,6 +52,7 @@ export const updateVisaSchema = z.object({
   country: z.string().trim().min(1).max(100).optional(),
   submissionDate: validDateString.optional(),
   price: money({ positive: true }).optional(),
+  paidAmount: money({ min: 0 }).optional(),
   costPrice: money({ positive: true }).optional(),
   currency: z.string().max(10).optional(),
   paymentStatus: z.enum(paymentStatuses).optional(),

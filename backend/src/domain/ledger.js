@@ -147,7 +147,7 @@ export function computeTicketLedger(ticket = {}) {
     paymentStatus = 'UNPAID';
   }
 
-  const netValueDec = Decimal.max(0, ticketPriceDec.minus(totalRefundedDec));
+  const netValueDec = ticketPriceDec;
 
   return {
     totalPaid: moneyNumber(totalPaidDec),
@@ -257,14 +257,18 @@ export function aggregateLedgers(tickets = []) {
         group.outstandingDec = group.outstandingDec.plus(asDecimal(ledger.remaining));
       }
 
-      // Collected and refunds stay gross
-      group.collectedDec = group.collectedDec.plus(asDecimal(ledger.totalPaid));
+      // Collected includes all payments: ticket payments + modification payments
+      const ticketPaidDec = asDecimal(ledger.totalPaid);
+      const modPaidDec = asDecimal(ledger.modificationPaid);
+      group.ticketCollectedDec = (group.ticketCollectedDec || asDecimal(0)).plus(ticketPaidDec);
+      group.modificationCollectedDec = group.modificationCollectedDec.plus(modPaidDec);
+      group.collectedDec = group.collectedDec.plus(ticketPaidDec).plus(modPaidDec);
+
       group.refundsDec = group.refundsDec.plus(asDecimal(ledger.totalRefunded));
       group.pendingRefundsDec = group.pendingRefundsDec.plus(asDecimal(ledger.pendingRefunds));
 
       // Modification totals
       group.modificationFeesDec = group.modificationFeesDec.plus(asDecimal(ledger.modificationFees));
-      group.modificationCollectedDec = group.modificationCollectedDec.plus(asDecimal(ledger.modificationPaid));
       group.modificationOutstandingDec = group.modificationOutstandingDec.plus(asDecimal(ledger.modificationOutstanding));
       group.modificationProfitDec = group.modificationProfitDec.plus(asDecimal(ledger.modificationProfit));
 
@@ -290,6 +294,7 @@ export function aggregateLedgers(tickets = []) {
     const g = byCurrency[curr];
     const sales = moneyNumber(g.salesDec);
     const collected = moneyNumber(g.collectedDec);
+    const ticketCollected = moneyNumber(g.ticketCollectedDec || g.collectedDec.minus(g.modificationCollectedDec));
     const outstanding = moneyNumber(g.outstandingDec);
     const refunds = moneyNumber(g.refundsDec);
     const pendingRefunds = moneyNumber(g.pendingRefundsDec);
@@ -299,20 +304,19 @@ export function aggregateLedgers(tickets = []) {
     const modificationProfit = moneyNumber(g.modificationProfitDec);
     const grossProfit = moneyNumber(g.grossProfitDec);
 
-    // netCash = collected + modificationCollected - refunds
+    // netCash = collected - refunds (collectedDec already includes modificationCollectedDec)
     const netCash = moneyNumber(
-      g.collectedDec.plus(g.modificationCollectedDec).minus(g.refundsDec)
+      g.collectedDec.minus(g.refundsDec)
     );
 
-    // netValue = sales - refunds
-    const netValue = moneyNumber(
-      Decimal.max(0, g.salesDec.minus(g.refundsDec))
-    );
+    // netValue = sales (ticket price/sales is not deducted by refunds)
+    const netValue = sales;
 
-    // collectionRate on active tickets: collected / sales
-    const collectionRate = g.salesDec.greaterThan(0)
-      ? Math.round(g.collectedDec.dividedBy(g.salesDec).times(100).toNumber())
-      : 0;
+    // collectionRate on active tickets: collected / (sales + modificationFees)
+    const collectionBase = g.salesDec.plus(g.modificationFeesDec);
+    const collectionRate = collectionBase.greaterThan(0)
+      ? Math.round(g.collectedDec.dividedBy(collectionBase).times(100).toNumber())
+      : (g.salesDec.greaterThan(0) ? Math.round(g.collectedDec.dividedBy(g.salesDec).times(100).toNumber()) : 0);
 
     finalizedByCurrency[curr] = {
       currency: curr,
@@ -322,6 +326,7 @@ export function aggregateLedgers(tickets = []) {
       totalSales: sales,
       collected,
       totalCollected: collected,
+      ticketCollected,
       outstanding,
       totalOutstanding: outstanding,
       refunds,

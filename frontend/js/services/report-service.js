@@ -106,6 +106,12 @@ export const ReportService = {
     const rows = tickets.map(t => {
       const fin = t.financials || TicketService.getTicketFinancials(t);
       const customerName = (t.customerId ? customerMap.get(t.customerId) : null) || t.passengerName || 'Unknown';
+      const ticketPaid = fin.totalPaid || 0;
+      const modPaid = fin.modificationPaid || 0;
+      const modFees = fin.modificationFees || 0;
+      const modRemaining = fin.modificationOutstanding || 0;
+      const totalPaid = Number((ticketPaid + modPaid).toFixed(2));
+      const totalRemaining = Number(((fin.remaining || 0) + modRemaining).toFixed(2));
 
       return {
         ticketId: t.id,
@@ -113,8 +119,12 @@ export const ReportService = {
         customerId: t.customerId,
         customerName,
         ticketPrice: fin.ticketPrice,
-        totalPaid: fin.totalPaid,
-        totalRemaining: fin.remaining,
+        ticketPaid,
+        totalPaid,
+        totalRemaining,
+        modificationFees: modFees,
+        modificationPaid: modPaid,
+        modificationOutstanding: modRemaining,
         tripType: t.tripType || 'One Way',
         currency: fin.currency || t.currency || 'EGP'
       };

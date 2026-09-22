@@ -625,11 +625,17 @@ export const ar = {
     editVisaModalTitle: 'تعديل التأشيرة',
     editVisaModalSubtitle: 'تحديث بيانات هذه التأشيرة.',
     totalPrice: 'إجمالي الإيرادات',
+    totalRevenue: 'إجمالي الإيرادات',
+    totalPaid: 'إجمالي المحصل',
+    totalRemaining: 'إجمالي المتبقي',
     totalCost: 'إجمالي التكاليف',
+    totalVisas: 'عدد التأشيرات',
     totalCount: 'عدد التأشيرات',
     profit: 'الربح',
     filterType: 'جميع الأنواع',
     filterPayment: 'جميع حالات الدفع',
+    filterStatus: 'جميع الحالات',
+    filterCurrency: 'جميع العملات',
     types: {
       TOURIST: 'سياحية',
       WORK: 'عمل',
@@ -639,10 +645,12 @@ export const ar = {
     },
     paymentStatus: {
       PAID: 'مدفوع',
+      PARTIAL: 'مدفوع جزئيًا',
       UNPAID: 'غير مدفوع'
     },
     payment: {
       PAID: 'مدفوع',
+      PARTIAL: 'مدفوع جزئيًا',
       UNPAID: 'غير مدفوع'
     },
     table: {
@@ -651,8 +659,12 @@ export const ar = {
       visaType: 'نوع التأشيرة',
       country: 'الدولة',
       submissionDate: 'تاريخ التقديم',
+      currency: 'العملة',
       price: 'السعر',
+      paidAmount: 'المحصل',
+      remainingAmount: 'باقي عليه',
       costPrice: 'سعر التكلفة',
+      status: 'الدفع',
       paymentStatus: 'الدفع',
       actions: 'إجراءات'
     },
@@ -666,6 +678,8 @@ export const ar = {
       countryPlaceholder: 'مثال: السعودية، تركيا، أمريكا...',
       submissionDate: 'تاريخ التقديم',
       price: 'السعر (للعميل)',
+      paidAmount: 'المبلغ المحصل من العميل',
+      remainingAmount: 'باقي عليه (المتبقي)',
       costPrice: 'سعر التكلفة (للمكتب)',
       currency: 'العملة',
       paymentStatus: 'حالة الدفع',
@@ -678,6 +692,7 @@ export const ar = {
       clientInfo: 'بيانات العميل',
       visaInfo: 'بيانات التأشيرة',
       financialInfo: 'البيانات المالية',
+      profit: 'الربح',
       changePaymentStatus: 'تغيير حالة الدفع',
       markAsPaid: 'تحديد كمدفوع',
       markAsUnpaid: 'تحديد كغير مدفوع'

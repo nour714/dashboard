@@ -94,6 +94,7 @@ export function computeWeeklyTrends(tickets = []) {
             const pAmt = asDecimal(p.amount || 0);
             if (isModificationPayment(p)) {
               group.modificationCollectionsTotal = group.modificationCollectionsTotal.plus(pAmt);
+              group.collectionsTotal = group.collectionsTotal.plus(pAmt);
             } else {
               group.collectionsTotal = group.collectionsTotal.plus(pAmt);
             }
@@ -412,6 +413,8 @@ export const ReportService = {
     const rows = tickets.map(t => {
       const ledger = computeTicketLedger(t);
       const price = moneyNumber(asDecimal(t.ticketPrice));
+      const totalCollectedFromCustomer = moneyNumber(asDecimal(ledger.totalPaid).plus(asDecimal(ledger.modificationPaid)));
+      const totalRemainingFromCustomer = moneyNumber(asDecimal(ledger.remaining).plus(asDecimal(ledger.modificationOutstanding)));
 
       return {
         ticketId: t.id,
@@ -419,8 +422,9 @@ export const ReportService = {
         customerId: t.customerId,
         customerName: t.customer?.name || t.passengerName || 'Unknown',
         ticketPrice: price,
-        totalPaid: ledger.totalPaid,
-        totalRemaining: ledger.remaining,
+        ticketPaid: ledger.totalPaid,
+        totalPaid: totalCollectedFromCustomer,
+        totalRemaining: totalRemainingFromCustomer,
         tripType: t.tripType || 'One Way',
         modificationFees: ledger.modificationFees,
         modificationPaid: ledger.modificationPaid,

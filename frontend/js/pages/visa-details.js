@@ -20,13 +20,20 @@ function getVisaTypeBadge(visaType) {
 }
 
 function getPaymentStatusBadge(status) {
-  const isPaid = status === 'PAID';
-  const label = isPaid ? (t('visas.paymentStatus.PAID') || t('common.paid') || 'Paid') : (t('visas.paymentStatus.UNPAID') || t('common.unpaid') || 'Unpaid');
-  const bgClass = isPaid ? 'badge-success' : 'badge-danger';
+  let bgClass = 'badge-danger';
+  if (status === 'PAID') {
+    bgClass = 'badge-success';
+  } else if (status === 'PARTIAL') {
+    bgClass = 'badge-warning';
+  }
+  const label = t('visas.paymentStatus.' + status) || t('visas.payment.' + status) || status;
   return `<span class="badge ${bgClass}">${escapeHtml(label)}</span>`;
 }
 
 function openEditVisaModal(visa, onSuccess) {
+  const currentUser = AuthService.getCurrentUser();
+  const isAdmin = (currentUser?.role || '').toUpperCase() === 'ADMIN';
+
   let localIsoDate = '';
   if (visa.submissionDate) {
     const d = new Date(visa.submissionDate);
@@ -34,6 +41,10 @@ function openEditVisaModal(visa, onSuccess) {
       localIsoDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
     }
   }
+
+  const initialPrice = Number(visa.price) || 0;
+  const initialPaid = Number(visa.paidAmount) || 0;
+  const initialRem = Math.max(0, initialPrice - initialPaid);
 
   openModal({
     title: t('visas.editVisaModalTitle') || 'Edit Visa',
@@ -79,22 +90,46 @@ function openEditVisaModal(visa, onSuccess) {
             <input type="number" id="edit-visa-price" class="form-control tabular-nums" min="0" step="any" value="${escapeHtml(String(visa.price ?? ''))}" required />
           </div>
           <div class="form-group">
-            <label class="form-label">${escapeHtml(t('visas.table.costPrice') || 'Cost Price')}</label>
-            <input type="number" id="edit-visa-costPrice" class="form-control tabular-nums" min="0" step="any" value="${escapeHtml(String(visa.costPrice ?? ''))}" />
+            <label class="form-label">${escapeHtml(t('visas.table.paidAmount') || t('visas.form.paidAmount') || 'Collected Amount')}</label>
+            <input type="number" id="edit-visa-paidAmount" class="form-control tabular-nums" min="0" step="any" value="${escapeHtml(String(visa.paidAmount ?? 0))}" />
           </div>
         </div>
-        
+
+        <!-- Dynamic Remaining Calculation Banner -->
+        <div class="p-sm d-flex items-center justify-between" style="background: var(--color-bg-secondary, #f8fafc); border-radius: var(--radius-md); border: 1px dashed var(--color-border-soft);">
+          <span class="text-sm font-medium text-muted">${escapeHtml(t('visas.table.remainingAmount') || t('visas.form.remainingAmount') || 'Remaining Balance')}:</span>
+          <span id="edit-visa-remaining-preview" class="tabular-nums font-bold" style="font-size: 15px; color: ${initialRem === 0 && initialPrice > 0 ? 'var(--color-success, #16a34a)' : 'var(--color-warning, #d97706)'};">${formatCurrency(initialRem, visa.currency || 'EGP')}</span>
+        </div>
+
         <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">${escapeHtml(t('visas.table.paymentStatus') || t('visas.form.paymentStatus') || 'Payment Status')} *</label>
+            <select id="edit-visa-status" class="form-control" required>
+              <option value="UNPAID" ${visa.paymentStatus === 'UNPAID' ? 'selected' : ''}>${escapeHtml(t('visas.payment.UNPAID') || 'UNPAID')}</option>
+              <option value="PARTIAL" ${visa.paymentStatus === 'PARTIAL' ? 'selected' : ''}>${escapeHtml(t('visas.payment.PARTIAL') || 'PARTIAL')}</option>
+              <option value="PAID" ${visa.paymentStatus === 'PAID' ? 'selected' : ''}>${escapeHtml(t('visas.payment.PAID') || 'PAID')}</option>
+            </select>
+          </div>
           <div class="form-group">
             <label class="form-label">${escapeHtml(t('visas.table.currency') || 'Currency')}</label>
             <select id="edit-visa-currency" class="form-control">
-              <option value="EGP" ${visa.currency === 'EGP' ? 'selected' : ''}>EGP</option>
-              <option value="USD" ${visa.currency === 'USD' ? 'selected' : ''}>USD</option>
-              <option value="EUR" ${visa.currency === 'EUR' ? 'selected' : ''}>EUR</option>
-              <option value="SAR" ${visa.currency === 'SAR' ? 'selected' : ''}>SAR</option>
+              <option value="EGP" ${visa.currency === 'EGP' ? 'selected' : ''}>EGP (جنيه مصري)</option>
+              <option value="USD" ${visa.currency === 'USD' ? 'selected' : ''}>USD (دولار أمريكي)</option>
+              <option value="EUR" ${visa.currency === 'EUR' ? 'selected' : ''}>EUR (يورو)</option>
+              <option value="SAR" ${visa.currency === 'SAR' ? 'selected' : ''}>SAR (ريال سعودي)</option>
+              <option value="AED" ${visa.currency === 'AED' ? 'selected' : ''}>AED (درهم إماراتي)</option>
+              <option value="QAR" ${visa.currency === 'QAR' ? 'selected' : ''}>QAR (ريال قطري)</option>
+              <option value="KWD" ${visa.currency === 'KWD' ? 'selected' : ''}>KWD (دينار كويتي)</option>
             </select>
           </div>
         </div>
+
+        ${isAdmin ? `
+        <div class="form-group">
+          <label class="form-label">${escapeHtml(t('visas.table.costPrice') || 'Cost Price')}</label>
+          <input type="number" id="edit-visa-costPrice" class="form-control tabular-nums" min="0" step="any" value="${escapeHtml(String(visa.costPrice ?? ''))}" />
+        </div>
+        ` : ''}
 
         <div class="form-group">
           <label class="form-label">${escapeHtml(t('visas.table.notes') || 'Notes')}</label>
@@ -112,6 +147,46 @@ function openEditVisaModal(visa, onSuccess) {
       const cancelBtn = modalEl.querySelector('#cancel-edit-visa');
       const submitBtn = modalEl.querySelector('#submit-edit-visa');
       const errorBox = modalEl.querySelector('#edit-visa-error-box');
+      const priceInput = modalEl.querySelector('#edit-visa-price');
+      const paidInput = modalEl.querySelector('#edit-visa-paidAmount');
+      const statusSelect = modalEl.querySelector('#edit-visa-status');
+      const currencySelect = modalEl.querySelector('#edit-visa-currency');
+      const remainingPreview = modalEl.querySelector('#edit-visa-remaining-preview');
+
+      let userOverrodeStatus = false;
+      if (statusSelect) {
+        statusSelect.addEventListener('change', () => {
+          userOverrodeStatus = true;
+        });
+      }
+
+      const syncRemaining = () => {
+        const p = Number(priceInput?.value) || 0;
+        const pd = Number(paidInput?.value) || 0;
+        const rem = Math.max(0, p - pd);
+        const curr = currencySelect?.value || visa.currency || 'EGP';
+        if (remainingPreview) {
+          remainingPreview.textContent = formatCurrency(rem, curr);
+          if (rem === 0 && p > 0) {
+            remainingPreview.style.color = 'var(--color-success, #16a34a)';
+          } else {
+            remainingPreview.style.color = 'var(--color-warning, #d97706)';
+          }
+        }
+        if (!userOverrodeStatus && statusSelect) {
+          if (pd >= p && p > 0) {
+            statusSelect.value = 'PAID';
+          } else if (pd > 0) {
+            statusSelect.value = 'PARTIAL';
+          } else {
+            statusSelect.value = 'UNPAID';
+          }
+        }
+      };
+
+      if (priceInput) priceInput.addEventListener('input', syncRemaining);
+      if (paidInput) paidInput.addEventListener('input', syncRemaining);
+      if (currencySelect) currencySelect.addEventListener('change', syncRemaining);
 
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
@@ -123,10 +198,16 @@ function openEditVisaModal(visa, onSuccess) {
           const country = modalEl.querySelector('#edit-visa-country').value.trim();
           const submissionDate = modalEl.querySelector('#edit-visa-date').value || null;
           const price = Number(modalEl.querySelector('#edit-visa-price').value);
-          const costPriceRaw = modalEl.querySelector('#edit-visa-costPrice').value;
-          const costPrice = costPriceRaw ? Number(costPriceRaw) : null;
+          const paidAmount = Number(modalEl.querySelector('#edit-visa-paidAmount')?.value) || 0;
+          const paymentStatus = modalEl.querySelector('#edit-visa-status')?.value;
           const currency = modalEl.querySelector('#edit-visa-currency').value || 'EGP';
           const notes = modalEl.querySelector('#edit-visa-notes').value.trim();
+
+          let costPrice = visa.costPrice;
+          if (isAdmin) {
+            const costPriceRaw = modalEl.querySelector('#edit-visa-costPrice')?.value;
+            costPrice = costPriceRaw ? Number(costPriceRaw) : null;
+          }
 
           if (!clientName || !visaType || !country || isNaN(price)) {
             showToast(t('validation.requiredField') || 'Please fill required fields', 'error');
@@ -146,6 +227,8 @@ function openEditVisaModal(visa, onSuccess) {
             country,
             submissionDate,
             price,
+            paidAmount,
+            paymentStatus,
             costPrice,
             currency,
             notes
@@ -343,8 +426,20 @@ export const VisaDetailsPage = {
               <span class="detail-value">${getPaymentStatusBadge(visa.paymentStatus)}</span>
             </div>
             <div class="detail-row d-flex justify-between items-center" style="padding-bottom: 12px; border-bottom: 1px solid var(--color-border-soft);">
+              <span class="detail-label text-muted">${escapeHtml(t('visas.table.currency') || 'Currency')}</span>
+              <span class="detail-value"><span class="badge badge-secondary ltr-data font-medium">${escapeHtml(visa.currency || 'EGP')}</span></span>
+            </div>
+            <div class="detail-row d-flex justify-between items-center" style="padding-bottom: 12px; border-bottom: 1px solid var(--color-border-soft);">
               <span class="detail-label text-muted">${escapeHtml(t('visas.table.price') || 'Price (Client)')}</span>
               <span class="detail-value tabular-nums font-bold" style="font-size: 15px;">${formatCurrency(visa.price, visa.currency || 'EGP')}</span>
+            </div>
+            <div class="detail-row d-flex justify-between items-center" style="padding-bottom: 12px; border-bottom: 1px solid var(--color-border-soft);">
+              <span class="detail-label text-muted">${escapeHtml(t('visas.table.paidAmount') || 'Collected Amount')}</span>
+              <span class="detail-value tabular-nums font-bold text-success" style="font-size: 15px;">${formatCurrency(visa.paidAmount ?? 0, visa.currency || 'EGP')}</span>
+            </div>
+            <div class="detail-row d-flex justify-between items-center" style="padding-bottom: 12px; border-bottom: 1px solid var(--color-border-soft);">
+              <span class="detail-label text-muted">${escapeHtml(t('visas.table.remainingAmount') || 'Remaining Balance')}</span>
+              <span class="detail-value tabular-nums font-bold ${(visa.remainingAmount ?? 0) > 0 ? 'text-warning' : 'text-muted'}" style="font-size: 15px;">${formatCurrency(visa.remainingAmount ?? 0, visa.currency || 'EGP')}</span>
             </div>
             ${isAdmin ? `
               <div class="detail-row d-flex justify-between items-center" style="padding-bottom: 12px; border-bottom: 1px solid var(--color-border-soft);">
@@ -388,7 +483,11 @@ export const VisaDetailsPage = {
         btnTogglePayment.addEventListener('click', async () => {
           btnTogglePayment.disabled = true;
           const newStatus = visa.paymentStatus === 'PAID' ? 'UNPAID' : 'PAID';
-          const updateRes = await VisaService.updateVisa(visaId, { paymentStatus: newStatus });
+          const newPaidAmount = newStatus === 'PAID' ? Number(visa.price || 0) : 0;
+          const updateRes = await VisaService.updateVisa(visaId, { 
+            paymentStatus: newStatus,
+            paidAmount: newPaidAmount
+          });
           if (updateRes.success) {
             showToast(t('visas.paymentUpdated') || t('visas.paymentStatusUpdated') || 'Payment status updated', 'success');
             const fresh = await VisaService.getVisaById(visaId);

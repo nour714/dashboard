@@ -76,6 +76,23 @@ async function runVisaTests() {
   const emptyUpdateResult = updateVisaSchema.safeParse({});
   assert(!emptyUpdateResult.success, 'updateVisaSchema rejects empty update');
 
+  const partialData = {
+    ...validData,
+    paidAmount: 500,
+    paymentStatus: 'PARTIAL'
+  };
+  const partialResult = createVisaSchema.safeParse(partialData);
+  assert(partialResult.success, 'createVisaSchema accepts PARTIAL status and valid paidAmount');
+
+  const negativePaid = createVisaSchema.safeParse({ ...validData, paidAmount: -50 });
+  assert(!negativePaid.success, 'createVisaSchema rejects negative paidAmount');
+
+  const updatePaid = updateVisaSchema.safeParse({ paidAmount: 800, paymentStatus: 'PARTIAL' });
+  assert(updatePaid.success, 'updateVisaSchema accepts paidAmount and PARTIAL status');
+
+  const queryCurrencyResult = queryVisasSchema.safeParse({ currency: 'USD' });
+  assert(queryCurrencyResult.success, 'queryVisasSchema accepts currency filter');
+
   // 2. Service Logic with Mock Prisma
   console.log('\n⚙️ Test Suite 2: Service CRUD & Role Scoping');
 
@@ -136,6 +153,7 @@ async function runVisaTests() {
           if (where.createdById && record.createdById !== where.createdById) return false;
           if (where.visaType && record.visaType !== where.visaType) return false;
           if (where.paymentStatus && record.paymentStatus !== where.paymentStatus) return false;
+          if (where.currency && record.currency !== where.currency) return false;
           if (where.OR) {
             const matches = where.OR.some(cond => {
               if (cond.clientName?.contains) {
@@ -199,7 +217,7 @@ async function runVisaTests() {
     submissionDate: new Date(),
     price: 8000,
     costPrice: 6500,
-    currency: 'EGP',
+    currency: 'SAR',
     paymentStatus: 'UNPAID'
   }, agent2);
 
@@ -221,6 +239,9 @@ async function runVisaTests() {
 
   const paidVisas = await VisaService.getVisas({ paymentStatus: 'PAID' }, adminUser);
   assert(paidVisas.visas.length === 1 && paidVisas.visas[0].paymentStatus === 'PAID', 'Filter by paymentStatus works');
+
+  const sarVisas = await VisaService.getVisas({ currency: 'SAR' }, adminUser);
+  assert(sarVisas.visas.length === 1 && sarVisas.visas[0].currency === 'SAR', 'Filter by currency works');
 
   // Search test
   const searchResult = await VisaService.getVisas({ search: 'Saudi' }, adminUser);
@@ -253,6 +274,50 @@ async function runVisaTests() {
   const afterDelete = await VisaService.getVisas({}, adminUser);
   assert(afterDelete.visas.length === 1 && afterDelete.visas[0].id === visa2.id, 'Soft-deleted visas are excluded from getVisas');
 
+  // Test partial payment & auto-derived status
+  const visa3 = await VisaService.createVisa({
+    clientName: 'Youssef Nabil',
+    phone: '01055556666',
+    visaType: 'STUDY',
+    country: 'Canada',
+    submissionDate: new Date(),
+    price: 10000,
+    paidAmount: 4000,
+    costPrice: 7000,
+    currency: 'EGP'
+  }, agent1);
+
+  assert(visa3 && visa3.paidAmount === 4000, 'Visa paidAmount stored correctly');
+  assert(visa3.remainingAmount === 6000, 'Visa remainingAmount computed correctly (10000 - 4000 = 6000)');
+  assert(visa3.paymentStatus === 'PARTIAL', 'Payment status automatically derived as PARTIAL when 0 < paid < price');
+
+  // Test full payment auto-derivation
+  const visa4 = await VisaService.createVisa({
+    clientName: 'Kareem Tarek',
+    phone: '01099990000',
+    visaType: 'WORK',
+    country: 'Germany',
+    submissionDate: new Date(),
+    price: 6000,
+    paidAmount: 6000,
+    currency: 'EGP'
+  }, agent1);
+
+  assert(visa4.remainingAmount === 0, 'Visa remainingAmount is 0 when fully paid');
+  assert(visa4.paymentStatus === 'PAID', 'Payment status automatically derived as PAID when paidAmount >= price');
+
+  // Test updating paidAmount updates remaining and derived status
+  const updatedVisa3 = await VisaService.updateVisa(visa3.id, { paidAmount: 10000 }, agent1);
+  assert(updatedVisa3.paidAmount === 10000, 'Visa paidAmount updated to 10000');
+  assert(updatedVisa3.remainingAmount === 0, 'Visa remainingAmount updated to 0');
+  assert(updatedVisa3.paymentStatus === 'PAID', 'Visa paymentStatus automatically transitioned to PAID');
+
+  // Test Totals aggregation
+  const totalsCheck = await VisaService.getVisas({}, adminUser);
+  assert(totalsCheck.totals.totalPaidAmount !== undefined, 'getVisas totals include totalPaidAmount');
+  assert(totalsCheck.totals.totalRemainingAmount !== undefined, 'getVisas totals include totalRemainingAmount');
+  assert(totalsCheck.totals.totalPaidAmount > 0, 'totalPaidAmount is accurately aggregated');
+
   // 3. Controller Sanitization Tests
   console.log('\n🛡️ Test Suite 3: Controller Role Sanitization');
 
@@ -267,13 +332,19 @@ async function runVisaTests() {
     })
   };
 
-  // Admin gets costPrice
+  // Admin gets costPrice and totalCostPrice
   await VisaController.getVisas({ query: {}, user: adminUser }, mockRes, (err) => { throw err; });
   assert(capturedResponse.body.data[0].costPrice !== undefined, 'Admin gets costPrice in visa response');
+  assert(capturedResponse.body.totals.totalCostPrice !== undefined, 'Admin gets totalCostPrice in totals');
 
-  // Agent DOES NOT get costPrice
-  await VisaController.getVisas({ query: {}, user: agent2 }, mockRes, (err) => { throw err; });
+  // Agent DOES NOT get costPrice or totalCostPrice, but DOES get paidAmount and remainingAmount
+  await VisaController.getVisas({ query: {}, user: agent1 }, mockRes, (err) => { throw err; });
   assert(capturedResponse.body.data[0].costPrice === undefined, 'Agent response hides costPrice (role sanitization)');
+  assert(capturedResponse.body.data[0].paidAmount !== undefined, 'Agent response includes paidAmount');
+  assert(capturedResponse.body.data[0].remainingAmount !== undefined, 'Agent response includes remainingAmount');
+  assert(capturedResponse.body.totals.totalCostPrice === undefined, 'Agent totals hide totalCostPrice');
+  assert(capturedResponse.body.totals.totalPaidAmount !== undefined, 'Agent totals include totalPaidAmount');
+  assert(capturedResponse.body.totals.totalRemainingAmount !== undefined, 'Agent totals include totalRemainingAmount');
 
   console.log('\n========================================================');
   console.log(`Passed: ${passed} | Failed: ${failed}`);

@@ -625,11 +625,17 @@ export const en = {
     editVisaModalTitle: 'Edit Visa',
     editVisaModalSubtitle: 'Update details for this visa record.',
     totalPrice: 'Total Revenue',
+    totalRevenue: 'Total Revenue',
+    totalPaid: 'Total Collected',
+    totalRemaining: 'Total Remaining',
     totalCost: 'Total Cost',
+    totalVisas: 'Total Visas',
     totalCount: 'Total Visas',
     profit: 'Profit',
     filterType: 'All Types',
     filterPayment: 'All Payment Status',
+    filterStatus: 'All Status',
+    filterCurrency: 'All Currencies',
     types: {
       TOURIST: 'Tourist',
       WORK: 'Work',
@@ -639,10 +645,12 @@ export const en = {
     },
     paymentStatus: {
       PAID: 'Paid',
+      PARTIAL: 'Partially Paid',
       UNPAID: 'Unpaid'
     },
     payment: {
       PAID: 'Paid',
+      PARTIAL: 'Partially Paid',
       UNPAID: 'Unpaid'
     },
     table: {
@@ -651,8 +659,12 @@ export const en = {
       visaType: 'Visa Type',
       country: 'Country',
       submissionDate: 'Submission Date',
+      currency: 'Currency',
       price: 'Price',
+      paidAmount: 'Collected',
+      remainingAmount: 'Remaining',
       costPrice: 'Cost Price',
+      status: 'Payment',
       paymentStatus: 'Payment',
       actions: 'Actions'
     },
@@ -666,6 +678,8 @@ export const en = {
       countryPlaceholder: 'e.g. Saudi Arabia, Turkey, USA...',
       submissionDate: 'Submission Date',
       price: 'Price (Client)',
+      paidAmount: 'Collected Amount',
+      remainingAmount: 'Remaining Balance',
       costPrice: 'Cost Price (Office)',
       currency: 'Currency',
       paymentStatus: 'Payment Status',
@@ -678,6 +692,7 @@ export const en = {
       clientInfo: 'Client Information',
       visaInfo: 'Visa Information',
       financialInfo: 'Financial Information',
+      profit: 'Profit',
       changePaymentStatus: 'Change Payment Status',
       markAsPaid: 'Mark as Paid',
       markAsUnpaid: 'Mark as Unpaid'
