@@ -46,11 +46,11 @@ describe('Edit Ticket Expansion Verification', () => {
   it('2. updateTicketSchema rejects non-positive ticketPrice', () => {
     assert.throws(() => {
       updateTicketSchema.parse({ ticketPrice: 0 });
-    }, /Ticket price must be greater than zero/);
+    }, /Amount must be greater than zero/);
 
     assert.throws(() => {
       updateTicketSchema.parse({ ticketPrice: -500 });
-    }, /Ticket price must be greater than zero/);
+    }, /Amount must be greater than zero/);
   });
 
   // --- 2. Backend TicketService Business Rules ---
@@ -102,7 +102,7 @@ describe('Edit Ticket Expansion Verification', () => {
         assert.ok(err instanceof BusinessRuleError);
         assert.equal(err.code, 'PRICE_BELOW_PAID');
         assert.equal(err.statusCode, 409);
-        assert.ok(err.message.includes('Customer has already paid 7000, which is more than the new price of 5000'));
+        assert.ok(err.message.includes('Customer has already paid 7000.00, which is more than the new price of 5000.00'));
         return true;
       });
     } finally {

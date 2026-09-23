@@ -280,7 +280,7 @@ async function runP0FixesTests() {
     });
 
     // Perform deleteTicket
-    const deleteResult = await TicketService.deleteTicket(ticketWithFinId, mockAdmin);
+    const deleteResult = await TicketService.deleteTicket(ticketWithFinId, mockAdmin, { confirmUnrefundedBalance: true });
     assert(deleteResult.deleted === true, 'deleteTicket returns deleted: true');
     assert(deleteResult.ticketId === ticketWithFinId, 'deleteTicket returns ticketId');
 

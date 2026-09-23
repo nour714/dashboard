@@ -187,8 +187,8 @@ export function derivePaymentStatus(ticketPrice = 0, totalPaid = 0, currentStatu
   const price = asDecimal(ticketPrice);
   const paid = asDecimal(totalPaid);
 
-  if (price.lessThanOrEqualTo(0)) return 'CONFIRMED';
-  if (paid.greaterThanOrEqualTo(price)) return 'CONFIRMED';
+  if (price.greaterThan(0) && paid.greaterThanOrEqualTo(price)) return 'CONFIRMED';
+  if (price.lessThanOrEqualTo(0) && paid.greaterThan(0)) return 'CONFIRMED';
   if (paid.greaterThan(0) && paid.lessThan(price)) return 'PARTIALLY PAID';
   return 'UNPAID';
 }

@@ -14,6 +14,9 @@
  * 10. Audit check: zero hardcoded API keys in codebase
  */
 
+// Must be set BEFORE any imports so service-level guards detect test mode
+process.env.NODE_ENV = 'test';
+
 import { TicketExtractionService, toAirportCode, toSingleFlightNumber, discoverAvailableModels } from '../../backend/src/services/ticket-extraction.service.js';
 import { env } from '../../backend/src/config/env.js';
 import { TicketCreatePage } from '../../frontend/js/pages/ticket-create.js';

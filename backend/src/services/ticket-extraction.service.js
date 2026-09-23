@@ -41,6 +41,63 @@ export function toSingleFlightNumber(raw) {
   return first || raw.trim();
 }
 
+export function cleanPassengerName(raw) {
+  if (!raw || typeof raw !== 'string') return raw;
+  let name = raw.trim();
+
+  // 1. Remove airline title prefixes or suffixes (MR, MRS, MS, MISS, MSTR, DR, CHD, INF)
+  name = name.replace(/\b(MR|MRS|MS|MISS|MSTR|DR|CHD|INF)\b\.?/gi, '').trim();
+
+  // 2. Handle GDS slash format: "SURNAME/GIVENNAME [MIDDLE]" -> "Givenname [Middle] Surname"
+  if (name.includes('/')) {
+    const parts = name.split('/').map(p => p.trim()).filter(Boolean);
+    if (parts.length === 2) {
+      const [surname, givenname] = parts;
+      name = `${givenname} ${surname}`;
+    }
+  }
+
+  // 3. Remove multiple spaces
+  name = name.replace(/\s+/g, ' ').trim();
+
+  // 4. Proper Case if ALL CAPS (e.g. "TAREK MAHMOUD" -> "Tarek Mahmoud")
+  if (/^[A-Z\s'-]+$/.test(name) && name.length > 3) {
+    name = name
+      .toLowerCase()
+      .split(' ')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  }
+
+  return name || raw.trim();
+}
+
+export function cleanTicketNumber(raw) {
+  if (!raw || typeof raw !== 'string') return raw;
+  const clean = raw.trim();
+
+  // Standard e-ticket 13 or 14 digits with optional dash after 3rd digit
+  const match = clean.match(/\b(\d{3})[- ]?(\d{10})\b/);
+  if (match) {
+    return `${match[1]}${match[2]}`;
+  }
+
+  const digitMatch = clean.match(/\b\d{10,14}\b/);
+  if (digitMatch) {
+    return digitMatch[0];
+  }
+
+  return clean;
+}
+
+let cachedWorkingModel = null;
+let cachedApiVersion = 'v1beta';
+
+export function clearModelCache() {
+  cachedWorkingModel = null;
+  cachedApiVersion = 'v1beta';
+}
+
 const EXTRACTION_SCHEMA = {
   type: 'object',
   properties: {
@@ -131,11 +188,12 @@ Worked example: outbound segments are TK123 CAI→IST departing 10 Jan, then TK4
 
 Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Standardize airline names and their 2-letter IATA codes (e.g., EgyptAir MS, Air Cairo SM, Emirates EK, Etihad Airways EY, Qatar Airways QR, Turkish Airlines TK, Saudia SV, Flynas XY, flydubai FZ, Air Arabia G9, British Airways BA, Air France AF, Lufthansa LH, KLM KL, Iberia IB, ITA Airways AZ, Aegean Airlines A3, American Airlines AA, Delta Air Lines DL, United Airlines UA, Air Canada AC, Air China CA, China Eastern MU, China Southern CZ, Singapore Airlines SQ, Ethiopian Airlines ET, Kenya Airways KQ, Royal Air Maroc AT, Tunisair TU, Air Algérie AH). For "origin" and "destination", return ONLY the 3-letter IATA airport code (e.g. "CAI", "DXB") — never the city name, country name, or full airport name. Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
 
-    const primaryModel = env.GEMINI_MODEL || 'gemini-3.6-flash';
-    const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-3.1-pro-preview';
+    const primaryModel = env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-1.5-pro';
     const candidateModels = Array.from(new Set([
       primaryModel,
       fallbackModel,
+      'gemini-2.0-flash',
       'gemini-3.5-flash-lite'
     ])).filter(Boolean);
 
@@ -154,6 +212,7 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
       generationConfig: {
         responseMimeType: 'application/json',
         responseSchema: EXTRACTION_SCHEMA,
+        temperature: 0.0,
         maxOutputTokens: 2000
       }
     });
@@ -182,6 +241,10 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
         if (response.ok) {
           const json = await response.json();
           console.log(`[TicketExtraction] Extraction succeeded using ${apiVersion}/${modelName}`);
+          if (process.env.NODE_ENV !== 'test') {
+            cachedWorkingModel = modelName;
+            cachedApiVersion = apiVersion;
+          }
           return { ok: true, json };
         }
 
@@ -210,13 +273,25 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
       }
     };
 
-    // Phase 1: Try candidate models on v1 (GA path first)
-    for (const modelName of candidateModels) {
-      if (attemptCount >= MAX_EXTRACTION_ATTEMPTS) break;
-      const res = await tryCallEndpoint('v1', modelName);
+    // Phase 0: If in-memory model cache exists (production), hit verified model directly
+    if (process.env.NODE_ENV !== 'test' && cachedWorkingModel) {
+      const res = await tryCallEndpoint(cachedApiVersion, cachedWorkingModel);
       if (res.ok) {
         result = res.json;
-        break;
+      } else {
+        clearModelCache();
+      }
+    }
+
+    // Phase 1: Try candidate models on v1 (GA path first)
+    if (!result) {
+      for (const modelName of candidateModels) {
+        if (attemptCount >= MAX_EXTRACTION_ATTEMPTS) break;
+        const res = await tryCallEndpoint('v1', modelName);
+        if (res.ok) {
+          result = res.json;
+          break;
+        }
       }
     }
 
@@ -272,11 +347,41 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
     if (parsed && typeof parsed === 'object') {
       delete parsed.costPrice;
 
+      if (parsed.passengerName) parsed.passengerName = cleanPassengerName(parsed.passengerName);
+      if (parsed.ticketNumber) parsed.ticketNumber = cleanTicketNumber(parsed.ticketNumber);
       if (parsed.flightNumber) parsed.flightNumber = toSingleFlightNumber(parsed.flightNumber);
       if (parsed.returnFlightNumber) parsed.returnFlightNumber = toSingleFlightNumber(parsed.returnFlightNumber);
 
       if (parsed.origin) parsed.origin = toAirportCode(parsed.origin);
       if (parsed.destination) parsed.destination = toAirportCode(parsed.destination);
+
+      // Smart Dual Pipeline Escalation: If essential flight details are incomplete and not in test mode,
+      // perform a targeted second pass with the high-precision Pro fallback model.
+      const isMissingEssential = !parsed.passengerName || !parsed.flightNumber || !parsed.origin || !parsed.destination || (!parsed.ticketNumber && !parsed.pnr);
+      if (isMissingEssential && process.env.NODE_ENV !== 'test' && attemptCount < MAX_EXTRACTION_ATTEMPTS) {
+        try {
+          console.log('[TicketExtraction] Essential fields incomplete, escalating to Pro model:', fallbackModel);
+          const proRes = await tryCallEndpoint('v1beta', fallbackModel);
+          if (proRes.ok && proRes.json?.candidates?.[0]?.content?.parts?.[0]?.text) {
+            const proParsed = JSON.parse(proRes.json.candidates[0].content.parts[0].text);
+            if (proParsed && typeof proParsed === 'object') {
+              for (const [key, val] of Object.entries(proParsed)) {
+                if (key !== 'costPrice' && (!parsed[key] || String(parsed[key]).trim() === '')) {
+                  parsed[key] = val;
+                }
+              }
+              if (parsed.passengerName) parsed.passengerName = cleanPassengerName(parsed.passengerName);
+              if (parsed.ticketNumber) parsed.ticketNumber = cleanTicketNumber(parsed.ticketNumber);
+              if (parsed.flightNumber) parsed.flightNumber = toSingleFlightNumber(parsed.flightNumber);
+              if (parsed.returnFlightNumber) parsed.returnFlightNumber = toSingleFlightNumber(parsed.returnFlightNumber);
+              if (parsed.origin) parsed.origin = toAirportCode(parsed.origin);
+              if (parsed.destination) parsed.destination = toAirportCode(parsed.destination);
+            }
+          }
+        } catch (proErr) {
+          console.warn('[TicketExtraction] Pro model escalation skipped:', proErr.message);
+        }
+      }
 
       // Standardize airline name and IATA 2-letter code if present
       if (parsed.airline || parsed.airlineCode) {

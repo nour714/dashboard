@@ -390,7 +390,7 @@ async function runSecurityFixesTests() {
   // Test 3: Soft deletion (archiving) preserving financial records & Audit Log
   // testTicketId has 6,000 EGP paid, 4,000 EGP refunded (unrefunded balance = 2,000 EGP)
   // Deleting ticket with unrefunded balance and payments succeeds as soft-delete
-  const deleteRes = await TicketService.deleteTicket(testTicketId, mockUser);
+  const deleteRes = await TicketService.deleteTicket(testTicketId, mockUser, { confirmUnrefundedBalance: true });
   assert(deleteRes && deleteRes.deleted === true && deleteRes.ticketId === testTicketId, 'Deleting ticket with payments and partial refund succeeds');
 
   // After deletion: ticket is soft-deleted (deletedAt is set)

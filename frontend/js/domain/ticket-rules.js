@@ -201,8 +201,8 @@ export function derivePaymentStatus(ticketPrice = 0, totalPaid = 0, currentStatu
   const price = Number(ticketPrice) || 0;
   const paid = Number(totalPaid) || 0;
 
-  if (price <= 0) return 'CONFIRMED';
-  if (paid >= price) return 'CONFIRMED';
+  if (price > 0 && paid >= price) return 'CONFIRMED';
+  if (price <= 0 && paid > 0) return 'CONFIRMED';
   if (paid > 0 && paid < price) return 'PARTIALLY PAID';
   return 'UNPAID';
 }

@@ -8,6 +8,129 @@
 import { store } from '../state/store.js';
 import { apiClient } from './api-client.js';
 import { TicketService } from './ticket-service.js';
+import {
+  calculateTotalPaid,
+  calculateRemaining,
+  calculateTotalRefunded,
+  calculateNetValue,
+  calculateTotalModificationFees,
+  calculateNetProfit
+} from '../domain/ticket-rules.js';
+
+/**
+ * Computes all business intelligence metrics dynamically from live state tickets and employees.
+ * @param {Array<object>} tickets
+ * @param {Array<object>} employees
+ * @returns {object}
+ */
+export function buildReportFromTickets(tickets = [], employees = []) {
+  let totalTickets = tickets.length;
+  let totalSales = 0;
+  let totalCollected = 0;
+  let totalOutstanding = 0;
+  let totalRefunds = 0;
+  let totalModFees = 0;
+  let totalNetProfit = 0;
+
+  tickets.forEach(t => {
+    const price = Number(t.ticketPrice) || 0;
+    totalSales += price;
+    const paid = calculateTotalPaid(t.payments);
+    totalCollected += paid;
+    totalOutstanding += calculateRemaining(price, paid);
+    totalRefunds += calculateTotalRefunded(t.refunds);
+    totalModFees += calculateTotalModificationFees(t.modifications);
+    const profit = calculateNetProfit(t.ticketPrice, t.costPrice);
+    if (profit !== null) {
+      totalNetProfit += profit;
+    }
+  });
+
+  const netValue = calculateNetValue(totalSales, totalModFees, totalRefunds);
+  const collectionRate = totalSales > 0 ? Math.round((totalCollected / totalSales) * 100) : 0;
+
+  const kpis = {
+    totalTickets,
+    totalSales,
+    totalCollected,
+    totalOutstanding,
+    totalRefunds,
+    totalModFees,
+    totalNetProfit,
+    netValue,
+    collectionRate,
+    isCalculated: true
+  };
+
+  // Employee Performance: Computed dynamically from state tickets
+  const employeePerformance = employees.map(emp => {
+    const empTickets = tickets.filter(t => t.createdBy === emp.name || t.createdById === emp.id);
+    let sales = 0;
+    let collected = 0;
+    let refunds = 0;
+    let outstanding = 0;
+
+    empTickets.forEach(t => {
+      const p = Number(t.ticketPrice) || 0;
+      sales += p;
+      const paid = calculateTotalPaid(t.payments);
+      collected += paid;
+      outstanding += calculateRemaining(p, paid);
+      refunds += calculateTotalRefunded(t.refunds);
+    });
+
+    const hasStateTickets = empTickets.length > 0;
+
+    return {
+      ...emp,
+      computedTickets: hasStateTickets ? empTickets.length : (emp.ticketsCount || 0),
+      computedSales: hasStateTickets ? sales : (emp.sales || 0),
+      computedCollected: hasStateTickets ? collected : (emp.collected || 0),
+      computedRefunds: hasStateTickets ? refunds : (emp.refunds || 0),
+      computedOutstanding: hasStateTickets ? outstanding : (emp.outstanding || 0),
+      isCalculated: hasStateTickets
+    };
+  });
+
+  // Airline Performance: Computed dynamically from state tickets
+  const airlineMap = {};
+  tickets.forEach(t => {
+    const airline = t.airline || 'Unknown';
+    if (!airlineMap[airline]) {
+      airlineMap[airline] = {
+        airline,
+        airlineCode: t.airlineCode || 'XX',
+        ticketsSold: 0,
+        totalRevenue: 0,
+        totalRefunded: 0
+      };
+    }
+    airlineMap[airline].ticketsSold += 1;
+    airlineMap[airline].totalRevenue += (Number(t.ticketPrice) || 0);
+    airlineMap[airline].totalRefunded += calculateTotalRefunded(t.refunds);
+  });
+
+  const calculatedAirlines = Object.values(airlineMap).map(a => {
+    const rate = a.totalRevenue > 0 ? ((a.totalRefunded / a.totalRevenue) * 100).toFixed(1) + '%' : '0.0%';
+    return {
+      ...a,
+      refundRate: rate,
+      isFallback: false
+    };
+  });
+
+  // Sort airlines by tickets sold descending
+  calculatedAirlines.sort((a, b) => b.ticketsSold - a.ticketsSold);
+
+  const airlinePerformance = calculatedAirlines;
+
+  return {
+    kpis,
+    employeePerformance,
+    airlinePerformance,
+    dataSource: 'APPLICATION_STATE'
+  };
+}
 
 /**
  * Static mock fallback data used strictly when no state records exist.
