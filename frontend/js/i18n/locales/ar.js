@@ -63,6 +63,8 @@ export const ar = {
     save: 'حفظ',
     saveChanges: 'حفظ التغييرات',
     cancel: 'إلغاء',
+    yes: 'نعم',
+    no: 'لا',
     close: 'إغلاق',
     closeSearch: 'إغلاق البحث',
     back: 'رجوع',
@@ -459,7 +461,9 @@ export const ar = {
       uploadNew: 'رفع مستند جديد',
       empty: 'لم يتم رفع مستند جواز السفر بعد.',
       upload: 'رفع المستند'
-    }
+    },
+    deletePassportTitle: 'حذف مستند جواز السفر',
+    deletePassportConfirm: 'هل أنت متأكد من حذف مستند جواز السفر نهائيًا؟'
   },
 
   // Payments Page
@@ -568,7 +572,7 @@ export const ar = {
     deleteTitle: 'حذف موظف',
     deleteWarning: 'تحذير: هذا الإجراء نهائي ولا يمكن التراجع عنه.',
     deleteExplanation: 'سيتم حذف حساب الموظف نهائيًا. جميع السجلات التاريخية (التذاكر، المدفوعات، إلخ) ستبقى محفوظة لكنها لن تكون مرتبطة بهذا الحساب.',
-    deleteTypeEmail: 'اكتب البريد الإلكتروني للموظف للتأكيد',
+    deleteConfirmQuestion: 'هل أنت متأكد من حذف هذا الموظف؟',
     deleteSuccess: 'تم حذف حساب الموظف نهائيًا.',
     deleteFailed: 'فشل حذف الموظف',
     cannotDeleteSelf: 'لا يمكنك حذف حسابك الخاص. اطلب من مسؤول آخر.',

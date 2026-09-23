@@ -484,8 +484,8 @@ export const CustomerDetailsPage = {
             </div>
           `,
           footerHtml: `
-            <button type="button" class="btn btn-secondary" id="cancel-delete-cust">${escapeHtml(t('common.cancel'))}</button>
-            <button type="button" class="btn btn-danger" id="confirm-delete-cust">${escapeHtml(t('common.delete'))}</button>
+            <button type="button" class="btn btn-secondary" id="cancel-delete-cust">${escapeHtml(t('common.no') || 'لا')}</button>
+            <button type="button" class="btn btn-danger" id="confirm-delete-cust">${escapeHtml(t('common.yes') || 'نعم')}</button>
           `,
           onOpen: (modalEl) => {
             const cancelBtn = modalEl.querySelector('#cancel-delete-cust');
@@ -643,24 +643,44 @@ export const CustomerDetailsPage = {
 
     const deleteBtn = container.querySelector('#btn-delete-passport-doc');
     if (deleteBtn) {
-      deleteBtn.addEventListener('click', async () => {
-        if (!confirm('Are you sure you want to permanently delete this passport document?')) return;
+      deleteBtn.addEventListener('click', () => {
+        openModal({
+          title: t('customerDetails.deletePassportTitle') || 'Delete Passport Document',
+          contentHtml: `
+            <p class="text-sm" style="margin: 0; text-align: center;">
+              ${escapeHtml(t('customerDetails.deletePassportConfirm') || 'هل أنت متأكد من حذف مستند جواز السفر نهائيًا؟')}
+            </p>
+          `,
+          footerHtml: `
+            <button type="button" class="btn btn-secondary" id="cancel-delete-passport">${escapeHtml(t('common.no') || 'لا')}</button>
+            <button type="button" class="btn btn-danger" id="confirm-delete-passport">${escapeHtml(t('common.yes') || 'نعم')}</button>
+          `,
+          onOpen: (modalEl) => {
+            const cancelBtn = modalEl.querySelector('#cancel-delete-passport');
+            const confirmBtn = modalEl.querySelector('#confirm-delete-passport');
 
-        deleteBtn.disabled = true;
-        deleteBtn.textContent = 'Deleting…';
+            if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
-        const result = await CustomerService.deletePassportDocument(customerId);
+            if (confirmBtn) {
+              confirmBtn.addEventListener('click', async () => {
+                confirmBtn.disabled = true;
 
-        if (!result.success) {
-          deleteBtn.disabled = false;
-          deleteBtn.innerHTML = `${icons.trash('w-4 h-4')} Delete`;
-          showToast(result.error?.message || 'Delete failed', 'error');
-          return;
-        }
+                const result = await CustomerService.deletePassportDocument(customerId);
 
-        showToast('Passport document deleted.', 'success');
-        container.innerHTML = CustomerDetailsPage.render(params, activeTab);
-        CustomerDetailsPage.afterRender(container, params, activeTab);
+                if (!result.success) {
+                  confirmBtn.disabled = false;
+                  showToast(result.error?.message || 'Delete failed', 'error');
+                  return;
+                }
+
+                closeModal();
+                showToast('Passport document deleted.', 'success');
+                container.innerHTML = CustomerDetailsPage.render(params, activeTab);
+                CustomerDetailsPage.afterRender(container, params, activeTab);
+              });
+            }
+          }
+        });
       });
     }
   }

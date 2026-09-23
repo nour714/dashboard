@@ -72,31 +72,23 @@ function openDeleteEmployeeModal(employee, container) {
           </p>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">${escapeHtml(t('employees.deleteTypeEmail'))} (${escapeHtml(employee.email)})</label>
-          <input type="text" id="delete-employee-confirm-input" class="form-control ltr-field" autocomplete="off" placeholder="${escapeHtml(employee.email)}" />
-        </div>
+        <p class="text-sm" style="margin: 0; text-align: center;">
+          ${escapeHtml(t('employees.deleteConfirmQuestion') || 'هل أنت متأكد من حذف هذا الموظف؟')}
+        </p>
 
         <div id="delete-employee-error-box" class="p-sm text-sm text-danger" style="display: none; background-color: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md); border: 1px solid rgba(239, 68, 68, 0.3);"></div>
       </div>
     `,
     footerHtml: `
-      <button type="button" class="btn btn-secondary" id="modal-cancel-delete-employee">${escapeHtml(t('common.cancel'))}</button>
-      <button type="button" class="btn btn-danger" id="modal-confirm-delete-employee" disabled>${escapeHtml(t('common.delete'))}</button>
+      <button type="button" class="btn btn-secondary" id="modal-cancel-delete-employee">${escapeHtml(t('common.no') || 'لا')}</button>
+      <button type="button" class="btn btn-danger" id="modal-confirm-delete-employee">${escapeHtml(t('common.yes') || 'نعم')}</button>
     `,
     onOpen: (modalEl) => {
       const cancelBtn = modalEl.querySelector('#modal-cancel-delete-employee');
       const confirmBtn = modalEl.querySelector('#modal-confirm-delete-employee');
-      const confirmInput = modalEl.querySelector('#delete-employee-confirm-input');
       const errorBox = modalEl.querySelector('#delete-employee-error-box');
 
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
-
-      if (confirmInput && confirmBtn) {
-        confirmInput.addEventListener('input', () => {
-          confirmBtn.disabled = confirmInput.value.trim().toLowerCase() !== employee.email.toLowerCase();
-        });
-      }
 
       if (confirmBtn) {
         confirmBtn.addEventListener('click', async () => {

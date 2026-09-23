@@ -267,8 +267,8 @@ function openDeleteVisaModal(visa, onSuccess) {
       </div>
     `,
     footerHtml: `
-      <button type="button" class="btn btn-secondary" id="modal-cancel-delete">${escapeHtml(t('common.cancel') || 'Cancel')}</button>
-      <button type="button" class="btn btn-danger" id="modal-confirm-delete">${escapeHtml(t('common.delete') || 'Delete')}</button>
+      <button type="button" class="btn btn-secondary" id="modal-cancel-delete">${escapeHtml(t('common.no') || 'لا')}</button>
+      <button type="button" class="btn btn-danger" id="modal-confirm-delete">${escapeHtml(t('common.yes') || 'نعم')}</button>
     `,
     onOpen: (modalEl) => {
       const cancelBtn = modalEl.querySelector('#modal-cancel-delete');

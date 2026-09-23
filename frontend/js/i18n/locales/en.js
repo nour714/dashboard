@@ -63,6 +63,8 @@ export const en = {
     save: 'Save',
     saveChanges: 'Save Changes',
     cancel: 'Cancel',
+    yes: 'Yes',
+    no: 'No',
     close: 'Close',
     closeSearch: 'Close search',
     back: 'Back',
@@ -459,7 +461,9 @@ export const en = {
       uploadNew: 'Upload New',
       empty: 'No passport document uploaded yet.',
       upload: 'Upload Document'
-    }
+    },
+    deletePassportTitle: 'Delete Passport Document',
+    deletePassportConfirm: 'Are you sure you want to permanently delete this passport document?'
   },
 
   // Payments Page
@@ -568,7 +572,7 @@ export const en = {
     deleteTitle: 'Delete Employee',
     deleteWarning: 'Warning: This action is permanent and cannot be undone.',
     deleteExplanation: 'The employee account will be permanently deleted. All their historical records (tickets, payments, etc.) will be preserved but will no longer be linked to this account.',
-    deleteTypeEmail: 'Type the employee email to confirm',
+    deleteConfirmQuestion: 'Are you sure you want to delete this employee?',
     deleteSuccess: 'Employee account permanently deleted.',
     deleteFailed: 'Failed to delete employee',
     cannotDeleteSelf: 'You cannot delete your own account. Ask another administrator.',
