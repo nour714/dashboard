@@ -15,6 +15,7 @@ export function renderTopbar(upcomingCount = 0) {
   const initials = userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || (isAr ? 'م.ر' : 'MR');
   const currentLang = i18n.getLanguage();
   const nextLangLabel = currentLang === 'ar' ? 'English' : 'العربية';
+  const nextLangShort = currentLang === 'ar' ? 'EN' : 'عربي';
 
   const isDark = (typeof document !== 'undefined') &&
     document.documentElement.getAttribute('data-theme') === 'dark';
@@ -83,7 +84,8 @@ export function renderTopbar(upcomingCount = 0) {
           aria-label="${escapeHtml(t('common.switchLanguage'))}"
         >
           ${icons.globe('w-4 h-4')}
-          <span>${escapeHtml(nextLangLabel)}</span>
+          <span class="topbar-lang-full hide-mobile">${escapeHtml(nextLangLabel)}</span>
+          <span class="topbar-lang-short show-mobile">${escapeHtml(nextLangShort)}</span>
         </button>
 
         <a href="/tickets/new" class="topbar-new-ticket-btn hide-mobile" data-link>

@@ -175,18 +175,26 @@
     position: sticky;
     top: 10px;
     margin: 10px 12px var(--spacing-sm) 12px;
-    padding: 0 12px;
+    padding: 0 10px;
     border-radius: 18px;
-    height: 56px;
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    overflow: visible;
+  }
+
+  .topbar-left {
+    flex: 0 0 auto !important;
+    max-width: none;
+    display: flex;
+    align-items: center;
   }
 
   .topbar-mobile-brand {
     display: flex !important;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     text-decoration: none;
     color: inherit;
     flex-shrink: 0;
@@ -197,52 +205,71 @@
     height: 28px;
     object-fit: contain;
     border-radius: 6px;
+    flex-shrink: 0;
   }
 
+  /* On mobile phones, hide the text so only the logo mark shows! This prevents collision with the search icon and prevents avatar MR from getting clipped! */
   .topbar-mobile-brand-title {
-    font-family: var(--font-family-serif, 'Cinzel', serif);
-    font-weight: 700;
-    font-size: 16px;
-    letter-spacing: -0.01em;
-    display: flex;
-    align-items: baseline;
-    line-height: 1;
-  }
-
-  .topbar-mobile-brand-title .brand-africa {
-    color: var(--color-accent, #d42b2b);
-  }
-
-  .topbar-mobile-brand-title .brand-travel {
-    color: var(--color-text);
+    display: none !important;
   }
 
   .topbar-right {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
+    flex-shrink: 0;
+    margin-inline-start: auto;
   }
 
   .topbar-icon-btn {
-    width: 34px !important;
-    height: 34px !important;
-    min-width: 34px !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
     padding: 0 !important;
     border-radius: 10px !important;
+    flex-shrink: 0;
+  }
+
+  .topbar-icon-btn svg {
+    width: 15px !important;
+    height: 15px !important;
+    min-width: 15px !important;
+    max-width: 15px !important;
   }
 
   .topbar-lang-btn {
-    height: 34px !important;
-    padding: 0 8px !important;
-    font-size: 11.5px !important;
-    gap: 4px !important;
+    height: 32px !important;
+    padding: 0 7px !important;
+    font-size: 11px !important;
+    gap: 3px !important;
     border-radius: var(--radius-full) !important;
+    flex-shrink: 0;
+  }
+
+  .topbar-lang-btn svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  .topbar-lang-full {
+    display: none !important;
+  }
+
+  .topbar-lang-short {
+    display: inline-block !important;
+    font-weight: 600;
+  }
+
+  .topbar-user-badge {
+    padding: 0 !important;
+    flex-shrink: 0;
   }
 
   .topbar-user-avatar {
-    width: 32px !important;
-    height: 32px !important;
-    font-size: 11px !important;
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 10.5px !important;
+    flex-shrink: 0;
   }
 
   .topbar-mobile-search-btn {
