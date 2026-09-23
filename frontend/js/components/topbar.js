@@ -26,6 +26,12 @@ export function renderTopbar(upcomingCount = 0) {
   return `
     <header class="app-topbar">
       <div class="topbar-left">
+        <a href="/dashboard" class="topbar-mobile-brand show-mobile" data-link aria-label="AfricaTravel">
+          <img src="/assets/logo.png" alt="AfricaTravel" class="topbar-mobile-logo no-flip" />
+          <span class="topbar-mobile-brand-title">
+            <span class="brand-africa">Africa</span><span class="brand-travel">Travel</span>
+          </span>
+        </a>
         <form class="topbar-search-form" id="topbar-global-search">
           <span class="topbar-search-icon">${icons.search('w-4 h-4')}</span>
           <input

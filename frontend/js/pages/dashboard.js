@@ -68,6 +68,39 @@ export const DashboardPage = {
       `;
     }).join('');
 
+    const recentTicketsMobileHtml = recentTickets.map(tk => {
+      const fin = tk.financials || TicketService.getTicketFinancials(tk);
+      const isPaid = (fin.remaining || 0) === 0;
+
+      return `
+        <a href="/tickets/${escapeHtml(tk.id)}" class="mobile-data-card" data-link>
+          <div class="mobile-card-top">
+            <span class="mobile-card-id ltr-data">#${escapeHtml(tk.ticketNumber || tk.id)}</span>
+            ${renderStatusBadge(fin.paymentStatus || tk.status)}
+          </div>
+          <div class="font-bold text-base mb-xxs">${escapeHtml(tk.passengerName)}</div>
+          <div class="mobile-card-route">
+            <span class="airline-code-badge ltr-data">${escapeHtml(tk.airlineCode || 'MS')}</span>
+            <span class="ltr-data font-medium">${escapeHtml(tk.origin)} ✈ ${escapeHtml(tk.destination)}</span>
+          </div>
+          <div class="mobile-card-meta">
+            <div>
+              <div class="text-xs text-muted">${escapeHtml(t('common.price'))} / ${escapeHtml(t('common.remaining'))}</div>
+              <div class="font-semibold tabular-nums text-sm">
+                ${formatCurrency(fin.ticketPrice, fin.currency)}
+                <span class="${isPaid ? 'text-success' : 'text-danger'}" style="font-size: 12px; margin-inline-start: 4px;">
+                  (${isPaid ? escapeHtml(t('common.paid')) : formatCurrency(fin.remaining, fin.currency)})
+                </span>
+              </div>
+            </div>
+            <span class="text-accent font-semibold text-xs d-flex items-center gap-xxs">
+              ${escapeHtml(t('common.details'))} ›
+            </span>
+          </div>
+        </a>
+      `;
+    }).join('');
+
     const upcomingFlightsHtml = upcomingFlights.map(tk => `
       <div class="d-flex items-center justify-between p-sm mb-xs" style="background-color: var(--color-surface); border: 1px solid var(--color-border-soft); border-radius: var(--radius-lg);">
         <div class="d-flex items-center gap-sm">
@@ -151,7 +184,8 @@ export const DashboardPage = {
               <h2 class="card-title">${escapeHtml(t('dashboard.recentTickets.title'))}</h2>
               <a href="/tickets" class="btn btn-sm btn-ghost" data-link>${escapeHtml(t('common.viewAll'))}</a>
             </div>
-            <div class="table-responsive">
+            <!-- Desktop Table View -->
+            <div class="table-responsive desktop-table-view">
               <table class="data-table">
                 <thead>
                   <tr>
@@ -166,6 +200,11 @@ export const DashboardPage = {
                   ${recentTicketsHtml}
                 </tbody>
               </table>
+            </div>
+
+            <!-- Mobile Card View -->
+            <div class="mobile-card-list mobile-card-view p-sm" style="display: none;">
+              ${recentTicketsMobileHtml || `<p class="text-sm text-muted p-sm text-center">${escapeHtml(t('common.noData'))}</p>`}
             </div>
           </div>
         </div>

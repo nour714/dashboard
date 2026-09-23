@@ -638,7 +638,20 @@ if (document.readyState === 'loading') {
 // Register Service Worker for PWA installability and shell caching
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
+    navigator.serviceWorker.register('/sw.js').then((registration) => {
+      // Proactively check for newer service worker version
+      registration.update().catch(() => {});
+      registration.addEventListener('updatefound', () => {
+        const installingWorker = registration.installing;
+        if (installingWorker) {
+          installingWorker.addEventListener('statechange', () => {
+            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              window.location.reload();
+            }
+          });
+        }
+      });
+    }).catch((err) => {
       console.warn('Service worker registration failed:', err);
     });
   });

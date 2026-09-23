@@ -11,7 +11,7 @@
  * returning users pick up the new version instead of a stale cache.
  */
 
-const CACHE_NAME = 'africatravel-shell-v7';
+const CACHE_NAME = 'africatravel-shell-v8';
 
 const SHELL_ASSETS = [
   '/',
@@ -37,6 +37,7 @@ const SHELL_ASSETS = [
   '/js/services/expense-service.js',
   '/js/services/report-service.js',
   '/js/services/ticket-service.js',
+  '/js/services/visa-service.js',
   '/js/components/bottom-nav.js',
   '/js/components/empty-state.js',
   '/js/components/icons.js',
@@ -59,6 +60,8 @@ const SHELL_ASSETS = [
   '/js/pages/dashboard.js',
   '/js/pages/employees.js',
   '/js/pages/expenses.js',
+  '/js/pages/visas.js',
+  '/js/pages/visa-details.js',
   '/js/pages/login.js',
   '/js/pages/payments.js',
   '/js/pages/refunds.js',
