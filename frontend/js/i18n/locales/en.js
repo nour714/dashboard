@@ -863,7 +863,9 @@ export const en = {
       title: 'Delete Ticket',
       warningPermanent: 'Warning: Permanent deletion cannot be undone',
       explanationPermanent: 'The ticket along with all associated payments and refunds will be permanently deleted. This cannot be recovered, and only a summary record will be retained in the audit log.',
-      typeToConfirm: 'Type the ticket number to confirm'
+      confirmQuestion: 'Are you sure you want to delete this ticket?',
+      yes: 'Yes',
+      no: 'No'
     },
     deleteCustomer: {
       title: 'Delete Customer',

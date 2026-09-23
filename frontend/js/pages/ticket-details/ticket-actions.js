@@ -702,31 +702,23 @@ export function openDeleteTicketModal(ticket, onSuccess) {
           </p>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">${escapeHtml(t('modals.deleteTicket.typeToConfirm') || `اكتب رقم التذكرة (${confirmValue}) للتأكيد`)} (${escapeHtml(confirmValue)})</label>
-          <input type="text" id="delete-ticket-confirm-input" class="form-control ltr-field" autocomplete="off" placeholder="${escapeHtml(confirmValue)}" />
-        </div>
+        <p class="text-sm" style="margin: 0; text-align: center;">
+          ${escapeHtml(t('modals.deleteTicket.confirmQuestion') || 'هل أنت متأكد من حذف هذه التذكرة؟')}
+        </p>
 
         <div id="delete-ticket-error-box" class="p-sm text-sm text-danger" style="display: none; background-color: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md); border: 1px solid rgba(239, 68, 68, 0.3);"></div>
       </div>
     `,
     footerHtml: `
-      <button type="button" class="btn btn-secondary" id="modal-cancel-delete-ticket">${escapeHtml(t('common.cancel'))}</button>
-      <button type="button" class="btn btn-danger" id="modal-confirm-delete-ticket" disabled>${escapeHtml(t('common.delete'))}</button>
+      <button type="button" class="btn btn-secondary" id="modal-cancel-delete-ticket">${escapeHtml(t('modals.deleteTicket.no') || t('common.no') || 'لا')}</button>
+      <button type="button" class="btn btn-danger" id="modal-confirm-delete-ticket">${escapeHtml(t('modals.deleteTicket.yes') || t('common.yes') || 'نعم')}</button>
     `,
     onOpen: (modalEl) => {
       const cancelBtn = modalEl.querySelector('#modal-cancel-delete-ticket');
       const confirmBtn = modalEl.querySelector('#modal-confirm-delete-ticket');
-      const confirmInput = modalEl.querySelector('#delete-ticket-confirm-input');
       const errorBox = modalEl.querySelector('#delete-ticket-error-box');
 
       if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
-
-      if (confirmInput && confirmBtn) {
-        confirmInput.addEventListener('input', () => {
-          confirmBtn.disabled = confirmInput.value.trim() !== confirmValue;
-        });
-      }
 
       if (confirmBtn) {
         confirmBtn.addEventListener('click', async () => {
