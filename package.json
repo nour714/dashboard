@@ -78,9 +78,9 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
-    "@supabase/server": "^1.6.0",
+    "@supabase/server": "^1.7.0",
     "@supabase/supabase-js": "^2.116.0",
-    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/ratelimit": "^2.1.0",
     "@upstash/redis": "^1.38.4",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
@@ -89,11 +89,11 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
-    "file-type": "^22.1.0",
+    "file-type": "^22.1.1",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
-    "multer": "^2.3.0",
-    "zod": "^4.6.2"
+    "multer": "^2.4.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
