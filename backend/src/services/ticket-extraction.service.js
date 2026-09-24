@@ -13,7 +13,7 @@ import { BusinessRuleError } from '../domain/errors.js';
 import { findAirline } from '../constants/airlines.js';
 import { normalizeValidatedAirportCode } from '../constants/airports.js';
 
-const GEMINI_REQUEST_TIMEOUT_MS = 14000;
+const GEMINI_REQUEST_TIMEOUT_MS = 10000;
 
 export function toAirportCode(raw) {
   if (!raw || typeof raw !== 'string') return raw;
@@ -206,7 +206,8 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
       primaryModel,
       fallbackModel,
       'gemini-2.0-flash',
-      'gemini-3.5-flash-lite'
+      'gemini-1.5-flash',
+      'gemini-2.5-flash-lite'
     ])).filter(Boolean);
 
     const MAX_EXTRACTION_ATTEMPTS = 4;
@@ -295,11 +296,11 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
       }
     }
 
-    // Phase 1: Try candidate models on v1 (GA path first)
+    // Phase 1: Try candidate models on v1beta (supports structured outputs and current Gemini 2.x/1.5 models)
     if (!result) {
       for (const modelName of candidateModels) {
         if (attemptCount >= MAX_EXTRACTION_ATTEMPTS) break;
-        const res = await tryCallEndpoint('v1', modelName);
+        const res = await tryCallEndpoint('v1beta', modelName);
         if (res.ok) {
           result = res.json;
           break;
@@ -307,11 +308,11 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
       }
     }
 
-    // Phase 2: If candidate models on v1 failed, try candidate models on v1beta
+    // Phase 2: If candidate models on v1beta failed, fallback to v1
     if (!result && attemptCount < MAX_EXTRACTION_ATTEMPTS) {
       for (const modelName of candidateModels) {
         if (attemptCount >= MAX_EXTRACTION_ATTEMPTS) break;
-        const res = await tryCallEndpoint('v1beta', modelName);
+        const res = await tryCallEndpoint('v1', modelName);
         if (res.ok) {
           result = res.json;
           break;
@@ -440,7 +441,8 @@ For each ticket/passenger:
       primaryModel,
       fallbackModel,
       'gemini-2.0-flash',
-      'gemini-3.5-flash-lite'
+      'gemini-1.5-flash',
+      'gemini-2.5-flash-lite'
     ])).filter(Boolean);
 
     const requestPayload = JSON.stringify({
@@ -461,7 +463,7 @@ For each ticket/passenger:
     let result = null;
     let lastError = null;
 
-    for (const apiVer of ['v1', 'v1beta']) {
+    for (const apiVer of ['v1beta', 'v1']) {
       for (const model of candidateModels) {
         const apiUrl = `https://generativelanguage.googleapis.com/${apiVer}/models/${encodeURIComponent(model)}:generateContent`;
         const controller = new AbortController();
