@@ -7,6 +7,7 @@ import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { renderStatusBadge } from '../components/status-badge.js';
 import { renderEmptyState } from '../components/empty-state.js';
+import { openBulkImportModal } from '../components/bulk-import-modal.js';
 import { showToast } from '../components/toast.js';
 import {
   calculateTotalPaid,
@@ -228,11 +229,15 @@ export const TicketsPage = {
       title: t('tickets.title'),
       subtitle: t('tickets.subtitle'),
       actionsHtml: `
-        <button type="button" class="btn btn-secondary" id="export-tickets-btn">
+        <button type="button" class="btn btn-secondary d-flex items-center gap-xs" id="bulk-import-tickets-btn">
+          ${icons.upload('w-4 h-4')}
+          <span>${escapeHtml(t('tickets.bulkImport') || 'Import Tickets')}</span>
+        </button>
+        <button type="button" class="btn btn-secondary d-flex items-center gap-xs" id="export-tickets-btn">
           ${icons.download('w-4 h-4')}
           <span>${escapeHtml(t('common.export'))}</span>
         </button>
-        <a href="/tickets/new" class="btn btn-primary" data-link>
+        <a href="/tickets/new" class="btn btn-primary d-flex items-center gap-xs" data-link>
           ${icons.plus('w-4 h-4')}
           <span>${escapeHtml(t('tickets.createTicket'))}</span>
         </a>
@@ -416,6 +421,17 @@ export const TicketsPage = {
     }
 
     if (clearBtn) clearBtn.addEventListener('click', resetFilters);
+
+    const bulkImportBtn = container.querySelector('#bulk-import-tickets-btn');
+    if (bulkImportBtn) {
+      bulkImportBtn.addEventListener('click', () => {
+        openBulkImportModal({
+          onSuccess: () => {
+            updateResults();
+          }
+        });
+      });
+    }
 
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
