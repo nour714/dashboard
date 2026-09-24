@@ -121,6 +121,18 @@ const EXTRACTION_SCHEMA = {
   }
 };
 
+export const MULTI_EXTRACTION_SCHEMA = {
+  type: 'object',
+  properties: {
+    tickets: {
+      type: 'array',
+      description: 'List of ALL flight tickets/passengers found in the document. If only one is found, return an array with that 1 item.',
+      items: EXTRACTION_SCHEMA
+    }
+  },
+  required: ['tickets']
+};
+
 export async function discoverAvailableModels(apiKey) {
   if (!apiKey) return [];
   const versions = ['v1', 'v1beta'];
@@ -383,49 +395,180 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
         }
       }
 
-      // Standardize airline name and IATA 2-letter code if present
-      if (parsed.airline || parsed.airlineCode) {
-        const matched = findAirline(parsed.airlineCode || parsed.airline) || findAirline(parsed.airline);
-        if (matched) {
-          parsed.airline = matched.name;
-          parsed.airlineCode = matched.code;
-        }
-      }
-
-      // Log raw AI values before normalization so any future extraction mismatch
-      // (e.g. a correct code rejected by the curated allowlist) is diagnosable from server logs.
-      if (parsed.origin || parsed.destination) {
-        console.log('[TicketExtraction] Raw origin/destination from Gemini:', parsed.origin, '/', parsed.destination);
-      }
-
-      // Validate origin/destination against the curated allowlist, but NEVER silently blank
-      // a field the model did extract — an agent reviewing a pre-filled (if unverified)
-      // suggestion like "ACC" is far better than facing an empty required field with no
-      // explanation. Fields outside the curated list are still flagged via unrecognizedFields
-      // so the UI can visually mark them for confirmation.
-      const unrecognizedFields = [];
-      for (const field of ['origin', 'destination']) {
-        if (!parsed[field]) continue;
-        const code = normalizeValidatedAirportCode(parsed[field]);
-        if (code) {
-          parsed[field] = code;
-        } else {
-          unrecognizedFields.push(field);
-        }
-      }
-      if (unrecognizedFields.length) parsed.unrecognizedFields = unrecognizedFields;
-
-      // If no return flight is present, omit all return* fields and set tripType to "One Way"
-      if (!parsed.returnDepartureDate && !parsed.returnFlightNumber) {
-        parsed.tripType = 'One Way';
-        delete parsed.returnFlightNumber;
-        delete parsed.returnDepartureDate;
-        delete parsed.returnArrivalDate;
-      } else {
-        parsed.tripType = 'Round Trip';
-      }
+      cleanAndNormalizeExtractedTicket(parsed);
     }
 
     return parsed;
+  },
+
+  /**
+   * Extracts one or more tickets from a document (PDF or image) using Google Gemini API.
+   * Useful for multi-page documents, group bookings, or bulk PDFs.
+   * @param {Buffer} fileBuffer
+   * @param {string} mimeType
+   * @returns {Promise<Array<object>>}
+   */
+  async extractMultipleFromDocument(fileBuffer, mimeType) {
+    if (!env.GEMINI_API_KEY) {
+      throw new BusinessRuleError('AI extraction is not configured on this server', 'AI_EXTRACTION_UNAVAILABLE', 503);
+    }
+
+    if (!fileBuffer || !Buffer.isBuffer(fileBuffer) || fileBuffer.length === 0) {
+      throw new BusinessRuleError('No valid file buffer provided for extraction', 'FILE_REQUIRED', 400);
+    }
+
+    const base64Data = fileBuffer.toString('base64');
+    const prompt = `You are extracting flight ticket booking details from this document for ALL tickets and passengers found. Read the ENTIRE document first.
+A document may contain a single ticket or multiple tickets/passengers (e.g. multi-page document, group booking, family travel, multiple e-tickets).
+Identify EVERY ticket or passenger mentioned in the document and return each as an object in the 'tickets' array.
+If there is only 1 ticket or passenger, return an array with 1 item.
+
+For each ticket/passenger:
+- PASSENGER NAME: convert "SURNAME/GIVENNAME" or "SURNAME/GIVENNAME MR/MRS/MS" to "Givenname Surname".
+- CONNECTING FLIGHTS / TRANSIT STOPS: an airport is a transit stop if it is an arrival and a later departure on the same ticket. Only the arrival of the LAST outbound segment is the true destination.
+- "origin" = 3-letter IATA code of departure airport of first outbound segment.
+- "destination" = 3-letter IATA code of arrival airport of last outbound segment (never transit airport).
+- "flightNumber" = flight number of first outbound segment ONLY.
+- "tripType" = "Round Trip" ONLY if there is a separate return leg; otherwise "One Way".
+- "returnFlightNumber" = flight number of first return segment ONLY.
+- "returnDepartureDate" = departure date of first return segment.
+- Dates must be in YYYY-MM-DD format. Standardize airline names and their 2-letter IATA codes. Return ONLY identifiable fields.`;
+
+    const primaryModel = env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-1.5-pro';
+    const candidateModels = Array.from(new Set([
+      primaryModel,
+      fallbackModel,
+      'gemini-2.0-flash',
+      'gemini-3.5-flash-lite'
+    ])).filter(Boolean);
+
+    const requestPayload = JSON.stringify({
+      contents: [{
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType, data: base64Data } }
+        ]
+      }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: MULTI_EXTRACTION_SCHEMA,
+        temperature: 0.0,
+        maxOutputTokens: 6000
+      }
+    });
+
+    let result = null;
+    let lastError = null;
+
+    for (const apiVer of ['v1', 'v1beta']) {
+      for (const model of candidateModels) {
+        const apiUrl = `https://generativelanguage.googleapis.com/${apiVer}/models/${encodeURIComponent(model)}:generateContent`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), GEMINI_REQUEST_TIMEOUT_MS);
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': env.GEMINI_API_KEY
+            },
+            signal: controller.signal,
+            body: requestPayload
+          });
+
+          if (response.ok) {
+            result = await response.json();
+            break;
+          }
+          const errBody = await response.text().catch(() => '');
+          lastError = new BusinessRuleError('Gemini API extraction failed: ' + (errBody || response.status), 'AI_EXTRACTION_FAILED', 502);
+        } catch (netErr) {
+          lastError = new BusinessRuleError('AI extraction request failed: ' + netErr.message, 'AI_EXTRACTION_FAILED', 502);
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      }
+      if (result) break;
+    }
+
+    if (!result) {
+      throw lastError || new BusinessRuleError('الاستخراج مش متاح دلوقتي، إملى النموذج يدويًا', 'AI_EXTRACTION_FAILED', 502);
+    }
+
+    const textPart = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!textPart) {
+      throw new BusinessRuleError('AI extraction returned no readable data', 'AI_EXTRACTION_EMPTY', 502);
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(textPart);
+    } catch {
+      throw new BusinessRuleError('AI extraction returned malformed data', 'AI_EXTRACTION_PARSE_ERROR', 502);
+    }
+
+    const rawList = Array.isArray(parsed?.tickets)
+      ? parsed.tickets
+      : (parsed && typeof parsed === 'object' && (parsed.passengerName || parsed.ticketNumber || parsed.pnr) ? [parsed] : []);
+
+    const cleanedList = [];
+    for (const item of rawList) {
+      if (item && typeof item === 'object') {
+        cleanAndNormalizeExtractedTicket(item);
+        if (item.passengerName || item.ticketNumber || item.pnr || (item.origin && item.destination)) {
+          cleanedList.push(item);
+        }
+      }
+    }
+
+    return cleanedList;
   }
 };
+
+export function cleanAndNormalizeExtractedTicket(parsed) {
+  if (!parsed || typeof parsed !== 'object') return parsed;
+  delete parsed.costPrice;
+
+  if (parsed.passengerName) parsed.passengerName = cleanPassengerName(parsed.passengerName);
+  if (parsed.ticketNumber) parsed.ticketNumber = cleanTicketNumber(parsed.ticketNumber);
+  if (parsed.flightNumber) parsed.flightNumber = toSingleFlightNumber(parsed.flightNumber);
+  if (parsed.returnFlightNumber) parsed.returnFlightNumber = toSingleFlightNumber(parsed.returnFlightNumber);
+
+  if (parsed.origin) parsed.origin = toAirportCode(parsed.origin);
+  if (parsed.destination) parsed.destination = toAirportCode(parsed.destination);
+
+  // Standardize airline name and IATA 2-letter code if present
+  if (parsed.airline || parsed.airlineCode) {
+    const matched = findAirline(parsed.airlineCode || parsed.airline) || findAirline(parsed.airline);
+    if (matched) {
+      parsed.airline = matched.name;
+      parsed.airlineCode = matched.code;
+    }
+  }
+
+  // Validate origin/destination against the curated allowlist
+  const unrecognizedFields = [];
+  for (const field of ['origin', 'destination']) {
+    if (!parsed[field]) continue;
+    const code = normalizeValidatedAirportCode(parsed[field]);
+    if (code) {
+      parsed[field] = code;
+    } else {
+      unrecognizedFields.push(field);
+    }
+  }
+  if (unrecognizedFields.length) parsed.unrecognizedFields = unrecognizedFields;
+
+  // If no return flight is present, omit all return* fields and set tripType to "One Way"
+  if (!parsed.returnDepartureDate && !parsed.returnFlightNumber) {
+    parsed.tripType = 'One Way';
+    delete parsed.returnFlightNumber;
+    delete parsed.returnDepartureDate;
+    delete parsed.returnArrivalDate;
+  } else {
+    parsed.tripType = 'Round Trip';
+  }
+
+  return parsed;
+}

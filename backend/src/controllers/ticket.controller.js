@@ -188,5 +188,45 @@ export const TicketController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  async downloadBulkTemplate(req, res, next) {
+    try {
+      const templateBuffer = TicketService.generateBulkTemplate();
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="africatravel_tickets_template.xlsx"');
+      return res.send(templateBuffer);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async bulkImportTickets(req, res, next) {
+    try {
+      let files = [];
+      if (Array.isArray(req.files)) {
+        files = req.files;
+      } else if (req.files && typeof req.files === 'object') {
+        if (Array.isArray(req.files.files)) files = files.concat(req.files.files);
+        if (Array.isArray(req.files.file)) files = files.concat(req.files.file);
+      } else if (req.file) {
+        files = [req.file];
+      }
+
+      if (files.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'No file uploaded for bulk import', code: 'FILE_REQUIRED' }
+        });
+      }
+
+      const report = await TicketService.bulkImportTickets(files, req.user);
+      return res.status(200).json({
+        success: true,
+        data: report
+      });
+    } catch (err) {
+      next(err);
+    }
   }
 };

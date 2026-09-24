@@ -8,7 +8,7 @@
  */
 
 import { store } from '../state/store.js';
-import { apiClient } from './api-client.js';
+import { apiClient, getAccessToken } from './api-client.js';
 import {
   calculateTotalPaid,
   calculateRemaining,
@@ -255,6 +255,61 @@ export const TicketService = {
       return {
         success: false,
         error: { message: err.message || 'Extraction failed', code: 'EXTRACTION_ERROR' }
+      };
+    }
+  },
+
+  /**
+   * Bulk imports tickets from uploaded spreadsheets (.xlsx, .xls, .csv) or documents (.pdf).
+   * @param {Array<File>|File} files
+   * @returns {Promise<{success: boolean, data?: object, error?: object}>}
+   */
+  async bulkImportTickets(files) {
+    try {
+      const formData = new FormData();
+      const fileList = Array.isArray(files) ? files : [files];
+      for (const f of fileList) {
+        formData.append('files', f);
+      }
+      const res = await apiClient.post('/tickets/bulk-import', formData);
+      if (res.success) {
+        await store.refreshTickets().catch(() => {});
+      }
+      return res;
+    } catch (err) {
+      return {
+        success: false,
+        error: { message: err.message || 'Bulk import failed', code: 'BULK_IMPORT_ERROR' }
+      };
+    }
+  },
+
+  /**
+   * Downloads the sample Excel template for bulk ticket upload.
+   */
+  async downloadBulkTemplate() {
+    try {
+      const token = getAccessToken();
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch('/api/tickets/bulk-import/template', { headers });
+      if (!response.ok) throw new Error('Failed to download template');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'africatravel_tickets_template.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      return { success: true };
+    } catch (err) {
+      return {
+        success: false,
+        error: { message: err.message || 'Failed to download template', code: 'DOWNLOAD_TEMPLATE_ERROR' }
       };
     }
   }

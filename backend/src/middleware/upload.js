@@ -171,3 +171,35 @@ export const passportDocUpload = multer({
     cb(null, true);
   }
 });
+
+const BULK_ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+  'application/octet-stream',
+  'text/csv',
+  'text/plain',
+  'application/csv',
+  'image/jpeg',
+  'image/png'
+];
+
+const BULK_ALLOWED_EXTENSIONS = ['.pdf', '.xlsx', '.xls', '.csv', '.jpg', '.jpeg', '.png'];
+
+export const bulkTicketUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024, files: 50 },
+  fileFilter: (req, file, cb) => {
+    const ext = (file.originalname || '').toLowerCase().match(/\.[^.]+$/)?.[0];
+    const isMimeAllowed = BULK_ALLOWED_MIME_TYPES.includes(file.mimetype);
+    const isExtAllowed = BULK_ALLOWED_EXTENSIONS.includes(ext);
+
+    if (!isMimeAllowed && !isExtAllowed) {
+      const err = new Error('INVALID_FILE_TYPE');
+      err.code = 'INVALID_FILE_TYPE';
+      return cb(err);
+    }
+    cb(null, true);
+  }
+});
+

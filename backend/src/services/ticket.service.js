@@ -22,6 +22,8 @@ import { validateRefund } from '../domain/refund-rules.js';
 import { validateModification } from '../domain/modification-rules.js';
 import { NotFoundError, BusinessRuleError, ValidationError, ForbiddenError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
+import { BulkTicketParserService } from './bulk-ticket-parser.service.js';
+import { TicketExtractionService } from './ticket-extraction.service.js';
 
 /**
  * Computes financial ledger balance properties for a ticket object
@@ -1203,5 +1205,173 @@ export const TicketService = {
     }
 
     return result;
+  },
+
+  /**
+   * Generates a sample Excel template for bulk ticket upload.
+   * @returns {Buffer}
+   */
+  generateBulkTemplate() {
+    return BulkTicketParserService.generateTemplate();
+  },
+
+  /**
+   * Bulk imports tickets from uploaded spreadsheets (.xlsx, .xls, .csv) or documents (PDF).
+   * Automatically detects duplicates, skips them without failing, and returns a detailed report.
+   * @param {Array<{buffer: Buffer, originalname: string, mimetype: string}>} files
+   * @param {object} currentUser
+   * @returns {Promise<object>}
+   */
+  async bulkImportTickets(files = [], currentUser = {}) {
+    if (!Array.isArray(files) || files.length === 0) {
+      throw new BusinessRuleError('No files uploaded for bulk import', 'FILES_REQUIRED', 400);
+    }
+
+    const prisma = getPrismaClient();
+    const imported = [];
+    const duplicates = [];
+    const errors = [];
+
+    for (const file of files) {
+      if (!file || !file.buffer || file.buffer.length === 0) continue;
+
+      const fileName = file.originalname || 'uploaded-file';
+      const lowerName = fileName.toLowerCase();
+      const mime = file.mimetype || '';
+
+      const isSpreadsheet =
+        lowerName.endsWith('.xlsx') ||
+        lowerName.endsWith('.xls') ||
+        lowerName.endsWith('.csv') ||
+        mime.includes('spreadsheet') ||
+        mime.includes('excel') ||
+        mime.includes('csv');
+
+      let parsedTickets = [];
+
+      try {
+        if (isSpreadsheet) {
+          parsedTickets = BulkTicketParserService.parseSpreadsheet(file.buffer);
+        } else {
+          // Document / PDF extraction via Gemini AI
+          parsedTickets = await TicketExtractionService.extractMultipleFromDocument(file.buffer, mime);
+        }
+      } catch (extractErr) {
+        errors.push({
+          fileName,
+          passengerName: '-',
+          pnr: '-',
+          ticketNumber: '-',
+          error: extractErr.message || 'Failed to extract tickets from file'
+        });
+        continue;
+      }
+
+      if (!Array.isArray(parsedTickets) || parsedTickets.length === 0) {
+        errors.push({
+          fileName,
+          passengerName: '-',
+          pnr: '-',
+          ticketNumber: '-',
+          error: 'No readable ticket records found in file'
+        });
+        continue;
+      }
+
+      for (const item of parsedTickets) {
+        const cleanTktNum = item.ticketNumber ? String(item.ticketNumber).trim() : null;
+        const cleanPnr = item.pnr ? String(item.pnr).trim().toUpperCase() : null;
+        const pName = (item.passengerName || 'Guest').trim();
+
+        // 1. Proactive duplicate check (ticketNumber or pnr)
+        let duplicateFound = false;
+        let dupReason = '';
+
+        if (cleanTktNum) {
+          const existingTkt = await prisma.ticket.findFirst({
+            where: { ticketNumber: cleanTktNum, deletedAt: null }
+          });
+          if (existingTkt) {
+            duplicateFound = true;
+            dupReason = `رقم التذكرة مسجل مسبقاً (${cleanTktNum})`;
+          }
+        }
+
+        if (!duplicateFound && cleanPnr) {
+          const existingPnr = await prisma.ticket.findFirst({
+            where: { pnr: cleanPnr, deletedAt: null }
+          });
+          if (existingPnr) {
+            duplicateFound = true;
+            dupReason = `رمز الحجز PNR مسجل مسبقاً (${cleanPnr})`;
+          }
+        }
+
+        if (duplicateFound) {
+          duplicates.push({
+            fileName,
+            passengerName: pName,
+            pnr: cleanPnr || '-',
+            ticketNumber: cleanTktNum || '-',
+            reason: dupReason
+          });
+          continue;
+        }
+
+        // 2. Create the ticket
+        try {
+          const ticketPayload = {
+            ...item,
+            passengerName: pName,
+            ticketNumber: cleanTktNum,
+            pnr: cleanPnr,
+            ticketPrice: item.ticketPrice !== undefined ? Number(item.ticketPrice) : 0,
+            costPrice: currentUser?.role === 'ADMIN' && item.costPrice !== undefined ? Number(item.costPrice) : null
+          };
+
+          const created = await this.createTicket(ticketPayload, currentUser);
+          imported.push({
+            id: created.id,
+            ticketNumber: created.ticketNumber || '-',
+            pnr: created.pnr || '-',
+            passengerName: created.passengerName,
+            airline: created.airline,
+            origin: created.origin,
+            destination: created.destination,
+            fileName
+          });
+        } catch (createErr) {
+          if (createErr.code === 'DUPLICATE_TICKET_NUMBER' || createErr.code === 'P2002') {
+            duplicates.push({
+              fileName,
+              passengerName: pName,
+              pnr: cleanPnr || '-',
+              ticketNumber: cleanTktNum || '-',
+              reason: 'رقم التذكرة أو PNR مسجل مسبقاً'
+            });
+          } else {
+            errors.push({
+              fileName,
+              passengerName: pName,
+              pnr: cleanPnr || '-',
+              ticketNumber: cleanTktNum || '-',
+              error: createErr.message || 'Validation error'
+            });
+          }
+        }
+      }
+    }
+
+    const totalProcessed = imported.length + duplicates.length + errors.length;
+
+    return {
+      totalProcessed,
+      totalImported: imported.length,
+      totalDuplicates: duplicates.length,
+      totalErrors: errors.length,
+      imported,
+      duplicates,
+      errors
+    };
   }
 };

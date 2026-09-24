@@ -15,7 +15,7 @@ import {
 import { addPaymentSchema } from '../schemas/payment.schema.js';
 import { addRefundSchema, updateRefundSchema } from '../schemas/refund.schema.js';
 import { addModificationSchema } from '../schemas/modification.schema.js';
-import { passportDocUpload, uploadConcurrencyBudget, aiExtractionConcurrencyBudget } from '../middleware/upload.js';
+import { passportDocUpload, bulkTicketUpload, uploadConcurrencyBudget, aiExtractionConcurrencyBudget } from '../middleware/upload.js';
 import { uploadRateLimiter } from '../middleware/rate-limiter.js';
 import { TicketExtractionService } from '../services/ticket-extraction.service.js';
 
@@ -23,6 +23,23 @@ const router = Router();
 
 // All ticket endpoints require authentication
 router.use(authenticate);
+
+// Download Excel Template for Bulk Import
+router.get(
+  '/bulk-import/template',
+  requireRole('ADMIN', 'AGENT', 'TICKET_ONLY'),
+  TicketController.downloadBulkTemplate
+);
+
+// Bulk Import Tickets (Excel/CSV or multi-page PDF documents)
+router.post(
+  '/bulk-import',
+  requireRole('ADMIN', 'AGENT', 'TICKET_ONLY'),
+  uploadRateLimiter,
+  uploadConcurrencyBudget,
+  bulkTicketUpload.fields([{ name: 'file', maxCount: 1 }, { name: 'files', maxCount: 50 }]),
+  TicketController.bulkImportTickets
+);
 
 // AI Ticket Extraction from Document (PDF/Image)
 router.post(
