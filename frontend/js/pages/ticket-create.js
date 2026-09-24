@@ -429,7 +429,12 @@ export const TicketCreatePage = {
           const result = await TicketService.extractFromDocument(file);
 
           if (!result.success) {
-            showToast(result.error?.message || 'فشل الاستخراج، أكمل البيانات يدويًا', 'error');
+            const reason = result.error?.details?.reason;
+            const msg = reason
+              ? `${result.error?.message || 'فشل الاستخراج'}: ${reason}`
+              : (result.error?.message || 'فشل الاستخراج، أكمل البيانات يدويًا');
+            showToast(msg, 'error');
+            console.error('[AI Ticket Extraction Error]:', result.error);
             return;
           }
 

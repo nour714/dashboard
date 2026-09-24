@@ -205,8 +205,8 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
     const candidateModels = Array.from(new Set([
       primaryModel,
       fallbackModel,
-      'gemini-2.0-flash',
       'gemini-1.5-flash',
+      'gemini-2.0-flash',
       'gemini-2.5-flash-lite'
     ])).filter(Boolean);
 
@@ -272,14 +272,22 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
           googleErrMsg = errBody ? errBody.slice(0, 150) : '';
         }
 
-        const friendlyMsg = googleErrMsg
-          ? `Gemini API (${modelName}): ${googleErrMsg}`
-          : 'الاستخراج مش متاح دلوقتي، إملى النموذج يدويًا';
-        lastError = new BusinessRuleError(friendlyMsg, 'AI_EXTRACTION_FAILED', 502);
+        const friendlyMsg = 'الاستخراج مش متاح دلوقتي، إملى النموذج يدويًا';
+        lastError = new BusinessRuleError(friendlyMsg, 'AI_EXTRACTION_FAILED', 502, {
+          reason: googleErrMsg || (response.status ? `HTTP ${response.status}` : 'Google API error'),
+          status: response.status,
+          model: modelName,
+          apiVersion
+        });
         return { ok: false, status: response.status };
       } catch (networkErr) {
         console.error(`[TicketExtraction] Network error with ${apiVersion}/${modelName}:`, networkErr.message);
-        lastError = new BusinessRuleError('الاستخراج مش متاح دلوقتي، إملى النموذج يدويًا', 'AI_EXTRACTION_FAILED', 502);
+        lastError = new BusinessRuleError('الاستخراج مش متاح دلوقتي، إملى النموذج يدويًا', 'AI_EXTRACTION_FAILED', 502, {
+          reason: networkErr.message || 'Network connection failed',
+          status: 0,
+          model: modelName,
+          apiVersion
+        });
         return { ok: false, status: 0 };
       } finally {
         clearTimeout(timeoutId);
@@ -339,9 +347,6 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
     }
 
     if (!result) {
-      if (attemptCount >= MAX_EXTRACTION_ATTEMPTS) {
-        throw new BusinessRuleError('الاستخراج مش متاح دلوقتي، إملى النموذج يدويًا', 'AI_EXTRACTION_FAILED', 502);
-      }
       throw lastError || new BusinessRuleError('الاستخراج مش متاح دلوقتي، إملى النموذج يدويًا', 'AI_EXTRACTION_FAILED', 502);
     }
     const textPart = result?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -440,8 +445,8 @@ For each ticket/passenger:
     const candidateModels = Array.from(new Set([
       primaryModel,
       fallbackModel,
-      'gemini-2.0-flash',
       'gemini-1.5-flash',
+      'gemini-2.0-flash',
       'gemini-2.5-flash-lite'
     ])).filter(Boolean);
 
