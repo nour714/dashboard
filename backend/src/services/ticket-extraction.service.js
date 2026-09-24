@@ -200,13 +200,16 @@ Worked example: outbound segments are TK123 CAI→IST departing 10 Jan, then TK4
 
 Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Standardize airline names and their 2-letter IATA codes (e.g., EgyptAir MS, Air Cairo SM, Emirates EK, Etihad Airways EY, Qatar Airways QR, Turkish Airlines TK, Saudia SV, Flynas XY, flydubai FZ, Air Arabia G9, British Airways BA, Air France AF, Lufthansa LH, KLM KL, Iberia IB, ITA Airways AZ, Aegean Airlines A3, American Airlines AA, Delta Air Lines DL, United Airlines UA, Air Canada AC, Air China CA, China Eastern MU, China Southern CZ, Singapore Airlines SQ, Ethiopian Airlines ET, Kenya Airways KQ, Royal Air Maroc AT, Tunisair TU, Air Algérie AH). For "origin" and "destination", return ONLY the 3-letter IATA airport code (e.g. "CAI", "DXB") — never the city name, country name, or full airport name. Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
 
-    const primaryModel = env.GEMINI_MODEL || 'gemini-2.5-flash';
-    const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-1.5-pro';
+    const primaryModel = env.GEMINI_MODEL || 'gemini-3.7-flash';
+    const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite';
     const candidateModels = Array.from(new Set([
       primaryModel,
       fallbackModel,
-      'gemini-1.5-flash',
-      'gemini-2.0-flash',
+      'gemini-3.7-flash',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-2.5-flash',
       'gemini-2.5-flash-lite'
     ])).filter(Boolean);
 
@@ -440,13 +443,16 @@ For each ticket/passenger:
 - "returnDepartureDate" = departure date of first return segment.
 - Dates must be in YYYY-MM-DD format. Standardize airline names and their 2-letter IATA codes. Return ONLY identifiable fields.`;
 
-    const primaryModel = env.GEMINI_MODEL || 'gemini-2.5-flash';
-    const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-1.5-pro';
+    const primaryModel = env.GEMINI_MODEL || 'gemini-3.7-flash';
+    const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-3.5-flash-lite';
     const candidateModels = Array.from(new Set([
       primaryModel,
       fallbackModel,
-      'gemini-1.5-flash',
-      'gemini-2.0-flash',
+      'gemini-3.7-flash',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-2.5-flash',
       'gemini-2.5-flash-lite'
     ])).filter(Boolean);
 
