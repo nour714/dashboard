@@ -36,6 +36,7 @@
     "test:expenses": "node tests/integration/expenses.test.js",
     "test:visas": "node tests/integration/visas.test.js",
     "test:ai-extract": "node tests/integration/ticket-extraction.test.js",
+    "test:bulk-import": "node tests/integration/bulk-ticket-import.test.js",
     "test:airlines": "node tests/integration/airlines-catalog.test.js",
     "test:pwa": "node tests/integration/pwa-install.test.js",
     "test:mobile-search": "node tests/integration/mobile-search.test.js",

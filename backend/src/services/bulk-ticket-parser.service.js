@@ -38,12 +38,12 @@ const COLUMN_ALIASES = {
     'رقم الرحلة', 'الرحلة', 'رقم رحلة الذهاب', 'رحلة الذهاب'
   ],
   origin: [
-    'origin', 'departure', 'from', 'departure airport', 'dep airport',
-    'مطار الإقلاع', 'الإقلاع', 'من', 'محطة المغادرة', 'مطار المغادرة', 'الاقلاع'
+    'origin', 'from', 'departure airport', 'dep airport', 'origin airport', 'from airport',
+    'مطار الإقلاع', 'مطار المغادرة', 'محطة المغادرة', 'من', 'الاقلاع', 'الإقلاع'
   ],
   destination: [
-    'destination', 'arrival', 'to', 'arrival airport', 'arr airport',
-    'مطار الوصول', 'الوصول', 'إلى', 'الي', 'محطة الوصول'
+    'destination', 'to', 'arrival airport', 'arr airport', 'dest airport', 'to airport',
+    'مطار الوصول', 'محطة الوصول', 'إلى', 'الي', 'الوصول'
   ],
   departureDate: [
     'departuredate', 'departure_date', 'departure date', 'travel date', 'date', 'flight date',
@@ -106,15 +106,32 @@ function resolveCanonicalField(headerKey) {
   const norm = normalizeHeader(headerKey);
   if (!norm) return null;
 
+  // Pass 1: Strict exact match
   for (const [canonical, aliases] of Object.entries(COLUMN_ALIASES)) {
     for (const alias of aliases) {
-      const normAlias = normalizeHeader(alias);
-      if (norm === normAlias || norm.includes(normAlias) || normAlias.includes(norm)) {
+      if (norm === normalizeHeader(alias)) {
         return canonical;
       }
     }
   }
-  return null;
+
+  // Pass 2: Longest alias substring match (e.g. 'departure date' beats 'departure')
+  let bestCanonical = null;
+  let bestMatchLength = 0;
+
+  for (const [canonical, aliases] of Object.entries(COLUMN_ALIASES)) {
+    for (const alias of aliases) {
+      const normAlias = normalizeHeader(alias);
+      if (normAlias.length >= 2 && (norm.includes(normAlias) || normAlias.includes(norm))) {
+        if (normAlias.length > bestMatchLength) {
+          bestMatchLength = normAlias.length;
+          bestCanonical = canonical;
+        }
+      }
+    }
+  }
+
+  return bestCanonical;
 }
 
 function formatRawDate(val) {
