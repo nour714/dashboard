@@ -67,6 +67,66 @@ export const TicketService = {
   },
 
   /**
+   * Retrieves all tickets with money due (UNPAID or PARTIALLY PAID with remaining > 0).
+   * Automatically excludes CANCELLED and REFUNDED tickets.
+   * @param {object} filters
+   * @returns {Array<object>}
+   */
+  getDueTickets(filters = {}) {
+    const { tickets } = store.getState();
+    const excludedStatuses = ['CANCELLED', 'REFUNDED', 'PARTIALLY_REFUNDED'];
+
+    let result = (tickets || []).filter(t => {
+      const status = (t.status || '').toUpperCase();
+      if (excludedStatuses.includes(status)) return false;
+
+      const totalPaid = calculateTotalPaid(t.payments);
+      const remaining = calculateRemaining(t.ticketPrice, totalPaid);
+      return remaining > 0;
+    });
+
+    if (filters.search) {
+      const q = filters.search.toLowerCase().trim();
+      result = result.filter(t =>
+        (t.id && t.id.toLowerCase().includes(q)) ||
+        (t.ticketNumber && t.ticketNumber.toLowerCase().includes(q)) ||
+        (t.pnr && t.pnr.toLowerCase().includes(q)) ||
+        (t.passengerName && t.passengerName.toLowerCase().includes(q)) ||
+        (t.phone && t.phone.toLowerCase().includes(q)) ||
+        (t.airline && t.airline.toLowerCase().includes(q)) ||
+        (t.origin && t.origin.toLowerCase().includes(q)) ||
+        (t.destination && t.destination.toLowerCase().includes(q))
+      );
+    }
+
+    if (filters.status && filters.status !== 'All' && filters.status !== 'All Statuses') {
+      result = result.filter(t => {
+        const totalPaid = calculateTotalPaid(t.payments);
+        const derived = derivePaymentStatus(t.ticketPrice, totalPaid, t.status);
+        return derived === filters.status || t.status === filters.status;
+      });
+    }
+
+    return result;
+  },
+
+  /**
+   * Returns current count of due tickets in real-time.
+   * @returns {number}
+   */
+  getDueTicketsCount() {
+    const { tickets } = store.getState();
+    const excludedStatuses = ['CANCELLED', 'REFUNDED', 'PARTIALLY_REFUNDED'];
+    return (tickets || []).filter(t => {
+      const status = (t.status || '').toUpperCase();
+      if (excludedStatuses.includes(status)) return false;
+      const totalPaid = calculateTotalPaid(t.payments);
+      const remaining = calculateRemaining(t.ticketPrice, totalPaid);
+      return remaining > 0;
+    }).length;
+  },
+
+  /**
    * Finds a cached ticket by ID, ticketNumber, or PNR.
    * @param {string} ticketId
    * @returns {object|null}

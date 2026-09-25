@@ -54,6 +54,10 @@ export function renderBottomNav(activePath = '/dashboard') {
     <div class="mobile-drawer-backdrop" id="mobile-more-backdrop"></div>
     <div class="mobile-drawer" id="mobile-more-drawer" role="dialog" aria-modal="true" aria-label="${escapeHtml(t('nav.more'))}">
       <div class="drawer-nav-grid">
+        <a href="/due-tickets" class="drawer-nav-item" data-link>
+          ${icons.clock()}
+          <span>${escapeHtml(t('nav.dueTickets'))}</span>
+        </a>
         <a href="/visas" class="drawer-nav-item" data-link>
           ${icons.visa()}
           <span>${escapeHtml(t('nav.visas'))}</span>

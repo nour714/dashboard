@@ -5,6 +5,7 @@
 import { LoginPage } from '../pages/login.js';
 import { DashboardPage } from '../pages/dashboard.js';
 import { TicketsPage } from '../pages/tickets.js';
+import { DueTicketsPage } from '../pages/due-tickets.js';
 import { TicketCreatePage } from '../pages/ticket-create.js';
 import { TicketDetailsPage } from '../pages/ticket-details.js';
 import { ModificationDetailsPage } from '../pages/modification-details.js';
@@ -32,6 +33,7 @@ export const routes = [
   { path: '/tickets/:id/refunds', ...TicketDetailsPage },
   { path: '/tickets/:id', ...TicketDetailsPage },
   { path: '/tickets', ...TicketsPage },
+  { path: '/due-tickets', ...DueTicketsPage },
   { path: '/customers/:id', ...CustomerDetailsPage },
   { path: '/customers', ...CustomersPage },
   { path: '/visas/:id', ...VisaDetailsPage },

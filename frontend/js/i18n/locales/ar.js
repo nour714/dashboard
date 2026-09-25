@@ -35,6 +35,7 @@ export const ar = {
   nav: {
     dashboard: 'لوحة التحكم',
     tickets: 'التذاكر',
+    dueTickets: 'تذاكر عليها متبقي',
     customers: 'العملاء',
     payments: 'المدفوعات',
     refunds: 'الاستردادات',
@@ -272,6 +273,32 @@ export const ar = {
       description: 'لا توجد تذاكر تطابق معايير البحث أو التصفية الحالية.',
       createAction: 'إنشاء تذكرة جديدة'
     }
+  },
+
+  // Due Tickets Page (تذاكر عليها متبقي)
+  dueTickets: {
+    title: 'تذاكر عليها متبقي',
+    subtitle: 'قائمة الحجوزات والتذاكر التي تتضمن مبالغ ومستحقات مالية قيد التحصيل.',
+    searchPlaceholder: 'ابحث بالاسم، الهاتف، PNR، أو رقم التذكرة...',
+    filterStatus: 'تصفية الحالة',
+    filterAll: 'جميع المستحقات',
+    filterUnpaid: 'غير مدفوعة بالكامل',
+    filterPartiallyPaid: 'مدفوعة جزئيًا',
+    remainingAmount: 'المتبقي المطلوب',
+    table: {
+      ticketNumber: 'رقم التذكرة',
+      passenger: 'المسافر',
+      airlineRoute: 'شركة الطيران والمسار',
+      travelDate: 'تاريخ السفر',
+      price: 'سعر التذكرة',
+      paid: 'المدفوع',
+      remaining: 'المتبقي المطلوب',
+      status: 'حالة الدفع',
+      action: 'الإجراء'
+    },
+    actionPay: 'عرض وسداد التذكرة',
+    emptyTitle: 'لا توجد تذاكر عليها متبقي',
+    emptySubtitle: 'رائع! جميع التذاكر الحالية مسددة بالكامل، أو لا توجد نتائج مطابقة لبحثك.'
   },
 
   // Ticket Create Page

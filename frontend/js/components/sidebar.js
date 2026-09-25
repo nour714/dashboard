@@ -4,6 +4,7 @@
 
 import { icons } from './icons.js';
 import { AuthService } from '../services/auth-service.js';
+import { TicketService } from '../services/ticket-service.js';
 import { escapeHtml } from '../utils/security.js';
 import { i18n, t, getUserRoleLabel } from '../i18n/i18n.js';
 
@@ -16,9 +17,17 @@ export function renderSidebar(activePath = '/dashboard') {
   const userRole = getUserRoleLabel(currentUser);
   const initials = userName.split(' ').map(n => n[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || (isAr ? 'م.ر' : 'MR');
 
+  let dueTicketsCount = 0;
+  try {
+    dueTicketsCount = TicketService.getDueTicketsCount ? TicketService.getDueTicketsCount() : 0;
+  } catch {
+    dueTicketsCount = 0;
+  }
+
   const mainNav = [
     { path: '/dashboard', label: t('nav.dashboard'), icon: 'dashboard' },
     { path: '/tickets', label: t('nav.tickets'), icon: 'ticket' },
+    { path: '/due-tickets', label: t('nav.dueTickets'), icon: 'clock', badge: dueTicketsCount },
     { path: '/visas', label: t('nav.visas'), icon: 'visa' },
     { path: '/customers', label: t('nav.customers'), icon: 'customers' },
     { path: '/payments', label: t('nav.payments'), icon: 'payments' },
@@ -37,13 +46,18 @@ export function renderSidebar(activePath = '/dashboard') {
 
   const renderLinks = (items) => items.map(item => {
     const isActive = activePath === item.path ||
-      (item.path !== '/dashboard' && activePath.startsWith(item.path));
+      (item.path !== '/dashboard' && item.path !== '/tickets' && activePath.startsWith(item.path)) ||
+      (item.path === '/tickets' && (activePath === '/tickets' || (activePath.startsWith('/tickets/') && !activePath.startsWith('/due-tickets'))));
     const iconSvg = typeof icons[item.icon] === 'function' ? icons[item.icon]('nav-icon') : '';
+    const badgeHtml = item.badge !== undefined && item.badge > 0
+      ? `<span class="nav-badge" aria-label="${item.badge}">${item.badge > 99 ? '99+' : item.badge}</span>`
+      : '';
 
     return `
       <a href="${item.path}" class="nav-link ${isActive ? 'active' : ''}" data-link title="${escapeHtml(item.label)}">
         ${iconSvg}
         <span>${escapeHtml(item.label)}</span>
+        ${badgeHtml}
       </a>
     `;
   }).join('');

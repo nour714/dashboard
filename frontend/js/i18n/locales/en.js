@@ -35,6 +35,7 @@ export const en = {
   nav: {
     dashboard: 'Dashboard',
     tickets: 'Tickets',
+    dueTickets: 'Tickets with Balance',
     customers: 'Customers',
     payments: 'Payments',
     refunds: 'Refunds',
@@ -272,6 +273,32 @@ export const en = {
       description: 'No tickets matched your search criteria or filter selections.',
       createAction: 'Create New Ticket'
     }
+  },
+
+  // Due Tickets Page (Tickets with Balance)
+  dueTickets: {
+    title: 'Tickets with Balance',
+    subtitle: 'List of bookings and tickets with pending or outstanding balances awaiting collection.',
+    searchPlaceholder: 'Search by passenger, phone, PNR, or ticket number...',
+    filterStatus: 'Filter Status',
+    filterAll: 'All Due Tickets',
+    filterUnpaid: 'Unpaid in Full',
+    filterPartiallyPaid: 'Partially Paid',
+    remainingAmount: 'Remaining Balance',
+    table: {
+      ticketNumber: 'Ticket #',
+      passenger: 'Passenger',
+      airlineRoute: 'Airline & Route',
+      travelDate: 'Travel Date',
+      price: 'Price',
+      paid: 'Paid',
+      remaining: 'Remaining Due',
+      status: 'Payment Status',
+      action: 'Action'
+    },
+    actionPay: 'View & Settle Ticket',
+    emptyTitle: 'No Tickets with Balance Due',
+    emptySubtitle: 'Great news! All current tickets are fully paid, or no tickets matched your search criteria.'
   },
 
   // Ticket Create Page

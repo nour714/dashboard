@@ -4,6 +4,7 @@
 
 import { store } from './state/store.js';
 import { AuthService } from './services/auth-service.js';
+import { TicketService } from './services/ticket-service.js';
 import { refreshAccessToken } from './services/api-client.js';
 import { routes } from './router/routes.js';
 import { Router } from './router/router.js';
@@ -115,6 +116,7 @@ class App {
       } else if (state.isAuthenticated) {
         this.updateHeaderProfile();
         this.updateTopbarBadges();
+        this.updateSidebarBadges();
       }
     });
 
@@ -618,6 +620,33 @@ class App {
     if (badgeEl) {
       badgeEl.style.display = count > 0 ? 'flex' : 'none';
       badgeEl.textContent = count > 9 ? '9+' : String(count);
+    }
+  }
+
+  updateSidebarBadges() {
+    const dueLink = document.querySelector('a[href="/due-tickets"] .nav-badge');
+    let dueCount = 0;
+    try {
+      dueCount = TicketService.getDueTicketsCount ? TicketService.getDueTicketsCount() : 0;
+    } catch {
+      dueCount = 0;
+    }
+
+    if (dueLink) {
+      if (dueCount > 0) {
+        dueLink.textContent = dueCount > 99 ? '99+' : String(dueCount);
+        dueLink.style.display = 'inline-flex';
+      } else {
+        dueLink.style.display = 'none';
+      }
+    } else if (dueCount > 0) {
+      const dueNav = document.querySelector('a[href="/due-tickets"]');
+      if (dueNav) {
+        const badge = document.createElement('span');
+        badge.className = 'nav-badge';
+        badge.textContent = dueCount > 99 ? '99+' : String(dueCount);
+        dueNav.appendChild(badge);
+      }
     }
   }
 }
