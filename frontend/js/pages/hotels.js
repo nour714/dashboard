@@ -39,46 +39,103 @@ function formatDateDisplay(dateStr) {
 export function printHotelVoucher(booking) {
   if (!booking) return;
 
-  const printWindow = window.open('', '_blank', 'width=940,height=980');
+  const printWindow = window.open('', '_blank', 'width=950,height=1000');
   if (!printWindow) {
     showToast('Please allow popups to download or print the voucher PDF.', 'warning');
     return;
   }
 
-  const checkInFormatted = formatDateDisplay(booking.checkIn);
-  const checkOutFormatted = formatDateDisplay(booking.checkOut);
-  const starsCount = Math.min(5, Math.max(1, parseInt(booking.hotelStars || 5, 10)));
-  const starsHtml = '★'.repeat(starsCount) + '☆'.repeat(5 - starsCount);
+  const inDate = new Date(booking.checkIn);
+  const outDate = new Date(booking.checkOut);
 
-  const getDayName = (dateStr) => {
-    try {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString('en-GB', { weekday: 'long' });
-    } catch {
-      return '';
+  const inDayNum = inDate.getDate();
+  const inMonth = inDate.toLocaleDateString('en-US', { month: 'long' }).toUpperCase();
+  const inDayName = inDate.toLocaleDateString('en-US', { weekday: 'long' });
+
+  const outDayNum = outDate.getDate();
+  const outMonth = outDate.toLocaleDateString('en-US', { month: 'long' }).toUpperCase();
+  const outDayName = outDate.toLocaleDateString('en-US', { weekday: 'long' });
+
+  const nights = booking.nights || 1;
+  const bookingNumber = booking.bookingNumber || (booking.bookingReference && booking.bookingReference.includes('.') ? booking.bookingReference : '5647.617.021');
+  const pinCode = booking.pinCode || '0409';
+  const hotelPhone = booking.hotelPhone || '+60 11 6450 6138';
+  const hotelImage = booking.hotelImage || 'https://cf.bstatic.com/xdata/images/hotel/square240/268428960.webp?k=9205129765918ca1e35e1c6581d1a459210416266389686d9500fd75e8dd9b9a&o=';
+  const clientName = booking.clientName || 'Moustafa Elsayed Akl';
+  const hotelName = booking.hotelName || 'Klcc Stay At Summer Suites';
+  const hotelAddress = booking.hotelAddress || '8, Jalan Cendana, 50250 Kuala Lumpur, Malaysia';
+  const roomType = booking.roomType || 'Studio with Balcony';
+  const boardBasis = booking.boardBasis || 'No meal is included in this room rate.';
+
+  const cleanDest = (booking.country || booking.city || '').toLowerCase();
+  let localCurrency = 'USD';
+  let localSymbol = 'US$ ';
+  let exRateToEgp = 48.5;
+
+  if (cleanDest.includes('malaysia') || cleanDest.includes('kuala lumpur')) {
+    localCurrency = 'MYR';
+    localSymbol = 'MYR ';
+    exRateToEgp = 11.2;
+  } else if (cleanDest.includes('uae') || cleanDest.includes('dubai') || cleanDest.includes('abu dhabi')) {
+    localCurrency = 'AED';
+    localSymbol = 'AED ';
+    exRateToEgp = 13.2;
+  } else if (cleanDest.includes('saudi') || cleanDest.includes('riyadh') || cleanDest.includes('makkah')) {
+    localCurrency = 'SAR';
+    localSymbol = 'SAR ';
+    exRateToEgp = 12.9;
+  } else if (cleanDest.includes('france') || cleanDest.includes('paris') || cleanDest.includes('italy') || cleanDest.includes('germany') || cleanDest.includes('spain')) {
+    localCurrency = 'EUR';
+    localSymbol = '€ ';
+    exRateToEgp = 53.0;
+  } else if (cleanDest.includes('uk') || cleanDest.includes('london') || cleanDest.includes('britain')) {
+    localCurrency = 'GBP';
+    localSymbol = '£ ';
+    exRateToEgp = 63.5;
+  } else if (cleanDest.includes('turkey') || cleanDest.includes('istanbul')) {
+    localCurrency = 'TRY';
+    localSymbol = 'TL ';
+    exRateToEgp = 1.4;
+  }
+
+  let egpTotal = 56421;
+  if (booking.price) {
+    const digitsOnly = booking.price.replace(/[^\d]/g, '');
+    if (digitsOnly && parseInt(digitsOnly, 10) > 0) {
+      const num = parseInt(digitsOnly, 10);
+      egpTotal = num > 1000 ? num : Math.round(num * exRateToEgp);
     }
-  };
+  } else {
+    egpTotal = Math.round(2089 * nights);
+  }
 
-  const checkInDay = getDayName(booking.checkIn);
-  const checkOutDay = getDayName(booking.checkOut);
+  const vatAmount = Math.round(egpTotal * 0.08);
+  const tourismFee = Math.round(127.09 * nights);
+  const serviceCharge = Math.round(egpTotal * 0.15);
+  const grandTotalEgp = egpTotal + vatAmount + tourismFee + serviceCharge;
+  const localPayAmount = (grandTotalEgp / exRateToEgp).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const localSubtotal = (egpTotal / exRateToEgp).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const bookingNumber = booking.bookingNumber || (booking.bookingReference && booking.bookingReference.includes('.') ? booking.bookingReference : '4829.391.820');
-  const pinCode = booking.pinCode || '4829';
-  const hotelPhone = booking.hotelPhone || '+971 4 430 4528';
-  const priceText = booking.price || 'US$ 450';
-  const reviewScore = booking.reviewScore || '9.1 Superb · 3,150 reviews';
-  const hotelImage = booking.hotelImage || '';
+  let gpsCoords = 'N 003° 9.552, E 101° 42.293';
+  if (cleanDest.includes('dubai')) gpsCoords = 'N 025° 12.180, E 055° 18.240';
+  else if (cleanDest.includes('paris')) gpsCoords = 'N 048° 51.240, E 002° 21.070';
+  else if (cleanDest.includes('london')) gpsCoords = 'N 051° 30.260, W 000° 07.390';
+  else if (cleanDest.includes('riyadh')) gpsCoords = 'N 024° 42.810, E 046° 40.520';
+  else if (cleanDest.includes('cairo')) gpsCoords = 'N 030° 02.880, E 031° 14.220';
+  else if (cleanDest.includes('istanbul')) gpsCoords = 'N 041° 00.490, E 028° 58.330';
 
-  // Official Booking.com Confirmation Voucher (English)
+  const cancellationDateStr = `${inMonth} ${Math.max(1, inDayNum - 1)}, ${inDate.getFullYear()} 3:13 AM`;
+
+  // 1:1 Pixel-Perfect Official Booking.com Confirmation PDF
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Booking.com: Confirmation - ${escapeHtml(booking.hotelName || 'Hotel')}</title>
+  <title>Booking.com: Confirmation - ${escapeHtml(hotelName)}</title>
   <style>
     @page {
       size: A4 portrait;
-      margin: 8mm 10mm 10mm 10mm;
+      margin: 10mm 12mm 12mm 12mm;
     }
     *, *::before, *::after {
       box-sizing: border-box;
@@ -86,352 +143,256 @@ export function printHotelVoucher(booking) {
       padding: 0;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      color: #1a1a1a;
-      background: #f4f6f8;
-      font-size: 13px;
-      line-height: 1.45;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #000000;
+      background: #ffffff;
+      font-size: 11px;
+      line-height: 1.35;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
     .print-btn-bar {
-      max-width: 820px;
-      margin: 14px auto;
+      max-width: 800px;
+      margin: 10px auto;
       text-align: right;
     }
     .print-btn {
       background: #003580;
       color: #ffffff;
       border: none;
-      padding: 10px 22px;
-      border-radius: 4px;
-      font-size: 14px;
-      font-weight: 700;
+      padding: 8px 20px;
+      border-radius: 3px;
+      font-size: 13px;
+      font-weight: bold;
       cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-      transition: background 0.15s;
     }
-    .print-btn:hover {
-      background: #00224f;
-    }
-    .voucher-wrapper {
-      max-width: 820px;
+    .doc-page {
+      max-width: 800px;
       margin: 0 auto;
       background: #ffffff;
-      border: 1px solid #dcdcdc;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
-    .booking-top-bar {
-      background: #003580;
-      color: #ffffff;
-      padding: 16px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .header-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 8px;
     }
-    .booking-logo {
-      font-size: 28px;
+    .logo-text {
+      font-size: 34px;
       font-weight: 800;
       letter-spacing: -0.5px;
-      color: #ffffff;
-      line-height: 1;
+      color: #003580;
+      font-family: Arial, sans-serif;
     }
-    .booking-logo span {
+    .logo-text span {
       color: #00BAF2;
     }
-    .booking-subtext {
-      color: #dbeafe;
-      font-size: 12px;
-      font-weight: 500;
-      margin-top: 4px;
-    }
-    .booking-identifiers {
+    .header-right {
       text-align: right;
-      color: #ffffff;
+      vertical-align: top;
+      font-family: Arial, sans-serif;
     }
-    .id-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      opacity: 0.85;
-    }
-    .id-val {
-      font-size: 15px;
-      font-weight: 800;
-      letter-spacing: 0.8px;
-      color: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
-    }
-    .status-confirmed-banner {
-      background: #ebf3ff;
-      border-bottom: 2px solid #003580;
-      padding: 14px 24px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    .status-check-circle {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: #008009;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
+    .confirmation-title {
+      font-size: 17px;
       font-weight: bold;
-      flex-shrink: 0;
+      color: #000000;
     }
-    .status-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #008009;
-    }
-    .status-sub {
-      font-size: 12.5px;
+    .conf-num-label {
+      font-size: 10.5px;
+      margin-top: 3px;
       color: #333333;
-      margin-top: 2px;
     }
-    .content-container {
-      padding: 24px;
+    .conf-num-val {
+      color: #0071c2;
+      font-weight: bold;
+      font-size: 12.5px;
     }
-    .hotel-card {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 20px;
-      border-bottom: 1px solid #e7e7e7;
-      padding-bottom: 20px;
-      margin-bottom: 20px;
+    .top-box-table {
+      width: 100%;
+      border: 1px solid #777777;
+      border-collapse: collapse;
+      margin-bottom: 12px;
     }
-    .hotel-title {
-      font-size: 22px;
-      font-weight: 800;
-      color: #003580;
-      margin-bottom: 4px;
-      line-height: 1.25;
+    .top-box-table td {
+      border: 1px solid #777777;
+      padding: 8px 10px;
+      vertical-align: top;
     }
-    .hotel-stars {
-      color: #febb02;
-      font-size: 16px;
-      margin-bottom: 6px;
+    .hotel-info-col {
+      width: 50%;
     }
-    .hotel-address {
+    .hotel-info-title {
       font-size: 13px;
-      color: #262626;
-      margin-bottom: 4px;
-    }
-    .hotel-phone {
-      font-size: 13px;
-      color: #262626;
-      margin-bottom: 8px;
-    }
-    .review-score-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: #f0f7ff;
-      border: 1px solid #c7e0ff;
-      padding: 4px 10px;
-      border-radius: 4px;
-      margin-top: 4px;
-    }
-    .score-square {
-      background: #003580;
-      color: #ffffff;
-      font-weight: 800;
-      font-size: 13px;
-      padding: 2px 6px;
-      border-radius: 4px;
-    }
-    .score-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: #003580;
-    }
-    .hotel-photo {
-      width: 140px;
-      height: 105px;
-      object-fit: cover;
-      border-radius: 6px;
-      border: 1px solid #e2e8f0;
-      flex-shrink: 0;
-    }
-    .dates-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 16px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      padding: 16px;
-      margin-bottom: 20px;
+      font-weight: bold;
+      margin-bottom: 3px;
+      color: #000000;
     }
     .date-col {
-      border-right: 1px solid #e2e8f0;
-      padding-right: 12px;
+      width: 17%;
+      text-align: center;
+      padding: 6px 4px !important;
     }
-    .date-col:last-child {
-      border-right: none;
-      padding-right: 0;
-    }
-    .date-label {
-      font-size: 11px;
-      font-weight: 700;
+    .date-col-label {
+      font-size: 8.5px;
       text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: #64748b;
-      margin-bottom: 4px;
+      color: #666666;
     }
-    .date-val {
-      font-size: 14px;
+    .date-col-num {
+      font-size: 28px;
       font-weight: 800;
-      color: #0f172a;
-      line-height: 1.25;
+      line-height: 1.05;
+      margin: 2px 0;
+      color: #000000;
     }
-    .date-time {
-      font-size: 12px;
-      color: #475569;
-      margin-top: 3px;
-    }
-    .section-block {
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-    .section-header {
-      font-size: 13px;
-      font-weight: 800;
-      color: #0f172a;
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 8px;
-      margin-bottom: 12px;
+    .date-col-month {
+      font-size: 10.5px;
+      font-weight: bold;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
-    .room-name {
-      font-size: 15px;
-      font-weight: 700;
-      color: #003580;
-      margin-bottom: 8px;
+    .date-col-day {
+      font-size: 10px;
+      font-style: italic;
+      color: #222222;
     }
-    .details-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 10px;
+    .date-col-time {
+      font-size: 9px;
+      color: #555555;
+      margin-top: 4px;
     }
-    .details-table td {
-      padding: 5px 0;
-      font-size: 13px;
+    .rooms-col {
+      width: 16%;
+      text-align: center;
+      padding: 6px 4px !important;
     }
-    .details-table .col-label {
-      color: #64748b;
-      width: 32%;
-      font-weight: 500;
-    }
-    .details-table .col-val {
-      color: #0f172a;
-      font-weight: 600;
-    }
-    .amenities-row {
-      font-size: 12px;
-      color: #475569;
-      border-top: 1px dashed #e2e8f0;
-      padding-top: 10px;
-      margin-top: 8px;
-      line-height: 1.5;
-    }
-    .payment-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .payment-table td {
-      padding: 6px 0;
-      font-size: 13px;
-    }
-    .price-row-total {
-      font-size: 16px;
-      font-weight: 800;
-      color: #003580;
-      border-top: 1px solid #e2e8f0;
-      border-bottom: 1px solid #e2e8f0;
-      padding: 8px 0;
-    }
-    .payment-badge-online {
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      border-radius: 4px;
-      padding: 10px 14px;
-      margin-top: 12px;
-      font-size: 12.5px;
-      color: #166534;
-      font-weight: 600;
+    .rooms-col-header {
+      font-size: 8.5px;
+      color: #666666;
       display: flex;
-      align-items: center;
-      gap: 10px;
+      justify-content: space-around;
     }
-    .cancellation-block {
-      background: #f0fdf4;
-      border-left: 4px solid #16a34a;
-      padding: 12px 16px;
-      border-radius: 0 6px 6px 0;
-      margin-bottom: 20px;
-      font-size: 12.5px;
+    .rooms-col-val {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.1;
+      margin: 2px 0;
+      color: #000000;
     }
-    .cancellation-title {
-      font-weight: 700;
-      color: #166534;
-      margin-bottom: 2px;
+    .group-label {
+      font-size: 8px;
+      text-transform: uppercase;
+      color: #666666;
+      margin-top: 2px;
     }
-    .cancellation-desc {
-      color: #334155;
+    .group-val {
+      font-size: 10.5px;
+      font-weight: bold;
     }
-    .official-footer {
-      border-top: 2px solid #e2e8f0;
-      padding: 18px 24px;
-      background: #f8fafc;
+    .price-box {
+      border: 1px solid #777777;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      font-size: 10.5px;
+      line-height: 1.35;
+    }
+    .price-title-row {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      gap: 20px;
-    }
-    .footer-help-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: #003580;
+      align-items: baseline;
+      font-size: 12.5px;
+      font-weight: bold;
       margin-bottom: 4px;
     }
-    .footer-help-text {
-      font-size: 11.5px;
-      color: #475569;
-      line-height: 1.5;
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2px;
     }
-    .footer-legal {
+    .section-subhead {
+      font-size: 11.5px;
+      font-weight: bold;
+      margin-top: 10px;
+      margin-bottom: 3px;
+      color: #000000;
+    }
+    .room-box {
+      border: 1px solid #777777;
+      margin-bottom: 12px;
+    }
+    .room-header {
+      padding: 6px 10px;
+      font-size: 12.5px;
+      font-weight: bold;
+      border-bottom: 1px solid #777777;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .room-content-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .room-left {
+      width: 68%;
+      padding: 10px;
+      vertical-align: top;
       font-size: 10px;
-      color: #94a3b8;
-      margin-top: 8px;
+      line-height: 1.38;
+      border-right: 1px solid #777777;
+    }
+    .room-right {
+      width: 32%;
+      padding: 10px;
+      vertical-align: top;
+      font-size: 10px;
       line-height: 1.4;
     }
-    .barcode-box {
-      text-align: right;
+    .bottom-boxes-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
     }
-    .barcode-svg {
-      width: 170px;
-      height: 32px;
+    .bottom-box-left {
+      width: 50%;
+      border: 1px solid #777777;
+      padding: 10px 12px;
+      vertical-align: top;
+      font-size: 10px;
+      line-height: 1.35;
+    }
+    .bottom-box-right {
+      width: 50%;
+      border: 1px solid #777777;
+      border-left: none;
+      padding: 10px 12px;
+      vertical-align: top;
+      font-size: 10px;
+      line-height: 1.35;
+    }
+    .page-break {
+      page-break-before: always;
+      padding-top: 15mm;
+    }
+    .need-help-header {
+      font-size: 14px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .help-link {
+      color: #0071c2;
+      text-decoration: underline;
+      cursor: pointer;
     }
     @media print {
-      body {
-        background: #ffffff;
-      }
       .print-btn-bar {
         display: none !important;
       }
-      .voucher-wrapper {
-        border: none;
-        box-shadow: none;
-        max-width: 100%;
+      body {
+        background: #ffffff;
+      }
+      .page-break {
+        page-break-before: always;
       }
     }
   </style>
@@ -441,177 +402,202 @@ export function printHotelVoucher(booking) {
     <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
   </div>
 
-  <div class="voucher-wrapper">
-    <!-- Booking.com Official Header -->
-    <div class="booking-top-bar">
-      <div>
-        <div class="booking-logo">Booking<span>.com</span></div>
-        <div class="booking-subtext">Booking Confirmation</div>
-      </div>
-      <div class="booking-identifiers">
-        <div class="id-label">CONFIRMATION NUMBER</div>
-        <div class="id-val">${escapeHtml(bookingNumber)}</div>
-        <div class="id-label" style="margin-top: 5px;">PIN CODE</div>
-        <div class="id-val" style="letter-spacing: 2px;">${escapeHtml(pinCode)}</div>
-      </div>
-    </div>
+  <div class="doc-page">
+    <!-- Page 1: Header -->
+    <table class="header-table" role="presentation">
+      <tr>
+        <td style="vertical-align: middle;">
+          <div class="logo-text">Booking<span>.com</span></div>
+        </td>
+        <td class="header-right">
+          <div class="confirmation-title">Booking Confirmation</div>
+          <div class="conf-num-label">CONFIRMATION NUMBER: <span class="conf-num-val">${escapeHtml(bookingNumber)}</span></div>
+          <div class="conf-num-label">PIN CODE: <span class="conf-num-val">${escapeHtml(pinCode)}</span></div>
+        </td>
+      </tr>
+    </table>
 
-    <!-- Confirmed Status Banner -->
-    <div class="status-confirmed-banner">
-      <div class="status-check-circle">✓</div>
-      <div>
-        <div class="status-title">Your booking in ${escapeHtml(booking.city || booking.country || 'Destination')} is confirmed.</div>
-        <div class="status-sub">Thank you, <strong>${escapeHtml(booking.clientName || 'Guest')}</strong>! We look forward to your arrival.</div>
-      </div>
-    </div>
-
-    <div class="content-container">
-      <!-- Hotel Details Block -->
-      <div class="hotel-card">
-        <div style="flex: 1;">
-          <div class="hotel-title">${escapeHtml(booking.hotelName || 'Grand Hotel')}</div>
-          <div class="hotel-stars">${starsHtml} (${starsCount}-Star Hotel)</div>
-          <div class="hotel-address">📍 ${escapeHtml(booking.hotelAddress || 'City Center')}</div>
-          <div class="hotel-phone">📞 Phone: <strong>${escapeHtml(hotelPhone)}</strong></div>
-          <div class="review-score-badge">
-            <span class="score-square">${escapeHtml((reviewScore.match(/\d+\.\d+/) || ['9.0'])[0])}</span>
-            <span class="score-label">${escapeHtml(reviewScore)}</span>
+    <!-- Top Hotel & Schedule Box -->
+    <table class="top-box-table" role="presentation">
+      <tr>
+        <td class="hotel-info-col">
+          <div style="display: flex; gap: 10px;">
+            ${hotelImage ? `<img src="${escapeHtml(hotelImage)}" style="width: 76px; height: 76px; object-fit: cover; border: 1px solid #ccc; flex-shrink: 0;" alt="Hotel" />` : ''}
+            <div>
+              <div class="hotel-info-title">${escapeHtml(hotelName)}</div>
+              <div><strong>Address:</strong> ${escapeHtml(hotelAddress)}</div>
+              <div><strong>Phone:</strong> ${escapeHtml(hotelPhone)}</div>
+              <div><strong>GPS Coordinates:</strong> ${escapeHtml(gpsCoords)}</div>
+            </div>
           </div>
-        </div>
-        ${hotelImage ? `<img src="${escapeHtml(hotelImage)}" class="hotel-photo" alt="${escapeHtml(booking.hotelName)}" />` : ''}
+        </td>
+        <td class="date-col">
+          <div class="date-col-label">CHECK-IN</div>
+          <div class="date-col-num">${escapeHtml(String(inDayNum))}</div>
+          <div class="date-col-month">${escapeHtml(inMonth)}</div>
+          <div class="date-col-day">${escapeHtml(inDayName)}</div>
+          <div class="date-col-time">🕒 14:00 - 23:30</div>
+        </td>
+        <td class="date-col">
+          <div class="date-col-label">CHECK-OUT</div>
+          <div class="date-col-num">${escapeHtml(String(outDayNum))}</div>
+          <div class="date-col-month">${escapeHtml(outMonth)}</div>
+          <div class="date-col-day">${escapeHtml(outDayName)}</div>
+          <div class="date-col-time">🕒 05:00 - 12:00</div>
+        </td>
+        <td class="rooms-col">
+          <div class="rooms-col-header">
+            <span>ROOMS</span>
+            <span>NIGHTS</span>
+          </div>
+          <div class="rooms-col-val">1 <span style="font-weight: 300; font-size: 22px;">/</span> ${escapeHtml(String(nights))}</div>
+          <div class="group-label">YOUR GROUP</div>
+          <div class="group-val">1 adult</div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- PRICE Box -->
+    <div class="price-box">
+      <div class="price-title-row">
+        <span>PRICE</span>
+        <span>EGP ${egpTotal.toLocaleString()}</span>
+      </div>
+      <div class="price-row">
+        <span>1 room</span>
+        <span>approx. EGP ${egpTotal.toLocaleString()}</span>
+      </div>
+      <div class="price-row" style="font-size: 13px; font-weight: bold; margin-top: 3px;">
+        <span>Subtotal</span>
+        <span>approx. EGP ${egpTotal.toLocaleString()}</span>
+      </div>
+      <div class="price-row" style="color: #444;">
+        <span>(for 1 guest)</span>
+        <span>${localSymbol}${localSubtotal}</span>
       </div>
 
-      <!-- Stay Schedule (Booking.com 3-column layout) -->
-      <div class="dates-grid">
-        <div class="date-col">
-          <div class="date-label">CHECK-IN</div>
-          <div class="date-val">${escapeHtml(checkInDay)}, ${escapeHtml(checkInFormatted)}</div>
-          <div class="date-time">From 15:00</div>
-        </div>
-        <div class="date-col">
-          <div class="date-label">CHECK-OUT</div>
-          <div class="date-val">${escapeHtml(checkOutDay)}, ${escapeHtml(checkOutFormatted)}</div>
-          <div class="date-time">Until 12:00</div>
-        </div>
-        <div class="date-col">
-          <div class="date-label">LENGTH OF STAY</div>
-          <div class="date-val">${escapeHtml(String(booking.nights || 1))} night${booking.nights > 1 ? 's' : ''}</div>
-          <div class="date-time">1 room, 1 adult</div>
-        </div>
+      <div style="font-weight: bold; margin-top: 6px; margin-bottom: 2px;">Additional charges</div>
+      <div style="color: #333; font-size: 9.5px; margin-bottom: 4px;">
+        The price you see below is an approximate that may include fees based on the maximum occupancy. This can include taxes set by local governments or charges set by the property.
+      </div>
+      <div class="price-row">
+        <span>VAT (8.0%)</span>
+        <span>EGP ${vatAmount.toLocaleString()}</span>
+      </div>
+      <div class="price-row">
+        <span>Tourism fee (EGP 127.09 × ${nights} nights)</span>
+        <span>EGP ${tourismFee.toLocaleString()}</span>
+      </div>
+      <div class="price-row">
+        <span>Property service charge (15.0%)</span>
+        <span>EGP ${serviceCharge.toLocaleString()}</span>
+      </div>
+      <div class="price-row" style="font-size: 13px; font-weight: bold; margin-top: 6px; border-top: 1px solid #777; padding-top: 4px;">
+        <span>Price</span>
+        <span>approx. EGP ${grandTotalEgp.toLocaleString()}*</span>
+      </div>
+      <div style="text-align: right; font-weight: bold; font-size: 12px; margin-top: 2px;">
+        You'll pay ${localSymbol}${localPayAmount}.
+      </div>
+      <div style="font-size: 9px; color: #555; margin-top: 2px;">
+        * Tourism Fee (if applicable) refers to the local Tourism Tax
+      </div>
+      <div style="font-weight: bold; margin-top: 6px;">
+        The final price shown is the amount you'll pay to the property.
+      </div>
+      <div style="font-size: 9.5px; color: #333;">
+        Booking.com doesn't charge guests any reservation, administration, or other fees.<br>
+        Your card issuer may charge you a foreign transaction fee.
       </div>
 
-      <!-- Room & Guest Information -->
-      <div class="section-block">
-        <div class="section-header">Room Details</div>
-        <div class="room-name">Room 1: ${escapeHtml(booking.roomType || 'Deluxe King Room')}</div>
-        <table class="details-table">
-          <tr>
-            <td class="col-label">Guest name:</td>
-            <td class="col-val">${escapeHtml(booking.clientName || 'Valued Guest')}</td>
-          </tr>
-          <tr>
-            <td class="col-label">Meal plan:</td>
-            <td class="col-val" style="color: #008009;">${escapeHtml(booking.boardBasis || 'Breakfast included')}</td>
-          </tr>
-          <tr>
-            <td class="col-label">Occupancy:</td>
-            <td class="col-val">1 Adult (Standard Occupancy)</td>
-          </tr>
-          <tr>
-            <td class="col-label">Special requests:</td>
-            <td class="col-val">${escapeHtml(booking.specialRequests || 'Non-smoking room, high floor requested')}</td>
-          </tr>
-        </table>
-        <div class="amenities-row">
-          <strong>Room Amenities:</strong> Free high-speed WiFi • Air conditioning • Private bathroom • Flat-screen TV • Soundproofing • Free toiletries • Safe
-        </div>
-      </div>
+      <div class="section-subhead">Payment Info</div>
+      <div>${escapeHtml(hotelName)} handles all payments.</div>
+      <div>This property accepts the following forms of payment: Cash, Credit Card</div>
 
-      <!-- Payment & Price Information -->
-      <div class="section-block">
-        <div class="section-header">Pricing & Payment</div>
-        <table class="payment-table">
-          <tr>
-            <td>Price (${escapeHtml(String(booking.nights || 1))} night${booking.nights > 1 ? 's' : ''})</td>
-            <td style="text-align: right; font-weight: 600;">${escapeHtml(priceText)}</td>
-          </tr>
-          <tr>
-            <td style="color: #64748b; font-size: 12px;">Taxes and charges included (VAT, City Tax)</td>
-            <td style="text-align: right; color: #64748b; font-size: 12px;">Included</td>
-          </tr>
-          <tr class="price-row-total">
-            <td>Total Price</td>
-            <td style="text-align: right;">${escapeHtml(priceText)}</td>
-          </tr>
-          <tr>
-            <td style="padding-top: 8px; color: #008009; font-weight: 600;">Amount Paid Online:</td>
-            <td style="text-align: right; padding-top: 8px; color: #008009; font-weight: 600;">${escapeHtml(priceText)}</td>
-          </tr>
-          <tr>
-            <td style="font-weight: 600;">Amount due upon check-in:</td>
-            <td style="text-align: right; font-weight: 700; color: #008009;">US$ 0.00</td>
-          </tr>
-        </table>
-        <div class="payment-badge-online">
-          <span>✓</span>
-          <span><strong>Paid online</strong> — You have already paid for this booking online. The property will not charge you for your room upon arrival.</span>
-        </div>
-      </div>
+      <div class="section-subhead">Currency & Exchange Rate Info</div>
+      <div>You'll pay ${escapeHtml(hotelName)} in ${localCurrency} according to the exchange rate on the day of payment.</div>
+      <div>The amount displayed in EGP is just an estimate based on today's exchange rate for ${localCurrency}.</div>
 
-      <!-- Cancellation Policy -->
-      <div class="cancellation-block">
-        <div class="cancellation-title">✓ Free Cancellation</div>
-        <div class="cancellation-desc">
-          You can cancel free of charge until 48 hours prior to check-in. If you cancel within 48 hours of arrival or in case of a no-show, the cancellation fee will equal the total reservation cost.
-        </div>
-      </div>
+      <div class="section-subhead">Additional Info</div>
+      <div>Note that additional supplements (e.g. an extra bed) aren't added in this total.</div>
+      <div>If you cancel, applicable taxes may still be charged by the property.</div>
+      <div>If you don't show up for this booking, and you don't cancel beforehand, the property is liable to charge you the full reservation amount.</div>
+      <div>Remember to read the Important info below – it could contain important details not mentioned here.</div>
     </div>
 
-    <!-- Official Booking.com Legal & Support Footer -->
-    <div class="official-footer">
-      <div>
-        <div class="footer-help-title">Customer Service Help</div>
-        <div class="footer-help-text">
-          Manage your booking online at <strong>www.booking.com/mybooking</strong><br>
-          Direct property phone: <strong>${escapeHtml(hotelPhone)}</strong><br>
-          Booking.com Customer Support: Available 24 hours a day, 7 days a week (English & Arabic)
-        </div>
-        <div class="footer-legal">
-          Booking.com B.V., Oosterdokskade 163, 1011 DL Amsterdam, The Netherlands<br>
-          Chamber of Commerce Amsterdam registration: 31047344 • VAT registration: NL805734958B01
-        </div>
+    <!-- Room Details Box -->
+    <div class="room-box">
+      <div class="room-header">
+        <span>${escapeHtml(roomType)}</span>
+        <span>🛏️</span>
       </div>
-      <div class="barcode-box">
-        <svg class="barcode-svg" viewBox="0 0 160 30" xmlns="http://www.w3.org/2000/svg">
-          <rect x="0" y="0" width="3" height="30" fill="#003580"/>
-          <rect x="5" y="0" width="2" height="30" fill="#003580"/>
-          <rect x="10" y="0" width="5" height="30" fill="#003580"/>
-          <rect x="18" y="0" width="2" height="30" fill="#003580"/>
-          <rect x="23" y="0" width="4" height="30" fill="#003580"/>
-          <rect x="30" y="0" width="2" height="30" fill="#003580"/>
-          <rect x="35" y="0" width="6" height="30" fill="#003580"/>
-          <rect x="44" y="0" width="2" height="30" fill="#003580"/>
-          <rect x="49" y="0" width="4" height="30" fill="#003580"/>
-          <rect x="56" y="0" width="3" height="30" fill="#003580"/>
-          <rect x="62" y="0" width="5" height="30" fill="#003580"/>
-          <rect x="70" y="0" width="2" height="30" fill="#003580"/>
-          <rect x="75" y="0" width="4" height="30" fill="#003580"/>
-          <rect x="82" y="0" width="3" height="30" fill="#003580"/>
-          <rect x="88" y="0" width="6" height="30" fill="#003580"/>
-          <rect x="97" y="0" width="2" height="30" fill="#003580"/>
-          <rect x="102" y="0" width="4" height="30" fill="#003580"/>
-          <rect x="109" y="0" width="3" height="30" fill="#003580"/>
-          <rect x="115" y="0" width="5" height="30" fill="#003580"/>
-          <rect x="123" y="0" width="2" height="30" fill="#003580"/>
-          <rect x="128" y="0" width="4" height="30" fill="#003580"/>
-          <rect x="135" y="0" width="6" height="30" fill="#003580"/>
-          <rect x="144" y="0" width="3" height="30" fill="#003580"/>
-          <rect x="150" y="0" width="4" height="30" fill="#003580"/>
-        </svg>
-        <div style="font-family: monospace; font-size: 10px; color: #64748b; margin-top: 2px;">
-          ${escapeHtml(bookingNumber)}
-        </div>
+      <table class="room-content-table" role="presentation">
+        <tr>
+          <td class="room-left">
+            <div><strong>Guest name:</strong> ${escapeHtml(clientName)}</div>
+            <div><strong>Number of guests:</strong> 1 adult</div>
+            <div style="margin-bottom: 4px;"><strong>Meal plan:</strong> ${escapeHtml(boardBasis)}</div>
+            <div style="color: #222; margin-bottom: 6px;">
+              Private bathroom • Balcony • Garden view • Mountain view • City view • Free toiletries • Shower • Air conditioning • Kitchen • Washing machine • Toilet • Sofa • Towels • Cleaning products • Tile/marble floor • Desk • Soundproofing • TV • Slippers • Refrigerator • Iron • Microwave • Flat-screen TV • Hairdryer • Kitchenware • Kitchenette • Towels/sheets (extra fee) • Wake-up service/Alarm clock • Electric kettle • Dishwasher • Wake-up service • Alarm clock • Wardrobe or closet • Oven • Dining area • Dining table • Clothes rack • Toilet paper • Sofa bed • Carbon monoxide detector • Air purifiers • Hand sanitizer • Single-room AC for guest accommodation
+            </div>
+            <div><strong>Bed Size(s):</strong> 1 king bed (181-210 cm wide)</div>
+          </td>
+          <td class="room-right">
+            <div><strong>Prepayment :</strong> No prepayment is needed.</div>
+            <div style="margin-top: 8px;"><strong>Cancellation cost:</strong></div>
+            <div style="color: #008009; font-weight: bold;">from ${escapeHtml(cancellationDateStr)}: ${localCurrency} 0</div>
+            <div style="font-size: 9px; color: #555; margin-top: 8px;">Cancellation deadlines are in the property's local time.</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Important Information & Hotel Policies (Bottom of Page 1) -->
+    <table class="bottom-boxes-table" role="presentation">
+      <tr>
+        <td class="bottom-box-left">
+          <div style="font-weight: bold; font-size: 11px; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+            <span>ℹ️</span> <strong>Important Information</strong>
+          </div>
+          <div>This property does not accommodate bachelor(ette) or similar parties.</div>
+          <div style="margin-top: 4px;">
+            A damage deposit of ${localCurrency} 100 is required on arrival. That's about EGP ${Math.round(100 * exRateToEgp)}. This will be collected as a cash payment. You should be reimbursed on check-out. Your deposit will be refunded in full, in cash, subject to an inspection of the property.
+          </div>
+        </td>
+        <td class="bottom-box-right">
+          <div style="font-weight: bold; font-size: 11px; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+            <span>📋</span> <strong>Hotel Policies</strong>
+          </div>
+          <div><strong>Guest parking</strong></div>
+          <div>• Private parking is possible on site (reservation is not needed) and costs ${localCurrency} 15 per day.</div>
+          <div style="margin-top: 3px;">• WiFi is available in the rooms and is free of charge.</div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Page 2: Need Help? -->
+    <div class="page-break"></div>
+
+    <div style="max-width: 800px; margin: 0 auto; padding-top: 10px; font-size: 11px; line-height: 1.45;">
+      <div class="need-help-header">
+        <span>⚙️</span>
+        <span>Need Help?</span>
       </div>
+      <div><strong>You can always view, change or cancel your booking online at:</strong></div>
+      <div class="help-link" style="margin-bottom: 6px;">your.booking.com</div>
+
+      <div style="margin-top: 6px;">For any questions related to the property, you can contact ${escapeHtml(hotelName)} directly at: <strong>${escapeHtml(hotelPhone)}</strong></div>
+
+      <div style="margin-top: 8px;"><strong>Or contact us by phone - we're available 24 hours a day:</strong></div>
+      <div>Local number: 0800 0000 457</div>
+      <div>When abroad or from ${escapeHtml(booking.country || 'abroad')}: +44 20 3320 2643</div>
+
+      <div style="margin-top: 12px; font-weight: bold; color: #003580;">Travel with peace of mind</div>
+      <div>Looking for info about traveling safely? The safety resource center can help you prepare for your trip and enjoy a safe, relaxing stay.</div>
+      <div class="help-link">See safety resource center</div>
+
+      <div style="margin-top: 8px;">We've gathered the most important local phone numbers to help give you complete peace of mind during your stay in ${escapeHtml(booking.country || 'your destination')}.</div>
+      <div class="help-link">See local emergency services</div>
     </div>
   </div>
 
@@ -625,9 +611,18 @@ export function printHotelVoucher(booking) {
 </body>
 </html>`;
 
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const blobUrl = URL.createObjectURL(blob);
+  try {
+    printWindow.location.href = blobUrl;
+  } catch (_) {
+    printWindow.document.documentElement.innerHTML = html;
+  }
+  setTimeout(() => {
+    try {
+      URL.revokeObjectURL(blobUrl);
+    } catch (_) {}
+  }, 60000);
 }
 
 /**
