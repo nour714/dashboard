@@ -42,7 +42,7 @@ export const ar = {
     reports: 'التقارير',
     expenses: 'مصروفات المكتب',
     visas: 'التأشيرات',
-    hotels: 'الفنادق (AI)',
+    hotels: 'حجوزات الفنادق',
     administration: 'الإدارة',
     employees: 'الموظفون',
     activity: 'سجل النشاط',
@@ -1002,12 +1002,12 @@ export const ar = {
     returnSoon: 'موعد العودة يقرب'
   },
 
-  // Hotels (AI)
+  // Hotels (Python & AI)
   hotels: {
-    title: 'حجوزات الفنادق (AI)',
-    subtitle: 'توليد فوتشرات حجز الفنادق الدولية بالذكاء الاصطناعي وإدارتها',
-    generateTitle: 'توليد حجز فندق بالذكاء الاصطناعي',
-    generateSubtitle: 'أدخل اسم العميل، الدولة/المدينة، وفترة الإقامة لتوليد فوتشر فندقي دولي رسمي متكامل',
+    title: 'حجوزات الفنادق (بايثون / AI)',
+    subtitle: 'استخراج وتوليد فوتشرات حجز الفنادق الدولية الحية وإدارتها',
+    generateTitle: 'توليد حجز فندق دولي (Booking.com Live / AI)',
+    generateSubtitle: 'أدخل اسم العميل، الدولة/المدينة، وفترة الإقامة لاستخراج فندق حقيقي وتوليد فوتشر رسمي متكامل',
     clientName: 'اسم العميل',
     clientNamePlaceholder: 'اكتب اسم العميل أو اختر من القائمة...',
     destination: 'الدولة / المدينة',
@@ -1015,8 +1015,8 @@ export const ar = {
     checkIn: 'تاريخ الوصول (Check-in)',
     checkOut: 'تاريخ المغادرة (Check-out)',
     nights: 'عدد الليالي',
-    generateBtn: 'توليد الحجز بالذكاء الاصطناعي ✦',
-    generating: 'جاري اختيار الفندق وتوليد بيانات الحجز...',
+    generateBtn: 'توليد الحجز الفندقي ✦',
+    generating: 'جاري استخراج الفندق الحي عبر بايثون وتوليد الفوتشر...',
     previewTitle: 'معاينة فوتشر الفندق المولد',
     previewSubtitle: 'يمكنك مراجعة أو تعديل أي تفاصيل أدناه قبل الطباعة أو الحفظ',
     hotelName: 'اسم الفندق',

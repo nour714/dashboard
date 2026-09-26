@@ -289,6 +289,8 @@ export async function generateHotelBookingDetails({ clientName, country, checkIn
       specialRequests: 'Non-smoking room, Quiet area, High floor requested',
       cancellationPolicy: 'Guaranteed by AfricaTravel. Non-refundable within 48 hours of check-in.',
       status: 'CONFIRMED',
+      source: 'CURATED_CATALOG',
+      provider: 'CATALOG',
       generatedByAi: false
     };
   }
@@ -405,6 +407,8 @@ CRITICAL INSTRUCTIONS:
       specialRequests: parsed.specialRequests || 'Non-smoking room, high floor requested',
       cancellationPolicy: parsed.cancellationPolicy || 'All charges prepaid & guaranteed by AfricaTravel.',
       status: 'CONFIRMED',
+      source: 'GEMINI_AI',
+      provider: 'AI',
       generatedByAi: true
     };
   } catch (err) {
@@ -445,6 +449,8 @@ function buildFinalResult(fallback, meta) {
     specialRequests: 'Non-smoking room, high floor requested',
     cancellationPolicy: 'All room charges prepaid and guaranteed by AfricaTravel.',
     status: 'CONFIRMED',
+    source: meta.generatedByAi ? 'GEMINI_AI' : 'CURATED_CATALOG',
+    provider: meta.generatedByAi ? 'AI' : 'CATALOG',
     generatedByAi: meta.generatedByAi ?? false
   };
 }

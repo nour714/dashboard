@@ -42,7 +42,7 @@ export const en = {
     reports: 'Reports',
     expenses: 'Office Expenses',
     visas: 'Visas',
-    hotels: 'Hotels (AI)',
+    hotels: 'Hotels',
     administration: 'Administration',
     employees: 'Employees',
     activity: 'Activity Log',
@@ -1002,12 +1002,12 @@ export const en = {
     returnSoon: 'Return approaching'
   },
 
-  // Hotels (AI)
+  // Hotels (Python & AI)
   hotels: {
-    title: 'Hotel Bookings (AI)',
-    subtitle: 'Generate and manage international hotel booking vouchers powered by AI',
-    generateTitle: 'Generate Hotel Booking with AI',
-    generateSubtitle: 'Enter client name, destination, and stay period to generate an official international voucher',
+    title: 'Hotel Bookings (Python / AI)',
+    subtitle: 'Fetch live accommodations and generate official international vouchers',
+    generateTitle: 'Generate Hotel Booking (Booking.com Live / AI)',
+    generateSubtitle: 'Enter client name, destination, and stay period to fetch real live hotel and generate official voucher',
     clientName: 'Client Name',
     clientNamePlaceholder: 'Enter client name or pick from list...',
     destination: 'Country / City',
@@ -1015,8 +1015,8 @@ export const en = {
     checkIn: 'Check-in Date',
     checkOut: 'Check-out Date',
     nights: 'Nights',
-    generateBtn: 'Generate Booking with AI ✦',
-    generating: 'Selecting hotel & generating booking data...',
+    generateBtn: 'Generate Hotel Booking ✦',
+    generating: 'Fetching live hotel via Python & generating voucher...',
     previewTitle: 'Generated Hotel Voucher Preview',
     previewSubtitle: 'Review or adjust any details below before printing or saving',
     hotelName: 'Hotel Name',

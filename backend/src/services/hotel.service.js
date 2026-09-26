@@ -6,13 +6,60 @@ import { getPrismaClient } from '../config/database.js';
 import { NotFoundError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
 import { generateHotelBookingDetails, generateReferenceCodes, calculateNights } from './hotel-ai.service.js';
+import { PythonScraperService } from './python-scraper.service.js';
 
 export const HotelService = {
   /**
-   * Generate realistic hotel booking details using AI
+   * Generate realistic hotel booking details using live Python scraper with AI/curated fallback
    */
   async generateAi(data) {
     const { clientName, country, checkIn, checkOut, customerId } = data;
+    const nights = calculateNights(checkIn, checkOut);
+    const { bookingReference, confirmationNumber } = generateReferenceCodes();
+
+    // 1. Prioritize Python Live Scraper (real Booking.com accommodation)
+    try {
+      const liveHotel = await PythonScraperService.scrapeLiveHotel({
+        destination: country,
+        checkIn,
+        checkOut
+      });
+
+      if (liveHotel && liveHotel.hotelName) {
+        return {
+          bookingReference,
+          confirmationNumber,
+          clientName: clientName.trim(),
+          customerId: customerId || null,
+          hotelName: liveHotel.hotelName,
+          hotelStars: liveHotel.hotelStars || 5,
+          hotelAddress: liveHotel.hotelAddress || `City Center, ${country}`,
+          city: liveHotel.city || country,
+          country: liveHotel.country || country,
+          checkIn: new Date(checkIn).toISOString(),
+          checkOut: new Date(checkOut).toISOString(),
+          nights,
+          roomType: liveHotel.roomType || 'Deluxe King Room',
+          boardBasis: liveHotel.boardBasis || 'Bed & Breakfast (Buffet Included)',
+          guests: '1 Adult (Standard Single/Double Occupancy)',
+          checkInTime: liveHotel.checkInTime || '15:00',
+          checkOutTime: liveHotel.checkOutTime || '12:00',
+          amenities: Array.isArray(liveHotel.amenities) && liveHotel.amenities.length > 0
+            ? liveHotel.amenities
+            : ['High-speed Wi-Fi Included', 'Swimming Pool & Spa', '24-Hour Concierge', 'Air Conditioning'],
+          specialRequests: liveHotel.specialRequests || 'Non-smoking room, high floor requested',
+          cancellationPolicy: liveHotel.cancellationPolicy || 'All accommodation charges prepaid & guaranteed by AfricaTravel.',
+          status: 'CONFIRMED',
+          source: 'BOOKING_LIVE',
+          provider: 'PYTHON_SCRAPER',
+          generatedByAi: false
+        };
+      }
+    } catch (scraperErr) {
+      console.warn('[HotelService] Python live scraper failed, proceeding to fallback:', scraperErr.message);
+    }
+
+    // 2. Seamless fallback to Gemini AI / Curated catalog
     const generated = await generateHotelBookingDetails({
       clientName,
       country,

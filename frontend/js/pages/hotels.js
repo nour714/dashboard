@@ -497,7 +497,7 @@ export function renderHotelsPage() {
             </h3>
             <p class="text-xs text-muted mt-xxs">${escapeHtml(t('hotels.generateSubtitle'))}</p>
           </div>
-          <span class="badge badge-primary">AI Powered ✦</span>
+          <span class="badge badge-primary">Python Live & AI Powered ✦</span>
         </div>
 
         <div class="card-body">
@@ -653,6 +653,16 @@ function renderPreviewCard(booking) {
   const starsCount = Math.min(5, Math.max(1, parseInt(booking.hotelStars || 5, 10)));
   const starsHtml = '★'.repeat(starsCount) + '☆'.repeat(5 - starsCount);
 
+  const isPython = booking.source === 'BOOKING_LIVE' || booking.provider === 'PYTHON_SCRAPER';
+  const sourceBadge = isPython
+    ? `<span class="badge" style="background: #10b981; color: white; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">
+        <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ffffff;"></span>
+        ${isAr ? 'فندق حقيقي عبر بايثون (Booking.com)' : 'Live via Python (Booking.com)'}
+       </span>`
+    : `<span class="badge" style="background: #6366f1; color: white; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">
+        ✦ ${isAr ? 'مقترح ذكي معتمد (دليل 5 نجوم)' : 'Smart Curated (5-Star)'}
+       </span>`;
+
   return `
     <div class="card" style="border: 2px solid #b38d4f; background: var(--color-surface);">
       <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-sm" style="background: rgba(179, 141, 79, 0.08);">
@@ -661,7 +671,10 @@ function renderPreviewCard(booking) {
             ${icons.hotel('w-5 h-5')}
           </div>
           <div>
-            <h4 class="card-title" style="margin: 0;">${escapeHtml(t('hotels.previewTitle'))}</h4>
+            <div class="d-flex align-items-center gap-xs">
+              <h4 class="card-title" style="margin: 0;">${escapeHtml(t('hotels.previewTitle'))}</h4>
+              ${sourceBadge}
+            </div>
             <p class="text-xs text-muted" style="margin: 0;">${escapeHtml(t('hotels.previewSubtitle'))}</p>
           </div>
         </div>
