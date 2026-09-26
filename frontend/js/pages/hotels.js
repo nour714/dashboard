@@ -668,7 +668,7 @@ function renderPreviewCard(booking) {
 
         <div class="d-flex align-items-center gap-xs">
           <button type="button" id="btn-toggle-edit-hotel" class="btn btn-sm btn-secondary d-flex align-items-center gap-xxs">
-            ${icons.pencil('w-3.5 h-3.5')}
+            ${icons.pencil ? icons.pencil('w-3.5 h-3.5') : (icons.edit ? icons.edit('w-3.5 h-3.5') : '✏️')}
             <span>${escapeHtml(t('hotels.quickEdit'))}</span>
           </button>
           <button type="button" id="btn-print-voucher-now" class="btn btn-sm btn-primary d-flex align-items-center gap-xxs">
