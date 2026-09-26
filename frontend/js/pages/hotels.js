@@ -60,7 +60,10 @@ export function printHotelVoucher(booking) {
   const bookingNumber = booking.bookingNumber || (booking.bookingReference && booking.bookingReference.includes('.') ? booking.bookingReference : '5647.617.021');
   const pinCode = booking.pinCode || '0409';
   const hotelPhone = booking.hotelPhone || '+60 11 6450 6138';
-  const hotelImage = booking.hotelImage || 'https://cf.bstatic.com/xdata/images/hotel/square240/268428960.webp?k=9205129765918ca1e35e1c6581d1a459210416266389686d9500fd75e8dd9b9a&o=';
+  let hotelImage = booking.hotelImage || 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/891377055.webp?k=a7455032de938c25e69873b80fdd46b074e13da1320c876a55ca0d632274e054&o=';
+  if (hotelImage.includes('square240') || hotelImage.includes('square60') || hotelImage.includes('square180')) {
+    hotelImage = hotelImage.replace(/square(240|60|180|120)/, 'max1024x768');
+  }
   const clientName = booking.clientName || 'Moustafa Elsayed Akl';
   const hotelName = booking.hotelName || 'Klcc Stay At Summer Suites';
   const hotelAddress = booking.hotelAddress || '8, Jalan Cendana, 50250 Kuala Lumpur, Malaysia';
@@ -902,7 +905,7 @@ function renderPreviewCard(booking) {
                 </div>
               </div>
 
-              ${hotelImage ? `<img src="${escapeHtml(hotelImage)}" style="width: 120px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid var(--color-border);" alt="${escapeHtml(booking.hotelName)}" />` : ''}
+              <img id="prev-hotel-img" src="${escapeHtml(hotelImage)}" style="width: 120px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid var(--color-border); ${hotelImage ? '' : 'display: none;'}" alt="${escapeHtml(booking.hotelName)}" />
             </div>
 
             <div class="form-grid-4 text-xs pt-xs" style="border-top: 1px solid var(--color-border);">
@@ -963,7 +966,7 @@ function renderPreviewCard(booking) {
               <input type="text" id="edit-hotel-phone" class="form-control" value="${escapeHtml(hotelPhone)}" />
             </div>
             <div class="form-group">
-              <label class="form-label">Price (USD / EUR)</label>
+              <label class="form-label">Price (USD / EUR / Local)</label>
               <input type="text" id="edit-hotel-price" class="form-control" value="${escapeHtml(priceText)}" />
             </div>
             <div class="form-group">
@@ -972,7 +975,7 @@ function renderPreviewCard(booking) {
             </div>
           </div>
 
-          <div class="form-grid-2 mb-sm">
+          <div class="form-grid-3 mb-sm">
             <div class="form-group">
               <label class="form-label">Booking.com Confirmation Number</label>
               <input type="text" id="edit-booking-number" class="form-control" value="${escapeHtml(bookingNumber)}" />
@@ -980,6 +983,10 @@ function renderPreviewCard(booking) {
             <div class="form-group">
               <label class="form-label">Booking.com PIN Code</label>
               <input type="text" id="edit-pin-code" class="form-control" value="${escapeHtml(pinCode)}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">${isAr ? 'رابط صورة الفندق (Booking.com)' : 'Hotel Image URL'}</label>
+              <input type="text" id="edit-hotel-image" class="form-control" value="${escapeHtml(hotelImage)}" />
             </div>
           </div>
 
@@ -1332,6 +1339,7 @@ function bindPreviewEvents(root) {
       const editPrice = (container.querySelector('#edit-hotel-price') || document.getElementById('edit-hotel-price'))?.value.trim();
       const editBookingNum = (container.querySelector('#edit-booking-number') || document.getElementById('edit-booking-number'))?.value.trim();
       const editPinCode = (container.querySelector('#edit-pin-code') || document.getElementById('edit-pin-code'))?.value.trim();
+      const editHotelImage = (container.querySelector('#edit-hotel-image') || document.getElementById('edit-hotel-image'))?.value.trim();
 
       if (editHotelName) currentGeneratedBooking.hotelName = editHotelName;
       if (editRoomType) currentGeneratedBooking.roomType = editRoomType;
@@ -1340,6 +1348,7 @@ function bindPreviewEvents(root) {
       if (editStars) currentGeneratedBooking.hotelStars = editStars;
       if (editPhone) currentGeneratedBooking.hotelPhone = editPhone;
       if (editPrice) currentGeneratedBooking.price = editPrice;
+      if (editHotelImage) currentGeneratedBooking.hotelImage = editHotelImage;
       if (editBookingNum) {
         currentGeneratedBooking.bookingNumber = editBookingNum;
         currentGeneratedBooking.bookingReference = editBookingNum;
@@ -1359,6 +1368,7 @@ function bindPreviewEvents(root) {
       const priceEl = container.querySelector('#prev-price') || document.getElementById('prev-price');
       const bNumEl = container.querySelector('#prev-booking-num') || document.getElementById('prev-booking-num');
       const pinEl = container.querySelector('#prev-pin-code') || document.getElementById('prev-pin-code');
+      const imgEl = container.querySelector('#prev-hotel-img') || document.getElementById('prev-hotel-img');
 
       if (nameEl) nameEl.textContent = currentGeneratedBooking.hotelName;
       if (roomEl) roomEl.textContent = currentGeneratedBooking.roomType;
@@ -1369,6 +1379,10 @@ function bindPreviewEvents(root) {
       if (priceEl) priceEl.textContent = currentGeneratedBooking.price;
       if (bNumEl) bNumEl.textContent = currentGeneratedBooking.bookingNumber;
       if (pinEl) pinEl.textContent = currentGeneratedBooking.pinCode;
+      if (imgEl && currentGeneratedBooking.hotelImage) {
+        imgEl.src = currentGeneratedBooking.hotelImage;
+        imgEl.style.display = 'block';
+      }
 
       editMode.style.display = 'none';
       displayMode.style.display = 'block';

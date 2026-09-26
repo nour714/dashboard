@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const SCRAPER_SCRIPT_PATH = path.resolve(__dirname, '../scrapers/booking_scraper.py');
-const SCRAPER_TIMEOUT_MS = 16000;
+const SCRAPER_TIMEOUT_MS = 28000;
 
 export const PythonScraperService = {
   /**
