@@ -501,7 +501,7 @@ export function renderHotelsPage() {
         </div>
 
         <div class="card-body">
-          <form id="hotel-ai-form" class="d-flex flex-column gap-md">
+          <form id="hotel-ai-form" class="d-flex flex-column gap-md" onsubmit="return false;">
             <div class="form-grid-3">
               <!-- Field 1: Client Name with Autocomplete -->
               <div class="form-group" style="position: relative;">
@@ -580,7 +580,7 @@ export function renderHotelsPage() {
 
             <!-- Generate Action -->
             <div class="d-flex justify-content-end mt-xs">
-              <button type="submit" id="btn-generate-hotel" class="btn btn-primary d-flex align-items-center gap-xs" style="min-width: 220px;">
+              <button type="button" id="btn-generate-hotel" class="btn btn-primary d-flex align-items-center gap-xs" style="min-width: 220px;">
                 <span class="btn-icon">${icons.sparkles('w-4 h-4')}</span>
                 <span id="btn-generate-text">${escapeHtml(t('hotels.generateBtn'))}</span>
               </button>
@@ -834,17 +834,18 @@ function renderArchiveRows(bookings = []) {
 /**
  * Fetch and refresh saved hotel bookings
  */
-async function loadSavedBookings() {
+async function loadSavedBookings(root) {
+  const container = root || document;
   try {
     const res = await HotelService.getBookings({ search: currentSearch });
     cachedBookings = res.data || [];
-    const tbody = document.getElementById('hotels-table-body');
+    const tbody = container.querySelector('#hotels-table-body') || document.getElementById('hotels-table-body');
     if (tbody) {
       tbody.innerHTML = renderArchiveRows(cachedBookings);
     }
   } catch (err) {
     console.error('[HotelsPage] Failed to load bookings:', err);
-    const tbody = document.getElementById('hotels-table-body');
+    const tbody = container.querySelector('#hotels-table-body') || document.getElementById('hotels-table-body');
     if (tbody) {
       tbody.innerHTML = `
         <tr>
@@ -860,20 +861,22 @@ async function loadSavedBookings() {
 /**
  * Bind interactive events on the Hotels Page
  */
-export function initHotelsPage() {
+export function initHotelsPage(container) {
+  const root = container || document;
   const isAr = i18n.getLanguage() === 'ar';
-  const aiForm = document.getElementById('hotel-ai-form');
-  const clientNameInput = document.getElementById('hotel-client-name');
-  const destinationInput = document.getElementById('hotel-destination');
-  const checkinInput = document.getElementById('hotel-checkin');
-  const checkoutInput = document.getElementById('hotel-checkout');
-  const customerIdInput = document.getElementById('hotel-customer-id');
-  const autocompleteList = document.getElementById('customer-autocomplete-list');
-  const previewSection = document.getElementById('hotel-preview-section');
-  const searchInput = document.getElementById('search-hotel-archive');
+  const aiForm = root.querySelector('#hotel-ai-form') || document.getElementById('hotel-ai-form');
+  const btnGen = root.querySelector('#btn-generate-hotel') || document.getElementById('btn-generate-hotel');
+  const clientNameInput = root.querySelector('#hotel-client-name') || document.getElementById('hotel-client-name');
+  const destinationInput = root.querySelector('#hotel-destination') || document.getElementById('hotel-destination');
+  const checkinInput = root.querySelector('#hotel-checkin') || document.getElementById('hotel-checkin');
+  const checkoutInput = root.querySelector('#hotel-checkout') || document.getElementById('hotel-checkout');
+  const customerIdInput = root.querySelector('#hotel-customer-id') || document.getElementById('hotel-customer-id');
+  const autocompleteList = root.querySelector('#customer-autocomplete-list') || document.getElementById('customer-autocomplete-list');
+  const previewSection = root.querySelector('#hotel-preview-section') || document.getElementById('hotel-preview-section');
+  const searchInput = root.querySelector('#search-hotel-archive') || document.getElementById('search-hotel-archive');
 
   // Load initial saved bookings list
-  loadSavedBookings();
+  loadSavedBookings(root);
 
   // 1. Customer Autocomplete
   if (clientNameInput && autocompleteList) {
@@ -925,7 +928,7 @@ export function initHotelsPage() {
   }
 
   // 2. Quick Destination Chips
-  document.querySelectorAll('.quick-dest-chip').forEach(chip => {
+  root.querySelectorAll('.quick-dest-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       if (destinationInput) {
         destinationInput.value = chip.dataset.dest || '';
@@ -934,61 +937,69 @@ export function initHotelsPage() {
     });
   });
 
-  // 3. AI Generation Form Submission
-  if (aiForm) {
-    aiForm.addEventListener('submit', async (e) => {
+  // 3. AI Generation Handler (safe from any page reload)
+  const handleGenerate = async (e) => {
+    if (e && typeof e.preventDefault === 'function') {
       e.preventDefault();
-      if (isGenerating) return;
+      e.stopPropagation();
+    }
+    if (isGenerating) return false;
 
-      const clientName = clientNameInput?.value.trim();
-      const country = destinationInput?.value.trim();
-      const checkIn = checkinInput?.value;
-      const checkOut = checkoutInput?.value;
-      const customerId = customerIdInput?.value || null;
+    const clientName = clientNameInput?.value.trim();
+    const country = destinationInput?.value.trim();
+    const checkIn = checkinInput?.value;
+    const checkOut = checkoutInput?.value;
+    const customerId = customerIdInput?.value || null;
 
-      if (!clientName || !country || !checkIn || !checkOut) {
-        showToast(isAr ? 'يرجى ملء جميع الحقول المطلوبة' : 'Please fill all required fields', 'warning');
-        return;
+    if (!clientName || !country || !checkIn || !checkOut) {
+      showToast(isAr ? 'يرجى ملء جميع الحقول المطلوبة' : 'Please fill all required fields', 'warning');
+      return false;
+    }
+
+    if (new Date(checkOut) <= new Date(checkIn)) {
+      showToast(isAr ? 'تاريخ الخروج يجب أن يكون بعد تاريخ الدخول' : 'Check-out date must be after check-in date', 'warning');
+      return false;
+    }
+
+    isGenerating = true;
+    const btnGenText = root.querySelector('#btn-generate-text') || document.getElementById('btn-generate-text');
+    if (btnGen) btnGen.disabled = true;
+    if (btnGenText) btnGenText.textContent = t('hotels.generating');
+
+    try {
+      const res = await HotelService.generateAiBooking({
+        clientName,
+        country,
+        checkIn,
+        checkOut,
+        customerId
+      });
+
+      currentGeneratedBooking = res.data;
+      if (previewSection) {
+        previewSection.innerHTML = renderPreviewCard(currentGeneratedBooking);
+        previewSection.style.display = 'block';
+        previewSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        bindPreviewEvents(root);
       }
 
-      if (new Date(checkOut) <= new Date(checkIn)) {
-        showToast(isAr ? 'تاريخ الخروج يجب أن يكون بعد تاريخ الدخول' : 'Check-out date must be after check-in date', 'warning');
-        return;
-      }
+      showToast(isAr ? 'تم توليد بيانات الحجز الفندقي بنجاح!' : 'Hotel booking generated successfully!', 'success');
+    } catch (err) {
+      console.error('[HotelsPage] AI generation error:', err);
+      showToast(err.message || (isAr ? 'فشل توليد الحجز بالذكاء الاصطناعي' : 'Failed to generate hotel booking'), 'error');
+    } finally {
+      isGenerating = false;
+      if (btnGen) btnGen.disabled = false;
+      if (btnGenText) btnGenText.textContent = t('hotels.generateBtn');
+    }
+    return false;
+  };
 
-      isGenerating = true;
-      const btnGen = document.getElementById('btn-generate-hotel');
-      const btnGenText = document.getElementById('btn-generate-text');
-      if (btnGen) btnGen.disabled = true;
-      if (btnGenText) btnGenText.textContent = t('hotels.generating');
-
-      try {
-        const res = await HotelService.generateAiBooking({
-          clientName,
-          country,
-          checkIn,
-          checkOut,
-          customerId
-        });
-
-        currentGeneratedBooking = res.data;
-        if (previewSection) {
-          previewSection.innerHTML = renderPreviewCard(currentGeneratedBooking);
-          previewSection.style.display = 'block';
-          previewSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          bindPreviewEvents();
-        }
-
-        showToast(isAr ? 'تم توليد بيانات الحجز الفندقي بنجاح!' : 'Hotel booking generated successfully!', 'success');
-      } catch (err) {
-        console.error('[HotelsPage] AI generation error:', err);
-        showToast(err.message || (isAr ? 'فشل توليد الحجز بالذكاء الاصطناعي' : 'Failed to generate hotel booking'), 'error');
-      } finally {
-        isGenerating = false;
-        if (btnGen) btnGen.disabled = false;
-        if (btnGenText) btnGenText.textContent = t('hotels.generateBtn');
-      }
-    });
+  if (aiForm) {
+    aiForm.addEventListener('submit', handleGenerate);
+  }
+  if (btnGen) {
+    btnGen.addEventListener('click', handleGenerate);
   }
 
   // 4. Search Archive
@@ -998,13 +1009,13 @@ export function initHotelsPage() {
       clearTimeout(timeout);
       timeout = setTimeout(() => {
         currentSearch = searchInput.value.trim();
-        loadSavedBookings();
+        loadSavedBookings(root);
       }, 300);
     });
   }
 
   // 5. Delegate Reprint & Delete actions on Table
-  const table = document.getElementById('hotels-archive-table');
+  const table = root.querySelector('#hotels-archive-table') || document.getElementById('hotels-archive-table');
   if (table) {
     table.addEventListener('click', async (e) => {
       const reprintBtn = e.target.closest('.btn-reprint-voucher');
@@ -1024,7 +1035,7 @@ export function initHotelsPage() {
         try {
           await HotelService.deleteBooking(id);
           showToast(isAr ? 'تم حذف الحجز بنجاح' : 'Hotel booking deleted successfully', 'success');
-          loadSavedBookings();
+          loadSavedBookings(root);
         } catch (err) {
           showToast(err.message || 'Failed to delete booking', 'error');
         }
@@ -1036,15 +1047,16 @@ export function initHotelsPage() {
 /**
  * Bind events inside the dynamically rendered Preview Card
  */
-function bindPreviewEvents() {
+function bindPreviewEvents(root) {
+  const container = root || document;
   const isAr = i18n.getLanguage() === 'ar';
-  const printBtn = document.getElementById('btn-print-voucher-now');
-  const saveBtn = document.getElementById('btn-save-hotel-db');
-  const toggleEditBtn = document.getElementById('btn-toggle-edit-hotel');
-  const displayMode = document.getElementById('preview-display-mode');
-  const editMode = document.getElementById('preview-edit-mode');
-  const cancelEditBtn = document.getElementById('btn-cancel-edit');
-  const applyEditBtn = document.getElementById('btn-save-inline-edit');
+  const printBtn = container.querySelector('#btn-print-voucher-now') || document.getElementById('btn-print-voucher-now');
+  const saveBtn = container.querySelector('#btn-save-hotel-db') || document.getElementById('btn-save-hotel-db');
+  const toggleEditBtn = container.querySelector('#btn-toggle-edit-hotel') || document.getElementById('btn-toggle-edit-hotel');
+  const displayMode = container.querySelector('#preview-display-mode') || document.getElementById('preview-display-mode');
+  const editMode = container.querySelector('#preview-edit-mode') || document.getElementById('preview-edit-mode');
+  const cancelEditBtn = container.querySelector('#btn-cancel-edit') || document.getElementById('btn-cancel-edit');
+  const applyEditBtn = container.querySelector('#btn-save-inline-edit') || document.getElementById('btn-save-inline-edit');
 
   // Print voucher button
   if (printBtn) {
@@ -1061,7 +1073,7 @@ function bindPreviewEvents() {
       if (!currentGeneratedBooking || isSaving) return;
       isSaving = true;
       saveBtn.disabled = true;
-      const saveText = document.getElementById('save-btn-text');
+      const saveText = container.querySelector('#save-btn-text') || document.getElementById('save-btn-text');
       if (saveText) saveText.textContent = t('hotels.saving');
 
       try {
@@ -1070,7 +1082,7 @@ function bindPreviewEvents() {
         saveBtn.classList.remove('btn-outline');
         saveBtn.classList.add('btn-success');
         if (saveText) saveText.textContent = isAr ? '✓ تم الحفظ' : '✓ Saved';
-        loadSavedBookings();
+        loadSavedBookings(container);
       } catch (err) {
         showToast(err.message || 'Failed to save booking', 'error');
         saveBtn.disabled = false;
@@ -1098,12 +1110,12 @@ function bindPreviewEvents() {
 
   if (applyEditBtn && displayMode && editMode) {
     applyEditBtn.addEventListener('click', () => {
-      const editHotelName = document.getElementById('edit-hotel-name')?.value.trim();
-      const editRoomType = document.getElementById('edit-room-type')?.value.trim();
-      const editBoardBasis = document.getElementById('edit-board-basis')?.value.trim();
-      const editAddress = document.getElementById('edit-hotel-address')?.value.trim();
-      const editStars = parseInt(document.getElementById('edit-hotel-stars')?.value || '5', 10);
-      const editConfNum = document.getElementById('edit-confirmation-num')?.value.trim();
+      const editHotelName = (container.querySelector('#edit-hotel-name') || document.getElementById('edit-hotel-name'))?.value.trim();
+      const editRoomType = (container.querySelector('#edit-room-type') || document.getElementById('edit-room-type'))?.value.trim();
+      const editBoardBasis = (container.querySelector('#edit-board-basis') || document.getElementById('edit-board-basis'))?.value.trim();
+      const editAddress = (container.querySelector('#edit-hotel-address') || document.getElementById('edit-hotel-address'))?.value.trim();
+      const editStars = parseInt((container.querySelector('#edit-hotel-stars') || document.getElementById('edit-hotel-stars'))?.value || '5', 10);
+      const editConfNum = (container.querySelector('#edit-confirmation-num') || document.getElementById('edit-confirmation-num'))?.value.trim();
 
       if (editHotelName) currentGeneratedBooking.hotelName = editHotelName;
       if (editRoomType) currentGeneratedBooking.roomType = editRoomType;
@@ -1113,11 +1125,11 @@ function bindPreviewEvents() {
       if (editConfNum) currentGeneratedBooking.confirmationNumber = editConfNum;
 
       // Update preview card displays
-      const nameEl = document.getElementById('prev-hotel-name');
-      const roomEl = document.getElementById('prev-room');
-      const boardEl = document.getElementById('prev-board');
-      const addrEl = document.getElementById('prev-address');
-      const starsEl = document.getElementById('prev-stars');
+      const nameEl = container.querySelector('#prev-hotel-name') || document.getElementById('prev-hotel-name');
+      const roomEl = container.querySelector('#prev-room') || document.getElementById('prev-room');
+      const boardEl = container.querySelector('#prev-board') || document.getElementById('prev-board');
+      const addrEl = container.querySelector('#prev-address') || document.getElementById('prev-address');
+      const starsEl = container.querySelector('#prev-stars') || document.getElementById('prev-stars');
 
       if (nameEl) nameEl.textContent = currentGeneratedBooking.hotelName;
       if (roomEl) roomEl.textContent = currentGeneratedBooking.roomType;
@@ -1134,6 +1146,10 @@ function bindPreviewEvents() {
 
 export const HotelsPage = {
   render: renderHotelsPage,
+  afterRender(container) {
+    initHotelsPage(container);
+  },
   init: initHotelsPage
 };
+
 
