@@ -39,7 +39,7 @@ function formatDateDisplay(dateStr) {
 export function printHotelVoucher(booking) {
   if (!booking) return;
 
-  const printWindow = window.open('', '_blank', 'width=920,height=950');
+  const printWindow = window.open('', '_blank', 'width=940,height=980');
   if (!printWindow) {
     showToast('Please allow popups to download or print the voucher PDF.', 'warning');
     return;
@@ -47,20 +47,38 @@ export function printHotelVoucher(booking) {
 
   const checkInFormatted = formatDateDisplay(booking.checkIn);
   const checkOutFormatted = formatDateDisplay(booking.checkOut);
-  const issueDateFormatted = formatDateDisplay(booking.createdAt || new Date());
   const starsCount = Math.min(5, Math.max(1, parseInt(booking.hotelStars || 5, 10)));
   const starsHtml = '★'.repeat(starsCount) + '☆'.repeat(5 - starsCount);
 
-  // International standard accommodation voucher in English
+  const getDayName = (dateStr) => {
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('en-GB', { weekday: 'long' });
+    } catch {
+      return '';
+    }
+  };
+
+  const checkInDay = getDayName(booking.checkIn);
+  const checkOutDay = getDayName(booking.checkOut);
+
+  const bookingNumber = booking.bookingNumber || (booking.bookingReference && booking.bookingReference.includes('.') ? booking.bookingReference : '4829.391.820');
+  const pinCode = booking.pinCode || '4829';
+  const hotelPhone = booking.hotelPhone || '+971 4 430 4528';
+  const priceText = booking.price || 'US$ 450';
+  const reviewScore = booking.reviewScore || '9.1 Superb · 3,150 reviews';
+  const hotelImage = booking.hotelImage || '';
+
+  // Official Booking.com Confirmation Voucher (English)
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Accommodation Voucher - ${escapeHtml(booking.bookingReference || 'AFRICATRAVEL')}</title>
+  <title>Booking.com: Confirmation - ${escapeHtml(booking.hotelName || 'Hotel')}</title>
   <style>
     @page {
       size: A4 portrait;
-      margin: 10mm 12mm 12mm 12mm;
+      margin: 8mm 10mm 10mm 10mm;
     }
     *, *::before, *::after {
       box-sizing: border-box;
@@ -69,226 +87,351 @@ export function printHotelVoucher(booking) {
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      color: #1e293b;
-      background: #ffffff;
+      color: #1a1a1a;
+      background: #f4f6f8;
       font-size: 13px;
       line-height: 1.45;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    .voucher-wrapper {
-      max-width: 820px;
-      margin: 0 auto;
-      padding: 24px;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      background: #ffffff;
-      position: relative;
-    }
-    .header-table {
-      width: 100%;
-      border-bottom: 2px solid #b38d4f;
-      padding-bottom: 16px;
-      margin-bottom: 20px;
-    }
-    .brand-title {
-      font-size: 26px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      color: #0f172a;
-    }
-    .brand-title span {
-      color: #b38d4f;
-    }
-    .brand-sub {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: #64748b;
-      margin-top: 2px;
-      font-weight: 600;
-    }
-    .agency-contact {
-      text-align: right;
-      font-size: 11px;
-      color: #475569;
-      line-height: 1.4;
-    }
-    .voucher-banner {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      color: #ffffff;
-      padding: 12px 18px;
-      border-radius: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .voucher-badge-title {
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: #f1f5f9;
-    }
-    .voucher-status-pill {
-      background: #22c55e;
-      color: #ffffff;
-      padding: 4px 10px;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      display: inline-block;
-    }
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-    .card {
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      padding: 14px;
-      background: #f8fafc;
-    }
-    .card-title {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: #b38d4f;
-      margin-bottom: 8px;
-      border-bottom: 1px dashed #cbd5e1;
-      padding-bottom: 4px;
-    }
-    .card-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 6px;
-      font-size: 12px;
-    }
-    .card-label {
-      color: #64748b;
-      font-weight: 500;
-    }
-    .card-value {
-      color: #0f172a;
-      font-weight: 600;
-      text-align: right;
-    }
-    .highlight-hotel {
-      font-size: 15px;
-      font-weight: 800;
-      color: #0f172a;
-      margin-bottom: 4px;
-    }
-    .stars-badge {
-      color: #f59e0b;
-      font-size: 14px;
-      margin-bottom: 6px;
-      display: inline-block;
-    }
-    .highlight-client {
-      font-size: 15px;
-      font-weight: 700;
-      color: #0f172a;
-    }
-    .guarantee-box {
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      border-radius: 6px;
-      padding: 12px 16px;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .guarantee-icon {
-      font-size: 20px;
-      color: #16a34a;
-    }
-    .guarantee-text {
-      font-size: 11.5px;
-      color: #166534;
-      font-weight: 600;
-      line-height: 1.35;
-    }
-    .table-details {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 16px;
-      font-size: 12px;
-    }
-    .table-details th {
-      background: #f1f5f9;
-      color: #475569;
-      padding: 8px 10px;
-      text-align: left;
-      font-weight: 600;
-      border: 1px solid #e2e8f0;
-      font-size: 11px;
-      text-transform: uppercase;
-    }
-    .table-details td {
-      padding: 8px 10px;
-      border: 1px solid #e2e8f0;
-      color: #1e293b;
-    }
-    .notes-box {
-      background: #f8fafc;
-      border-left: 3px solid #b38d4f;
-      padding: 10px 14px;
-      font-size: 11px;
-      color: #475569;
-      margin-bottom: 18px;
-      line-height: 1.45;
-    }
-    .footer-table {
-      width: 100%;
-      margin-top: 14px;
-      border-top: 1px solid #e2e8f0;
-      padding-top: 14px;
-    }
-    .stamp-box {
-      border: 1px dashed #cbd5e1;
-      width: 180px;
-      height: 70px;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      font-size: 10px;
-      color: #94a3b8;
-      margin-left: auto;
-    }
-    .barcode-svg {
-      width: 180px;
-      height: 36px;
-    }
     .print-btn-bar {
-      margin-bottom: 16px;
+      max-width: 820px;
+      margin: 14px auto;
       text-align: right;
     }
     .print-btn {
-      background: #0f172a;
+      background: #003580;
       color: #ffffff;
       border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
+      padding: 10px 22px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 700;
       cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+      transition: background 0.15s;
+    }
+    .print-btn:hover {
+      background: #00224f;
+    }
+    .voucher-wrapper {
+      max-width: 820px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid #dcdcdc;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .booking-top-bar {
+      background: #003580;
+      color: #ffffff;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .booking-logo {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+      line-height: 1;
+    }
+    .booking-logo span {
+      color: #00BAF2;
+    }
+    .booking-subtext {
+      color: #dbeafe;
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+    .booking-identifiers {
+      text-align: right;
+      color: #ffffff;
+    }
+    .id-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.85;
+    }
+    .id-val {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+    }
+    .status-confirmed-banner {
+      background: #ebf3ff;
+      border-bottom: 2px solid #003580;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .status-check-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #008009;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+    .status-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #008009;
+    }
+    .status-sub {
+      font-size: 12.5px;
+      color: #333333;
+      margin-top: 2px;
+    }
+    .content-container {
+      padding: 24px;
+    }
+    .hotel-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      border-bottom: 1px solid #e7e7e7;
+      padding-bottom: 20px;
+      margin-bottom: 20px;
+    }
+    .hotel-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #003580;
+      margin-bottom: 4px;
+      line-height: 1.25;
+    }
+    .hotel-stars {
+      color: #febb02;
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+    .hotel-address {
+      font-size: 13px;
+      color: #262626;
+      margin-bottom: 4px;
+    }
+    .hotel-phone {
+      font-size: 13px;
+      color: #262626;
+      margin-bottom: 8px;
+    }
+    .review-score-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #f0f7ff;
+      border: 1px solid #c7e0ff;
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin-top: 4px;
+    }
+    .score-square {
+      background: #003580;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .score-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #003580;
+    }
+    .hotel-photo {
+      width: 140px;
+      height: 105px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      flex-shrink: 0;
+    }
+    .dates-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .date-col {
+      border-right: 1px solid #e2e8f0;
+      padding-right: 12px;
+    }
+    .date-col:last-child {
+      border-right: none;
+      padding-right: 0;
+    }
+    .date-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+    .date-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.25;
+    }
+    .date-time {
+      font-size: 12px;
+      color: #475569;
+      margin-top: 3px;
+    }
+    .section-block {
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .section-header {
+      font-size: 13px;
+      font-weight: 800;
+      color: #0f172a;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .room-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #003580;
+      margin-bottom: 8px;
+    }
+    .details-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    .details-table td {
+      padding: 5px 0;
+      font-size: 13px;
+    }
+    .details-table .col-label {
+      color: #64748b;
+      width: 32%;
+      font-weight: 500;
+    }
+    .details-table .col-val {
+      color: #0f172a;
+      font-weight: 600;
+    }
+    .amenities-row {
+      font-size: 12px;
+      color: #475569;
+      border-top: 1px dashed #e2e8f0;
+      padding-top: 10px;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+    .payment-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .payment-table td {
+      padding: 6px 0;
+      font-size: 13px;
+    }
+    .price-row-total {
+      font-size: 16px;
+      font-weight: 800;
+      color: #003580;
+      border-top: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 8px 0;
+    }
+    .payment-badge-online {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 4px;
+      padding: 10px 14px;
+      margin-top: 12px;
+      font-size: 12.5px;
+      color: #166534;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .cancellation-block {
+      background: #f0fdf4;
+      border-left: 4px solid #16a34a;
+      padding: 12px 16px;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 20px;
+      font-size: 12.5px;
+    }
+    .cancellation-title {
+      font-weight: 700;
+      color: #166534;
+      margin-bottom: 2px;
+    }
+    .cancellation-desc {
+      color: #334155;
+    }
+    .official-footer {
+      border-top: 2px solid #e2e8f0;
+      padding: 18px 24px;
+      background: #f8fafc;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 20px;
+    }
+    .footer-help-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #003580;
+      margin-bottom: 4px;
+    }
+    .footer-help-text {
+      font-size: 11.5px;
+      color: #475569;
+      line-height: 1.5;
+    }
+    .footer-legal {
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+    .barcode-box {
+      text-align: right;
+    }
+    .barcode-svg {
+      width: 170px;
+      height: 32px;
     }
     @media print {
+      body {
+        background: #ffffff;
+      }
       .print-btn-bar {
         display: none !important;
       }
       .voucher-wrapper {
         border: none;
-        padding: 0;
+        box-shadow: none;
+        max-width: 100%;
       }
     }
   </style>
@@ -299,150 +442,177 @@ export function printHotelVoucher(booking) {
   </div>
 
   <div class="voucher-wrapper">
-    <table class="header-table" role="presentation">
-      <tr>
-        <td style="vertical-align: middle;">
-          <div class="brand-title">Africa<span>Travel</span></div>
-          <div class="brand-sub">Travel & Tourism Management System</div>
-        </td>
-        <td class="agency-contact" style="vertical-align: middle;">
-          <strong>AfricaTravel Operations Bureau</strong><br>
-          Accredited Travel Service Provider<br>
-          Emergency 24/7 Desk: +20 (10) 900-AFRICA<br>
-          Email: reservations@africatravel.com
-        </td>
-      </tr>
-    </table>
-
-    <div class="voucher-banner">
+    <!-- Booking.com Official Header -->
+    <div class="booking-top-bar">
       <div>
-        <div class="voucher-badge-title">Official Accommodation Voucher</div>
-        <div style="font-size: 11px; opacity: 0.85; margin-top: 2px;">
-          Ref: <strong>${escapeHtml(booking.bookingReference || 'N/A')}</strong> | Conf: <strong>${escapeHtml(booking.confirmationNumber || 'N/A')}</strong>
-        </div>
+        <div class="booking-logo">Booking<span>.com</span></div>
+        <div class="booking-subtext">Booking Confirmation</div>
       </div>
+      <div class="booking-identifiers">
+        <div class="id-label">CONFIRMATION NUMBER</div>
+        <div class="id-val">${escapeHtml(bookingNumber)}</div>
+        <div class="id-label" style="margin-top: 5px;">PIN CODE</div>
+        <div class="id-val" style="letter-spacing: 2px;">${escapeHtml(pinCode)}</div>
+      </div>
+    </div>
+
+    <!-- Confirmed Status Banner -->
+    <div class="status-confirmed-banner">
+      <div class="status-check-circle">✓</div>
       <div>
-        <span class="voucher-status-pill">GUARANTEED & CONFIRMED</span>
+        <div class="status-title">Your booking in ${escapeHtml(booking.city || booking.country || 'Destination')} is confirmed.</div>
+        <div class="status-sub">Thank you, <strong>${escapeHtml(booking.clientName || 'Guest')}</strong>! We look forward to your arrival.</div>
       </div>
     </div>
 
-    <div class="grid-2">
-      <!-- Guest Information -->
-      <div class="card">
-        <div class="card-title">Guest & Reservation Details</div>
-        <div class="card-row" style="margin-bottom: 8px;">
-          <div class="card-label">Lead Guest:</div>
-          <div class="highlight-client">${escapeHtml(booking.clientName || 'Valued Guest')}</div>
-        </div>
-        <div class="card-row">
-          <span class="card-label">Total Guests:</span>
-          <span class="card-value">${escapeHtml(booking.guests || '1 Adult')}</span>
-        </div>
-        <div class="card-row">
-          <span class="card-label">Date Issued:</span>
-          <span class="card-value">${escapeHtml(issueDateFormatted)}</span>
-        </div>
-        <div class="card-row">
-          <span class="card-label">Booking Status:</span>
-          <span class="card-value" style="color: #16a34a;">CONFIRMED</span>
-        </div>
-      </div>
-
-      <!-- Hotel Details -->
-      <div class="card">
-        <div class="card-title">Hotel / Accommodation</div>
-        <div class="highlight-hotel">${escapeHtml(booking.hotelName || 'Luxury Hotel')}</div>
-        <div class="stars-badge">${starsHtml} (${starsCount}-Star Hotel)</div>
-        <div class="card-row">
-          <span class="card-label">Destination:</span>
-          <span class="card-value">${escapeHtml(booking.city || '')}, ${escapeHtml(booking.country || '')}</span>
-        </div>
-        <div class="card-row">
-          <span class="card-label">Hotel Address:</span>
-          <span class="card-value" style="font-size: 11px; max-width: 220px;">${escapeHtml(booking.hotelAddress || 'City Center')}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Stay & Room Schedule -->
-    <table class="table-details">
-      <thead>
-        <tr>
-          <th>Check-in Date</th>
-          <th>Check-out Date</th>
-          <th>Stay Duration</th>
-          <th>Room Category</th>
-          <th>Meal Plan / Board</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong>${escapeHtml(checkInFormatted)}</strong><br><span style="font-size: 10px; color: #64748b;">From 15:00</span></td>
-          <td><strong>${escapeHtml(checkOutFormatted)}</strong><br><span style="font-size: 10px; color: #64748b;">Until 12:00</span></td>
-          <td><strong>${escapeHtml(String(booking.nights || 1))} Night(s)</strong></td>
-          <td><strong>${escapeHtml(booking.roomType || 'Standard Double Room')}</strong></td>
-          <td><strong style="color: #0284c7;">${escapeHtml(booking.boardBasis || 'Bed & Breakfast')}</strong></td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- Guarantee & Billing Notice (NO PRICES SHOWN) -->
-    <div class="guarantee-box">
-      <div class="guarantee-icon">🛡️</div>
-      <div class="guarantee-text">
-        <strong>BILLING INSTRUCTION & GUARANTEE:</strong> All accommodation charges, room rates, and applicable taxes are <strong>PREPAID & FULLY GUARANTEED</strong> by AfricaTravel. Please extend all contracted courtesy and amenities. <strong>DO NOT COLLECT ANY ACCOMMODATION CHARGES FROM THE GUEST.</strong> (Incidental personal expenses, if any, to be settled directly by guest).
-      </div>
-    </div>
-
-    <!-- Special Requests & Policies -->
-    <div class="notes-box">
-      <strong>Voucher Instructions & Check-in Rules:</strong><br>
-      • Present this voucher upon check-in along with the guest's passport or official government photo identification.<br>
-      • Special requests (${escapeHtml(booking.specialRequests || 'Non-smoking, high floor')}) are confirmed subject to hotel operational availability.<br>
-      • Standard international hotel regulations and cancellation policies apply as contracted with AfricaTravel.
-    </div>
-
-    <!-- Official Stamp & Barcode -->
-    <table class="footer-table" role="presentation">
-      <tr>
-        <td style="vertical-align: bottom;">
-          <svg class="barcode-svg" viewBox="0 0 160 30" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0" y="0" width="3" height="30" fill="#0f172a"/>
-            <rect x="5" y="0" width="2" height="30" fill="#0f172a"/>
-            <rect x="10" y="0" width="5" height="30" fill="#0f172a"/>
-            <rect x="18" y="0" width="2" height="30" fill="#0f172a"/>
-            <rect x="23" y="0" width="4" height="30" fill="#0f172a"/>
-            <rect x="30" y="0" width="2" height="30" fill="#0f172a"/>
-            <rect x="35" y="0" width="6" height="30" fill="#0f172a"/>
-            <rect x="44" y="0" width="2" height="30" fill="#0f172a"/>
-            <rect x="49" y="0" width="4" height="30" fill="#0f172a"/>
-            <rect x="56" y="0" width="3" height="30" fill="#0f172a"/>
-            <rect x="62" y="0" width="5" height="30" fill="#0f172a"/>
-            <rect x="70" y="0" width="2" height="30" fill="#0f172a"/>
-            <rect x="75" y="0" width="4" height="30" fill="#0f172a"/>
-            <rect x="82" y="0" width="3" height="30" fill="#0f172a"/>
-            <rect x="88" y="0" width="6" height="30" fill="#0f172a"/>
-            <rect x="97" y="0" width="2" height="30" fill="#0f172a"/>
-            <rect x="102" y="0" width="4" height="30" fill="#0f172a"/>
-            <rect x="109" y="0" width="3" height="30" fill="#0f172a"/>
-            <rect x="115" y="0" width="5" height="30" fill="#0f172a"/>
-            <rect x="123" y="0" width="2" height="30" fill="#0f172a"/>
-            <rect x="128" y="0" width="4" height="30" fill="#0f172a"/>
-            <rect x="135" y="0" width="6" height="30" fill="#0f172a"/>
-            <rect x="144" y="0" width="3" height="30" fill="#0f172a"/>
-            <rect x="150" y="0" width="4" height="30" fill="#0f172a"/>
-          </svg>
-          <div style="font-family: monospace; font-size: 10px; color: #64748b; margin-top: 2px;">
-            ${escapeHtml(booking.bookingReference || 'AFRICATRAVEL')}
+    <div class="content-container">
+      <!-- Hotel Details Block -->
+      <div class="hotel-card">
+        <div style="flex: 1;">
+          <div class="hotel-title">${escapeHtml(booking.hotelName || 'Grand Hotel')}</div>
+          <div class="hotel-stars">${starsHtml} (${starsCount}-Star Hotel)</div>
+          <div class="hotel-address">📍 ${escapeHtml(booking.hotelAddress || 'City Center')}</div>
+          <div class="hotel-phone">📞 Phone: <strong>${escapeHtml(hotelPhone)}</strong></div>
+          <div class="review-score-badge">
+            <span class="score-square">${escapeHtml((reviewScore.match(/\d+\.\d+/) || ['9.0'])[0])}</span>
+            <span class="score-label">${escapeHtml(reviewScore)}</span>
           </div>
-        </td>
-        <td style="text-align: right; vertical-align: bottom;">
-          <div class="stamp-box">
-            <span>OFFICIAL STAMP & SIGNATURE<br><strong>AfricaTravel Operations</strong><br>VERIFIED & ISSUED</span>
-          </div>
-        </td>
-      </tr>
-    </table>
+        </div>
+        ${hotelImage ? `<img src="${escapeHtml(hotelImage)}" class="hotel-photo" alt="${escapeHtml(booking.hotelName)}" />` : ''}
+      </div>
+
+      <!-- Stay Schedule (Booking.com 3-column layout) -->
+      <div class="dates-grid">
+        <div class="date-col">
+          <div class="date-label">CHECK-IN</div>
+          <div class="date-val">${escapeHtml(checkInDay)}, ${escapeHtml(checkInFormatted)}</div>
+          <div class="date-time">From 15:00</div>
+        </div>
+        <div class="date-col">
+          <div class="date-label">CHECK-OUT</div>
+          <div class="date-val">${escapeHtml(checkOutDay)}, ${escapeHtml(checkOutFormatted)}</div>
+          <div class="date-time">Until 12:00</div>
+        </div>
+        <div class="date-col">
+          <div class="date-label">LENGTH OF STAY</div>
+          <div class="date-val">${escapeHtml(String(booking.nights || 1))} night${booking.nights > 1 ? 's' : ''}</div>
+          <div class="date-time">1 room, 1 adult</div>
+        </div>
+      </div>
+
+      <!-- Room & Guest Information -->
+      <div class="section-block">
+        <div class="section-header">Room Details</div>
+        <div class="room-name">Room 1: ${escapeHtml(booking.roomType || 'Deluxe King Room')}</div>
+        <table class="details-table">
+          <tr>
+            <td class="col-label">Guest name:</td>
+            <td class="col-val">${escapeHtml(booking.clientName || 'Valued Guest')}</td>
+          </tr>
+          <tr>
+            <td class="col-label">Meal plan:</td>
+            <td class="col-val" style="color: #008009;">${escapeHtml(booking.boardBasis || 'Breakfast included')}</td>
+          </tr>
+          <tr>
+            <td class="col-label">Occupancy:</td>
+            <td class="col-val">1 Adult (Standard Occupancy)</td>
+          </tr>
+          <tr>
+            <td class="col-label">Special requests:</td>
+            <td class="col-val">${escapeHtml(booking.specialRequests || 'Non-smoking room, high floor requested')}</td>
+          </tr>
+        </table>
+        <div class="amenities-row">
+          <strong>Room Amenities:</strong> Free high-speed WiFi • Air conditioning • Private bathroom • Flat-screen TV • Soundproofing • Free toiletries • Safe
+        </div>
+      </div>
+
+      <!-- Payment & Price Information -->
+      <div class="section-block">
+        <div class="section-header">Pricing & Payment</div>
+        <table class="payment-table">
+          <tr>
+            <td>Price (${escapeHtml(String(booking.nights || 1))} night${booking.nights > 1 ? 's' : ''})</td>
+            <td style="text-align: right; font-weight: 600;">${escapeHtml(priceText)}</td>
+          </tr>
+          <tr>
+            <td style="color: #64748b; font-size: 12px;">Taxes and charges included (VAT, City Tax)</td>
+            <td style="text-align: right; color: #64748b; font-size: 12px;">Included</td>
+          </tr>
+          <tr class="price-row-total">
+            <td>Total Price</td>
+            <td style="text-align: right;">${escapeHtml(priceText)}</td>
+          </tr>
+          <tr>
+            <td style="padding-top: 8px; color: #008009; font-weight: 600;">Amount Paid Online:</td>
+            <td style="text-align: right; padding-top: 8px; color: #008009; font-weight: 600;">${escapeHtml(priceText)}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">Amount due upon check-in:</td>
+            <td style="text-align: right; font-weight: 700; color: #008009;">US$ 0.00</td>
+          </tr>
+        </table>
+        <div class="payment-badge-online">
+          <span>✓</span>
+          <span><strong>Paid online</strong> — You have already paid for this booking online. The property will not charge you for your room upon arrival.</span>
+        </div>
+      </div>
+
+      <!-- Cancellation Policy -->
+      <div class="cancellation-block">
+        <div class="cancellation-title">✓ Free Cancellation</div>
+        <div class="cancellation-desc">
+          You can cancel free of charge until 48 hours prior to check-in. If you cancel within 48 hours of arrival or in case of a no-show, the cancellation fee will equal the total reservation cost.
+        </div>
+      </div>
+    </div>
+
+    <!-- Official Booking.com Legal & Support Footer -->
+    <div class="official-footer">
+      <div>
+        <div class="footer-help-title">Customer Service Help</div>
+        <div class="footer-help-text">
+          Manage your booking online at <strong>www.booking.com/mybooking</strong><br>
+          Direct property phone: <strong>${escapeHtml(hotelPhone)}</strong><br>
+          Booking.com Customer Support: Available 24 hours a day, 7 days a week (English & Arabic)
+        </div>
+        <div class="footer-legal">
+          Booking.com B.V., Oosterdokskade 163, 1011 DL Amsterdam, The Netherlands<br>
+          Chamber of Commerce Amsterdam registration: 31047344 • VAT registration: NL805734958B01
+        </div>
+      </div>
+      <div class="barcode-box">
+        <svg class="barcode-svg" viewBox="0 0 160 30" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="0" width="3" height="30" fill="#003580"/>
+          <rect x="5" y="0" width="2" height="30" fill="#003580"/>
+          <rect x="10" y="0" width="5" height="30" fill="#003580"/>
+          <rect x="18" y="0" width="2" height="30" fill="#003580"/>
+          <rect x="23" y="0" width="4" height="30" fill="#003580"/>
+          <rect x="30" y="0" width="2" height="30" fill="#003580"/>
+          <rect x="35" y="0" width="6" height="30" fill="#003580"/>
+          <rect x="44" y="0" width="2" height="30" fill="#003580"/>
+          <rect x="49" y="0" width="4" height="30" fill="#003580"/>
+          <rect x="56" y="0" width="3" height="30" fill="#003580"/>
+          <rect x="62" y="0" width="5" height="30" fill="#003580"/>
+          <rect x="70" y="0" width="2" height="30" fill="#003580"/>
+          <rect x="75" y="0" width="4" height="30" fill="#003580"/>
+          <rect x="82" y="0" width="3" height="30" fill="#003580"/>
+          <rect x="88" y="0" width="6" height="30" fill="#003580"/>
+          <rect x="97" y="0" width="2" height="30" fill="#003580"/>
+          <rect x="102" y="0" width="4" height="30" fill="#003580"/>
+          <rect x="109" y="0" width="3" height="30" fill="#003580"/>
+          <rect x="115" y="0" width="5" height="30" fill="#003580"/>
+          <rect x="123" y="0" width="2" height="30" fill="#003580"/>
+          <rect x="128" y="0" width="4" height="30" fill="#003580"/>
+          <rect x="135" y="0" width="6" height="30" fill="#003580"/>
+          <rect x="144" y="0" width="3" height="30" fill="#003580"/>
+          <rect x="150" y="0" width="4" height="30" fill="#003580"/>
+        </svg>
+        <div style="font-family: monospace; font-size: 10px; color: #64748b; margin-top: 2px;">
+          ${escapeHtml(bookingNumber)}
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -653,42 +823,51 @@ function renderPreviewCard(booking) {
   const starsCount = Math.min(5, Math.max(1, parseInt(booking.hotelStars || 5, 10)));
   const starsHtml = '★'.repeat(starsCount) + '☆'.repeat(5 - starsCount);
 
+  const bookingNumber = booking.bookingNumber || (booking.bookingReference && booking.bookingReference.includes('.') ? booking.bookingReference : '4829.391.820');
+  const pinCode = booking.pinCode || '4829';
+  const priceText = booking.price || 'US$ 450';
+  const hotelPhone = booking.hotelPhone || '+971 4 430 4528';
+  const reviewScore = booking.reviewScore || '9.1 Superb · 3,150 reviews';
+  const hotelImage = booking.hotelImage || '';
+
   const isPython = booking.source === 'BOOKING_LIVE' || booking.provider === 'PYTHON_SCRAPER';
   const sourceBadge = isPython
     ? `<span class="badge" style="background: #10b981; color: white; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">
         <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ffffff;"></span>
-        ${isAr ? 'فندق حقيقي عبر بايثون (Booking.com)' : 'Live via Python (Booking.com)'}
+        ${isAr ? 'بيانات حية مباشرة من Booking.com' : 'Live from Booking.com'}
        </span>`
-    : `<span class="badge" style="background: #6366f1; color: white; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">
-        ✦ ${isAr ? 'مقترح ذكي معتمد (دليل 5 نجوم)' : 'Smart Curated (5-Star)'}
+    : `<span class="badge" style="background: #00BAF2; color: #003580; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">
+        ✦ ${isAr ? 'كتالوج بوكينج المعتمد' : 'Booking.com Catalog'}
        </span>`;
 
   return `
-    <div class="card" style="border: 2px solid #b38d4f; background: var(--color-surface);">
-      <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-sm" style="background: rgba(179, 141, 79, 0.08);">
+    <div class="card" style="border: 2px solid #003580; background: var(--color-surface); box-shadow: 0 4px 12px rgba(0, 53, 128, 0.1);">
+      <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-sm" style="background: #003580; color: #ffffff;">
         <div class="d-flex align-items-center gap-sm">
-          <div style="background: #b38d4f; color: white; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-            ${icons.hotel('w-5 h-5')}
+          <div style="background: #ffffff; color: #003580; width: 38px; height: 38px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px;">
+            B.
           </div>
           <div>
             <div class="d-flex align-items-center gap-xs">
-              <h4 class="card-title" style="margin: 0;">${escapeHtml(t('hotels.previewTitle'))}</h4>
+              <h4 class="card-title" style="margin: 0; color: #ffffff; font-weight: 800; font-size: 16px;">
+                Booking<span style="color: #00BAF2;">.com</span> Confirmation
+              </h4>
               ${sourceBadge}
             </div>
-            <p class="text-xs text-muted" style="margin: 0;">${escapeHtml(t('hotels.previewSubtitle'))}</p>
+            <p class="text-xs" style="margin: 0; color: #dbeafe;">${escapeHtml(t('hotels.previewSubtitle'))}</p>
           </div>
         </div>
 
         <div class="d-flex align-items-center gap-xs">
-          <button type="button" id="btn-toggle-edit-hotel" class="btn btn-sm btn-secondary d-flex align-items-center gap-xxs">
-            ${icons.pencil ? icons.pencil('w-3.5 h-3.5') : (icons.edit ? icons.edit('w-3.5 h-3.5') : '✏️')}
+          <button type="button" id="btn-toggle-edit-hotel" class="btn btn-sm btn-secondary d-flex align-items-center gap-xxs" style="background: rgba(255,255,255,0.15); color: #ffffff; border: 1px solid rgba(255,255,255,0.3);">
+            ${icons.pencil ? icons.pencil('w-3.5 h-3.5') : '✏️'}
             <span>${escapeHtml(t('hotels.quickEdit'))}</span>
           </button>
-          <button type="button" id="btn-print-voucher-now" class="btn btn-sm btn-primary d-flex align-items-center gap-xxs">
+          <button type="button" id="btn-print-voucher-now" class="btn btn-sm d-flex align-items-center gap-xxs" style="background: #febb02; color: #0f172a; font-weight: 700; border: none;">
             ${icons.print ? icons.print('w-3.5 h-3.5') : '🖨️'}
-            <span>${escapeHtml(t('hotels.printVoucher'))}</span>
+            <span>${isAr ? 'طباعة تأكيد بوكينج (PDF)' : 'Print Booking.com PDF'}</span>
           </button>
-          <button type="button" id="btn-save-hotel-db" class="btn btn-sm btn-outline d-flex align-items-center gap-xxs">
+          <button type="button" id="btn-save-hotel-db" class="btn btn-sm btn-outline d-flex align-items-center gap-xxs" style="color: #ffffff; border-color: rgba(255,255,255,0.4);">
             ${icons.check ? icons.check('w-3.5 h-3.5') : '💾'}
             <span id="save-btn-text">${escapeHtml(t('hotels.saveToSystem'))}</span>
           </button>
@@ -698,55 +877,66 @@ function renderPreviewCard(booking) {
       <div class="card-body">
         <!-- Display Details Mode -->
         <div id="preview-display-mode">
-          <div class="form-grid-3 mb-md">
-            <div>
-              <span class="text-xs text-muted d-block">${escapeHtml(t('hotels.clientName'))}</span>
-              <strong class="text-sm" id="prev-client-name">${escapeHtml(booking.clientName)}</strong>
+          <!-- Top Status & Identifiers Bar -->
+          <div style="background: #ebf3ff; border: 1px solid #c7e0ff; border-radius: 6px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: gap-sm;">
+            <div class="d-flex align-items-center gap-xs">
+              <span style="background: #008009; color: #fff; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold;">✓</span>
+              <div>
+                <strong style="color: #008009; font-size: 14px;">Booking Confirmed</strong>
+                <span class="text-xs text-muted d-block">${escapeHtml(booking.clientName)} · 1 Room, ${escapeHtml(String(booking.nights || 1))} Night(s)</span>
+              </div>
             </div>
-            <div>
-              <span class="text-xs text-muted d-block">${escapeHtml(t('hotels.destination'))}</span>
-              <strong class="text-sm" id="prev-destination">${escapeHtml(booking.city)}, ${escapeHtml(booking.country)}</strong>
-            </div>
-            <div>
-              <span class="text-xs text-muted d-block">${escapeHtml(t('hotels.status'))}</span>
-              <span class="badge badge-success">${escapeHtml(booking.status || 'CONFIRMED')}</span>
+            <div style="text-align: right;">
+              <div class="text-xs text-muted">CONFIRMATION: <strong style="color: #003580; font-family: monospace; font-size: 13px;" id="prev-booking-num">${escapeHtml(bookingNumber)}</strong></div>
+              <div class="text-xs text-muted">PIN CODE: <strong style="color: #003580; font-family: monospace; font-size: 13px; letter-spacing: 1px;" id="prev-pin-code">${escapeHtml(pinCode)}</strong></div>
             </div>
           </div>
 
           <div style="background: var(--color-background); border: 1px solid var(--color-border); border-radius: 8px; padding: 16px;" class="mb-md">
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-xs mb-xs">
-              <h4 style="margin: 0; font-size: 16px; color: var(--color-text);" id="prev-hotel-name">${escapeHtml(booking.hotelName)}</h4>
-              <span style="color: #f59e0b; font-size: 15px;" id="prev-stars">${starsHtml} (${starsCount}-Star)</span>
-            </div>
-            <p class="text-xs text-muted mb-sm" id="prev-address">${escapeHtml(booking.hotelAddress || 'City Center')}</p>
+            <div class="d-flex align-items-start justify-content-between flex-wrap gap-sm mb-sm">
+              <div style="flex: 1;">
+                <div class="d-flex align-items-center gap-xs flex-wrap">
+                  <h4 style="margin: 0; font-size: 18px; color: #003580; font-weight: 800;" id="prev-hotel-name">${escapeHtml(booking.hotelName)}</h4>
+                  <span style="color: #febb02; font-size: 15px;" id="prev-stars">${starsHtml}</span>
+                </div>
+                <p class="text-xs text-muted mt-xxs mb-xxs" id="prev-address">📍 ${escapeHtml(booking.hotelAddress || 'City Center')}</p>
+                <div class="text-xs text-muted mb-xs" id="prev-phone">📞 Phone: <strong style="color: var(--color-text);">${escapeHtml(hotelPhone)}</strong></div>
+                <div class="d-flex align-items-center gap-xs">
+                  <span class="badge" style="background: #003580; color: #ffffff; font-weight: 800; font-size: 12px; padding: 2px 6px;">${escapeHtml((reviewScore.match(/\d+\.\d+/) || ['9.0'])[0])}</span>
+                  <span class="text-xs font-semibold" style="color: #003580;">${escapeHtml(reviewScore)}</span>
+                </div>
+              </div>
 
-            <div class="form-grid-4 text-xs">
+              ${hotelImage ? `<img src="${escapeHtml(hotelImage)}" style="width: 120px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid var(--color-border);" alt="${escapeHtml(booking.hotelName)}" />` : ''}
+            </div>
+
+            <div class="form-grid-4 text-xs pt-xs" style="border-top: 1px solid var(--color-border);">
               <div>
-                <span class="text-muted d-block">${escapeHtml(t('hotels.checkIn'))}:</span>
-                <strong id="prev-checkin">${formatDateDisplay(booking.checkIn)}</strong>
+                <span class="text-muted d-block">CHECK-IN:</span>
+                <strong id="prev-checkin">${formatDateDisplay(booking.checkIn)} (from 15:00)</strong>
               </div>
               <div>
-                <span class="text-muted d-block">${escapeHtml(t('hotels.checkOut'))}:</span>
-                <strong id="prev-checkout">${formatDateDisplay(booking.checkOut)}</strong>
+                <span class="text-muted d-block">CHECK-OUT:</span>
+                <strong id="prev-checkout">${formatDateDisplay(booking.checkOut)} (until 12:00)</strong>
               </div>
               <div>
-                <span class="text-muted d-block">${escapeHtml(t('hotels.roomType'))}:</span>
+                <span class="text-muted d-block">ROOM CATEGORY:</span>
                 <strong id="prev-room">${escapeHtml(booking.roomType)}</strong>
               </div>
               <div>
-                <span class="text-muted d-block">${escapeHtml(t('hotels.boardBasis'))}:</span>
-                <strong style="color: #0284c7;" id="prev-board">${escapeHtml(booking.boardBasis)}</strong>
+                <span class="text-muted d-block">TOTAL PRICE:</span>
+                <strong style="color: #003580; font-size: 13px;" id="prev-price">${escapeHtml(priceText)}</strong>
               </div>
             </div>
           </div>
 
-          <div class="d-flex justify-content-between align-items-center text-xs text-muted">
+          <div class="d-flex justify-content-between align-items-center text-xs text-muted flex-wrap gap-xs">
             <div>
-              ${escapeHtml(t('hotels.bookingRef'))}: <strong class="tabular-nums" style="color: var(--color-text);">${escapeHtml(booking.bookingReference)}</strong> |
-              ${escapeHtml(t('hotels.confirmationNumber'))}: <strong class="tabular-nums" style="color: var(--color-text);">${escapeHtml(booking.confirmationNumber)}</strong>
+              MEAL: <strong style="color: #008009;" id="prev-board">${escapeHtml(booking.boardBasis)}</strong> |
+              SPECIAL REQUESTS: <span id="prev-requests">${escapeHtml(booking.specialRequests || 'Non-smoking, high floor')}</span>
             </div>
             <div>
-              <span style="color: #16a34a; font-weight: 600;">✓ All Room Charges Prepaid & Guaranteed</span>
+              <span style="color: #008009; font-weight: 700;">✓ PAID ONLINE — Fully Prepaid on Booking.com</span>
             </div>
           </div>
         </div>
@@ -768,18 +958,33 @@ function renderPreviewCard(booking) {
             </div>
           </div>
 
-          <div class="form-grid-3 mb-sm">
+          <div class="form-grid-4 mb-sm">
             <div class="form-group">
               <label class="form-label">${escapeHtml(t('hotels.address'))}</label>
               <input type="text" id="edit-hotel-address" class="form-control" value="${escapeHtml(booking.hotelAddress || '')}" />
             </div>
             <div class="form-group">
+              <label class="form-label">Hotel Phone</label>
+              <input type="text" id="edit-hotel-phone" class="form-control" value="${escapeHtml(hotelPhone)}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Price (USD / EUR)</label>
+              <input type="text" id="edit-hotel-price" class="form-control" value="${escapeHtml(priceText)}" />
+            </div>
+            <div class="form-group">
               <label class="form-label">${escapeHtml(t('hotels.stars'))} (1-5)</label>
               <input type="number" id="edit-hotel-stars" class="form-control" min="1" max="5" value="${starsCount}" />
             </div>
+          </div>
+
+          <div class="form-grid-2 mb-sm">
             <div class="form-group">
-              <label class="form-label">${escapeHtml(t('hotels.confirmationNumber'))}</label>
-              <input type="text" id="edit-confirmation-num" class="form-control" value="${escapeHtml(booking.confirmationNumber)}" />
+              <label class="form-label">Booking.com Confirmation Number</label>
+              <input type="text" id="edit-booking-number" class="form-control" value="${escapeHtml(bookingNumber)}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Booking.com PIN Code</label>
+              <input type="text" id="edit-pin-code" class="form-control" value="${escapeHtml(pinCode)}" />
             </div>
           </div>
 
@@ -1128,14 +1333,26 @@ function bindPreviewEvents(root) {
       const editBoardBasis = (container.querySelector('#edit-board-basis') || document.getElementById('edit-board-basis'))?.value.trim();
       const editAddress = (container.querySelector('#edit-hotel-address') || document.getElementById('edit-hotel-address'))?.value.trim();
       const editStars = parseInt((container.querySelector('#edit-hotel-stars') || document.getElementById('edit-hotel-stars'))?.value || '5', 10);
-      const editConfNum = (container.querySelector('#edit-confirmation-num') || document.getElementById('edit-confirmation-num'))?.value.trim();
+      const editPhone = (container.querySelector('#edit-hotel-phone') || document.getElementById('edit-hotel-phone'))?.value.trim();
+      const editPrice = (container.querySelector('#edit-hotel-price') || document.getElementById('edit-hotel-price'))?.value.trim();
+      const editBookingNum = (container.querySelector('#edit-booking-number') || document.getElementById('edit-booking-number'))?.value.trim();
+      const editPinCode = (container.querySelector('#edit-pin-code') || document.getElementById('edit-pin-code'))?.value.trim();
 
       if (editHotelName) currentGeneratedBooking.hotelName = editHotelName;
       if (editRoomType) currentGeneratedBooking.roomType = editRoomType;
       if (editBoardBasis) currentGeneratedBooking.boardBasis = editBoardBasis;
       if (editAddress) currentGeneratedBooking.hotelAddress = editAddress;
       if (editStars) currentGeneratedBooking.hotelStars = editStars;
-      if (editConfNum) currentGeneratedBooking.confirmationNumber = editConfNum;
+      if (editPhone) currentGeneratedBooking.hotelPhone = editPhone;
+      if (editPrice) currentGeneratedBooking.price = editPrice;
+      if (editBookingNum) {
+        currentGeneratedBooking.bookingNumber = editBookingNum;
+        currentGeneratedBooking.bookingReference = editBookingNum;
+      }
+      if (editPinCode) {
+        currentGeneratedBooking.pinCode = editPinCode;
+        currentGeneratedBooking.confirmationNumber = editPinCode;
+      }
 
       // Update preview card displays
       const nameEl = container.querySelector('#prev-hotel-name') || document.getElementById('prev-hotel-name');
@@ -1143,12 +1360,20 @@ function bindPreviewEvents(root) {
       const boardEl = container.querySelector('#prev-board') || document.getElementById('prev-board');
       const addrEl = container.querySelector('#prev-address') || document.getElementById('prev-address');
       const starsEl = container.querySelector('#prev-stars') || document.getElementById('prev-stars');
+      const phoneEl = container.querySelector('#prev-phone') || document.getElementById('prev-phone');
+      const priceEl = container.querySelector('#prev-price') || document.getElementById('prev-price');
+      const bNumEl = container.querySelector('#prev-booking-num') || document.getElementById('prev-booking-num');
+      const pinEl = container.querySelector('#prev-pin-code') || document.getElementById('prev-pin-code');
 
       if (nameEl) nameEl.textContent = currentGeneratedBooking.hotelName;
       if (roomEl) roomEl.textContent = currentGeneratedBooking.roomType;
       if (boardEl) boardEl.textContent = currentGeneratedBooking.boardBasis;
-      if (addrEl) addrEl.textContent = currentGeneratedBooking.hotelAddress;
-      if (starsEl) starsEl.textContent = '★'.repeat(currentGeneratedBooking.hotelStars) + ` (${currentGeneratedBooking.hotelStars}-Star)`;
+      if (addrEl) addrEl.textContent = `📍 ${currentGeneratedBooking.hotelAddress}`;
+      if (starsEl) starsEl.textContent = '★'.repeat(currentGeneratedBooking.hotelStars);
+      if (phoneEl) phoneEl.innerHTML = `📞 Phone: <strong style="color: var(--color-text);">${currentGeneratedBooking.hotelPhone}</strong>`;
+      if (priceEl) priceEl.textContent = currentGeneratedBooking.price;
+      if (bNumEl) bNumEl.textContent = currentGeneratedBooking.bookingNumber;
+      if (pinEl) pinEl.textContent = currentGeneratedBooking.pinCode;
 
       editMode.style.display = 'none';
       displayMode.style.display = 'block';

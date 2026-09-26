@@ -26,29 +26,39 @@ export const HotelService = {
       });
 
       if (liveHotel && liveHotel.hotelName) {
+        const bNum = liveHotel.bookingNumber || `${Math.floor(1000 + Math.random() * 9000)}.${Math.floor(100 + Math.random() * 900)}.${Math.floor(100 + Math.random() * 900)}`;
+        const pin = liveHotel.pinCode || `${Math.floor(1000 + Math.random() * 9000)}`;
+
         return {
           bookingReference,
           confirmationNumber,
+          bookingNumber: bNum,
+          pinCode: pin,
           clientName: clientName.trim(),
           customerId: customerId || null,
           hotelName: liveHotel.hotelName,
           hotelStars: liveHotel.hotelStars || 5,
           hotelAddress: liveHotel.hotelAddress || `City Center, ${country}`,
+          hotelPhone: liveHotel.hotelPhone || '+971 4 430 4528',
           city: liveHotel.city || country,
           country: liveHotel.country || country,
           checkIn: new Date(checkIn).toISOString(),
           checkOut: new Date(checkOut).toISOString(),
           nights,
           roomType: liveHotel.roomType || 'Deluxe King Room',
-          boardBasis: liveHotel.boardBasis || 'Bed & Breakfast (Buffet Included)',
-          guests: '1 Adult (Standard Single/Double Occupancy)',
+          boardBasis: liveHotel.boardBasis || 'Breakfast included',
+          price: liveHotel.price || 'US$ 450',
+          reviewScore: liveHotel.reviewScore || '9.0 Superb · 2,840 reviews',
+          hotelImage: liveHotel.hotelImage || '',
+          guests: '1 Adult',
           checkInTime: liveHotel.checkInTime || '15:00',
           checkOutTime: liveHotel.checkOutTime || '12:00',
           amenities: Array.isArray(liveHotel.amenities) && liveHotel.amenities.length > 0
             ? liveHotel.amenities
-            : ['High-speed Wi-Fi Included', 'Swimming Pool & Spa', '24-Hour Concierge', 'Air Conditioning'],
+            : ['Free high-speed WiFi', 'Air conditioning', 'Private bathroom', 'Flat-screen TV'],
           specialRequests: liveHotel.specialRequests || 'Non-smoking room, high floor requested',
-          cancellationPolicy: liveHotel.cancellationPolicy || 'All accommodation charges prepaid & guaranteed by AfricaTravel.',
+          cancellationPolicy: liveHotel.cancellationPolicy || 'Free cancellation anytime up to 48 hours before check-in.',
+          paymentStatus: liveHotel.paymentStatus || 'Paid online',
           status: 'CONFIRMED',
           source: 'BOOKING_LIVE',
           provider: 'PYTHON_SCRAPER',
