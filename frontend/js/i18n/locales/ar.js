@@ -42,6 +42,7 @@ export const ar = {
     reports: 'التقارير',
     expenses: 'مصروفات المكتب',
     visas: 'التأشيرات',
+    hotels: 'الفنادق (AI)',
     administration: 'الإدارة',
     employees: 'الموظفون',
     activity: 'سجل النشاط',
@@ -999,5 +1000,45 @@ export const ar = {
   notifications: {
     departureSoon: 'موعد السفر يقرب',
     returnSoon: 'موعد العودة يقرب'
+  },
+
+  // Hotels (AI)
+  hotels: {
+    title: 'حجوزات الفنادق (AI)',
+    subtitle: 'توليد فوتشرات حجز الفنادق الدولية بالذكاء الاصطناعي وإدارتها',
+    generateTitle: 'توليد حجز فندق بالذكاء الاصطناعي',
+    generateSubtitle: 'أدخل اسم العميل، الدولة/المدينة، وفترة الإقامة لتوليد فوتشر فندقي دولي رسمي متكامل',
+    clientName: 'اسم العميل',
+    clientNamePlaceholder: 'اكتب اسم العميل أو اختر من القائمة...',
+    destination: 'الدولة / المدينة',
+    destinationPlaceholder: 'مثال: دبي، لندن، باريس، إسطنبول، الرياض...',
+    checkIn: 'تاريخ الوصول (Check-in)',
+    checkOut: 'تاريخ المغادرة (Check-out)',
+    nights: 'عدد الليالي',
+    generateBtn: 'توليد الحجز بالذكاء الاصطناعي ✦',
+    generating: 'جاري اختيار الفندق وتوليد بيانات الحجز...',
+    previewTitle: 'معاينة فوتشر الفندق المولد',
+    previewSubtitle: 'يمكنك مراجعة أو تعديل أي تفاصيل أدناه قبل الطباعة أو الحفظ',
+    hotelName: 'اسم الفندق',
+    stars: 'التقييم',
+    address: 'عنوان الفندق',
+    roomType: 'نوع الغرفة',
+    boardBasis: 'نظام الوجبات',
+    confirmationNumber: 'رقم التأكيد (Confirmation #)',
+    bookingRef: 'مرجع الحجز (Booking Ref)',
+    status: 'حالة الحجز',
+    confirmed: 'مؤكد (CONFIRMED)',
+    printVoucher: 'تحميل / طباعة فوتشر PDF (English)',
+    saveToSystem: 'حفظ في النظام',
+    saving: 'جاري الحفظ...',
+    savedSuccess: 'تم حفظ الحجز الفندقي في النظام بنجاح',
+    archiveTitle: 'سجل الحجوزات المحفوظة',
+    archiveSubtitle: 'أرشيف حجوزات الفنادق السابقة مع إمكانية إعادة طباعة الفوتشر',
+    noBookings: 'لا توجد حجوزات فنادق محفوظة حتى الآن',
+    noBookingsDesc: 'ابدأ بتوليد أول حجز فندق بالذكاء الاصطناعي أعلاه وحفظه في النظام.',
+    reprint: 'طباعة الفوتشر',
+    deleteBooking: 'حذف الحجز',
+    deleteConfirm: 'هل أنت متأكد من حذف هذا الحجز الفندقي؟',
+    quickEdit: 'تعديل سريع للبيانات'
   }
 };

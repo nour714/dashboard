@@ -259,6 +259,32 @@ export const icons = {
     <path d="M8 15h5"></path>
   `, cls, 18),
 
+  hotel: (cls = '') => svgWrapper(`
+    <path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Z"></path>
+    <path d="M8 6h.01"></path>
+    <path d="M16 6h.01"></path>
+    <path d="M12 6h.01"></path>
+    <path d="M12 10h.01"></path>
+    <path d="M16 10h.01"></path>
+    <path d="M8 10h.01"></path>
+    <path d="M12 14h.01"></path>
+    <path d="M16 14h.01"></path>
+    <path d="M8 14h.01"></path>
+    <path d="M10 22v-4h4v4"></path>
+  `, cls, 18),
+
+  star: (cls = '') => svgWrapper(`
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+  `, cls, 16),
+
+  sparkles: (cls = '') => svgWrapper(`
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path>
+    <path d="M5 3v4"></path>
+    <path d="M19 17v4"></path>
+    <path d="M3 5h4"></path>
+    <path d="M17 19h4"></path>
+  `, cls, 18),
+
   logOut: (cls = '') => svgWrapper(`
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
     <polyline points="16 17 21 12 16 7"></polyline>

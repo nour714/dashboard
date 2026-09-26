@@ -35,6 +35,7 @@
     "test:employee-delete": "node tests/integration/employee-delete.test.js",
     "test:expenses": "node tests/integration/expenses.test.js",
     "test:visas": "node tests/integration/visas.test.js",
+    "test:hotels": "node tests/integration/hotels.test.js",
     "test:ai-extract": "node tests/integration/ticket-extraction.test.js",
     "test:bulk-import": "node tests/integration/bulk-ticket-import.test.js",
     "test:airlines": "node tests/integration/airlines-catalog.test.js",

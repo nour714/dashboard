@@ -62,6 +62,10 @@ export function renderBottomNav(activePath = '/dashboard') {
           ${icons.visa()}
           <span>${escapeHtml(t('nav.visas'))}</span>
         </a>
+        <a href="/hotels" class="drawer-nav-item" data-link>
+          ${icons.hotel()}
+          <span>${escapeHtml(t('nav.hotels'))}</span>
+        </a>
         <a href="/payments" class="drawer-nav-item" data-link>
           ${icons.payments()}
           <span>${escapeHtml(t('nav.payments'))}</span>

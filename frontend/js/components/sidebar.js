@@ -29,6 +29,7 @@ export function renderSidebar(activePath = '/dashboard') {
     { path: '/tickets', label: t('nav.tickets'), icon: 'ticket' },
     { path: '/due-tickets', label: t('nav.dueTickets'), icon: 'clock', badge: dueTicketsCount },
     { path: '/visas', label: t('nav.visas'), icon: 'visa' },
+    { path: '/hotels', label: t('nav.hotels'), icon: 'hotel' },
     { path: '/customers', label: t('nav.customers'), icon: 'customers' },
     { path: '/payments', label: t('nav.payments'), icon: 'payments' },
     { path: '/refunds', label: t('nav.refunds'), icon: 'refunds' },

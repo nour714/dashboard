@@ -53,6 +53,7 @@ model User {
   refreshTokens RefreshToken[]
   expenses      Expense[]       @relation("ExpenseCreatedBy")
   visas         Visa[]          @relation("VisaCreatedBy")
+  hotelBookings HotelBooking[]  @relation("HotelBookingCreatedBy")
 
   @@map("users")
 }
@@ -75,6 +76,7 @@ model Customer {
   // Relations
   tickets               Ticket[]
   notes                 CustomerNote[]
+  hotelBookings         HotelBooking[]
 
 
   @@index([deletedAt])
@@ -319,3 +321,38 @@ model Visa {
   @@index([deletedAt])
   @@map("visas")
 }
+
+model HotelBooking {
+  id                 String    @id @default(cuid())
+  bookingReference   String    @unique
+  confirmationNumber String
+  clientName         String
+  customerId         String?
+  customer           Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  hotelName          String
+  hotelStars         Int       @default(5)
+  hotelAddress       String?
+  city               String
+  country            String
+  checkIn            DateTime
+  checkOut           DateTime
+  nights             Int       @default(1)
+  roomType           String    @default("Standard Double Room")
+  boardBasis         String    @default("Bed & Breakfast")
+  guests             String    @default("1 Guest")
+  specialRequests    String?
+  status             String    @default("CONFIRMED")
+  notes              String?
+  createdBy          String?
+  createdById        String?
+  user               User?     @relation("HotelBookingCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([createdById])
+  @@index([customerId])
+  @@index([deletedAt])
+  @@map("hotel_bookings")
+}
+

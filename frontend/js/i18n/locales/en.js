@@ -42,6 +42,7 @@ export const en = {
     reports: 'Reports',
     expenses: 'Office Expenses',
     visas: 'Visas',
+    hotels: 'Hotels (AI)',
     administration: 'Administration',
     employees: 'Employees',
     activity: 'Activity Log',
@@ -999,5 +1000,45 @@ export const en = {
   notifications: {
     departureSoon: 'Departure approaching',
     returnSoon: 'Return approaching'
+  },
+
+  // Hotels (AI)
+  hotels: {
+    title: 'Hotel Bookings (AI)',
+    subtitle: 'Generate and manage international hotel booking vouchers powered by AI',
+    generateTitle: 'Generate Hotel Booking with AI',
+    generateSubtitle: 'Enter client name, destination, and stay period to generate an official international voucher',
+    clientName: 'Client Name',
+    clientNamePlaceholder: 'Enter client name or pick from list...',
+    destination: 'Country / City',
+    destinationPlaceholder: 'e.g. Dubai, London, Paris, Istanbul, Riyadh...',
+    checkIn: 'Check-in Date',
+    checkOut: 'Check-out Date',
+    nights: 'Nights',
+    generateBtn: 'Generate Booking with AI ✦',
+    generating: 'Selecting hotel & generating booking data...',
+    previewTitle: 'Generated Hotel Voucher Preview',
+    previewSubtitle: 'Review or adjust any details below before printing or saving',
+    hotelName: 'Hotel Name',
+    stars: 'Star Rating',
+    address: 'Hotel Address',
+    roomType: 'Room Category',
+    boardBasis: 'Board Basis / Meals',
+    confirmationNumber: 'Confirmation #',
+    bookingRef: 'Booking Ref',
+    status: 'Booking Status',
+    confirmed: 'CONFIRMED',
+    printVoucher: 'Download / Print Voucher PDF (English)',
+    saveToSystem: 'Save to System',
+    saving: 'Saving...',
+    savedSuccess: 'Hotel booking saved to system successfully',
+    archiveTitle: 'Saved Hotel Bookings Archive',
+    archiveSubtitle: 'Historical hotel vouchers with 1-click reprinting',
+    noBookings: 'No hotel bookings saved yet',
+    noBookingsDesc: 'Generate your first hotel voucher with AI above and save it to the system.',
+    reprint: 'Print Voucher',
+    deleteBooking: 'Delete Booking',
+    deleteConfirm: 'Are you sure you want to delete this hotel booking?',
+    quickEdit: 'Quick Edit Details'
   }
 };

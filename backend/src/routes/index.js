@@ -12,6 +12,7 @@ import auditRoutes from './audit.routes.js';
 import settingRoutes from './setting.routes.js';
 import expenseRoutes from './expense.routes.js';
 import visaRoutes from './visa.routes.js';
+import hotelRoutes from './hotel.routes.js';
 import { apiRateLimiter } from '../middleware/rate-limiter.js';
 import { checkDatabaseHealth } from '../config/database.js';
 
@@ -53,5 +54,6 @@ apiRouter.use('/activity', auditRoutes);
 apiRouter.use('/settings', settingRoutes);
 apiRouter.use('/expenses', expenseRoutes);
 apiRouter.use('/visas', visaRoutes);
+apiRouter.use('/hotels', hotelRoutes);
 
 export default apiRouter;

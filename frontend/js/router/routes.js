@@ -18,6 +18,7 @@ import { ReportsPage } from '../pages/reports.js';
 import { ExpensesPage } from '../pages/expenses.js';
 import { VisasPage } from '../pages/visas.js';
 import { VisaDetailsPage } from '../pages/visa-details.js';
+import { HotelsPage } from '../pages/hotels.js';
 import { EmployeesPage } from '../pages/employees.js';
 import { ActivityPage } from '../pages/activity.js';
 import { SettingsPage } from '../pages/settings.js';
@@ -38,6 +39,7 @@ export const routes = [
   { path: '/customers', ...CustomersPage },
   { path: '/visas/:id', ...VisaDetailsPage },
   { path: '/visas', ...VisasPage },
+  { path: '/hotels', ...HotelsPage },
   { path: '/payments', ...PaymentsPage },
   { path: '/refunds', ...RefundsPage },
   { path: '/reports', ...ReportsPage },
