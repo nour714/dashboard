@@ -1564,8 +1564,7 @@ export function initHotelsPage(container) {
         country,
         checkIn,
         checkOut,
-        customerId,
-        requireLive: true
+        customerId
       });
 
       currentGeneratedBooking = res.data;

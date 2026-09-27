@@ -64,13 +64,8 @@ export const HotelService = {
           provider: 'PYTHON_SCRAPER',
           generatedByAi: false
         };
-      } else if (data.requireLive) {
-        throw new Error('تعذر جلب فندق حقيقي من Booking.com (حماية البوت أو لا توجد نتائج). يرجى المحاولة مرة أخرى.');
       }
     } catch (scraperErr) {
-      if (data.requireLive) {
-        throw scraperErr;
-      }
       console.warn('[HotelService] Python live scraper failed, proceeding to fallback:', scraperErr.message);
     }
 
