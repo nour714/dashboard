@@ -14,7 +14,8 @@ export const generateHotelAiSchema = z.object({
   country: z.string().trim().min(1, 'Country / City is required').max(100, 'Country is too long'),
   checkIn: validDateString,
   checkOut: validDateString,
-  customerId: z.string().max(100).optional().nullable()
+  customerId: z.string().max(100).optional().nullable(),
+  requireLive: z.boolean().optional()
 }).refine(data => {
   const inDate = new Date(data.checkIn);
   const outDate = new Date(data.checkOut);

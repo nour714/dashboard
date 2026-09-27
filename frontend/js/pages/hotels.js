@@ -17,6 +17,252 @@ let isGenerating = false;
 let isSaving = false;
 
 /**
+ * PDF Voucher translations for multi-language support (EN / FR / AR)
+ */
+const PDF_LANG = {
+  en: {
+    dir: 'ltr',
+    fontFamily: 'Arial, Helvetica, sans-serif',
+    bookingConfirmation: 'Booking Confirmation',
+    confirmationNumber: 'CONFIRMATION NUMBER',
+    pinCode: 'PIN CODE',
+    checkIn: 'CHECK-IN',
+    checkOut: 'CHECK-OUT',
+    rooms: 'ROOMS',
+    nights: 'NIGHTS',
+    yourGroup: 'YOUR GROUP',
+    adult: '1 adult',
+    price: 'PRICE',
+    room: '1 room',
+    approx: 'approx.',
+    subtotal: 'Subtotal',
+    forGuest: '(for 1 guest)',
+    additionalCharges: 'Additional charges',
+    additionalChargesDesc: "The price you see below is an approximate that may include fees based on the maximum occupancy. This can include taxes set by local governments or charges set by the property.",
+    vat: 'VAT',
+    tourismFee: 'Tourism fee',
+    perNights: 'nights',
+    propertyServiceCharge: 'Property service charge',
+    youllPay: "You'll pay",
+    tourismFeeNote: '* Tourism Fee (if applicable) refers to the local Tourism Tax',
+    finalPriceNote: "The final price shown is the amount you'll pay to the property.",
+    bookingNoCharge: "Booking.com doesn't charge guests any reservation, administration, or other fees.",
+    foreignTransaction: 'Your card issuer may charge you a foreign transaction fee.',
+    paymentInfo: 'Payment Info',
+    handlesPayments: 'handles all payments.',
+    acceptedPayments: 'This property accepts the following forms of payment: Cash, Credit Card',
+    currencyExchange: 'Currency & Exchange Rate Info',
+    youllPayIn: "You'll pay",
+    inCurrency: 'in',
+    exchangeRateNote: 'according to the exchange rate on the day of payment.',
+    estimateNote: 'The amount displayed in EGP is just an estimate based on today\'s exchange rate for',
+    additionalInfo: 'Additional Info',
+    extraBedNote: "Note that additional supplements (e.g. an extra bed) aren't added in this total.",
+    cancelTaxNote: 'If you cancel, applicable taxes may still be charged by the property.',
+    noShowNote: "If you don't show up for this booking, and you don't cancel beforehand, the property is liable to charge you the full reservation amount.",
+    readImportant: 'Remember to read the Important info below – it could contain important details not mentioned here.',
+    guestName: 'Guest name:',
+    numberOfGuests: 'Number of guests:',
+    mealPlan: 'Meal plan:',
+    bedSize: 'Bed Size(s):',
+    bedDesc: '1 king bed (181-210 cm wide)',
+    prepayment: 'Prepayment :',
+    noPrepayment: 'No prepayment is needed.',
+    cancellationCost: 'Cancellation cost:',
+    cancellationDeadline: "Cancellation deadlines are in the property's local time.",
+    importantInfo: 'Important Information',
+    noParties: 'This property does not accommodate bachelor(ette) or similar parties.',
+    damageDeposit: 'A damage deposit of',
+    isRequired: 'is required on arrival.',
+    thatsAbout: "That's about",
+    depositCash: 'This will be collected as a cash payment. You should be reimbursed on check-out. Your deposit will be refunded in full, in cash, subject to an inspection of the property.',
+    hotelPolicies: 'Hotel Policies',
+    guestParking: 'Guest parking',
+    parkingNote: '• Private parking is possible on site (reservation is not needed) and costs',
+    perDay: 'per day.',
+    wifiNote: '• WiFi is available in the rooms and is free of charge.',
+    needHelp: 'Need Help?',
+    viewChange: 'You can always view, change or cancel your booking online at:',
+    contactProperty: 'For any questions related to the property, you can contact',
+    directlyAt: 'directly at:',
+    contactUs: "Or contact us by phone - we're available 24 hours a day:",
+    localNumber: 'Local number:',
+    whenAbroad: 'When abroad or from',
+    travelPeace: 'Travel with peace of mind',
+    safetyInfo: 'Looking for info about traveling safely? The safety resource center can help you prepare for your trip and enjoy a safe, relaxing stay.',
+    seeSafety: 'See safety resource center',
+    emergencyInfo: "We've gathered the most important local phone numbers to help give you complete peace of mind during your stay in",
+    seeEmergency: 'See local emergency services',
+    printBtn: '🖨️ Print / Save as PDF',
+    address: 'Address:',
+    phone: 'Phone:',
+    gpsCoordinates: 'GPS Coordinates:',
+    amenities: 'Private bathroom • Balcony • Garden view • Mountain view • City view • Free toiletries • Shower • Air conditioning • Kitchen • Washing machine • Toilet • Sofa • Towels • Cleaning products • Tile/marble floor • Desk • Soundproofing • TV • Slippers • Refrigerator • Iron • Microwave • Flat-screen TV • Hairdryer • Kitchenware • Kitchenette • Towels/sheets (extra fee) • Wake-up service/Alarm clock • Electric kettle • Dishwasher • Wake-up service • Alarm clock • Wardrobe or closet • Oven • Dining area • Dining table • Clothes rack • Toilet paper • Sofa bed • Carbon monoxide detector • Air purifiers • Hand sanitizer • Single-room AC for guest accommodation',
+    dateLocale: 'en-US',
+  },
+  fr: {
+    dir: 'ltr',
+    fontFamily: 'Arial, Helvetica, sans-serif',
+    bookingConfirmation: 'Confirmation de réservation',
+    confirmationNumber: 'NUMÉRO DE CONFIRMATION',
+    pinCode: 'CODE PIN',
+    checkIn: 'ARRIVÉE',
+    checkOut: 'DÉPART',
+    rooms: 'CHAMBRES',
+    nights: 'NUITS',
+    yourGroup: 'VOTRE GROUPE',
+    adult: '1 adulte',
+    price: 'PRIX',
+    room: '1 chambre',
+    approx: 'env.',
+    subtotal: 'Sous-total',
+    forGuest: '(pour 1 voyageur)',
+    additionalCharges: 'Frais supplémentaires',
+    additionalChargesDesc: "Le prix ci-dessous est une estimation qui peut inclure des frais basés sur l'occupation maximale. Il peut inclure des taxes fixées par les gouvernements locaux ou des frais fixés par l'établissement.",
+    vat: 'TVA',
+    tourismFee: 'Taxe de séjour',
+    perNights: 'nuits',
+    propertyServiceCharge: "Frais de service de l'établissement",
+    youllPay: 'Vous paierez',
+    tourismFeeNote: "* La taxe de séjour (le cas échéant) fait référence à la taxe de séjour locale",
+    finalPriceNote: "Le prix final affiché est le montant que vous paierez à l'établissement.",
+    bookingNoCharge: "Booking.com ne facture aucun frais de réservation, d'administration ou autre à ses clients.",
+    foreignTransaction: "L'émetteur de votre carte peut vous facturer des frais de transaction à l'étranger.",
+    paymentInfo: 'Informations de paiement',
+    handlesPayments: 'gère tous les paiements.',
+    acceptedPayments: "Cet établissement accepte les modes de paiement suivants : Espèces, Carte de crédit",
+    currencyExchange: 'Devise et taux de change',
+    youllPayIn: 'Vous paierez',
+    inCurrency: 'en',
+    exchangeRateNote: "selon le taux de change du jour du paiement.",
+    estimateNote: "Le montant affiché en EGP est une estimation basée sur le taux de change actuel pour",
+    additionalInfo: 'Informations complémentaires',
+    extraBedNote: "Notez que les suppléments éventuels (par ex. un lit d'appoint) ne sont pas inclus dans ce total.",
+    cancelTaxNote: "En cas d'annulation, les taxes applicables peuvent toujours être facturées par l'établissement.",
+    noShowNote: "Si vous ne vous présentez pas pour cette réservation et que vous ne l'annulez pas au préalable, l'établissement est en droit de vous facturer le montant total de la réservation.",
+    readImportant: "N'oubliez pas de lire les informations importantes ci-dessous – elles pourraient contenir des détails importants non mentionnés ici.",
+    guestName: 'Nom du client :',
+    numberOfGuests: 'Nombre de voyageurs :',
+    mealPlan: 'Formule repas :',
+    bedSize: 'Taille du lit :',
+    bedDesc: '1 lit king-size (181-210 cm de large)',
+    prepayment: 'Prépaiement :',
+    noPrepayment: 'Aucun prépaiement nécessaire.',
+    cancellationCost: "Frais d'annulation :",
+    cancellationDeadline: "Les délais d'annulation sont dans le fuseau horaire de l'établissement.",
+    importantInfo: 'Informations importantes',
+    noParties: "Cet établissement n'accueille pas les enterrements de vie de garçon/jeune fille ou événements similaires.",
+    damageDeposit: 'Un dépôt de garantie de',
+    isRequired: "est requis à l'arrivée.",
+    thatsAbout: "Soit environ",
+    depositCash: "Ce montant sera collecté en espèces. Vous serez remboursé(e) lors du départ. Votre dépôt sera intégralement remboursé en espèces, sous réserve d'une inspection de l'établissement.",
+    hotelPolicies: "Règlement de l'établissement",
+    guestParking: 'Parking',
+    parkingNote: "• Un parking privé est disponible sur place (sans réservation) et coûte",
+    perDay: 'par jour.',
+    wifiNote: '• Le WiFi est disponible dans les chambres gratuitement.',
+    needHelp: "Besoin d'aide ?",
+    viewChange: 'Vous pouvez toujours consulter, modifier ou annuler votre réservation en ligne sur :',
+    contactProperty: "Pour toute question relative à l'établissement, vous pouvez contacter",
+    directlyAt: 'directement au :',
+    contactUs: 'Ou contactez-nous par téléphone - nous sommes disponibles 24h/24 :',
+    localNumber: 'Numéro local :',
+    whenAbroad: "Depuis l'étranger ou depuis",
+    travelPeace: 'Voyagez l\'esprit tranquille',
+    safetyInfo: "Vous cherchez des informations pour voyager en toute sécurité ? Le centre de ressources de sécurité peut vous aider à préparer votre voyage et à profiter d'un séjour sûr et relaxant.",
+    seeSafety: 'Voir le centre de ressources de sécurité',
+    emergencyInfo: "Nous avons rassemblé les numéros de téléphone locaux les plus importants pour vous garantir une tranquillité totale pendant votre séjour en",
+    seeEmergency: "Voir les services d'urgence locaux",
+    printBtn: '🖨️ Imprimer / Enregistrer en PDF',
+    address: 'Adresse :',
+    phone: 'Téléphone :',
+    gpsCoordinates: 'Coordonnées GPS :',
+    amenities: "Salle de bains privative • Balcon • Vue sur le jardin • Vue sur la montagne • Vue sur la ville • Articles de toilette gratuits • Douche • Climatisation • Cuisine • Lave-linge • Toilettes • Canapé • Serviettes • Produits d'entretien • Sol en carrelage/marbre • Bureau • Insonorisation • TV • Chaussons • Réfrigérateur • Fer à repasser • Micro-ondes • TV à écran plat • Sèche-cheveux • Ustensiles de cuisine • Kitchenette • Serviettes/draps (frais supplémentaires) • Réveil • Bouilloire électrique • Lave-vaisselle • Service de réveil • Réveil • Armoire ou placard • Four • Coin repas • Table à manger • Portant • Papier toilette • Canapé-lit • Détecteur de monoxyde de carbone • Purificateurs d'air • Désinfectant pour les mains • Climatisation individuelle pour le logement",
+    dateLocale: 'fr-FR',
+  },
+  ar: {
+    dir: 'rtl',
+    fontFamily: "'Segoe UI', Tahoma, Arial, sans-serif",
+    bookingConfirmation: 'تأكيد الحجز',
+    confirmationNumber: 'رقم التأكيد',
+    pinCode: 'الرقم السري',
+    checkIn: 'تسجيل الوصول',
+    checkOut: 'تسجيل المغادرة',
+    rooms: 'الغرف',
+    nights: 'الليالي',
+    yourGroup: 'مجموعتك',
+    adult: 'بالغ واحد',
+    price: 'السعر',
+    room: 'غرفة واحدة',
+    approx: 'تقريباً',
+    subtotal: 'المجموع الفرعي',
+    forGuest: '(لضيف واحد)',
+    additionalCharges: 'رسوم إضافية',
+    additionalChargesDesc: 'السعر الذي تراه أدناه هو تقدير تقريبي قد يشمل رسومًا بناءً على الإشغال الأقصى. يمكن أن يشمل ذلك ضرائب تفرضها الحكومات المحلية أو رسوم يحددها مكان الإقامة.',
+    vat: 'ضريبة القيمة المضافة',
+    tourismFee: 'رسوم السياحة',
+    perNights: 'ليالي',
+    propertyServiceCharge: 'رسوم خدمة مكان الإقامة',
+    youllPay: 'ستدفع',
+    tourismFeeNote: '* رسوم السياحة (إن وجدت) تشير إلى ضريبة السياحة المحلية',
+    finalPriceNote: 'السعر النهائي المعروض هو المبلغ الذي ستدفعه لمكان الإقامة.',
+    bookingNoCharge: 'لا تفرض Booking.com أي رسوم حجز أو إدارية أو أي رسوم أخرى على النزلاء.',
+    foreignTransaction: 'قد يفرض مصدر بطاقتك رسوم معاملات أجنبية.',
+    paymentInfo: 'معلومات الدفع',
+    handlesPayments: 'يتولى جميع المدفوعات.',
+    acceptedPayments: 'يقبل مكان الإقامة وسائل الدفع التالية: نقداً، بطاقة ائتمان',
+    currencyExchange: 'معلومات العملة وسعر الصرف',
+    youllPayIn: 'ستدفع',
+    inCurrency: 'بعملة',
+    exchangeRateNote: 'وفقاً لسعر الصرف في يوم الدفع.',
+    estimateNote: 'المبلغ المعروض بالجنيه المصري هو مجرد تقدير بناءً على سعر الصرف الحالي لـ',
+    additionalInfo: 'معلومات إضافية',
+    extraBedNote: 'يرجى ملاحظة أن الإضافات (مثل سرير إضافي) غير مدرجة في هذا الإجمالي.',
+    cancelTaxNote: 'في حالة الإلغاء، قد يتم تحصيل الضرائب المطبقة من قبل مكان الإقامة.',
+    noShowNote: 'إذا لم تحضر لهذا الحجز ولم تقم بإلغائه مسبقاً، يحق لمكان الإقامة تحصيل المبلغ الكامل للحجز.',
+    readImportant: 'تذكر قراءة المعلومات المهمة أدناه – قد تحتوي على تفاصيل مهمة غير مذكورة هنا.',
+    guestName: 'اسم الضيف:',
+    numberOfGuests: 'عدد الضيوف:',
+    mealPlan: 'خطة الوجبات:',
+    bedSize: 'حجم السرير:',
+    bedDesc: 'سرير كينج واحد (عرض 181-210 سم)',
+    prepayment: 'الدفع المسبق:',
+    noPrepayment: 'لا حاجة للدفع المسبق.',
+    cancellationCost: 'تكلفة الإلغاء:',
+    cancellationDeadline: 'مواعيد الإلغاء بالتوقيت المحلي لمكان الإقامة.',
+    importantInfo: 'معلومات مهمة',
+    noParties: 'لا يستضيف مكان الإقامة هذا حفلات توديع العزوبية أو ما شابهها.',
+    damageDeposit: 'مبلغ تأمين ضد الأضرار بقيمة',
+    isRequired: 'مطلوب عند الوصول.',
+    thatsAbout: 'أي ما يعادل تقريباً',
+    depositCash: 'سيتم تحصيله نقداً. سيتم رد المبلغ عند المغادرة. سيتم رد التأمين بالكامل نقداً، بعد فحص مكان الإقامة.',
+    hotelPolicies: 'سياسات الفندق',
+    guestParking: 'موقف السيارات',
+    parkingNote: '• يتوفر موقف سيارات خاص في الموقع (بدون حجز مسبق) بتكلفة',
+    perDay: 'في اليوم.',
+    wifiNote: '• خدمة الواي فاي متوفرة في الغرف مجاناً.',
+    needHelp: 'هل تحتاج مساعدة؟',
+    viewChange: 'يمكنك دائماً عرض أو تعديل أو إلغاء حجزك عبر الإنترنت على:',
+    contactProperty: 'لأي أسئلة متعلقة بمكان الإقامة، يمكنك التواصل مع',
+    directlyAt: 'مباشرة على:',
+    contactUs: 'أو تواصل معنا هاتفياً - نحن متاحون على مدار الساعة:',
+    localNumber: 'الرقم المحلي:',
+    whenAbroad: 'عند التواجد خارج البلاد أو من',
+    travelPeace: 'سافر بأمان وراحة بال',
+    safetyInfo: 'هل تبحث عن معلومات للسفر بأمان؟ يمكن لمركز موارد السلامة مساعدتك في التحضير لرحلتك والاستمتاع بإقامة آمنة ومريحة.',
+    seeSafety: 'اطلع على مركز موارد السلامة',
+    emergencyInfo: 'لقد جمعنا أهم أرقام الهواتف المحلية لمنحك راحة بال كاملة أثناء إقامتك في',
+    seeEmergency: 'اطلع على خدمات الطوارئ المحلية',
+    printBtn: '🖨️ طباعة / حفظ كـ PDF',
+    address: 'العنوان:',
+    phone: 'الهاتف:',
+    gpsCoordinates: 'إحداثيات GPS:',
+    amenities: 'حمام خاص • شرفة • إطلالة على الحديقة • إطلالة على الجبل • إطلالة على المدينة • أدوات نظافة مجانية • دش • تكييف هواء • مطبخ • غسالة ملابس • مرحاض • أريكة • مناشف • مواد تنظيف • أرضيات بلاط/رخام • مكتب • عزل صوتي • تلفزيون • شباشب • ثلاجة • مكواة • ميكروويف • تلفزيون بشاشة مسطحة • مجفف شعر • أدوات مطبخ • مطبخ صغير • مناشف/ملاءات (برسوم إضافية) • خدمة إيقاظ/منبه • غلاية كهربائية • غسالة أطباق • خدمة إيقاظ • منبه • خزانة ملابس • فرن • منطقة طعام • طاولة طعام • علاقة ملابس • ورق تواليت • أريكة سرير • كاشف أول أكسيد الكربون • أجهزة تنقية الهواء • معقم يدين • تكييف هواء فردي لسكن الضيوف',
+    dateLocale: 'ar-EG',
+  }
+};
+
+/**
  * Format ISO date for clean display
  */
 function formatDateDisplay(dateStr) {
@@ -34,12 +280,64 @@ function formatDateDisplay(dateStr) {
 }
 
 /**
+ * Localize room type for PDF voucher
+ */
+function localizeRoomType(roomType, lang) {
+  if (!roomType || lang === 'en') return roomType || 'Deluxe King Room';
+  const r = (roomType || '').toLowerCase();
+  if (lang === 'ar') {
+    if (r.includes('studio') && r.includes('balcony')) return 'استوديو مع شرفة';
+    if (r.includes('studio')) return 'استوديو ديلوكس';
+    if (r.includes('deluxe') && (r.includes('king') || r.includes('double'))) return 'غرفة ديلوكس كينج';
+    if (r.includes('king')) return 'غرفة بسرير كينج';
+    if (r.includes('standard') || r.includes('double')) return 'غرفة مزدوجة قياسية';
+    if (r.includes('suite')) return 'جناح فندقي تنفيذي';
+    if (r.includes('twin')) return 'غرفة توأم لشخصين';
+    return roomType;
+  } else if (lang === 'fr') {
+    if (r.includes('studio') && r.includes('balcony')) return 'Studio avec balcon';
+    if (r.includes('studio')) return 'Studio Deluxe';
+    if (r.includes('deluxe') && (r.includes('king') || r.includes('double'))) return 'Chambre Lit King-Size Deluxe';
+    if (r.includes('king')) return 'Chambre avec très grand lit';
+    if (r.includes('standard') || r.includes('double')) return 'Chambre Double Standard';
+    if (r.includes('suite')) return 'Suite Exécutive';
+    if (r.includes('twin')) return 'Chambre Lits Jumeaux';
+    return roomType;
+  }
+  return roomType;
+}
+
+/**
+ * Localize board basis for PDF voucher
+ */
+function localizeBoardBasis(boardBasis, lang) {
+  if (!boardBasis || lang === 'en') return boardBasis || 'No meal is included in this room rate.';
+  const b = (boardBasis || '').toLowerCase();
+  if (lang === 'ar') {
+    if (b.includes('breakfast') && (b.includes('included') || b.includes('free'))) return 'شامل وجبة الإفطار';
+    if (b.includes('all inclusive')) return 'إقامة شاملة كلياً (جميع الوجبات)';
+    if (b.includes('half board')) return 'نصف إقامة (إفطار وعشاء)';
+    return 'لا تشمل هذه الأسعار أي وجبة طعام.';
+  } else if (lang === 'fr') {
+    if (b.includes('breakfast') && (b.includes('included') || b.includes('free'))) return 'Petit-déjeuner compris';
+    if (b.includes('all inclusive')) return 'Formule tout compris';
+    if (b.includes('half board')) return 'Demi-pension';
+    return 'Aucun repas n\'est compris dans le tarif de cette chambre.';
+  }
+  return boardBasis;
+}
+
+/**
  * Generate and trigger international printable accommodation voucher
  */
-export function printHotelVoucher(booking) {
+export function printHotelVoucher(booking, pdfLang = 'en', existingWindow = null) {
   if (!booking) return;
 
-  const printWindow = window.open('', '_blank', 'width=950,height=1000');
+  const L = PDF_LANG[pdfLang] || PDF_LANG.en;
+  const isRtl = L.dir === 'rtl';
+  const dateLocale = L.dateLocale || 'en-US';
+
+  const printWindow = (existingWindow && !existingWindow.closed) ? existingWindow : window.open('', '_blank', 'width=950,height=1000');
   if (!printWindow) {
     showToast('Please allow popups to download or print the voucher PDF.', 'warning');
     return;
@@ -49,12 +347,12 @@ export function printHotelVoucher(booking) {
   const outDate = new Date(booking.checkOut);
 
   const inDayNum = inDate.getDate();
-  const inMonth = inDate.toLocaleDateString('en-US', { month: 'long' }).toUpperCase();
-  const inDayName = inDate.toLocaleDateString('en-US', { weekday: 'long' });
+  const inMonth = inDate.toLocaleDateString(dateLocale, { month: 'long' }).toUpperCase();
+  const inDayName = inDate.toLocaleDateString(dateLocale, { weekday: 'long' });
 
   const outDayNum = outDate.getDate();
-  const outMonth = outDate.toLocaleDateString('en-US', { month: 'long' }).toUpperCase();
-  const outDayName = outDate.toLocaleDateString('en-US', { weekday: 'long' });
+  const outMonth = outDate.toLocaleDateString(dateLocale, { month: 'long' }).toUpperCase();
+  const outDayName = outDate.toLocaleDateString(dateLocale, { weekday: 'long' });
 
   const nights = booking.nights || 1;
   const bookingNumber = booking.bookingNumber || (booking.bookingReference && booking.bookingReference.includes('.') ? booking.bookingReference : '5647.617.021');
@@ -67,8 +365,10 @@ export function printHotelVoucher(booking) {
   const clientName = booking.clientName || 'Moustafa Elsayed Akl';
   const hotelName = booking.hotelName || 'Klcc Stay At Summer Suites';
   const hotelAddress = booking.hotelAddress || '8, Jalan Cendana, 50250 Kuala Lumpur, Malaysia';
-  const roomType = booking.roomType || 'Studio with Balcony';
-  const boardBasis = booking.boardBasis || 'No meal is included in this room rate.';
+  const rawRoomType = booking.roomType || 'Studio with Balcony';
+  const rawBoardBasis = booking.boardBasis || 'No meal is included in this room rate.';
+  const roomType = localizeRoomType(rawRoomType, pdfLang);
+  const boardBasis = localizeBoardBasis(rawBoardBasis, pdfLang);
 
   const cleanDest = (booking.country || booking.city || '').toLowerCase();
   let localCurrency = 'USD';
@@ -129,12 +429,12 @@ export function printHotelVoucher(booking) {
 
   const cancellationDateStr = `${inMonth} ${Math.max(1, inDayNum - 1)}, ${inDate.getFullYear()} 3:13 AM`;
 
-  // 1:1 Pixel-Perfect Official Booking.com Confirmation PDF
+  // 1:1 Pixel-Perfect Official Booking.com Confirmation PDF (Multi-Language)
   const html = `<!DOCTYPE html>
-<html lang="en">
+<html lang="${pdfLang}" dir="${L.dir}">
 <head>
   <meta charset="UTF-8">
-  <title>Booking.com: Confirmation - ${escapeHtml(hotelName)}</title>
+  <title>Booking.com: ${escapeHtml(L.bookingConfirmation)} - ${escapeHtml(hotelName)}</title>
   <style>
     @page {
       size: A4 portrait;
@@ -146,18 +446,19 @@ export function printHotelVoucher(booking) {
       padding: 0;
     }
     body {
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: ${L.fontFamily};
       color: #000000;
       background: #ffffff;
       font-size: 11px;
       line-height: 1.35;
+      direction: ${L.dir};
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
     .print-btn-bar {
       max-width: 800px;
       margin: 10px auto;
-      text-align: right;
+      text-align: ${isRtl ? 'left' : 'right'};
     }
     .print-btn {
       background: #003580;
@@ -402,7 +703,7 @@ export function printHotelVoucher(booking) {
 </head>
 <body>
   <div class="print-btn-bar">
-    <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+    <button class="print-btn" onclick="window.print()">${L.printBtn}</button>
   </div>
 
   <div class="doc-page">
@@ -413,9 +714,9 @@ export function printHotelVoucher(booking) {
           <div class="logo-text">Booking<span>.com</span></div>
         </td>
         <td class="header-right">
-          <div class="confirmation-title">Booking Confirmation</div>
-          <div class="conf-num-label">CONFIRMATION NUMBER: <span class="conf-num-val">${escapeHtml(bookingNumber)}</span></div>
-          <div class="conf-num-label">PIN CODE: <span class="conf-num-val">${escapeHtml(pinCode)}</span></div>
+          <div class="confirmation-title">${escapeHtml(L.bookingConfirmation)}</div>
+          <div class="conf-num-label">${escapeHtml(L.confirmationNumber)}: <span class="conf-num-val">${escapeHtml(bookingNumber)}</span></div>
+          <div class="conf-num-label">${escapeHtml(L.pinCode)}: <span class="conf-num-val">${escapeHtml(pinCode)}</span></div>
         </td>
       </tr>
     </table>
@@ -428,21 +729,21 @@ export function printHotelVoucher(booking) {
             ${hotelImage ? `<img src="${escapeHtml(hotelImage)}" style="width: 76px; height: 76px; object-fit: cover; border: 1px solid #ccc; flex-shrink: 0;" alt="Hotel" />` : ''}
             <div>
               <div class="hotel-info-title">${escapeHtml(hotelName)}</div>
-              <div><strong>Address:</strong> ${escapeHtml(hotelAddress)}</div>
-              <div><strong>Phone:</strong> ${escapeHtml(hotelPhone)}</div>
-              <div><strong>GPS Coordinates:</strong> ${escapeHtml(gpsCoords)}</div>
+              <div><strong>${escapeHtml(L.address)}</strong> ${escapeHtml(hotelAddress)}</div>
+              <div><strong>${escapeHtml(L.phone)}</strong> ${escapeHtml(hotelPhone)}</div>
+              <div><strong>${escapeHtml(L.gpsCoordinates)}</strong> ${escapeHtml(gpsCoords)}</div>
             </div>
           </div>
         </td>
         <td class="date-col">
-          <div class="date-col-label">CHECK-IN</div>
+          <div class="date-col-label">${escapeHtml(L.checkIn)}</div>
           <div class="date-col-num">${escapeHtml(String(inDayNum))}</div>
           <div class="date-col-month">${escapeHtml(inMonth)}</div>
           <div class="date-col-day">${escapeHtml(inDayName)}</div>
           <div class="date-col-time">🕒 14:00 - 23:30</div>
         </td>
         <td class="date-col">
-          <div class="date-col-label">CHECK-OUT</div>
+          <div class="date-col-label">${escapeHtml(L.checkOut)}</div>
           <div class="date-col-num">${escapeHtml(String(outDayNum))}</div>
           <div class="date-col-month">${escapeHtml(outMonth)}</div>
           <div class="date-col-day">${escapeHtml(outDayName)}</div>
@@ -450,12 +751,12 @@ export function printHotelVoucher(booking) {
         </td>
         <td class="rooms-col">
           <div class="rooms-col-header">
-            <span>ROOMS</span>
-            <span>NIGHTS</span>
+            <span>${escapeHtml(L.rooms)}</span>
+            <span>${escapeHtml(L.nights)}</span>
           </div>
           <div class="rooms-col-val">1 <span style="font-weight: 300; font-size: 22px;">/</span> ${escapeHtml(String(nights))}</div>
-          <div class="group-label">YOUR GROUP</div>
-          <div class="group-val">1 adult</div>
+          <div class="group-label">${escapeHtml(L.yourGroup)}</div>
+          <div class="group-val">${escapeHtml(L.adult)}</div>
         </td>
       </tr>
     </table>
@@ -463,69 +764,69 @@ export function printHotelVoucher(booking) {
     <!-- PRICE Box -->
     <div class="price-box">
       <div class="price-title-row">
-        <span>PRICE</span>
+        <span>${escapeHtml(L.price)}</span>
         <span>EGP ${egpTotal.toLocaleString()}</span>
       </div>
       <div class="price-row">
-        <span>1 room</span>
-        <span>approx. EGP ${egpTotal.toLocaleString()}</span>
+        <span>${escapeHtml(L.room)}</span>
+        <span>${escapeHtml(L.approx)} EGP ${egpTotal.toLocaleString()}</span>
       </div>
       <div class="price-row" style="font-size: 13px; font-weight: bold; margin-top: 3px;">
-        <span>Subtotal</span>
-        <span>approx. EGP ${egpTotal.toLocaleString()}</span>
+        <span>${escapeHtml(L.subtotal)}</span>
+        <span>${escapeHtml(L.approx)} EGP ${egpTotal.toLocaleString()}</span>
       </div>
       <div class="price-row" style="color: #444;">
-        <span>(for 1 guest)</span>
+        <span>${escapeHtml(L.forGuest)}</span>
         <span>${localSymbol}${localSubtotal}</span>
       </div>
 
-      <div style="font-weight: bold; margin-top: 6px; margin-bottom: 2px;">Additional charges</div>
+      <div style="font-weight: bold; margin-top: 6px; margin-bottom: 2px;">${escapeHtml(L.additionalCharges)}</div>
       <div style="color: #333; font-size: 9.5px; margin-bottom: 4px;">
-        The price you see below is an approximate that may include fees based on the maximum occupancy. This can include taxes set by local governments or charges set by the property.
+        ${escapeHtml(L.additionalChargesDesc)}
       </div>
       <div class="price-row">
-        <span>VAT (8.0%)</span>
+        <span>${escapeHtml(L.vat)} (8.0%)</span>
         <span>EGP ${vatAmount.toLocaleString()}</span>
       </div>
       <div class="price-row">
-        <span>Tourism fee (EGP 127.09 × ${nights} nights)</span>
+        <span>${escapeHtml(L.tourismFee)} (EGP 127.09 × ${nights} ${escapeHtml(L.perNights)})</span>
         <span>EGP ${tourismFee.toLocaleString()}</span>
       </div>
       <div class="price-row">
-        <span>Property service charge (15.0%)</span>
+        <span>${escapeHtml(L.propertyServiceCharge)} (15.0%)</span>
         <span>EGP ${serviceCharge.toLocaleString()}</span>
       </div>
       <div class="price-row" style="font-size: 13px; font-weight: bold; margin-top: 6px; border-top: 1px solid #777; padding-top: 4px;">
-        <span>Price</span>
-        <span>approx. EGP ${grandTotalEgp.toLocaleString()}*</span>
+        <span>${escapeHtml(L.price)}</span>
+        <span>${escapeHtml(L.approx)} EGP ${grandTotalEgp.toLocaleString()}*</span>
       </div>
-      <div style="text-align: right; font-weight: bold; font-size: 12px; margin-top: 2px;">
-        You'll pay ${localSymbol}${localPayAmount}.
+      <div style="text-align: ${isRtl ? 'left' : 'right'}; font-weight: bold; font-size: 12px; margin-top: 2px;">
+        ${escapeHtml(L.youllPay)} ${localSymbol}${localPayAmount}.
       </div>
       <div style="font-size: 9px; color: #555; margin-top: 2px;">
-        * Tourism Fee (if applicable) refers to the local Tourism Tax
+        ${escapeHtml(L.tourismFeeNote)}
       </div>
       <div style="font-weight: bold; margin-top: 6px;">
-        The final price shown is the amount you'll pay to the property.
+        ${escapeHtml(L.finalPriceNote)}
       </div>
       <div style="font-size: 9.5px; color: #333;">
-        Booking.com doesn't charge guests any reservation, administration, or other fees.<br>
-        Your card issuer may charge you a foreign transaction fee.
+        ${escapeHtml(L.bookingNoCharge)}<br>
+        ${escapeHtml(L.foreignTransaction)}
       </div>
 
-      <div class="section-subhead">Payment Info</div>
-      <div>${escapeHtml(hotelName)} handles all payments.</div>
-      <div>This property accepts the following forms of payment: Cash, Credit Card</div>
+      <div class="section-subhead">${escapeHtml(L.paymentInfo)}</div>
+      <div>${escapeHtml(hotelName)} ${escapeHtml(L.handlesPayments)}</div>
+      <div>${escapeHtml(L.acceptedPayments)}</div>
 
-      <div class="section-subhead">Currency & Exchange Rate Info</div>
-      <div>You'll pay ${escapeHtml(hotelName)} in ${localCurrency} according to the exchange rate on the day of payment.</div>
-      <div>The amount displayed in EGP is just an estimate based on today's exchange rate for ${localCurrency}.</div>
+      <div class="section-subhead">${escapeHtml(L.currencyExchange)}</div>
+      <div>${escapeHtml(L.youllPayIn)} ${escapeHtml(hotelName)} ${escapeHtml(L.inCurrency)} ${localCurrency} ${escapeHtml(L.exchangeRateNote)}</div>
+      <div>${escapeHtml(L.estimateNote)} ${localCurrency}.</div>
 
-      <div class="section-subhead">Additional Info</div>
-      <div>Note that additional supplements (e.g. an extra bed) aren't added in this total.</div>
-      <div>If you cancel, applicable taxes may still be charged by the property.</div>
-      <div>If you don't show up for this booking, and you don't cancel beforehand, the property is liable to charge you the full reservation amount.</div>
-      <div>Remember to read the Important info below – it could contain important details not mentioned here.</div>
+      <div class="section-subhead">${escapeHtml(L.additionalInfo)}</div>
+      <div>${escapeHtml(L.extraBedNote)}</div>
+      <div>${escapeHtml(L.cancelTaxNote)}</div>
+      <div>${escapeHtml(L.noShowNote)}</div>
+      <div>${escapeHtml(L.readImportant)}</div>
     </div>
 
     <!-- Room Details Box -->
@@ -537,19 +838,19 @@ export function printHotelVoucher(booking) {
       <table class="room-content-table" role="presentation">
         <tr>
           <td class="room-left">
-            <div><strong>Guest name:</strong> ${escapeHtml(clientName)}</div>
-            <div><strong>Number of guests:</strong> 1 adult</div>
-            <div style="margin-bottom: 4px;"><strong>Meal plan:</strong> ${escapeHtml(boardBasis)}</div>
+            <div><strong>${escapeHtml(L.guestName)}</strong> ${escapeHtml(clientName)}</div>
+            <div><strong>${escapeHtml(L.numberOfGuests)}</strong> ${escapeHtml(L.adult)}</div>
+            <div style="margin-bottom: 4px;"><strong>${escapeHtml(L.mealPlan)}</strong> ${escapeHtml(boardBasis)}</div>
             <div style="color: #222; margin-bottom: 6px;">
-              Private bathroom • Balcony • Garden view • Mountain view • City view • Free toiletries • Shower • Air conditioning • Kitchen • Washing machine • Toilet • Sofa • Towels • Cleaning products • Tile/marble floor • Desk • Soundproofing • TV • Slippers • Refrigerator • Iron • Microwave • Flat-screen TV • Hairdryer • Kitchenware • Kitchenette • Towels/sheets (extra fee) • Wake-up service/Alarm clock • Electric kettle • Dishwasher • Wake-up service • Alarm clock • Wardrobe or closet • Oven • Dining area • Dining table • Clothes rack • Toilet paper • Sofa bed • Carbon monoxide detector • Air purifiers • Hand sanitizer • Single-room AC for guest accommodation
+              ${escapeHtml(L.amenities)}
             </div>
-            <div><strong>Bed Size(s):</strong> 1 king bed (181-210 cm wide)</div>
+            <div><strong>${escapeHtml(L.bedSize)}</strong> ${escapeHtml(L.bedDesc)}</div>
           </td>
           <td class="room-right">
-            <div><strong>Prepayment :</strong> No prepayment is needed.</div>
-            <div style="margin-top: 8px;"><strong>Cancellation cost:</strong></div>
+            <div><strong>${escapeHtml(L.prepayment)}</strong> ${escapeHtml(L.noPrepayment)}</div>
+            <div style="margin-top: 8px;"><strong>${escapeHtml(L.cancellationCost)}</strong></div>
             <div style="color: #008009; font-weight: bold;">from ${escapeHtml(cancellationDateStr)}: ${localCurrency} 0</div>
-            <div style="font-size: 9px; color: #555; margin-top: 8px;">Cancellation deadlines are in the property's local time.</div>
+            <div style="font-size: 9px; color: #555; margin-top: 8px;">${escapeHtml(L.cancellationDeadline)}</div>
           </td>
         </tr>
       </table>
@@ -560,20 +861,20 @@ export function printHotelVoucher(booking) {
       <tr>
         <td class="bottom-box-left">
           <div style="font-weight: bold; font-size: 11px; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
-            <span>ℹ️</span> <strong>Important Information</strong>
+            <span>ℹ️</span> <strong>${escapeHtml(L.importantInfo)}</strong>
           </div>
-          <div>This property does not accommodate bachelor(ette) or similar parties.</div>
+          <div>${escapeHtml(L.noParties)}</div>
           <div style="margin-top: 4px;">
-            A damage deposit of ${localCurrency} 100 is required on arrival. That's about EGP ${Math.round(100 * exRateToEgp)}. This will be collected as a cash payment. You should be reimbursed on check-out. Your deposit will be refunded in full, in cash, subject to an inspection of the property.
+            ${escapeHtml(L.damageDeposit)} ${localCurrency} 100 ${escapeHtml(L.isRequired)} ${escapeHtml(L.thatsAbout)} EGP ${Math.round(100 * exRateToEgp)}. ${escapeHtml(L.depositCash)}
           </div>
         </td>
         <td class="bottom-box-right">
           <div style="font-weight: bold; font-size: 11px; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
-            <span>📋</span> <strong>Hotel Policies</strong>
+            <span>📋</span> <strong>${escapeHtml(L.hotelPolicies)}</strong>
           </div>
-          <div><strong>Guest parking</strong></div>
-          <div>• Private parking is possible on site (reservation is not needed) and costs ${localCurrency} 15 per day.</div>
-          <div style="margin-top: 3px;">• WiFi is available in the rooms and is free of charge.</div>
+          <div><strong>${escapeHtml(L.guestParking)}</strong></div>
+          <div>${escapeHtml(L.parkingNote)} ${localCurrency} 15 ${escapeHtml(L.perDay)}</div>
+          <div style="margin-top: 3px;">${escapeHtml(L.wifiNote)}</div>
         </td>
       </tr>
     </table>
@@ -584,23 +885,23 @@ export function printHotelVoucher(booking) {
     <div style="max-width: 800px; margin: 0 auto; padding-top: 10px; font-size: 11px; line-height: 1.45;">
       <div class="need-help-header">
         <span>⚙️</span>
-        <span>Need Help?</span>
+        <span>${escapeHtml(L.needHelp)}</span>
       </div>
-      <div><strong>You can always view, change or cancel your booking online at:</strong></div>
+      <div><strong>${escapeHtml(L.viewChange)}</strong></div>
       <div class="help-link" style="margin-bottom: 6px;">your.booking.com</div>
 
-      <div style="margin-top: 6px;">For any questions related to the property, you can contact ${escapeHtml(hotelName)} directly at: <strong>${escapeHtml(hotelPhone)}</strong></div>
+      <div style="margin-top: 6px;">${escapeHtml(L.contactProperty)} ${escapeHtml(hotelName)} ${escapeHtml(L.directlyAt)} <strong>${escapeHtml(hotelPhone)}</strong></div>
 
-      <div style="margin-top: 8px;"><strong>Or contact us by phone - we're available 24 hours a day:</strong></div>
-      <div>Local number: 0800 0000 457</div>
-      <div>When abroad or from ${escapeHtml(booking.country || 'abroad')}: +44 20 3320 2643</div>
+      <div style="margin-top: 8px;"><strong>${escapeHtml(L.contactUs)}</strong></div>
+      <div>${escapeHtml(L.localNumber)} 0800 0000 457</div>
+      <div>${escapeHtml(L.whenAbroad)} ${escapeHtml(booking.country || 'abroad')}: +44 20 3320 2643</div>
 
-      <div style="margin-top: 12px; font-weight: bold; color: #003580;">Travel with peace of mind</div>
-      <div>Looking for info about traveling safely? The safety resource center can help you prepare for your trip and enjoy a safe, relaxing stay.</div>
-      <div class="help-link">See safety resource center</div>
+      <div style="margin-top: 12px; font-weight: bold; color: #003580;">${escapeHtml(L.travelPeace)}</div>
+      <div>${escapeHtml(L.safetyInfo)}</div>
+      <div class="help-link">${escapeHtml(L.seeSafety)}</div>
 
-      <div style="margin-top: 8px;">We've gathered the most important local phone numbers to help give you complete peace of mind during your stay in ${escapeHtml(booking.country || 'your destination')}.</div>
-      <div class="help-link">See local emergency services</div>
+      <div style="margin-top: 8px;">${escapeHtml(L.emergencyInfo)} ${escapeHtml(booking.country || 'your destination')}.</div>
+      <div class="help-link">${escapeHtml(L.seeEmergency)}</div>
     </div>
   </div>
 
@@ -732,6 +1033,20 @@ export function renderHotelsPage() {
                     />
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <!-- Field 4: PDF Language Selection -->
+            <div class="form-grid-3" style="margin-top: 4px;">
+              <div class="form-group">
+                <label class="form-label" for="hotel-pdf-lang">
+                  ${isAr ? 'لغة الـ PDF' : 'PDF Language'} 🌐
+                </label>
+                <select id="hotel-pdf-lang" class="form-control">
+                  <option value="en" selected>🇬🇧 English</option>
+                  <option value="fr">🇫🇷 Français</option>
+                  <option value="ar">🇸🇦 العربية</option>
+                </select>
               </div>
             </div>
 
@@ -1094,6 +1409,7 @@ export function initHotelsPage(container) {
   const autocompleteList = root.querySelector('#customer-autocomplete-list') || document.getElementById('customer-autocomplete-list');
   const previewSection = root.querySelector('#hotel-preview-section') || document.getElementById('hotel-preview-section');
   const searchInput = root.querySelector('#search-hotel-archive') || document.getElementById('search-hotel-archive');
+  const pdfLangSelect = root.querySelector('#hotel-pdf-lang') || document.getElementById('hotel-pdf-lang');
 
   // Load initial saved bookings list
   loadSavedBookings(root);
@@ -1170,6 +1486,8 @@ export function initHotelsPage(container) {
     const checkIn = checkinInput?.value;
     const checkOut = checkoutInput?.value;
     const customerId = customerIdInput?.value || null;
+    const langSelect = root.querySelector('#hotel-pdf-lang') || document.getElementById('hotel-pdf-lang');
+    const selectedLang = langSelect ? langSelect.value : 'en';
 
     if (!clientName || !country || !checkIn || !checkOut) {
       showToast(isAr ? 'يرجى ملء جميع الحقول المطلوبة' : 'Please fill all required fields', 'warning');
@@ -1186,13 +1504,68 @@ export function initHotelsPage(container) {
     if (btnGen) btnGen.disabled = true;
     if (btnGenText) btnGenText.textContent = t('hotels.generating');
 
+    // Pre-open print window on user gesture to avoid popup blocker
+    let printWindow = null;
+    try {
+      printWindow = window.open('', '_blank', 'width=950,height=1000');
+      if (printWindow) {
+        printWindow.document.documentElement.innerHTML = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>Booking.com</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 85vh;
+                margin: 0;
+                color: #003580;
+                text-align: center;
+                background: #f8fafc;
+              }
+              .spinner {
+                border: 4px solid #e2e8f0;
+                border-top: 4px solid #003580;
+                border-radius: 50%;
+                width: 44px;
+                height: 44px;
+                animation: spin 1s linear infinite;
+                margin-bottom: 20px;
+              }
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            </style>
+          </head>
+          <body>
+            <div style="font-size: 38px; font-weight: 800; margin-bottom: 12px;">Booking<span style="color: #00BAF2;">.com</span></div>
+            <div class="spinner"></div>
+            <div style="font-size: 16px; font-weight: bold; color: #1e293b; margin-bottom: 6px;">
+              ${isAr ? 'جاري جلب تفاصيل الفندق الحقيقية من Booking.com...' : 'Fetching authentic hotel details from Booking.com...'}
+            </div>
+            <div style="font-size: 13px; color: #64748b;">
+              ${isAr ? 'سيتم فتح ملف الـ PDF الرسمي تلقائياً فور اكتمال الجلب.' : 'The official PDF confirmation will open automatically once ready.'}
+            </div>
+          </body>
+          </html>
+        `;
+      }
+    } catch (_) {}
+
     try {
       const res = await HotelService.generateAiBooking({
         clientName,
         country,
         checkIn,
         checkOut,
-        customerId
+        customerId,
+        requireLive: true
       });
 
       currentGeneratedBooking = res.data;
@@ -1203,10 +1576,18 @@ export function initHotelsPage(container) {
         bindPreviewEvents(root);
       }
 
-      showToast(isAr ? 'تم توليد بيانات الحجز الفندقي بنجاح!' : 'Hotel booking generated successfully!', 'success');
+      // Automatically print the official PDF confirmation in the user's selected language
+      printHotelVoucher(currentGeneratedBooking, selectedLang, printWindow);
+
+      showToast(isAr ? 'تم جلب بيانات الفندق وطباعة تأكيد بوكينج بنجاح!' : 'Hotel booking generated and PDF opened successfully!', 'success');
     } catch (err) {
+      if (printWindow && !printWindow.closed) {
+        try {
+          printWindow.close();
+        } catch (_) {}
+      }
       console.error('[HotelsPage] AI generation error:', err);
-      showToast(err.message || (isAr ? 'فشل توليد الحجز بالذكاء الاصطناعي' : 'Failed to generate hotel booking'), 'error');
+      showToast(err.message || (isAr ? 'تعذر جلب بيانات الفندق من Booking.com. يرجى المحاولة مرة أخرى.' : 'Failed to generate hotel booking'), 'error');
     } finally {
       isGenerating = false;
       if (btnGen) btnGen.disabled = false;
@@ -1282,7 +1663,9 @@ function bindPreviewEvents(root) {
   if (printBtn) {
     printBtn.addEventListener('click', () => {
       if (currentGeneratedBooking) {
-        printHotelVoucher(currentGeneratedBooking);
+        const langSelect = container.querySelector('#hotel-pdf-lang') || document.getElementById('hotel-pdf-lang');
+        const selectedLang = langSelect ? langSelect.value : 'en';
+        printHotelVoucher(currentGeneratedBooking, selectedLang);
       }
     });
   }

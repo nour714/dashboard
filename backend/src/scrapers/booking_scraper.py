@@ -71,6 +71,69 @@ ARABIC_TO_ENGLISH = {
     'تبليسي': 'Tbilisi, Georgia'
 }
 
+AIRPORT_CODES = {
+    'KUL': 'Kuala Lumpur, Malaysia',
+    'DXB': 'Dubai, United Arab Emirates',
+    'DWC': 'Dubai, United Arab Emirates',
+    'AUH': 'Abu Dhabi, United Arab Emirates',
+    'SHJ': 'Sharjah, United Arab Emirates',
+    'CAI': 'Cairo, Egypt',
+    'HBE': 'Alexandria, Egypt',
+    'ALY': 'Alexandria, Egypt',
+    'SSH': 'Sharm El Sheikh, Egypt',
+    'HRG': 'Hurghada, Egypt',
+    'LXR': 'Luxor, Egypt',
+    'ASW': 'Aswan, Egypt',
+    'RUH': 'Riyadh, Saudi Arabia',
+    'JED': 'Jeddah, Saudi Arabia',
+    'MED': 'Medina, Saudi Arabia',
+    'DMM': 'Dammam, Saudi Arabia',
+    'IST': 'Istanbul, Turkey',
+    'SAW': 'Istanbul, Turkey',
+    'AYT': 'Antalya, Turkey',
+    'ESB': 'Ankara, Turkey',
+    'CDG': 'Paris, France',
+    'ORY': 'Paris, France',
+    'LHR': 'London, United Kingdom',
+    'LGW': 'London, United Kingdom',
+    'STN': 'London, United Kingdom',
+    'LTN': 'London, United Kingdom',
+    'MAN': 'Manchester, United Kingdom',
+    'FCO': 'Rome, Italy',
+    'CIA': 'Rome, Italy',
+    'MXP': 'Milan, Italy',
+    'LIN': 'Milan, Italy',
+    'BGY': 'Milan, Italy',
+    'MAD': 'Madrid, Spain',
+    'BCN': 'Barcelona, Spain',
+    'AGP': 'Malaga, Spain',
+    'FRA': 'Frankfurt, Germany',
+    'MUC': 'Munich, Germany',
+    'BER': 'Berlin, Germany',
+    'BKK': 'Bangkok, Thailand',
+    'DMK': 'Bangkok, Thailand',
+    'HKT': 'Phuket, Thailand',
+    'CNX': 'Chiang Mai, Thailand',
+    'DOH': 'Doha, Qatar',
+    'KWI': 'Kuwait City, Kuwait',
+    'BAH': 'Manama, Bahrain',
+    'MCT': 'Muscat, Oman',
+    'TBS': 'Tbilisi, Georgia',
+    'AMM': 'Amman, Jordan',
+    'BEY': 'Beirut, Lebanon',
+    'CMN': 'Casablanca, Morocco',
+    'RAK': 'Marrakech, Morocco',
+    'TUN': 'Tunis, Tunisia',
+    'JFK': 'New York, United States',
+    'EWR': 'New York, United States',
+    'LAX': 'Los Angeles, United States',
+    'MIA': 'Miami, United States',
+    'ORD': 'Chicago, United States',
+    'SIN': 'Singapore',
+    'NRT': 'Tokyo, Japan',
+    'HND': 'Tokyo, Japan'
+}
+
 def generate_hotel_phone(destination, hotel_name=""):
     dest = f"{destination} {hotel_name}".lower()
     if any(k in dest for k in ['malaysia', 'kuala lumpur', 'summer suites', 'klcc', 'penang', 'langkawi']):
@@ -105,12 +168,16 @@ def generate_hotel_phone(destination, hotel_name=""):
 def scrape_booking(destination, checkin, checkout):
     from playwright.sync_api import sync_playwright
 
-    # Normalize Arabic input if applicable
+    # Normalize input (Airport IATA code, Arabic name, or English city/country)
     clean = destination.strip()
-    for ar_term, en_term in ARABIC_TO_ENGLISH.items():
-        if ar_term in clean:
-            clean = clean.replace(ar_term, en_term)
-            break
+    upper_code = clean.upper()
+    if upper_code in AIRPORT_CODES:
+        clean = AIRPORT_CODES[upper_code]
+    else:
+        for ar_term, en_term in ARABIC_TO_ENGLISH.items():
+            if ar_term in clean:
+                clean = clean.replace(ar_term, en_term)
+                break
 
     # If just "Malaysia" or similar country without city, add capital for better results
     if clean.lower() == 'malaysia':
@@ -177,19 +244,18 @@ def scrape_booking(destination, checkin, checkout):
         if not cards:
             return None
 
-        # Pick the best valid hotel card
-        chosen_card = None
-        hotel_name = None
-        for card in cards[:6]:
+        # Collect valid hotel cards and pick randomly among them
+        valid_cards = []
+        for card in cards[:8]:
             title_el = card.query_selector('div[data-testid="title"]') or card.query_selector('[data-testid="title"]')
             if title_el:
                 name_text = title_el.inner_text().strip()
                 if name_text and len(name_text) > 2:
-                    chosen_card = card
-                    hotel_name = name_text
-                    break
+                    valid_cards.append((card, name_text))
 
-        if not chosen_card:
+        if valid_cards:
+            chosen_card, hotel_name = random.choice(valid_cards)
+        else:
             chosen_card = cards[0]
             title_el = chosen_card.query_selector('div[data-testid="title"]')
             hotel_name = title_el.inner_text().strip() if title_el else f"Grand Hotel {clean_dest}"
