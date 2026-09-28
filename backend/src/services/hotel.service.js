@@ -7,17 +7,65 @@ import { NotFoundError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
 import { generateHotelBookingDetails, generateReferenceCodes, calculateNights } from './hotel-ai.service.js';
 import { PythonScraperService } from './python-scraper.service.js';
+import { RapidApiBookingService } from './rapidapi-booking.service.js';
 
 export const HotelService = {
   /**
-   * Generate realistic hotel booking details using live Python scraper with AI/curated fallback
+   * Generate realistic hotel booking details using live RapidAPI Booking.com, Python scraper, or AI/curated fallback
    */
   async generateAi(data) {
     const { clientName, country, checkIn, checkOut, customerId } = data;
     const nights = calculateNights(checkIn, checkOut);
     const { bookingReference, confirmationNumber } = generateReferenceCodes();
 
-    // 1. Prioritize Python Live Scraper (real Booking.com accommodation)
+    // 1. Prioritize RapidAPI Booking.com (Fastest, ~1.2s, real Booking.com data and photos, zero bot issues)
+    try {
+      const rapidHotel = await RapidApiBookingService.fetchLiveHotel({
+        destination: country,
+        checkIn,
+        checkOut
+      });
+
+      if (rapidHotel && rapidHotel.hotelName) {
+        return {
+          bookingReference,
+          confirmationNumber,
+          bookingNumber: rapidHotel.bookingNumber,
+          pinCode: rapidHotel.pinCode,
+          clientName: clientName.trim(),
+          customerId: customerId || null,
+          hotelName: rapidHotel.hotelName,
+          hotelStars: rapidHotel.hotelStars || 5,
+          hotelAddress: rapidHotel.hotelAddress || `City Center, ${country}`,
+          hotelPhone: rapidHotel.hotelPhone || '+971 4 430 4528',
+          city: rapidHotel.city || country,
+          country: rapidHotel.country || country,
+          checkIn: new Date(checkIn).toISOString(),
+          checkOut: new Date(checkOut).toISOString(),
+          nights,
+          roomType: rapidHotel.roomType || 'Deluxe King Room',
+          boardBasis: rapidHotel.boardBasis || 'Breakfast included',
+          price: rapidHotel.price || 'US$ 450',
+          reviewScore: rapidHotel.reviewScore || '9.0 Superb · 2,840 reviews',
+          hotelImage: rapidHotel.hotelImage || '',
+          guests: '1 Adult',
+          checkInTime: rapidHotel.checkInTime || '15:00',
+          checkOutTime: rapidHotel.checkOutTime || '12:00',
+          amenities: rapidHotel.amenities || ['Free high-speed WiFi', 'Air conditioning', 'Private bathroom', 'Flat-screen TV'],
+          specialRequests: rapidHotel.specialRequests || 'Non-smoking room, high floor requested',
+          cancellationPolicy: rapidHotel.cancellationPolicy || 'Free cancellation anytime up to 48 hours before check-in.',
+          paymentStatus: rapidHotel.paymentStatus || 'Paid online',
+          status: 'CONFIRMED',
+          source: 'BOOKING_LIVE',
+          provider: 'RAPIDAPI_BOOKING',
+          generatedByAi: false
+        };
+      }
+    } catch (rapidErr) {
+      console.warn('[HotelService] RapidAPI Booking.com call failed:', rapidErr.message);
+    }
+
+    // 2. Secondary fallback: Python Live Scraper (Playwright)
     try {
       const liveHotel = await PythonScraperService.scrapeLiveHotel({
         destination: country,

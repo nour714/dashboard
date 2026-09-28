@@ -43,7 +43,9 @@ const envSchema = z.object({
   SUPABASE_STORAGE_BUCKET: z.string().default('customer-documents'),
   GEMINI_API_KEY: z.string().default(''),
   GEMINI_MODEL: z.string().default('gemini-3.7-flash'),
-  GEMINI_FALLBACK_MODEL: z.string().default('gemini-3.5-flash-lite')
+  GEMINI_FALLBACK_MODEL: z.string().default('gemini-3.5-flash-lite'),
+  RAPIDAPI_KEY: z.string().default(''),
+  RAPIDAPI_HOST: z.string().default('booking-com15.p.rapidapi.com')
 });
 
 function resolveDatabaseUrl() {
