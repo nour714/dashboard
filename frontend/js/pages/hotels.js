@@ -1535,23 +1535,23 @@ export function renderHotelsPage() {
         </div>
 
         <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table" id="hotels-archive-table">
+          <div class="table-responsive desktop-table-view">
+            <table class="data-table" id="hotels-archive-table">
               <thead>
                 <tr>
-                  <th>${isAr ? 'كود المرجع' : 'Booking Ref'}</th>
-                  <th>${escapeHtml(t('hotels.clientName'))}</th>
-                  <th>${escapeHtml(t('hotels.hotelName'))}</th>
-                  <th>${escapeHtml(t('hotels.destination'))}</th>
-                  <th>${isAr ? 'فترة الإقامة' : 'Stay Dates'}</th>
-                  <th>${escapeHtml(t('hotels.nights'))}</th>
-                  <th>${escapeHtml(t('hotels.status'))}</th>
-                  <th style="text-align: right;">${isAr ? 'الإجراءات' : 'Actions'}</th>
+                  <th style="min-width: 140px;">${isAr ? 'كود المرجع' : 'Booking Ref'}</th>
+                  <th style="min-width: 160px;">${escapeHtml(t('hotels.clientName'))}</th>
+                  <th style="min-width: 180px;">${escapeHtml(t('hotels.hotelName'))}</th>
+                  <th style="min-width: 140px;">${escapeHtml(t('hotels.destination'))}</th>
+                  <th style="min-width: 160px;">${isAr ? 'فترة الإقامة' : 'Stay Dates'}</th>
+                  <th style="min-width: 100px;">${escapeHtml(t('hotels.nights'))}</th>
+                  <th style="min-width: 120px;">${escapeHtml(t('hotels.status'))}</th>
+                  <th style="min-width: 120px; text-align: right;">${isAr ? 'الإجراءات' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody id="hotels-table-body">
                 <tr>
-                  <td colspan="8" class="text-center p-xl text-muted">
+                  <td colspan="8" class="text-center p-xl text-muted" style="padding: 40px 16px;">
                     ${isAr ? 'جاري تحميل الحجوزات...' : 'Loading bookings...'}
                   </td>
                 </tr>
@@ -1759,8 +1759,12 @@ function renderArchiveRows(bookings = []) {
   if (!bookings || bookings.length === 0) {
     return `
       <tr>
-        <td colspan="8" class="text-center p-xl text-muted">
-          ${escapeHtml(t('hotels.noBookings'))}
+        <td colspan="8" class="text-center p-xl text-muted" style="padding: 48px 16px;">
+          <div class="d-flex flex-column align-items-center justify-content-center gap-xs">
+            <span style="font-size: 32px; opacity: 0.5;">🏨</span>
+            <div style="font-weight: 600; font-size: 15px; color: var(--color-text);">${escapeHtml(t('hotels.noBookings'))}</div>
+            <div class="text-xs text-muted" style="max-width: 420px; text-align: center; line-height: 1.5;">${escapeHtml(t('hotels.noBookingsDesc'))}</div>
+          </div>
         </td>
       </tr>
     `;
