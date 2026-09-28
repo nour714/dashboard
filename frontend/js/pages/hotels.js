@@ -259,8 +259,378 @@ const PDF_LANG = {
     gpsCoordinates: 'إحداثيات GPS:',
     amenities: 'حمام خاص • شرفة • إطلالة على الحديقة • إطلالة على الجبل • إطلالة على المدينة • أدوات نظافة مجانية • دش • تكييف هواء • مطبخ • غسالة ملابس • مرحاض • أريكة • مناشف • مواد تنظيف • أرضيات بلاط/رخام • مكتب • عزل صوتي • تلفزيون • شباشب • ثلاجة • مكواة • ميكروويف • تلفزيون بشاشة مسطحة • مجفف شعر • أدوات مطبخ • مطبخ صغير • مناشف/ملاءات (برسوم إضافية) • خدمة إيقاظ/منبه • غلاية كهربائية • غسالة أطباق • خدمة إيقاظ • منبه • خزانة ملابس • فرن • منطقة طعام • طاولة طعام • علاقة ملابس • ورق تواليت • أريكة سرير • كاشف أول أكسيد الكربون • أجهزة تنقية الهواء • معقم يدين • تكييف هواء فردي لسكن الضيوف',
     dateLocale: 'ar-EG',
+  },
+  de: {
+    dir: 'ltr',
+    fontFamily: 'Arial, Helvetica, sans-serif',
+    bookingConfirmation: 'Buchungsbestätigung',
+    confirmationNumber: 'BUCHUNGSNUMMER',
+    pinCode: 'PIN-CODE',
+    checkIn: 'ANREISE',
+    checkOut: 'ABREISE',
+    rooms: 'ZIMMER',
+    nights: 'NÄCHTE',
+    yourGroup: 'IHRE GRUPPE',
+    adult: '1 Erwachsener',
+    price: 'PREIS',
+    room: '1 Zimmer',
+    approx: 'ca.',
+    subtotal: 'Zwischensumme',
+    forGuest: '(für 1 Gast)',
+    additionalCharges: 'Zusätzliche Kosten',
+    additionalChargesDesc: 'Der unten angezeigte Preis ist ein Richtwert, der möglicherweise Gebühren für die Maximalbelegung enthält.',
+    vat: 'Mehrwertsteuer (MwSt.)',
+    tourismFee: 'Tourismusabgabe / Kurtaxe',
+    perNights: 'Nächte',
+    propertyServiceCharge: 'Servicegebühr der Unterkunft',
+    youllPay: 'Sie zahlen',
+    tourismFeeNote: '* Tourismusabgabe (falls zutreffend) bezieht sich auf die lokale Kurtaxe',
+    finalPriceNote: 'Der angezeigte Endpreis ist der Betrag, den Sie an die Unterkunft zahlen.',
+    bookingNoCharge: 'Booking.com erhebt von Gästen keine Reservierungs-, Verwaltungs- oder sonstigen Gebühren.',
+    foreignTransaction: 'Ihr Kartenaussteller kann Ihnen eine Auslandseinsatzgebühr berechnen.',
+    paymentInfo: 'Zahlungsinformationen',
+    handlesPayments: 'wickelt alle Zahlungen ab.',
+    acceptedPayments: 'Diese Unterkunft akzeptiert folgende Zahlungsarten: Barzahlung, Kreditkarte',
+    currencyExchange: 'Währung & Wechselkurs',
+    youllPayIn: 'Sie zahlen an',
+    inCurrency: 'in',
+    exchangeRateNote: 'nach dem Wechselkurs am Tag der Zahlung.',
+    estimateNote: 'Der in EGP angezeigte Betrag ist eine Schätzung basierend auf dem heutigen Wechselkurs für',
+    additionalInfo: 'Zusätzliche Informationen',
+    extraBedNote: 'Zusätzliche Leistungen (z. B. Zustellbett) sind nicht in diesem Gesamtbetrag enthalten.',
+    cancelTaxNote: 'Im Falle einer Stornierung können von der Unterkunft Steuern erhoben werden.',
+    noShowNote: 'Wenn Sie nicht anreisen und nicht vorher stornieren, kann Ihnen der volle Betrag berechnet werden.',
+    readImportant: 'Bitte lesen Sie die wichtigen Informationen unten – sie enthalten wichtige Details.',
+    guestName: 'Name des Gastes:',
+    numberOfGuests: 'Anzahl der Gäste:',
+    mealPlan: 'Verpflegung:',
+    bedSize: 'Bettengröße(n):',
+    bedDesc: '1 großes Doppelbett (Kingsize, 181-210 cm breit)',
+    prepayment: 'Vorauszahlung:',
+    noPrepayment: 'Keine Vorauszahlung erforderlich.',
+    cancellationCost: 'Stornierungskosten:',
+    cancellationDeadline: 'Stornierungsfristen richten sich nach der Ortszeit der Unterkunft.',
+    importantInfo: 'Wichtige Informationen',
+    noParties: 'In dieser Unterkunft sind Junggesellen-/Junggesellinnenabschiede nicht gestattet.',
+    damageDeposit: 'Eine Schadenskaution in Höhe von',
+    isRequired: 'ist bei der Ankunft fällig.',
+    thatsAbout: 'Das sind etwa',
+    depositCash: 'Die Kaution wird in bar hinterlegt und beim Check-out nach beanstandungsloser Abnahme erstattet.',
+    hotelPolicies: 'Richtlinien der Unterkunft',
+    guestParking: 'Parkmöglichkeiten',
+    parkingNote: '• Private Parkplätze stehen an der Unterkunft zur Verfügung und kosten',
+    perDay: 'pro Tag.',
+    wifiNote: '• WLAN ist in allen Zimmern nutzbar und ist kostenfrei.',
+    needHelp: 'Brauchen Sie Hilfe?',
+    viewChange: 'Sie können Ihre Buchung jederzeit online einsehen, ändern oder stornieren unter:',
+    contactProperty: 'Bei Fragen zur Unterkunft können Sie',
+    directlyAt: 'direkt kontaktieren unter:',
+    contactUs: 'Oder kontaktieren Sie uns telefonisch rund um die Uhr:',
+    localNumber: 'Lokale Nummer:',
+    whenAbroad: 'Aus dem Ausland oder von',
+    travelPeace: 'Sorgenfrei reisen',
+    safetyInfo: 'Möchten Sie sich über sicheres Reisen informieren? Unser Sicherheitszentrum hilft Ihnen dabei.',
+    seeSafety: 'Zum Sicherheitszentrum',
+    emergencyInfo: 'Wir haben die wichtigsten Notrufnummern für Ihren Aufenthalt zusammengestellt in',
+    seeEmergency: 'Notdienste vor Ort ansehen',
+    printBtn: '🖨️ Drucken / Als PDF speichern',
+    address: 'Adresse:',
+    phone: 'Telefon:',
+    gpsCoordinates: 'GPS-Koordinaten:',
+    amenities: 'Eigenes Badezimmer • Balkon • Gartenblick • Bergblick • Stadtblick • Kostenlose Pflegeprodukte • Dusche • Klimaanlage • Küche • Waschmaschine • WC • Sofa • Handtücher • Fliesen-/Marmorboden • Schreibtisch • Schallisolierung • TV • Hausschuhe • Kühlschrank • Bügeleisen • Mikrowelle • Flachbild-TV • Haartrockner • Küchenutensilien • Tee-/Kaffeekocher • Spülmaschine • Weckservice • Kleiderschrank • Backofen • Essbereich • Esstisch • Wäscheständer • Toilettenpapier • Schlafsofa • Luftreiniger • Händedesinfektionsmittel',
+    dateLocale: 'de-DE'
+  },
+  es: {
+    dir: 'ltr',
+    fontFamily: 'Arial, Helvetica, sans-serif',
+    bookingConfirmation: 'Confirmación de la reserva',
+    confirmationNumber: 'NÚMERO DE CONFIRMACIÓN',
+    pinCode: 'CÓDIGO PIN',
+    checkIn: 'ENTRADA',
+    checkOut: 'SALIDA',
+    rooms: 'HABITACIONES',
+    nights: 'NOCHES',
+    yourGroup: 'TU GRUPO',
+    adult: '1 adulto',
+    price: 'PRECIO',
+    room: '1 habitación',
+    approx: 'aprox.',
+    subtotal: 'Subtotal',
+    forGuest: '(para 1 persona)',
+    additionalCharges: 'Cargos adicionales',
+    additionalChargesDesc: 'El precio indicado a continuación es aproximado y puede incluir suplementos según la ocupación máxima.',
+    vat: 'IVA',
+    tourismFee: 'Tasa turística',
+    perNights: 'noches',
+    propertyServiceCharge: 'Cargo por servicio del alojamiento',
+    youllPay: 'Pagarás',
+    tourismFeeNote: '* La tasa turística se refiere al impuesto turístico local aplicable',
+    finalPriceNote: 'El precio final mostrado es el importe que abonarás al alojamiento.',
+    bookingNoCharge: 'Booking.com no cobra a los clientes gastos de gestión ni comisiones de reserva.',
+    foreignTransaction: 'La entidad emisora de tu tarjeta puede cobrarte una comisión por transacciones internacionales.',
+    paymentInfo: 'Información sobre el pago',
+    handlesPayments: 'gestiona todos los pagos.',
+    acceptedPayments: 'Este alojamiento acepta las siguientes formas de pago: Efectivo, Tarjeta de crédito',
+    currencyExchange: 'Información de divisa y tipo de cambio',
+    youllPayIn: 'Pagarás a',
+    inCurrency: 'en',
+    exchangeRateNote: 'según el tipo de cambio del día en que se efectúe el pago.',
+    estimateNote: 'El importe mostrado en EGP es una estimación basada en el tipo de cambio de hoy para',
+    additionalInfo: 'Información adicional',
+    extraBedNote: 'Ten en cuenta que los suplementos (p. ej., camas supletorias) no están incluidos en el total.',
+    cancelTaxNote: 'En caso de cancelación, el alojamiento puede aplicar impuestos correspondientes.',
+    noShowNote: 'Si no te presentas y no cancelas antes, el alojamiento te cobrará el importe íntegro.',
+    readImportant: 'Recuerda leer la Información importante más abajo para más detalles.',
+    guestName: 'Nombre del huésped:',
+    numberOfGuests: 'Número de huéspedes:',
+    mealPlan: 'Régimen de comidas:',
+    bedSize: 'Tamaño de cama(s):',
+    bedDesc: '1 cama extragrande (ancho: 181-210 cm)',
+    prepayment: 'Pago por adelantado:',
+    noPrepayment: 'No se requiere pago por adelantado.',
+    cancellationCost: 'Gastos de cancelación:',
+    cancellationDeadline: 'Las fechas límite de cancelación se rigen por la hora local del alojamiento.',
+    importantInfo: 'Información importante',
+    noParties: 'En este alojamiento no se pueden celebrar despedidas de soltero o soltera ni fiestas similares.',
+    damageDeposit: 'Se requiere un depósito por daños de',
+    isRequired: 'a la llegada.',
+    thatsAbout: 'Equivale a unos',
+    depositCash: 'Se cobrará en efectivo y se devolverá íntegramente al hacer el check-out tras revisar el alojamiento.',
+    hotelPolicies: 'Condiciones del alojamiento',
+    guestParking: 'Aparcamiento para huéspedes',
+    parkingNote: '• Hay parking privado en el establecimiento (no es necesario reservar) por',
+    perDay: 'al día.',
+    wifiNote: '• Hay conexión a internet Wi-Fi disponible en las habitaciones gratis.',
+    needHelp: '¿Necesitas ayuda?',
+    viewChange: 'Puedes ver, modificar o cancelar tu reserva por internet en:',
+    contactProperty: 'Para cualquier duda sobre el alojamiento, contacta con',
+    directlyAt: 'directamente en:',
+    contactUs: 'O llámanos las 24 horas del día:',
+    localNumber: 'Número local:',
+    whenAbroad: 'Desde el extranjero o desde',
+    travelPeace: 'Viaja con total tranquilidad',
+    safetyInfo: '¿Buscas información para viajar con seguridad? El centro de recursos te ayuda a preparar tu estancia.',
+    seeSafety: 'Ver centro de recursos de seguridad',
+    emergencyInfo: 'Hemos reunido los teléfonos locales más importantes durante tu estancia en',
+    seeEmergency: 'Ver teléfonos de emergencia locales',
+    printBtn: '🖨️ Imprimir / Guardar como PDF',
+    address: 'Dirección:',
+    phone: 'Teléfono:',
+    gpsCoordinates: 'Coordenadas GPS:',
+    amenities: 'Baño privado • Balcón • Vistas al jardín • Vistas a la montaña • Vistas a la ciudad • Artículos de aseo gratis • Ducha • Aire acondicionado • Cocina • Lavadora • WC • Sofá • Toallas • Suelo de baldosa/mármol • Escritorio • Insonorización • TV • Zapatillas • Nevera • Plancha • Microondas • TV de pantalla plana • Secador de pelo • Utensilios de cocina • Zona de cocina • Hervidor eléctrico • Lavavajillas • Servicio de despertador • Armario • Horno • Zona de comedor • Mesa de comedor • Tendedero • Papel higiénico • Sofá cama • Purificadores de aire • Desinfectante de manos',
+    dateLocale: 'es-ES'
+  },
+  tr: {
+    dir: 'ltr',
+    fontFamily: 'Arial, Helvetica, sans-serif',
+    bookingConfirmation: 'Rezervasyon Onayı',
+    confirmationNumber: 'ONAY NUMARASI',
+    pinCode: 'PIN KODU',
+    checkIn: 'GİRİŞ',
+    checkOut: 'ÇIKIŞ',
+    rooms: 'ODALAR',
+    nights: 'GECE',
+    yourGroup: 'GRUBUNUZ',
+    adult: '1 yetişkin',
+    price: 'FİYAT',
+    room: '1 oda',
+    approx: 'yaklaşık',
+    subtotal: 'Ara toplam',
+    forGuest: '(1 kişi için)',
+    additionalCharges: 'Ek ücretler',
+    additionalChargesDesc: 'Aşağıda gösterilen fiyat yaklaşık bir değerdir ve azami doluluğa göre yerel vergileri veya tesis ücretlerini içerebilir.',
+    vat: 'KDV',
+    tourismFee: 'Konaklama / Şehir vergisi',
+    perNights: 'gece',
+    propertyServiceCharge: 'Tesis hizmet bedeli',
+    youllPay: 'Ödeyeceğiniz tutar',
+    tourismFeeNote: '* Varsa şehir/turizm vergisi yerel kurallara göre uygulanır',
+    finalPriceNote: 'Gösterilen nihai tutar, tesise doğrudan ödeyeceğiniz bedeldir.',
+    bookingNoCharge: 'Booking.com konuklardan hiçbir rezervasyon veya işlem ücreti talep etmez.',
+    foreignTransaction: 'Kartınızı veren banka yabancı para işlem ücreti uygulayabilir.',
+    paymentInfo: 'Ödeme Bilgileri',
+    handlesPayments: 'tüm ödemeleri yönetmektedir.',
+    acceptedPayments: 'Bu tesis şu ödeme yöntemlerini kabul etmektedir: Nakit, Kredi Kartı',
+    currencyExchange: 'Para Birimi ve Döviz Kuru Bilgisi',
+    youllPayIn: 'Ödemenizi şu tesise yapacaksınız:',
+    inCurrency: 'para birimiyle:',
+    exchangeRateNote: 'ödeme günündeki döviz kuruna göre tahsil edilir.',
+    estimateNote: 'EGP olarak gösterilen tutar yalnızca bugünkü döviz kuruna dayalı bir tahmindir:',
+    additionalInfo: 'Ek Bilgiler',
+    extraBedNote: 'İlave hizmetlerin (örn. ekstra yatak) bu toplama dahil olmadığını lütfen unutmayın.',
+    cancelTaxNote: 'İptal durumunda yürürlükteki vergiler tesis tarafından tahsil edilebilir.',
+    noShowNote: 'Giriş yapmaz ve önceden iptal etmezseniz tesis rezervasyon tutarının tamamını tahsil edebilir.',
+    readImportant: 'Aşağıdaki Önemli Bilgiler bölümünü okumayı unutmayın.',
+    guestName: 'Konuk adı:',
+    numberOfGuests: 'Konuk sayısı:',
+    mealPlan: 'Öğün planı:',
+    bedSize: 'Yatak boyutu:',
+    bedDesc: '1 ekstra büyük çift kişilik yatak (181-210 cm genişlik)',
+    prepayment: 'Ön ödeme:',
+    noPrepayment: 'Ön ödeme gerekmez.',
+    cancellationCost: 'İptal ücreti:',
+    cancellationDeadline: 'İptal süreleri tesisin yerel saatine göredir.',
+    importantInfo: 'Önemli Bilgiler',
+    noParties: 'Bu tesiste bekarlığa veda veya benzeri partiler düzenlenemez.',
+    damageDeposit: 'Girişte şu tutarda hasar güvence bedeli alınır:',
+    isRequired: 'giriş sırasında talep edilir.',
+    thatsAbout: 'Yaklaşık karşılığı:',
+    depositCash: 'Nakit olarak alınır ve çıkışta tesis kontrol edildikten sonra nakit olarak iade edilir.',
+    hotelPolicies: 'Tesis Kuralları',
+    guestParking: 'Otopark',
+    parkingNote: '• Tesis bünyesinde özel park yeri mevcuttur (rezervasyon gerekmez) ve günlük ücreti:',
+    perDay: 'günlük.',
+    wifiNote: '• WiFi odalarda mevcuttur ve ücretsizdir.',
+    needHelp: 'Yardıma mı ihtiyacınız var?',
+    viewChange: 'Rezervasyonunuzu dilediğiniz zaman online olarak görüntüleyebilir, değiştirebilir veya iptal edebilirsiniz:',
+    contactProperty: 'Tesisle ilgili tüm sorularınız için doğrudan iletişime geçebilirsiniz:',
+    directlyAt: 'Telefon:',
+    contactUs: 'Veya bizi arayın - günün 24 saati hizmetinizdeyiz:',
+    localNumber: 'Yerel numara:',
+    whenAbroad: 'Yurt dışından veya şuradan:',
+    travelPeace: 'Gönül rahatlığıyla seyahat edin',
+    safetyInfo: 'Güvenli seyahat hakkında bilgi mi arıyorsunuz? Güvenlik merkezimiz hazırlık yapmanıza yardımcı olabilir.',
+    seeSafety: 'Güvenlik merkezini görüntüle',
+    emergencyInfo: 'Seyahatiniz sırasında içinizin rahat olması için yerel acil durum numaralarını derledik:',
+    seeEmergency: 'Yerel acil durum servislerini gör',
+    printBtn: '🖨️ Yazdır / PDF olarak kaydet',
+    address: 'Adres:',
+    phone: 'Telefon:',
+    gpsCoordinates: 'GPS Koordinatları:',
+    amenities: 'Özel banyo • Balkon • Bahçe manzarası • Dağ manzarası • Şehir manzarası • Ücretsiz banyo malzemeleri • Duş • Klima • Mutfak • Çamaşır makinesi • Tuvalet • Kanepe • Havlular • Karo/mermer zemin • Çalışma masası • Ses yalıtımı • TV • Terlik • Buzdolabı • Ütü • Mikrodalga fırın • Düz ekran TV • Saç kurutma makinesi • Mutfak eşyaları • Mutfak alanı • Elektrikli su ısıtıcısı • Bulaşık makinesi • Uyandırma servisi • Gardırop • Fırın • Yemek alanı • Yemek masası • Çamaşır askılığı • Tuvalet kağıdı • Çekyat • Hava temizleyiciler • El dezenfektanı',
+    dateLocale: 'tr-TR'
   }
 };
+
+/**
+ * Automatically detect the native PDF language based on hotel destination / country / city
+ */
+export function detectCountryLanguage(destination = '', hotelCountry = '', hotelCity = '', hotelAddress = '', hotelName = '') {
+  // Comprehensive mapping of IATA airport codes to country native languages
+  const IATA_MAP = {
+    // Arab countries (ar)
+    'DXB': 'ar', 'DWC': 'ar', 'AUH': 'ar', 'SHJ': 'ar', 'RKT': 'ar',
+    'RUH': 'ar', 'JED': 'ar', 'MED': 'ar', 'DMM': 'ar', 'AHB': 'ar', 'TUU': 'ar', 'ELQ': 'ar',
+    'CAI': 'ar', 'HBE': 'ar', 'ALY': 'ar', 'SSH': 'ar', 'HRG': 'ar', 'LXR': 'ar', 'ASW': 'ar',
+    'DOH': 'ar', 'KWI': 'ar', 'BAH': 'ar', 'MCT': 'ar', 'SLL': 'ar',
+    'AMM': 'ar', 'AQJ': 'ar', 'BEY': 'ar', 'BGW': 'ar', 'EBL': 'ar', 'BSR': 'ar',
+    'CMN': 'ar', 'RAK': 'ar', 'TNG': 'ar', 'AGA': 'ar', 'FEZ': 'ar',
+    'TUN': 'ar', 'MIR': 'ar', 'DJE': 'ar', 'ALG': 'ar', 'ORN': 'ar', 'CZL': 'ar',
+    'KRT': 'ar', 'TIP': 'ar', 'BEN': 'ar',
+
+    // French countries (fr)
+    'CDG': 'fr', 'ORY': 'fr', 'BVA': 'fr', 'NCE': 'fr', 'LYS': 'fr', 'MRS': 'fr',
+    'BOD': 'fr', 'TLS': 'fr', 'SXB': 'fr', 'LIL': 'fr', 'NTE': 'fr',
+    'BRU': 'fr', 'CRL': 'fr', 'GVA': 'fr',
+
+    // German countries (de)
+    'BER': 'de', 'TXL': 'de', 'SXF': 'de', 'FRA': 'de', 'MUC': 'de', 'HAM': 'de',
+    'CGN': 'de', 'DUS': 'de', 'STR': 'de', 'DRS': 'de', 'LEJ': 'de', 'HAJ': 'de', 'NUE': 'de',
+    'VIE': 'de', 'SZG': 'de', 'INN': 'de', 'GRZ': 'de', 'ZRH': 'de', 'BSL': 'de', 'BRN': 'de',
+
+    // Spanish countries (es)
+    'MAD': 'es', 'BCN': 'es', 'VLC': 'es', 'AGP': 'es', 'SVQ': 'es', 'BIO': 'es',
+    'GRX': 'es', 'ALC': 'es', 'IBZ': 'es', 'PMI': 'es', 'TFS': 'es', 'TFN': 'es', 'LPA': 'es', 'ACE': 'es',
+    'MEX': 'es', 'CUN': 'es', 'GDL': 'es', 'EZE': 'es', 'AEP': 'es', 'BOG': 'es', 'MDE': 'es',
+    'LIM': 'es', 'SCL': 'es',
+
+    // Turkish countries (tr)
+    'IST': 'tr', 'SAW': 'tr', 'ISL': 'tr', 'AYT': 'tr', 'ESB': 'tr', 'ADB': 'tr',
+    'BJV': 'tr', 'DLM': 'tr', 'TZX': 'tr', 'GZT': 'tr', 'ADA': 'tr',
+
+    // English speaking / Global fallback
+    'LHR': 'en', 'LGW': 'en', 'STN': 'en', 'LTN': 'en', 'LCY': 'en', 'MAN': 'en', 'EDI': 'en', 'BHX': 'en',
+    'JFK': 'en', 'EWR': 'en', 'LGA': 'en', 'LAX': 'en', 'MIA': 'en', 'MCO': 'en', 'ORD': 'en', 'LAS': 'en', 'SFO': 'en',
+    'SYD': 'en', 'MEL': 'en', 'BNE': 'en', 'PER': 'en', 'YYZ': 'en', 'YVR': 'en', 'DUB': 'en',
+    'KUL': 'en', 'SIN': 'en', 'BKK': 'en'
+  };
+
+  // 1. Direct match on 3-letter IATA code if provided
+  const rawClean = (destination || '').trim().toUpperCase();
+  if (IATA_MAP[rawClean]) {
+    return IATA_MAP[rawClean];
+  }
+
+  // Check any 3-letter IATA token in inputs
+  const combinedRaw = `${destination || ''} ${hotelCountry || ''} ${hotelCity || ''}`.toUpperCase();
+  const tokens = combinedRaw.match(/\b[A-Z]{3}\b/g) || [];
+  for (const token of tokens) {
+    if (IATA_MAP[token]) {
+      return IATA_MAP[token];
+    }
+  }
+
+  // 2. Keyword checks across destination, hotelCountry, hotelCity, hotelAddress, hotelName
+  const combined = `${destination || ''} ${hotelCountry || ''} ${hotelCity || ''} ${hotelAddress || ''} ${hotelName || ''}`.toLowerCase();
+
+  // Arabic countries
+  const arabicKeywords = [
+    'saudi', 'السعودية', 'الرياض', 'مكة', 'جدة', 'المدينة', 'riyadh', 'makkah', 'mecca', 'jeddah', 'medina', 'dammam', 'ksa',
+    'uae', 'emirates', 'الامارات', 'الإمارات', 'dubai', 'دبي', 'abu dhabi', 'أبوظبي', 'sharjah', 'الشارقة', 'ajman', 'عجمان', 'ras al khaimah', 'رأس الخيمة',
+    'egypt', 'مصر', 'cairo', 'القاهرة', 'alexandria', 'الاسكندرية', 'الإسكندرية', 'اسكندرية', 'sharm', 'شرم', 'hurghada', 'الغردقة', 'luxor', 'الأقصر', 'aswan', 'أسوان', 'giza', 'الجيزة',
+    'qatar', 'قطر', 'doha', 'الدوحة',
+    'kuwait', 'الكويت',
+    'bahrain', 'البحرين', 'manama', 'المنامة',
+    'oman', 'عمان', 'عُمان', 'muscat', 'مسقط', 'salalah', 'صلالة',
+    'jordan', 'الأردن', 'الاردن', 'amman', 'عمان', 'aqaba', 'العقبة',
+    'lebanon', 'لبنان', 'beirut', 'بيروت',
+    'morocco', 'المغرب', 'casablanca', 'الدار البيضاء', 'marrakech', 'مراكش', 'rabat', 'الرباط', 'tangier', 'طنجة', 'agadir', 'أكادير', 'fez', 'فاس',
+    'tunisia', 'تونس', 'tunis',
+    'algeria', 'الجزائر', 'algiers',
+    'iraq', 'العراق', 'baghdad', 'بغداد', 'erbil', 'أربيل',
+    'libya', 'ليبيا', 'tripoli', 'طرابلس',
+    'sudan', 'السودان', 'khartoum', 'الخرطوم',
+    'yemen', 'اليمن', 'sanaa', 'صنعاء', 'aden', 'عدن'
+  ];
+  if (arabicKeywords.some(k => combined.includes(k))) {
+    return 'ar';
+  }
+
+  // French countries
+  const frenchKeywords = [
+    'france', 'فرنسا', 'paris', 'باريس', 'nice', 'نيس', 'cannes', 'كان', 'lyon', 'ليون', 'marseille', 'مارسيليا',
+    'bordeaux', 'بوردو', 'strasbourg', 'ستراسبورغ', 'toulouse', 'تولوز', 'monaco', 'موناكو', 'chamonix',
+    'belgium', 'بلجيكا', 'brussels', 'بروكسل',
+    'switzerland', 'سويسرا', 'geneva', 'جنيف', 'lausanne', 'لوزان'
+  ];
+  if (frenchKeywords.some(k => combined.includes(k))) {
+    return 'fr';
+  }
+
+  // German countries
+  const germanKeywords = [
+    'germany', 'ألمانيا', 'المانيا', 'berlin', 'برلين', 'munich', 'ميونخ', 'frankfurt', 'فرانكفورت', 'hamburg', 'هامبورغ',
+    'cologne', 'كولونيا', 'düsseldorf', 'dusseldorf', 'دوسلدورف', 'stuttgart', 'شتوتغارت',
+    'austria', 'النمسا', 'vienna', 'فيينا', 'salzburg', 'سالزبورغ',
+    'zurich', 'زيورخ', 'basel', 'بازل'
+  ];
+  if (germanKeywords.some(k => combined.includes(k))) {
+    return 'de';
+  }
+
+  // Spanish countries
+  const spanishKeywords = [
+    'spain', 'إسبانيا', 'اسبانيا', 'madrid', 'مدريد', 'barcelona', 'برشلونة', 'valencia', 'فالنسيا',
+    'seville', 'sevilla', 'إشبيلية', 'malaga', 'مالقة', 'ibiza', 'إيبيزا', 'mallorca', 'مايوركا', 'canary',
+    'mexico', 'المكسيك', 'argentina', 'الأرجنتين', 'colombia', 'كولومبيا', 'chile', 'تشيلي'
+  ];
+  if (spanishKeywords.some(k => combined.includes(k))) {
+    return 'es';
+  }
+
+  // Turkish countries
+  const turkishKeywords = [
+    'turkey', 'türkiye', 'تركيا', 'istanbul', 'إسطنبول', 'اسطنبول', 'antalya', 'أنطاليا', 'انطاليا',
+    'ankara', 'أنقرة', 'انقرة', 'izmir', 'إزمير', 'ازمير', 'bodrum', 'بودروم', 'trabzon', 'طرابزون',
+    'bursa', 'بورصة', 'cappadocia', 'كابادوكيا'
+  ];
+  if (turkishKeywords.some(k => combined.includes(k))) {
+    return 'tr';
+  }
+
+  // Default to English (UK, USA, Australia, Malaysia, Singapore, global fallback)
+  return 'en';
+}
 
 /**
  * Format ISO date for clean display
@@ -303,6 +673,33 @@ function localizeRoomType(roomType, lang) {
     if (r.includes('suite')) return 'Suite Exécutive';
     if (r.includes('twin')) return 'Chambre Lits Jumeaux';
     return roomType;
+  } else if (lang === 'de') {
+    if (r.includes('studio') && r.includes('balcony')) return 'Studio mit Balkon';
+    if (r.includes('studio')) return 'Deluxe Studio';
+    if (r.includes('deluxe') && (r.includes('king') || r.includes('double'))) return 'Deluxe Doppelzimmer mit Kingsize-Bett';
+    if (r.includes('king')) return 'Zimmer mit Kingsize-Bett';
+    if (r.includes('standard') || r.includes('double')) return 'Standard Doppelzimmer';
+    if (r.includes('suite')) return 'Executive Suite';
+    if (r.includes('twin')) return 'Zweibettzimmer';
+    return roomType;
+  } else if (lang === 'es') {
+    if (r.includes('studio') && r.includes('balcony')) return 'Estudio con balcón';
+    if (r.includes('studio')) return 'Estudio Deluxe';
+    if (r.includes('deluxe') && (r.includes('king') || r.includes('double'))) return 'Habitación Doble Deluxe con cama extragrande';
+    if (r.includes('king')) return 'Habitación con cama extragrande';
+    if (r.includes('standard') || r.includes('double')) return 'Habitación Doble Estándar';
+    if (r.includes('suite')) return 'Suite Ejecutiva';
+    if (r.includes('twin')) return 'Habitación con 2 camas individuales';
+    return roomType;
+  } else if (lang === 'tr') {
+    if (r.includes('studio') && r.includes('balcony')) return 'Balkonlu Stüdyo';
+    if (r.includes('studio')) return 'Deluxe Stüdyo';
+    if (r.includes('deluxe') && (r.includes('king') || r.includes('double'))) return 'King Yataklı Deluxe Çift Kişilik Oda';
+    if (r.includes('king')) return 'Geniş Çift Kişilik Yataklı Oda';
+    if (r.includes('standard') || r.includes('double')) return 'Standart Çift Kişilik Oda';
+    if (r.includes('suite')) return 'Executive Süit';
+    if (r.includes('twin')) return 'İki Yataklı Oda';
+    return roomType;
   }
   return roomType;
 }
@@ -323,6 +720,21 @@ function localizeBoardBasis(boardBasis, lang) {
     if (b.includes('all inclusive')) return 'Formule tout compris';
     if (b.includes('half board')) return 'Demi-pension';
     return 'Aucun repas n\'est compris dans le tarif de cette chambre.';
+  } else if (lang === 'de') {
+    if (b.includes('breakfast') && (b.includes('included') || b.includes('free'))) return 'Frühstück inbegriffen';
+    if (b.includes('all inclusive')) return 'All-Inclusive';
+    if (b.includes('half board')) return 'Halbpension';
+    return 'Keine Mahlzeiten in diesem Zimmerpreis inbegriffen.';
+  } else if (lang === 'es') {
+    if (b.includes('breakfast') && (b.includes('included') || b.includes('free'))) return 'Desayuno incluido';
+    if (b.includes('all inclusive')) return 'Todo incluido';
+    if (b.includes('half board')) return 'Media pensión';
+    return 'No hay comidas incluidas en la tarifa de esta habitación.';
+  } else if (lang === 'tr') {
+    if (b.includes('breakfast') && (b.includes('included') || b.includes('free'))) return 'Kahvaltı dahil';
+    if (b.includes('all inclusive')) return 'Her şey dahil';
+    if (b.includes('half board')) return 'Yarım pansiyon';
+    return 'Bu oda fiyatına herhangi bir öğün dahil değildir.';
   }
   return boardBasis;
 }
@@ -330,10 +742,14 @@ function localizeBoardBasis(boardBasis, lang) {
 /**
  * Generate and trigger international printable accommodation voucher
  */
-export function printHotelVoucher(booking, pdfLang = 'en', existingWindow = null) {
+export function printHotelVoucher(booking, pdfLang = 'auto', existingWindow = null) {
   if (!booking) return;
 
-  const L = PDF_LANG[pdfLang] || PDF_LANG.en;
+  const targetLang = (!pdfLang || pdfLang === 'auto')
+    ? detectCountryLanguage(booking.country, booking.city, booking.hotelAddress, booking.hotelName)
+    : pdfLang;
+
+  const L = PDF_LANG[targetLang] || PDF_LANG.en;
   const isRtl = L.dir === 'rtl';
   const dateLocale = L.dateLocale || 'en-US';
 
@@ -1043,9 +1459,13 @@ export function renderHotelsPage() {
                   ${isAr ? 'لغة الـ PDF' : 'PDF Language'} 🌐
                 </label>
                 <select id="hotel-pdf-lang" class="form-control">
-                  <option value="en" selected>🇬🇧 English</option>
-                  <option value="fr">🇫🇷 Français</option>
-                  <option value="ar">🇸🇦 العربية</option>
+                  <option value="auto" selected>🌐 ${isAr ? 'تلقائي حسب لغة دولة الفندق (الأصلية)' : 'Auto by Hotel Country (Native)'}</option>
+                  <option value="ar">🇸🇦 العربية (Arabic)</option>
+                  <option value="en">🇬🇧 English</option>
+                  <option value="fr">🇫🇷 Français (French)</option>
+                  <option value="de">🇩🇪 Deutsch (German)</option>
+                  <option value="es">🇪🇸 Español (Spanish)</option>
+                  <option value="tr">🇹🇷 Türkçe (Turkish)</option>
                 </select>
               </div>
             </div>
@@ -1663,7 +2083,7 @@ function bindPreviewEvents(root) {
     printBtn.addEventListener('click', () => {
       if (currentGeneratedBooking) {
         const langSelect = container.querySelector('#hotel-pdf-lang') || document.getElementById('hotel-pdf-lang');
-        const selectedLang = langSelect ? langSelect.value : 'en';
+        const selectedLang = langSelect ? langSelect.value : 'auto';
         printHotelVoucher(currentGeneratedBooking, selectedLang);
       }
     });
