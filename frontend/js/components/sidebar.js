@@ -66,7 +66,9 @@ export function renderSidebar(activePath = '/dashboard') {
   const isCollapsed = (typeof document !== 'undefined') &&
     (document.documentElement.classList.contains('sidebar-collapsed') ||
      document.body?.classList.contains('sidebar-collapsed'));
-  const collapseIcon = isCollapsed ? icons.arrowRight('w-4 h-4') : icons.arrowLeft('w-4 h-4');
+  const collapseIcon = isCollapsed
+    ? (isAr ? icons.arrowLeft('w-4 h-4') : icons.arrowRight('w-4 h-4'))
+    : (isAr ? icons.arrowRight('w-4 h-4') : icons.arrowLeft('w-4 h-4'));
   const toggleTitle = isCollapsed ? (t('common.expandSidebar') || 'Expand sidebar') : (t('common.collapseSidebar') || 'Collapse sidebar');
 
   return `
