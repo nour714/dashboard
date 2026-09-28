@@ -1398,7 +1398,6 @@ export function renderHotelsPage() {
             </h3>
             <p class="text-xs text-muted mt-xxs">${escapeHtml(t('hotels.generateSubtitle'))}</p>
           </div>
-          <span class="badge badge-primary">Python Live & AI Powered ✦</span>
         </div>
 
         <div class="card-body">

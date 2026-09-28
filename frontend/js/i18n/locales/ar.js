@@ -1002,11 +1002,11 @@ export const ar = {
     returnSoon: 'موعد العودة يقرب'
   },
 
-  // Hotels (Python & AI)
+  // Hotels
   hotels: {
-    title: 'حجوزات الفنادق (بايثون / AI)',
+    title: 'حجوزات الفنادق',
     subtitle: 'استخراج وتوليد فوتشرات حجز الفنادق الدولية الحية وإدارتها',
-    generateTitle: 'توليد حجز فندق دولي (Booking.com Live / AI)',
+    generateTitle: 'توليد حجز فندق دولي',
     generateSubtitle: 'أدخل اسم العميل، الدولة/المدينة، وفترة الإقامة لاستخراج فندق حقيقي وتوليد فوتشر رسمي متكامل',
     clientName: 'اسم العميل',
     clientNamePlaceholder: 'اكتب اسم العميل أو اختر من القائمة...',
@@ -1016,7 +1016,7 @@ export const ar = {
     checkOut: 'تاريخ المغادرة (Check-out)',
     nights: 'عدد الليالي',
     generateBtn: 'توليد الحجز الفندقي ✦',
-    generating: 'جاري استخراج الفندق الحي عبر بايثون وتوليد الفوتشر...',
+    generating: 'جاري استخراج الفندق وتوليد تأكيد الحجز...',
     previewTitle: 'معاينة فوتشر الفندق المولد',
     previewSubtitle: 'يمكنك مراجعة أو تعديل أي تفاصيل أدناه قبل الطباعة أو الحفظ',
     hotelName: 'اسم الفندق',

@@ -1002,11 +1002,11 @@ export const en = {
     returnSoon: 'Return approaching'
   },
 
-  // Hotels (Python & AI)
+  // Hotels
   hotels: {
-    title: 'Hotel Bookings (Python / AI)',
+    title: 'Hotel Bookings',
     subtitle: 'Fetch live accommodations and generate official international vouchers',
-    generateTitle: 'Generate Hotel Booking (Booking.com Live / AI)',
+    generateTitle: 'Generate Hotel Booking',
     generateSubtitle: 'Enter client name, destination, and stay period to fetch real live hotel and generate official voucher',
     clientName: 'Client Name',
     clientNamePlaceholder: 'Enter client name or pick from list...',
@@ -1016,7 +1016,7 @@ export const en = {
     checkOut: 'Check-out Date',
     nights: 'Nights',
     generateBtn: 'Generate Hotel Booking ✦',
-    generating: 'Fetching live hotel via Python & generating voucher...',
+    generating: 'Fetching hotel details & generating voucher...',
     previewTitle: 'Generated Hotel Voucher Preview',
     previewSubtitle: 'Review or adjust any details below before printing or saving',
     hotelName: 'Hotel Name',
