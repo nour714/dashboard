@@ -233,11 +233,16 @@ export const RapidApiBookingService = {
         return null;
       }
 
-      // 3. Random selection among top real hotels
+      // 3. Selection among top real prestigious hotels (prioritizing 4 and 5 stars)
       const validHotels = hotelsList.filter(h => h && h.property && h.property.name);
       if (validHotels.length === 0) return null;
 
-      const randomChoice = validHotels[Math.floor(Math.random() * Math.min(validHotels.length, 12))];
+      const premiumHotels = validHotels.filter(h => {
+        const cls = parseInt(h.property?.propertyClass || h.property?.accuratePropertyClass || 0, 10);
+        return cls >= 4;
+      });
+      const candidateList = premiumHotels.length > 0 ? premiumHotels : validHotels;
+      const randomChoice = candidateList[Math.floor(Math.random() * Math.min(candidateList.length, 10))];
       const prop = randomChoice.property;
 
       const hotelName = prop.name.trim();
@@ -250,9 +255,9 @@ export const RapidApiBookingService = {
         roomType = firstPart.length > 3 ? firstPart : 'Deluxe Double Room';
       }
 
-      // Star rating
+      // Star rating (Ensure prestigious rating for luxury travel voucher)
       let stars = parseInt(prop.propertyClass || prop.accuratePropertyClass || 0, 10);
-      if (stars < 1 || stars > 5) stars = 5;
+      if (stars < 4 || stars > 5) stars = 5;
 
       // Price
       const priceText = prop.priceBreakdown?.grossPrice?.amountRounded || 'US$ 350';

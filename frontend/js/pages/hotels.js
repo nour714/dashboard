@@ -854,7 +854,7 @@ export function printHotelVoucher(booking, pdfLang = 'auto', existingWindow = nu
   <style>
     @page {
       size: A4 portrait;
-      margin: 10mm 12mm 12mm 12mm;
+      margin: 0;
     }
     *, *::before, *::after {
       box-sizing: border-box;
@@ -870,6 +870,8 @@ export function printHotelVoucher(booking, pdfLang = 'auto', existingWindow = nu
       direction: ${L.dir};
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+      margin: 0;
+      padding: 0;
     }
     .print-btn-bar {
       max-width: 800px;
@@ -889,7 +891,9 @@ export function printHotelVoucher(booking, pdfLang = 'auto', existingWindow = nu
     .doc-page {
       max-width: 800px;
       margin: 0 auto;
+      padding: 10mm 12mm;
       background: #ffffff;
+      box-sizing: border-box;
     }
     .header-table {
       width: 100%;
@@ -1087,9 +1091,9 @@ export function printHotelVoucher(booking, pdfLang = 'auto', existingWindow = nu
       font-size: 10px;
       line-height: 1.35;
     }
-    .page-break {
+    .doc-page-2 {
       page-break-before: always;
-      padding-top: 15mm;
+      break-before: page;
     }
     .need-help-header {
       font-size: 14px;
@@ -1105,14 +1109,26 @@ export function printHotelVoucher(booking, pdfLang = 'auto', existingWindow = nu
       cursor: pointer;
     }
     @media print {
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      html, body {
+        width: 100%;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff;
+      }
       .print-btn-bar {
         display: none !important;
       }
-      body {
-        background: #ffffff;
+      .doc-page {
+        padding: 10mm 12mm !important;
+        max-width: 100% !important;
       }
-      .page-break {
-        page-break-before: always;
+      .doc-page-2 {
+        page-break-before: always !important;
+        break-before: page !important;
       }
     }
   </style>
@@ -1122,7 +1138,7 @@ export function printHotelVoucher(booking, pdfLang = 'auto', existingWindow = nu
     <button class="print-btn" onclick="window.print()">${L.printBtn}</button>
   </div>
 
-  <div class="doc-page">
+  <div class="doc-page doc-page-1">
     <!-- Page 1: Header -->
     <table class="header-table" role="presentation">
       <tr>
@@ -1294,11 +1310,11 @@ export function printHotelVoucher(booking, pdfLang = 'auto', existingWindow = nu
         </td>
       </tr>
     </table>
+  </div>
 
-    <!-- Page 2: Need Help? -->
-    <div class="page-break"></div>
-
-    <div style="max-width: 800px; margin: 0 auto; padding-top: 10px; font-size: 11px; line-height: 1.45;">
+  <!-- Page 2: Need Help? -->
+  <div class="doc-page doc-page-2">
+    <div style="font-size: 11px; line-height: 1.45;">
       <div class="need-help-header">
         <span>⚙️</span>
         <span>${escapeHtml(L.needHelp)}</span>
