@@ -516,6 +516,40 @@ export function generateHotelPhone(destination = '', hotelName = '') {
   return `+44 20 ${rand(7100, 8999)} ${rand(1000, 9999)}`;
 }
 
+export async function resolveRealHotelPhone(hotelName = '', destination = '', lat = null, lon = null) {
+  const normHotel = hotelName.toLowerCase().trim();
+  // 1. Check known hotel catalog
+  for (const [key, phone] of Object.entries(KNOWN_HOTEL_PHONES)) {
+    if (normHotel.includes(key)) {
+      return phone;
+    }
+  }
+
+  const cleanCity = destination.split(',')[0].trim() || destination;
+  const cleanName = hotelName.replace(/\(.*?\)/g, '').trim();
+
+  // 2. Query Nominatim search
+  try {
+    const q = `${cleanName} ${cleanCity}`;
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&extratags=1`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'AfricaTravelApp/1.0 (contact@africiatravel.com)' },
+      signal: AbortSignal.timeout(2500)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const tags = data[0].extratags || {};
+        const phone = tags.phone || tags['contact:phone'] || tags.telephone;
+        if (phone && phone.trim()) return phone.trim();
+      }
+    }
+  } catch (_) {}
+
+  // 3. Fallback to city-specific dialing format
+  return generateHotelPhone(destination, hotelName);
+}
+
 export const RapidApiBookingService = {
   /**
    * Search real live hotel from Booking.com via RapidAPI
@@ -665,7 +699,7 @@ export const RapidApiBookingService = {
       }
 
       const gpsCoordinates = formatDdmCoordinates(finalLat, finalLon);
-      const hotelPhone = generateHotelPhone(`${resolvedCountry} ${cleanCity}`, hotelName);
+      const hotelPhone = await resolveRealHotelPhone(hotelName, `${resolvedCountry} ${cleanCity}`, finalLat, finalLon);
 
       return {
         hotelName,
