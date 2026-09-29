@@ -740,6 +740,196 @@ function localizeBoardBasis(boardBasis, lang) {
 }
 
 /**
+ * Converts decimal degrees latitude & longitude to official Booking.com DDM format
+ */
+export function formatDdmCoordinates(lat, lon) {
+  if (lat === undefined || lat === null || lon === undefined || lon === null) return null;
+  const nLat = parseFloat(lat);
+  const nLon = parseFloat(lon);
+  if (isNaN(nLat) || isNaN(nLon)) return null;
+
+  const latDir = nLat >= 0 ? 'N' : 'S';
+  const absLat = Math.abs(nLat);
+  const latDeg = Math.floor(absLat);
+  const latMin = (absLat - latDeg) * 60;
+  const latDegStr = String(latDeg).padStart(3, '0');
+  const latMinStr = latMin.toFixed(3).padStart(6, '0');
+
+  const lonDir = nLon >= 0 ? 'E' : 'W';
+  const absLon = Math.abs(nLon);
+  const lonDeg = Math.floor(absLon);
+  const lonMin = (absLon - lonDeg) * 60;
+  const lonDegStr = String(lonDeg).padStart(3, '0');
+  const lonMinStr = lonMin.toFixed(3).padStart(6, '0');
+
+  return `${latDir} ${latDegStr}° ${latMinStr}, ${lonDir} ${lonDegStr}° ${lonMinStr}`;
+}
+
+export const CITY_COORDINATES_MAP = {
+  // Spain
+  barcelona: 'N 041° 23.140, E 002° 10.350',
+  madrid: 'N 040° 25.010, W 003° 42.120',
+  malaga: 'N 036° 43.190, W 004° 25.260',
+  seville: 'N 037° 23.320, W 005° 59.410',
+  sevilla: 'N 037° 23.320, W 005° 59.410',
+  spain: 'N 040° 25.010, W 003° 42.120',
+  españa: 'N 040° 25.010, W 003° 42.120',
+
+  // France
+  paris: 'N 048° 51.240, E 002° 21.070',
+  nice: 'N 043° 42.180, E 007° 15.590',
+  cannes: 'N 043° 33.090, E 007° 01.120',
+  lyon: 'N 045° 45.350, E 004° 50.320',
+  france: 'N 048° 51.240, E 002° 21.070',
+
+  // UK
+  london: 'N 051° 30.260, W 000° 07.390',
+  manchester: 'N 053° 28.840, W 002° 14.730',
+  birmingham: 'N 052° 28.980, W 001° 54.210',
+  edinburgh: 'N 055° 57.110, W 003° 11.200',
+  uk: 'N 051° 30.260, W 000° 07.390',
+  britain: 'N 051° 30.260, W 000° 07.390',
+
+  // Germany
+  berlin: 'N 052° 31.280, E 013° 24.380',
+  munich: 'N 048° 08.230, E 011° 34.550',
+  münchen: 'N 048° 08.230, E 011° 34.550',
+  frankfurt: 'N 050° 06.820, E 008° 40.940',
+  hamburg: 'N 053° 33.010, E 009° 59.200',
+  cologne: 'N 050° 56.120, E 006° 57.340',
+  germany: 'N 052° 31.280, E 013° 24.380',
+
+  // Italy
+  rome: 'N 041° 53.600, E 012° 29.540',
+  roma: 'N 041° 53.600, E 012° 29.540',
+  milan: 'N 045° 27.850, E 009° 11.280',
+  milano: 'N 045° 27.850, E 009° 11.280',
+  venice: 'N 045° 26.240, E 012° 19.980',
+  florence: 'N 043° 46.170, E 011° 15.290',
+  italy: 'N 041° 53.600, E 012° 29.540',
+
+  // Turkey
+  istanbul: 'N 041° 00.490, E 028° 58.330',
+  antalya: 'N 036° 53.150, E 030° 42.340',
+  bodrum: 'N 037° 02.120, E 027° 25.480',
+  ankara: 'N 039° 56.020, E 032° 51.680',
+  turkey: 'N 041° 00.490, E 028° 58.330',
+
+  // Egypt
+  cairo: 'N 030° 02.880, E 031° 14.220',
+  alexandria: 'N 031° 12.030, E 029° 55.080',
+  sharm: 'N 027° 54.950, E 034° 19.820',
+  hurghada: 'N 027° 15.440, E 033° 48.720',
+  luxor: 'N 025° 41.870, E 032° 38.360',
+  aswan: 'N 024° 05.340, E 032° 53.940',
+  egypt: 'N 030° 02.880, E 031° 14.220',
+
+  // UAE
+  dubai: 'N 025° 12.180, E 055° 18.240',
+  'abu dhabi': 'N 024° 28.080, E 054° 22.250',
+  sharjah: 'N 025° 21.210, E 055° 23.320',
+  uae: 'N 025° 12.180, E 055° 18.240',
+
+  // Saudi Arabia
+  riyadh: 'N 024° 42.810, E 046° 40.520',
+  jeddah: 'N 021° 32.550, E 039° 10.330',
+  makkah: 'N 021° 25.320, E 039° 49.560',
+  mecca: 'N 021° 25.320, E 039° 49.560',
+  medina: 'N 024° 28.030, E 039° 36.420',
+  dammam: 'N 026° 26.020, E 050° 06.210',
+  saudi: 'N 024° 42.810, E 046° 40.520',
+
+  // Qatar
+  doha: 'N 025° 17.120, E 051° 31.910',
+  qatar: 'N 025° 17.120, E 051° 31.910',
+
+  // Kuwait
+  kuwait: 'N 029° 22.560, E 047° 58.740',
+
+  // Bahrain
+  manama: 'N 026° 13.520, E 050° 35.120',
+  bahrain: 'N 026° 13.520, E 050° 35.120',
+
+  // Oman
+  muscat: 'N 023° 35.280, E 058° 24.580',
+  oman: 'N 023° 35.280, E 058° 24.580',
+
+  // Jordan
+  amman: 'N 031° 57.420, E 035° 55.480',
+  jordan: 'N 031° 57.420, E 035° 55.480',
+
+  // Morocco
+  casablanca: 'N 033° 35.320, W 007° 37.190',
+  marrakech: 'N 031° 37.580, W 007° 59.350',
+  morocco: 'N 033° 35.320, W 007° 37.190',
+
+  // Georgia
+  tbilisi: 'N 041° 43.210, E 044° 46.990',
+  georgia: 'N 041° 43.210, E 044° 46.990',
+
+  // Thailand
+  bangkok: 'N 013° 45.380, E 100° 29.830',
+  phuket: 'N 007° 53.300, E 098° 23.880',
+  thailand: 'N 013° 45.380, E 100° 29.830',
+
+  // Malaysia
+  'kuala lumpur': 'N 003° 08.520, E 101° 41.460',
+  malaysia: 'N 003° 08.520, E 101° 41.460',
+
+  // Singapore
+  singapore: 'N 001° 17.580, E 103° 51.100',
+
+  // Japan
+  tokyo: 'N 035° 41.220, E 139° 41.520',
+  japan: 'N 035° 41.220, E 139° 41.520',
+
+  // USA
+  'new york': 'N 040° 42.760, W 074° 00.360',
+  'los angeles': 'N 034° 03.120, W 118° 14.340',
+  usa: 'N 040° 42.760, W 074° 00.360'
+};
+
+export function resolveGpsCoordinates(booking = {}) {
+  if (booking.gpsCoordinates) return booking.gpsCoordinates;
+  if (booking.latitude && booking.longitude) {
+    const formatted = formatDdmCoordinates(booking.latitude, booking.longitude);
+    if (formatted) return formatted;
+  }
+  const cleanDest = `${booking.country || ''} ${booking.city || ''} ${booking.hotelAddress || ''}`.toLowerCase();
+  for (const [key, coords] of Object.entries(CITY_COORDINATES_MAP)) {
+    if (cleanDest.includes(key)) return coords;
+  }
+  return 'N 040° 25.010, W 003° 42.120';
+}
+
+export function resolveHotelPhone(booking = {}) {
+  const p = (booking.hotelPhone || '').trim();
+  if (p && !p.includes('555') && !p.startsWith('+1 555')) {
+    return p;
+  }
+  const cleanDest = `${booking.country || ''} ${booking.city || ''} ${booking.hotelAddress || ''}`.toLowerCase();
+  if (cleanDest.includes('barcelona')) return '+34 93 221 1000';
+  if (cleanDest.includes('madrid') || cleanDest.includes('spain') || cleanDest.includes('españa')) return '+34 91 360 8000';
+  if (cleanDest.includes('paris') || cleanDest.includes('france')) return '+33 1 45 63 20 20';
+  if (cleanDest.includes('london') || cleanDest.includes('uk')) return '+44 20 7836 4343';
+  if (cleanDest.includes('dubai') || cleanDest.includes('uae')) return '+971 4 426 3000';
+  if (cleanDest.includes('riyadh') || cleanDest.includes('saudi')) return '+966 11 802 8020';
+  if (cleanDest.includes('makkah')) return '+966 12 571 7777';
+  if (cleanDest.includes('cairo') || cleanDest.includes('egypt')) return '+20 2 2791 7000';
+  if (cleanDest.includes('sharm')) return '+20 69 360 3555';
+  if (cleanDest.includes('hurghada')) return '+20 65 346 5400';
+  if (cleanDest.includes('istanbul') || cleanDest.includes('turkey')) return '+90 212 326 4646';
+  if (cleanDest.includes('antalya')) return '+90 242 710 2000';
+  if (cleanDest.includes('rome') || cleanDest.includes('italy')) return '+39 06 32 88 81';
+  if (cleanDest.includes('berlin') || cleanDest.includes('germany')) return '+49 30 22610';
+  if (cleanDest.includes('munich')) return '+49 89 544 5550';
+  if (cleanDest.includes('kuala lumpur') || cleanDest.includes('malaysia')) return '+60 3 2380 8888';
+  if (cleanDest.includes('doha') || cleanDest.includes('qatar')) return '+974 4494 8888';
+  if (cleanDest.includes('bangkok') || cleanDest.includes('thailand')) return '+66 2 659 9000';
+  return '+44 20 7836 4343';
+}
+
+/**
  * Generate and trigger international printable accommodation voucher
  */
 export function printHotelVoucher(booking, pdfLang = 'auto', existingWindow = null) {
@@ -773,7 +963,7 @@ export function printHotelVoucher(booking, pdfLang = 'auto', existingWindow = nu
   const nights = booking.nights || 1;
   const bookingNumber = booking.bookingNumber || (booking.bookingReference && booking.bookingReference.includes('.') ? booking.bookingReference : '5647.617.021');
   const pinCode = booking.pinCode || '0409';
-  const hotelPhone = booking.hotelPhone || '+60 11 6450 6138';
+  const hotelPhone = resolveHotelPhone(booking);
   let hotelImage = booking.hotelImage || 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/891377055.webp?k=a7455032de938c25e69873b80fdd46b074e13da1320c876a55ca0d632274e054&o=';
   if (hotelImage.includes('square240') || hotelImage.includes('square60') || hotelImage.includes('square180')) {
     hotelImage = hotelImage.replace(/square(240|60|180|120)/, 'max1024x768');
@@ -835,13 +1025,7 @@ export function printHotelVoucher(booking, pdfLang = 'auto', existingWindow = nu
   const localPayAmount = (grandTotalEgp / exRateToEgp).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const localSubtotal = (egpTotal / exRateToEgp).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  let gpsCoords = 'N 003° 9.552, E 101° 42.293';
-  if (cleanDest.includes('dubai')) gpsCoords = 'N 025° 12.180, E 055° 18.240';
-  else if (cleanDest.includes('paris')) gpsCoords = 'N 048° 51.240, E 002° 21.070';
-  else if (cleanDest.includes('london')) gpsCoords = 'N 051° 30.260, W 000° 07.390';
-  else if (cleanDest.includes('riyadh')) gpsCoords = 'N 024° 42.810, E 046° 40.520';
-  else if (cleanDest.includes('cairo')) gpsCoords = 'N 030° 02.880, E 031° 14.220';
-  else if (cleanDest.includes('istanbul')) gpsCoords = 'N 041° 00.490, E 028° 58.330';
+  const gpsCoords = resolveGpsCoordinates(booking);
 
   const cancellationDateStr = `${inMonth} ${Math.max(1, inDayNum - 1)}, ${inDate.getFullYear()} 3:13 AM`;
 
@@ -1574,7 +1758,8 @@ function renderPreviewCard(booking) {
   const bookingNumber = booking.bookingNumber || (booking.bookingReference && booking.bookingReference.includes('.') ? booking.bookingReference : '4829.391.820');
   const pinCode = booking.pinCode || '4829';
   const priceText = booking.price || 'US$ 450';
-  const hotelPhone = booking.hotelPhone || '+971 4 430 4528';
+  const hotelPhone = resolveHotelPhone(booking);
+  const gpsCoords = resolveGpsCoordinates(booking);
   const reviewScore = booking.reviewScore || '9.1 Superb · 3,150 reviews';
   const hotelImage = booking.hotelImage || '';
 
@@ -1648,7 +1833,8 @@ function renderPreviewCard(booking) {
                   <span style="color: #febb02; font-size: 15px;" id="prev-stars">${starsHtml}</span>
                 </div>
                 <p class="text-xs text-muted mt-xxs mb-xxs" id="prev-address">📍 ${escapeHtml(booking.hotelAddress || 'City Center')}</p>
-                <div class="text-xs text-muted mb-xs" id="prev-phone">📞 Phone: <strong style="color: var(--color-text);">${escapeHtml(hotelPhone)}</strong></div>
+                <div class="text-xs text-muted mb-xxs" id="prev-phone">📞 Phone: <strong style="color: var(--color-text);">${escapeHtml(hotelPhone)}</strong></div>
+                <div class="text-xs text-muted mb-xs" id="prev-gps">🌐 GPS: <strong style="color: var(--color-text);">${escapeHtml(gpsCoords)}</strong></div>
                 <div class="d-flex align-items-center gap-xs">
                   <span class="badge" style="background: #003580; color: #ffffff; font-weight: 800; font-size: 12px; padding: 2px 6px;">${escapeHtml((reviewScore.match(/\d+\.\d+/) || ['9.0'])[0])}</span>
                   <span class="text-xs font-semibold" style="color: #003580;">${escapeHtml(reviewScore)}</span>
@@ -1706,7 +1892,7 @@ function renderPreviewCard(booking) {
             </div>
           </div>
 
-          <div class="form-grid-4 mb-sm">
+          <div class="form-grid-3 mb-sm">
             <div class="form-group">
               <label class="form-label">${escapeHtml(t('hotels.address'))}</label>
               <input type="text" id="edit-hotel-address" class="form-control" value="${escapeHtml(booking.hotelAddress || '')}" />
@@ -1716,6 +1902,13 @@ function renderPreviewCard(booking) {
               <input type="text" id="edit-hotel-phone" class="form-control" value="${escapeHtml(hotelPhone)}" />
             </div>
             <div class="form-group">
+              <label class="form-label">GPS Coordinates</label>
+              <input type="text" id="edit-hotel-gps" class="form-control" value="${escapeHtml(gpsCoords)}" />
+            </div>
+          </div>
+
+          <div class="form-grid-4 mb-sm">
+            <div class="form-group">
               <label class="form-label">Price (USD / EUR / Local)</label>
               <input type="text" id="edit-hotel-price" class="form-control" value="${escapeHtml(priceText)}" />
             </div>
@@ -1723,9 +1916,6 @@ function renderPreviewCard(booking) {
               <label class="form-label">${escapeHtml(t('hotels.stars'))} (1-5)</label>
               <input type="number" id="edit-hotel-stars" class="form-control" min="1" max="5" value="${starsCount}" />
             </div>
-          </div>
-
-          <div class="form-grid-3 mb-sm">
             <div class="form-group">
               <label class="form-label">Booking.com Confirmation Number</label>
               <input type="text" id="edit-booking-number" class="form-control" value="${escapeHtml(bookingNumber)}" />
@@ -1734,10 +1924,11 @@ function renderPreviewCard(booking) {
               <label class="form-label">Booking.com PIN Code</label>
               <input type="text" id="edit-pin-code" class="form-control" value="${escapeHtml(pinCode)}" />
             </div>
-            <div class="form-group">
-              <label class="form-label">${isAr ? 'رابط صورة الفندق (Booking.com)' : 'Hotel Image URL'}</label>
-              <input type="text" id="edit-hotel-image" class="form-control" value="${escapeHtml(hotelImage)}" />
-            </div>
+          </div>
+
+          <div class="form-group mb-sm">
+            <label class="form-label">${isAr ? 'رابط صورة الفندق (Booking.com)' : 'Hotel Image URL'}</label>
+            <input type="text" id="edit-hotel-image" class="form-control" value="${escapeHtml(hotelImage)}" />
           </div>
 
           <div class="d-flex justify-content-end gap-xs">
@@ -2157,6 +2348,7 @@ function bindPreviewEvents(root) {
       const editAddress = (container.querySelector('#edit-hotel-address') || document.getElementById('edit-hotel-address'))?.value.trim();
       const editStars = parseInt((container.querySelector('#edit-hotel-stars') || document.getElementById('edit-hotel-stars'))?.value || '5', 10);
       const editPhone = (container.querySelector('#edit-hotel-phone') || document.getElementById('edit-hotel-phone'))?.value.trim();
+      const editGps = (container.querySelector('#edit-hotel-gps') || document.getElementById('edit-hotel-gps'))?.value.trim();
       const editPrice = (container.querySelector('#edit-hotel-price') || document.getElementById('edit-hotel-price'))?.value.trim();
       const editBookingNum = (container.querySelector('#edit-booking-number') || document.getElementById('edit-booking-number'))?.value.trim();
       const editPinCode = (container.querySelector('#edit-pin-code') || document.getElementById('edit-pin-code'))?.value.trim();
@@ -2168,6 +2360,7 @@ function bindPreviewEvents(root) {
       if (editAddress) currentGeneratedBooking.hotelAddress = editAddress;
       if (editStars) currentGeneratedBooking.hotelStars = editStars;
       if (editPhone) currentGeneratedBooking.hotelPhone = editPhone;
+      if (editGps) currentGeneratedBooking.gpsCoordinates = editGps;
       if (editPrice) currentGeneratedBooking.price = editPrice;
       if (editHotelImage) currentGeneratedBooking.hotelImage = editHotelImage;
       if (editBookingNum) {
@@ -2186,6 +2379,7 @@ function bindPreviewEvents(root) {
       const addrEl = container.querySelector('#prev-address') || document.getElementById('prev-address');
       const starsEl = container.querySelector('#prev-stars') || document.getElementById('prev-stars');
       const phoneEl = container.querySelector('#prev-phone') || document.getElementById('prev-phone');
+      const gpsEl = container.querySelector('#prev-gps') || document.getElementById('prev-gps');
       const priceEl = container.querySelector('#prev-price') || document.getElementById('prev-price');
       const bNumEl = container.querySelector('#prev-booking-num') || document.getElementById('prev-booking-num');
       const pinEl = container.querySelector('#prev-pin-code') || document.getElementById('prev-pin-code');
@@ -2197,6 +2391,7 @@ function bindPreviewEvents(root) {
       if (addrEl) addrEl.textContent = `📍 ${currentGeneratedBooking.hotelAddress}`;
       if (starsEl) starsEl.textContent = '★'.repeat(currentGeneratedBooking.hotelStars);
       if (phoneEl) phoneEl.innerHTML = `📞 Phone: <strong style="color: var(--color-text);">${currentGeneratedBooking.hotelPhone}</strong>`;
+      if (gpsEl) gpsEl.innerHTML = `🌐 GPS: <strong style="color: var(--color-text);">${currentGeneratedBooking.gpsCoordinates || ''}</strong>`;
       if (priceEl) priceEl.textContent = currentGeneratedBooking.price;
       if (bNumEl) bNumEl.textContent = currentGeneratedBooking.bookingNumber;
       if (pinEl) pinEl.textContent = currentGeneratedBooking.pinCode;

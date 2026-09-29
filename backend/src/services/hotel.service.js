@@ -7,7 +7,7 @@ import { NotFoundError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
 import { generateHotelBookingDetails, generateReferenceCodes, calculateNights } from './hotel-ai.service.js';
 import { PythonScraperService } from './python-scraper.service.js';
-import { RapidApiBookingService } from './rapidapi-booking.service.js';
+import { RapidApiBookingService, generateHotelPhone } from './rapidapi-booking.service.js';
 
 export const HotelService = {
   /**
@@ -37,7 +37,10 @@ export const HotelService = {
           hotelName: rapidHotel.hotelName,
           hotelStars: rapidHotel.hotelStars || 5,
           hotelAddress: rapidHotel.hotelAddress || `City Center, ${country}`,
-          hotelPhone: rapidHotel.hotelPhone || '+971 4 430 4528',
+          hotelPhone: rapidHotel.hotelPhone || generateHotelPhone(country, rapidHotel.hotelName),
+          latitude: rapidHotel.latitude || null,
+          longitude: rapidHotel.longitude || null,
+          gpsCoordinates: rapidHotel.gpsCoordinates || null,
           city: rapidHotel.city || country,
           country: rapidHotel.country || country,
           checkIn: new Date(checkIn).toISOString(),
@@ -87,7 +90,10 @@ export const HotelService = {
           hotelName: liveHotel.hotelName,
           hotelStars: liveHotel.hotelStars || 5,
           hotelAddress: liveHotel.hotelAddress || `City Center, ${country}`,
-          hotelPhone: liveHotel.hotelPhone || '+971 4 430 4528',
+          hotelPhone: liveHotel.hotelPhone || generateHotelPhone(country, liveHotel.hotelName),
+          latitude: liveHotel.latitude || null,
+          longitude: liveHotel.longitude || null,
+          gpsCoordinates: liveHotel.gpsCoordinates || null,
           city: liveHotel.city || country,
           country: liveHotel.country || country,
           checkIn: new Date(checkIn).toISOString(),
