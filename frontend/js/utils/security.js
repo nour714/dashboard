@@ -43,3 +43,14 @@ export function sanitizeCsvCell(value) {
   }
   return '"' + str.replace(/"/g, '""') + '"';
 }
+
+/**
+ * Sanitizes a URL pathname for safe client-side routing and template interpolation.
+ * Removes dangerous characters that could break out of HTML contexts or trigger script injection.
+ * @param {string} path
+ * @returns {string}
+ */
+export function sanitizePath(path) {
+  if (!path || typeof path !== 'string') return '/dashboard';
+  return path.replace(/[<>"'`\\]/g, '').replace(/[\x00-\x1f\x7f]/g, '').trim() || '/dashboard';
+}

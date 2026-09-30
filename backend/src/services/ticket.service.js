@@ -7,7 +7,7 @@
 
 import crypto from 'crypto';
 import Decimal from 'decimal.js';
-import { getPrismaClient, withSerializableRetry } from '../config/database.js';
+import { getPrismaClient, withDbRetry, withSerializableRetry } from '../config/database.js';
 import {
   calculateTotalPaid,
   calculateTotalRefunded,
@@ -133,21 +133,24 @@ export const TicketService = {
     const limit = Math.min(100, Math.max(1, Number(filters.limit) || 50));
     const skip = (page - 1) * limit;
 
-    const [total, tickets] = await Promise.all([
-      prisma.ticket.count({ where }),
-      prisma.ticket.findMany({
-        where,
-        include: {
-          payments: { orderBy: { date: 'asc' } },
-          modifications: { orderBy: { date: 'asc' } },
-          refunds: { orderBy: { requestedDate: 'asc' } },
-          customer: { select: { id: true, name: true, phone: true, email: true } }
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit
-      })
-    ]);
+    const [total, tickets] = await withDbRetry(
+      () => Promise.all([
+        prisma.ticket.count({ where }),
+        prisma.ticket.findMany({
+          where,
+          include: {
+            payments: { orderBy: { date: 'asc' } },
+            modifications: { orderBy: { date: 'asc' } },
+            refunds: { orderBy: { requestedDate: 'asc' } },
+            customer: { select: { id: true, name: true, phone: true, email: true } }
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit
+        })
+      ]),
+      { context: 'ticket.getTickets' }
+    );
 
     const enrichedTickets = tickets.map(enrichTicketFinancials);
 
@@ -183,19 +186,22 @@ export const TicketService = {
       where.deletedAt = null;
     }
 
-    const ticket = await prisma.ticket.findFirst({
-      where,
-      include: {
-        payments: { orderBy: { date: 'asc' } },
-        modifications: { orderBy: { date: 'asc' } },
-        refunds: { orderBy: { requestedDate: 'asc' } },
-        customer: {
-          include: {
-            notes: { orderBy: { date: 'desc' } }
+    const ticket = await withDbRetry(
+      () => prisma.ticket.findFirst({
+        where,
+        include: {
+          payments: { orderBy: { date: 'asc' } },
+          modifications: { orderBy: { date: 'asc' } },
+          refunds: { orderBy: { requestedDate: 'asc' } },
+          customer: {
+            include: {
+              notes: { orderBy: { date: 'desc' } }
+            }
           }
         }
-      }
-    });
+      }),
+      { context: 'ticket.getTicketById' }
+    );
 
     if (!ticket) return null;
     return enrichTicketFinancials(ticket);

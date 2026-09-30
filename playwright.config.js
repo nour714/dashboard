@@ -1,8 +1,13 @@
+import 'dotenv/config';
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
+  timeout: 45000,
+  expect: {
+    timeout: 15000
+  },
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
   use: {

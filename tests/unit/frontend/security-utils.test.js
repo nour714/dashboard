@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test, describe } from 'node:test';
-import { escapeHtml, sanitizeText, sanitizeCsvCell } from '../../../frontend/js/utils/security.js';
+import { escapeHtml, sanitizeText, sanitizeCsvCell, sanitizePath } from '../../../frontend/js/utils/security.js';
 
 describe('Frontend Security Utilities: security.js', () => {
   describe('escapeHtml', () => {
@@ -68,4 +68,26 @@ describe('Frontend Security Utilities: security.js', () => {
       assert.strictEqual(sanitizeCsvCell(undefined), '""');
     });
   });
+
+  describe('sanitizePath (Client-side URL Path Sanitization)', () => {
+    test('returns clean paths unchanged', () => {
+      assert.strictEqual(sanitizePath('/dashboard'), '/dashboard');
+      assert.strictEqual(sanitizePath('/tickets/TK-101'), '/tickets/TK-101');
+      assert.strictEqual(sanitizePath('/customers?q=john'), '/customers?q=john');
+    });
+
+    test('strips dangerous HTML/script injection characters', () => {
+      assert.strictEqual(sanitizePath('/tickets/<script>alert(1)</script>'), '/tickets/scriptalert(1)/script');
+      assert.strictEqual(sanitizePath('/tickets/"onload="alert(1)'), '/tickets/onload=alert(1)');
+      assert.strictEqual(sanitizePath('/tickets/\'onmouseover=\'alert(1)'), '/tickets/onmouseover=alert(1)');
+    });
+
+    test('falls back to /dashboard on falsy or non-string inputs', () => {
+      assert.strictEqual(sanitizePath(''), '/dashboard');
+      assert.strictEqual(sanitizePath(null), '/dashboard');
+      assert.strictEqual(sanitizePath(undefined), '/dashboard');
+      assert.strictEqual(sanitizePath(123), '/dashboard');
+    });
+  });
 });
+

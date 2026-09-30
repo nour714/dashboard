@@ -4,7 +4,7 @@
  * Manages customer directory, note threads, and dynamic lifetime financial accounting.
  */
 
-import { getPrismaClient } from '../config/database.js';
+import { getPrismaClient, withDbRetry } from '../config/database.js';
 import { aggregateLedgers } from '../domain/ledger.js';
 import { ValidationError, NotFoundError, BusinessRuleError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
@@ -43,15 +43,18 @@ export const CustomerService = {
       const limit = Math.min(100, Math.max(1, Number(options.limit) || 50));
       const skip = (page - 1) * limit;
 
-      const [total, customers] = await Promise.all([
-        prisma.customer.count({ where }),
-        prisma.customer.findMany({
-          where,
-          orderBy: { createdAt: 'desc' },
-          skip,
-          take: limit
-        })
-      ]);
+      const [total, customers] = await withDbRetry(
+        () => Promise.all([
+          prisma.customer.count({ where }),
+          prisma.customer.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: limit
+          })
+        ]),
+        { context: 'customer.getCustomers' }
+      );
 
       return {
         customers,
@@ -64,10 +67,13 @@ export const CustomerService = {
       };
     }
 
-    return prisma.customer.findMany({
-      where,
-      orderBy: { createdAt: 'desc' }
-    });
+    return withDbRetry(
+      () => prisma.customer.findMany({
+        where,
+        orderBy: { createdAt: 'desc' }
+      }),
+      { context: 'customer.getCustomers' }
+    );
   },
 
   /**
@@ -79,20 +85,23 @@ export const CustomerService = {
     if (!customerId) return null;
     const prisma = getPrismaClient();
 
-    const customer = await prisma.customer.findUnique({
-      where: { id: customerId },
-      include: {
-        notes: { orderBy: { date: 'desc' } },
-        tickets: {
-          include: {
-            payments: true,
-            modifications: true,
-            refunds: true
-          },
-          orderBy: { createdAt: 'desc' }
+    const customer = await withDbRetry(
+      () => prisma.customer.findUnique({
+        where: { id: customerId },
+        include: {
+          notes: { orderBy: { date: 'desc' } },
+          tickets: {
+            include: {
+              payments: true,
+              modifications: true,
+              refunds: true
+            },
+            orderBy: { createdAt: 'desc' }
+          }
         }
-      }
-    });
+      }),
+      { context: 'customer.getCustomerById' }
+    );
 
     if (!customer) return null;
     if (!includeDeleted && customer.deletedAt !== null) return null;
