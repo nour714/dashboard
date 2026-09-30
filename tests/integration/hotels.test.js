@@ -129,8 +129,19 @@ async function runHotelTests() {
     const single = await HotelService.getBookingById(createdBookingId);
     assert(single.id === createdBookingId, 'Single booking retrieved by ID');
 
-    // Delete booking
-    await HotelService.deleteBooking(createdBookingId, { name: 'Admin Tester' });
+    // RBAC: Non-admin deletion MUST be rejected
+    let agentDeleteBlocked = false;
+    try {
+      await HotelService.deleteBooking(createdBookingId, { name: 'Agent Tester', role: 'AGENT' });
+    } catch (err) {
+      if (err.name === 'ForbiddenError' || err.statusCode === 403) {
+        agentDeleteBlocked = true;
+      }
+    }
+    assert(agentDeleteBlocked, 'Agent CANNOT delete hotel bookings (ForbiddenError 403)');
+
+    // Admin deletion succeeds
+    await HotelService.deleteBooking(createdBookingId, { name: 'Admin Tester', role: 'ADMIN' });
     const listAfterDelete = await HotelService.listBookings({ search: 'Mahmoud Hassan' });
     assert(!listAfterDelete.items.some(b => b.id === createdBookingId), 'Soft-deleted booking excluded from active list');
   } catch (dbErr) {

@@ -423,10 +423,22 @@ function openEditVisaModal(visa, onSuccess) {
           const paymentStatus = modalEl.querySelector('#edit-visa-status').value;
           const notes = modalEl.querySelector('#edit-visa-notes').value.trim();
           
-          let costPrice = visa.costPrice;
+          const updatePayload = {
+            clientName,
+            phone,
+            visaType,
+            country,
+            submissionDate,
+            price,
+            paidAmount,
+            currency,
+            paymentStatus,
+            notes
+          };
+
           if (isAdmin) {
             const costVal = modalEl.querySelector('#edit-visa-costPrice')?.value;
-            costPrice = costVal ? Number(costVal) : null;
+            updatePayload.costPrice = costVal ? Number(costVal) : null;
           }
 
           if (!clientName || !country || !submissionDate || isNaN(price)) {
@@ -440,19 +452,7 @@ function openEditVisaModal(visa, onSuccess) {
             errorBox.textContent = '';
           }
 
-          const result = await VisaService.updateVisa(visa.id, {
-            clientName,
-            phone,
-            visaType,
-            country,
-            submissionDate,
-            price,
-            paidAmount,
-            costPrice,
-            currency,
-            paymentStatus,
-            notes
-          });
+          const result = await VisaService.updateVisa(visa.id, updatePayload);
 
           submitBtn.disabled = false;
 

@@ -60,6 +60,14 @@ export const AuthService = {
   },
 
   /**
+   * Alias for getCurrentUser
+   * @returns {object|null}
+   */
+  getUser() {
+    return this.getCurrentUser();
+  },
+
+  /**
    * Updates the user profile on the backend and in local state.
    * @param {{ fullName?: string, name?: string, email?: string, title?: string }} profileData
    * @returns {Promise<{success: boolean, user?: object, error?: string}>}

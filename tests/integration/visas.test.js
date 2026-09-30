@@ -251,6 +251,19 @@ async function runVisaTests() {
   const updatedVisa = await VisaService.updateVisa(visa1.id, { paymentStatus: 'PAID', notes: 'Done' }, agent1);
   assert(updatedVisa.paymentStatus === 'PAID', 'Agent can update their own visa');
 
+  // RBAC: Agent attempting to modify costPrice MUST be rejected
+  let agentCostPriceForbidden = false;
+  try {
+    await VisaService.updateVisa(visa1.id, { costPrice: 999 }, agent1);
+  } catch (err) {
+    if (err.name === 'ForbiddenError' || err.statusCode === 403) agentCostPriceForbidden = true;
+  }
+  assert(agentCostPriceForbidden, 'Agent CANNOT modify visa costPrice (ForbiddenError 403)');
+
+  // Admin CAN modify costPrice
+  const adminUpdatedVisa = await VisaService.updateVisa(visa1.id, { costPrice: 1200 }, adminUser);
+  assert(adminUpdatedVisa.costPrice === 1200, 'Admin can successfully update visa costPrice');
+
   let agentForbidden = false;
   try {
     await VisaService.updateVisa(visa2.id, { notes: 'Hacked' }, agent1);

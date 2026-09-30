@@ -319,7 +319,12 @@ export const VisaService = {
       if (data.submissionDate !== undefined) updateData.submissionDate = new Date(data.submissionDate);
       if (data.price !== undefined) updateData.price = data.price;
       if (data.paidAmount !== undefined) updateData.paidAmount = data.paidAmount;
-      if (data.costPrice !== undefined) updateData.costPrice = data.costPrice;
+      if (data.costPrice !== undefined) {
+        if (currentUser?.role !== 'ADMIN') {
+          throw new ForbiddenError('Only administrators can modify visa cost price');
+        }
+        updateData.costPrice = data.costPrice;
+      }
       if (data.currency !== undefined) updateData.currency = data.currency;
       if (data.notes !== undefined) updateData.notes = data.notes;
 

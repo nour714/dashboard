@@ -24,6 +24,6 @@ router.post('/ai-generate', requireRole('ADMIN', 'AGENT'), validate({ body: gene
 router.get('/', requireRole('ADMIN', 'AGENT'), validate({ query: queryHotelBookingsSchema }), HotelController.getBookings);
 router.post('/', requireRole('ADMIN', 'AGENT'), validate({ body: createHotelBookingSchema }), HotelController.createBooking);
 router.get('/:id', requireRole('ADMIN', 'AGENT'), HotelController.getBookingById);
-router.delete('/:id', requireRole('ADMIN', 'AGENT'), HotelController.deleteBooking);
+router.delete('/:id', requireRole('ADMIN'), HotelController.deleteBooking);
 
 export default router;

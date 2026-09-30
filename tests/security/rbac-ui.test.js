@@ -8,6 +8,7 @@ import { renderBottomNav } from '../../frontend/js/components/bottom-nav.js';
 import { EmployeesPage } from '../../frontend/js/pages/employees.js';
 import { ReportsPage } from '../../frontend/js/pages/reports.js';
 import { SettingsPage } from '../../frontend/js/pages/settings.js';
+import { HotelsPage } from '../../frontend/js/pages/hotels.js';
 import { sanitizeAuditLogForRole } from '../../backend/src/controllers/audit.controller.js';
 import { store } from '../../frontend/js/state/store.js';
 import { AuthService } from '../../frontend/js/services/auth-service.js';
@@ -66,6 +67,21 @@ async function runRbacUiTests() {
   assert(!agentSettingsPage.includes('data-settings-target="statuses"'), 'Settings page hides Statuses tab for AGENT');
   assert(!agentSettingsPage.includes('href="/employees"'), 'Settings page hides Admin secondary nav bar for AGENT');
 
+  const sampleBooking = [{
+    id: 'HTL-123',
+    bookingReference: 'AT-HTL-123',
+    clientName: 'Test Client',
+    hotelName: 'Luxury Hotel',
+    city: 'Dubai',
+    country: 'UAE',
+    checkIn: '2026-10-01',
+    checkOut: '2026-10-05',
+    nights: 4,
+    status: 'CONFIRMED'
+  }];
+  const agentHotelRows = HotelsPage.renderArchiveRows(sampleBooking);
+  assert(!agentHotelRows.includes('btn-delete-booking'), 'Hotel archive table hides delete button for AGENT');
+
   const rawAuditLog = {
     id: 'ACT-1',
     user: 'Nour Agent',
@@ -107,6 +123,9 @@ async function runRbacUiTests() {
   assert(adminSettingsPage.includes('data-settings-target="currency"'), 'Settings page shows Currency tab for ADMIN');
   assert(adminSettingsPage.includes('data-settings-target="statuses"'), 'Settings page shows Statuses tab for ADMIN');
   assert(adminSettingsPage.includes('href="/employees"'), 'Settings page shows Admin secondary nav bar for ADMIN');
+
+  const adminHotelRows = HotelsPage.renderArchiveRows(sampleBooking);
+  assert(adminHotelRows.includes('btn-delete-booking'), 'Hotel archive table shows delete button for ADMIN');
 
   const adminAuditLog = sanitizeAuditLogForRole(rawAuditLog, 'ADMIN');
   assert(adminAuditLog.ip === '192.168.1.50', 'Audit log preserves IP for ADMIN');

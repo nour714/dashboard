@@ -4,6 +4,7 @@
 
 import { HotelService } from '../services/hotel-service.js';
 import { CustomerService } from '../services/customer-service.js';
+import { AuthService } from '../services/auth-service.js';
 import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { showToast } from '../components/toast.js';
@@ -1946,6 +1947,7 @@ function renderPreviewCard(booking) {
  */
 function renderArchiveRows(bookings = []) {
   const isAr = i18n.getLanguage() === 'ar';
+  const isAdmin = AuthService.getUser()?.role === 'ADMIN';
   if (!bookings || bookings.length === 0) {
     return `
       <tr>
@@ -1986,9 +1988,11 @@ function renderArchiveRows(bookings = []) {
               ${icons.print ? icons.print('w-3.5 h-3.5') : '🖨️'}
               <span>${isAr ? 'طباعة' : 'Print'}</span>
             </button>
+            ${isAdmin ? `
             <button type="button" class="btn btn-xs btn-danger btn-delete-booking" data-id="${b.id}" title="${escapeHtml(t('hotels.deleteBooking'))}">
               ${icons.trash ? icons.trash('w-3.5 h-3.5') : '🗑️'}
             </button>
+            ` : ''}
           </div>
         </td>
       </tr>
@@ -2259,6 +2263,10 @@ export function initHotelsPage(container) {
 
       const deleteBtn = e.target.closest('.btn-delete-booking');
       if (deleteBtn) {
+        if (AuthService.getUser()?.role !== 'ADMIN') {
+          showToast(isAr ? 'غير مصرح: الحذف متاح للمديرين فقط' : 'Unauthorized: Only administrators can delete bookings', 'error');
+          return;
+        }
         const id = deleteBtn.dataset.id;
         if (!confirm(t('hotels.deleteConfirm'))) return;
         try {
@@ -2411,7 +2419,8 @@ export const HotelsPage = {
   afterRender(container) {
     initHotelsPage(container);
   },
-  init: initHotelsPage
+  init: initHotelsPage,
+  renderArchiveRows
 };
 
 

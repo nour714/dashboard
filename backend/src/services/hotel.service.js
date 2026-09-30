@@ -3,7 +3,7 @@
  */
 
 import { getPrismaClient } from '../config/database.js';
-import { NotFoundError } from '../domain/errors.js';
+import { NotFoundError, ForbiddenError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
 import { generateHotelBookingDetails, generateReferenceCodes, calculateNights } from './hotel-ai.service.js';
 import { PythonScraperService } from './python-scraper.service.js';
@@ -294,7 +294,7 @@ export const HotelService = {
   },
 
   /**
-   * Soft delete a booking
+   * Soft delete a booking (ADMIN only)
    */
   async deleteBooking(id, currentUser = {}) {
     const prisma = getPrismaClient();
@@ -304,6 +304,10 @@ export const HotelService = {
 
     if (!existing) {
       throw new NotFoundError(`Hotel booking with ID "${id}" was not found.`);
+    }
+
+    if (currentUser?.role !== 'ADMIN') {
+      throw new ForbiddenError('Only administrators can delete hotel bookings');
     }
 
     const updated = await prisma.hotelBooking.update({
