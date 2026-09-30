@@ -2039,7 +2039,6 @@ export function initHotelsPage(container) {
   const autocompleteList = root.querySelector('#customer-autocomplete-list') || document.getElementById('customer-autocomplete-list');
   const previewSection = root.querySelector('#hotel-preview-section') || document.getElementById('hotel-preview-section');
   const searchInput = root.querySelector('#search-hotel-archive') || document.getElementById('search-hotel-archive');
-  const pdfLangSelect = root.querySelector('#hotel-pdf-lang') || document.getElementById('hotel-pdf-lang');
 
   // Load initial saved bookings list
   loadSavedBookings(root);

@@ -516,7 +516,7 @@ export function generateHotelPhone(destination = '', hotelName = '') {
   return `+44 20 ${rand(7100, 8999)} ${rand(1000, 9999)}`;
 }
 
-export async function resolveRealHotelPhone(hotelName = '', destination = '', lat = null, lon = null) {
+export async function resolveRealHotelPhone(hotelName = '', destination = '', _lat = null, _lon = null) {
   const normHotel = hotelName.toLowerCase().trim();
   // 1. Check known hotel catalog
   for (const [key, phone] of Object.entries(KNOWN_HOTEL_PHONES)) {

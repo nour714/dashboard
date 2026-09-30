@@ -297,7 +297,7 @@ function openDeleteVisaModal(visa, onSuccess) {
 }
 
 export const VisaDetailsPage = {
-  render(params) {
+  render(_params) {
     return `<div id="visa-details-wrapper" class="p-lg">
       <div class="text-center text-muted p-lg">
         <div style="display: inline-block; width: 24px; height: 24px; border: 2px solid var(--color-primary); border-radius: 50%; border-top-color: transparent; animation: spin 1s linear infinite;"></div>

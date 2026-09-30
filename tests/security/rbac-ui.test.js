@@ -7,6 +7,8 @@ import { renderTopbar } from '../../frontend/js/components/topbar.js';
 import { renderBottomNav } from '../../frontend/js/components/bottom-nav.js';
 import { EmployeesPage } from '../../frontend/js/pages/employees.js';
 import { ReportsPage } from '../../frontend/js/pages/reports.js';
+import { SettingsPage } from '../../frontend/js/pages/settings.js';
+import { sanitizeAuditLogForRole } from '../../backend/src/controllers/audit.controller.js';
 import { store } from '../../frontend/js/state/store.js';
 import { AuthService } from '../../frontend/js/services/auth-service.js';
 import { i18n } from '../../frontend/js/i18n/i18n.js';
@@ -58,6 +60,28 @@ async function runRbacUiTests() {
   const agentReportsPage = ReportsPage.render();
   assert(!agentReportsPage.includes('agentPerformance') && !agentReportsPage.includes('salesByAirline'), 'Reports page does NOT render removed Agent Performance / Airline Sales sections for AGENT');
 
+  const agentSettingsPage = SettingsPage.render();
+  assert(!agentSettingsPage.includes('data-settings-target="company"'), 'Settings page hides Company tab for AGENT');
+  assert(!agentSettingsPage.includes('data-settings-target="currency"'), 'Settings page hides Currency tab for AGENT');
+  assert(!agentSettingsPage.includes('data-settings-target="statuses"'), 'Settings page hides Statuses tab for AGENT');
+  assert(!agentSettingsPage.includes('href="/employees"'), 'Settings page hides Admin secondary nav bar for AGENT');
+
+  const rawAuditLog = {
+    id: 'ACT-1',
+    user: 'Nour Agent',
+    action: 'CREATE_TICKET',
+    ip: '192.168.1.50',
+    userAgent: 'Mozilla/5.0 Chrome/120.0',
+    metadata: {
+      costPrice: 5000,
+      ip: '192.168.1.50'
+    }
+  };
+  const sanitizedLog = sanitizeAuditLogForRole(rawAuditLog, 'AGENT');
+  assert(sanitizedLog.ip === undefined, 'Sanitized audit log removes IP for AGENT');
+  assert(sanitizedLog.userAgent === undefined, 'Sanitized audit log removes userAgent for AGENT');
+  assert(sanitizedLog.metadata?.costPrice === undefined, 'Sanitized audit log removes sensitive metadata for AGENT');
+
   // 2. Test as ADMIN role
   console.log('\n--- 2. ADMIN Role Visibility ---');
   store.state.currentUser = {
@@ -77,6 +101,16 @@ async function runRbacUiTests() {
   const adminEmployeesPage = EmployeesPage.render();
   assert(!adminEmployeesPage.includes('Access Restricted') && !adminEmployeesPage.includes('الوصول مقيد'), 'Employees page does NOT show Access Restricted for ADMIN');
   assert(adminEmployeesPage.includes('data-table'), 'Employees page renders employees table for ADMIN');
+
+  const adminSettingsPage = SettingsPage.render();
+  assert(adminSettingsPage.includes('data-settings-target="company"'), 'Settings page shows Company tab for ADMIN');
+  assert(adminSettingsPage.includes('data-settings-target="currency"'), 'Settings page shows Currency tab for ADMIN');
+  assert(adminSettingsPage.includes('data-settings-target="statuses"'), 'Settings page shows Statuses tab for ADMIN');
+  assert(adminSettingsPage.includes('href="/employees"'), 'Settings page shows Admin secondary nav bar for ADMIN');
+
+  const adminAuditLog = sanitizeAuditLogForRole(rawAuditLog, 'ADMIN');
+  assert(adminAuditLog.ip === '192.168.1.50', 'Audit log preserves IP for ADMIN');
+  assert(adminAuditLog.userAgent === 'Mozilla/5.0 Chrome/120.0', 'Audit log preserves userAgent for ADMIN');
 
   // 3. Test TICKET_ONLY navigation visibility
   console.log('\n--- 3. TICKET_ONLY Role Visibility ---');

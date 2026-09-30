@@ -16,21 +16,29 @@ export const SettingsPage = {
   render() {
     const { settings } = store.getState();
     const currentUser = AuthService.getCurrentUser() || {};
+    const isAdmin = (currentUser.role || '').toUpperCase() === 'ADMIN';
 
     const headerHtml = renderPageHeader({
       title: t('settings.title'),
       subtitle: t('settings.subtitle')
     });
 
-    const settingsMenu = [
+    const allSettingsMenu = [
       { id: 'profile', label: t('settings.tabs.profile'), icon: 'user' },
       { id: 'language', label: t('settings.tabs.language'), icon: 'globe' },
       { id: 'security', label: t('settings.tabs.security'), icon: 'shield' },
-      { id: 'company', label: t('settings.tabs.company'), icon: 'building' },
-      { id: 'currency', label: t('settings.tabs.currency'), icon: 'payments' },
+      { id: 'company', label: t('settings.tabs.company'), icon: 'building', adminOnly: true },
+      { id: 'currency', label: t('settings.tabs.currency'), icon: 'payments', adminOnly: true },
       { id: 'notifications', label: t('settings.tabs.notifications'), icon: 'bell' },
-      { id: 'statuses', label: t('settings.tabs.statuses'), icon: 'ticket' }
+      { id: 'statuses', label: t('settings.tabs.statuses'), icon: 'ticket', adminOnly: true }
     ];
+
+    const settingsMenu = allSettingsMenu.filter(m => !m.adminOnly || isAdmin);
+
+    const adminOnlySections = ['company', 'currency', 'statuses'];
+    if (!isAdmin && adminOnlySections.includes(activeSection)) {
+      activeSection = 'profile';
+    }
 
     const menuHtml = settingsMenu.map(m => `
       <button
@@ -281,12 +289,14 @@ export const SettingsPage = {
     return `
       ${headerHtml}
 
-      <!-- Admin Secondary Nav Tabs -->
+      <!-- Admin Secondary Nav Tabs (Admin Only) -->
+      ${isAdmin ? `
       <div class="tabs-header mb-lg" style="border-radius: var(--radius-xl); border: 1px solid var(--color-border-soft);">
         <a href="/employees" class="tab-btn" data-link>${escapeHtml(t('nav.employees'))}</a>
         <a href="/activity" class="tab-btn" data-link>${escapeHtml(t('nav.activity'))}</a>
         <a href="/settings" class="tab-btn active" data-link>${escapeHtml(t('nav.settings'))}</a>
       </div>
+      ` : ''}
 
       <!-- Settings Horizontal Tabs -->
       <div class="tabs-header mb-lg" style="border-radius: var(--radius-xl); border: 1px solid var(--color-border-soft); background: var(--color-surface-card); padding: 0 var(--spacing-sm); display: flex; align-items: center; gap: 4px; overflow-x: auto; scrollbar-width: none;">

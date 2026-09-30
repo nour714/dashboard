@@ -10,13 +10,15 @@ const sanitizeVisaForRole = (visa, role) => {
   
   if (Array.isArray(visa)) {
     return visa.map(v => {
-      const { costPrice, ...rest } = v;
-      return rest;
+      const copy = { ...v };
+      delete copy.costPrice;
+      return copy;
     });
   }
   
-  const { costPrice, ...rest } = visa;
-  return rest;
+  const copy = { ...visa };
+  delete copy.costPrice;
+  return copy;
 };
 
 export const VisaController = {

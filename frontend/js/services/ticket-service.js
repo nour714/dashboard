@@ -16,7 +16,6 @@ import {
   calculateTotalModificationProfit,
   calculateTotalRefunded,
   calculateAvailableRefund,
-  calculateNetValue,
   calculateNetProfit,
   derivePaymentStatus
 } from '../domain/ticket-rules.js';
