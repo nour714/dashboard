@@ -6,7 +6,7 @@ import { getPrismaClient } from '../config/database.js';
 import { NotFoundError, ForbiddenError } from '../domain/errors.js';
 import { AuditService } from './audit.service.js';
 import { generateHotelBookingDetails, generateReferenceCodes, calculateNights } from './hotel-ai.service.js';
-import { PythonScraperService } from './python-scraper.service.js';
+import { OpenHotelService } from './open-hotel.service.js';
 import { RapidApiBookingService, generateHotelPhone } from './rapidapi-booking.service.js';
 
 export const HotelService = {
@@ -18,7 +18,61 @@ export const HotelService = {
     const nights = calculateNights(checkIn, checkOut);
     const { bookingReference, confirmationNumber } = generateReferenceCodes();
 
-    // 1. Prioritize RapidAPI Booking.com (Fastest, ~1.2s, real Booking.com data and photos, zero bot issues)
+    console.log('[HotelService] Searching via OpenStreetMap (primary)...');
+
+    // 1. Primary: OpenStreetMap (Overpass API)
+    try {
+      const osmHotel = await OpenHotelService.fetchHotel({
+        destination: country,
+        checkIn,
+        checkOut
+      });
+
+      if (osmHotel && osmHotel.hotelName) {
+        return {
+          bookingReference,
+          confirmationNumber,
+          bookingNumber: osmHotel.bookingNumber || `${Math.floor(1000 + Math.random() * 9000)}.${Math.floor(100 + Math.random() * 900)}.${Math.floor(100 + Math.random() * 900)}`,
+          pinCode: osmHotel.pinCode || `${Math.floor(1000 + Math.random() * 9000)}`,
+          clientName: clientName.trim(),
+          customerId: customerId || null,
+          hotelName: osmHotel.hotelName,
+          hotelStars: osmHotel.hotelStars || 5,
+          hotelAddress: osmHotel.hotelAddress || `City Center, ${country}`,
+          hotelPhone: osmHotel.hotelPhone || generateHotelPhone(country, osmHotel.hotelName),
+          latitude: osmHotel.latitude || null,
+          longitude: osmHotel.longitude || null,
+          gpsCoordinates: osmHotel.gpsCoordinates || null,
+          city: osmHotel.city || country,
+          country: osmHotel.country || country,
+          checkIn: new Date(checkIn).toISOString(),
+          checkOut: new Date(checkOut).toISOString(),
+          nights,
+          roomType: osmHotel.roomType || 'Deluxe King Room',
+          boardBasis: osmHotel.boardBasis || 'Breakfast included',
+          price: osmHotel.price || 'US$ 450',
+          reviewScore: osmHotel.reviewScore || '9.0 Superb · 2,840 reviews',
+          hotelImage: osmHotel.hotelImage || '',
+          guests: '1 Adult',
+          checkInTime: osmHotel.checkInTime || '15:00',
+          checkOutTime: osmHotel.checkOutTime || '12:00',
+          amenities: Array.isArray(osmHotel.amenities) && osmHotel.amenities.length > 0
+            ? osmHotel.amenities
+            : ['Free high-speed WiFi', 'Air conditioning', 'Private bathroom', 'Flat-screen TV'],
+          specialRequests: osmHotel.specialRequests || 'Non-smoking room, high floor requested',
+          cancellationPolicy: osmHotel.cancellationPolicy || 'Free cancellation anytime up to 48 hours before check-in.',
+          paymentStatus: osmHotel.paymentStatus || 'Paid online',
+          status: 'CONFIRMED',
+          source: 'OPENSTREETMAP',
+          provider: osmHotel.provider || 'OSM_NOMINATIM',
+          generatedByAi: false
+        };
+      }
+    } catch (osmErr) {
+      console.warn('[HotelService] OpenStreetMap call failed:', osmErr.message);
+    }
+
+    // 2. Secondary fallback: RapidAPI Booking.com
     try {
       const rapidHotel = await RapidApiBookingService.fetchLiveHotel({
         destination: country,
@@ -68,62 +122,7 @@ export const HotelService = {
       console.warn('[HotelService] RapidAPI Booking.com call failed:', rapidErr.message);
     }
 
-    // 2. Secondary fallback: Python Live Scraper (Playwright)
-    try {
-      const liveHotel = await PythonScraperService.scrapeLiveHotel({
-        destination: country,
-        checkIn,
-        checkOut
-      });
-
-      if (liveHotel && liveHotel.hotelName) {
-        const bNum = liveHotel.bookingNumber || `${Math.floor(1000 + Math.random() * 9000)}.${Math.floor(100 + Math.random() * 900)}.${Math.floor(100 + Math.random() * 900)}`;
-        const pin = liveHotel.pinCode || `${Math.floor(1000 + Math.random() * 9000)}`;
-
-        return {
-          bookingReference,
-          confirmationNumber,
-          bookingNumber: bNum,
-          pinCode: pin,
-          clientName: clientName.trim(),
-          customerId: customerId || null,
-          hotelName: liveHotel.hotelName,
-          hotelStars: liveHotel.hotelStars || 5,
-          hotelAddress: liveHotel.hotelAddress || `City Center, ${country}`,
-          hotelPhone: liveHotel.hotelPhone || generateHotelPhone(country, liveHotel.hotelName),
-          latitude: liveHotel.latitude || null,
-          longitude: liveHotel.longitude || null,
-          gpsCoordinates: liveHotel.gpsCoordinates || null,
-          city: liveHotel.city || country,
-          country: liveHotel.country || country,
-          checkIn: new Date(checkIn).toISOString(),
-          checkOut: new Date(checkOut).toISOString(),
-          nights,
-          roomType: liveHotel.roomType || 'Deluxe King Room',
-          boardBasis: liveHotel.boardBasis || 'Breakfast included',
-          price: liveHotel.price || 'US$ 450',
-          reviewScore: liveHotel.reviewScore || '9.0 Superb · 2,840 reviews',
-          hotelImage: liveHotel.hotelImage || '',
-          guests: '1 Adult',
-          checkInTime: liveHotel.checkInTime || '15:00',
-          checkOutTime: liveHotel.checkOutTime || '12:00',
-          amenities: Array.isArray(liveHotel.amenities) && liveHotel.amenities.length > 0
-            ? liveHotel.amenities
-            : ['Free high-speed WiFi', 'Air conditioning', 'Private bathroom', 'Flat-screen TV'],
-          specialRequests: liveHotel.specialRequests || 'Non-smoking room, high floor requested',
-          cancellationPolicy: liveHotel.cancellationPolicy || 'Free cancellation anytime up to 48 hours before check-in.',
-          paymentStatus: liveHotel.paymentStatus || 'Paid online',
-          status: 'CONFIRMED',
-          source: 'BOOKING_LIVE',
-          provider: 'PYTHON_SCRAPER',
-          generatedByAi: false
-        };
-      }
-    } catch (scraperErr) {
-      console.warn('[HotelService] Python live scraper failed, proceeding to fallback:', scraperErr.message);
-    }
-
-    // 2. Seamless fallback to Gemini AI / Curated catalog
+    // 3. Seamless fallback to Gemini AI / Curated catalog
     const generated = await generateHotelBookingDetails({
       clientName,
       country,

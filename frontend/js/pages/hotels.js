@@ -1764,15 +1764,24 @@ function renderPreviewCard(booking) {
   const reviewScore = booking.reviewScore || '9.1 Superb · 3,150 reviews';
   const hotelImage = booking.hotelImage || '';
 
+  const isOpenStreetMap = booking.source === 'OPENSTREETMAP';
   const isPython = booking.source === 'BOOKING_LIVE' || booking.provider === 'PYTHON_SCRAPER';
-  const sourceBadge = isPython
-    ? `<span class="badge" style="background: #10b981; color: white; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">
+  let sourceBadge = '';
+  if (isOpenStreetMap) {
+    sourceBadge = `<span class="badge" style="background: #10b981; color: white; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">
         <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ffffff;"></span>
-        ${isAr ? 'بيانات حية مباشرة من Booking.com' : 'Live from Booking.com'}
-       </span>`
-    : `<span class="badge" style="background: #00BAF2; color: #003580; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">
-        ✦ ${isAr ? 'كتالوج بوكينج المعتمد' : 'Booking.com Catalog'}
+        ${isAr ? 'بيانات حية مفتوحة المصدر (OSM)' : 'Live Open-Source (OSM)'}
        </span>`;
+  } else if (isPython) {
+    sourceBadge = `<span class="badge" style="background: #10b981; color: white; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">
+        <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ffffff;"></span>
+        ${isAr ? 'بيانات حية مباشرة' : 'Live Real Data'}
+       </span>`;
+  } else {
+    sourceBadge = `<span class="badge" style="background: #00BAF2; color: #003580; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 11px;">
+        ✦ ${isAr ? 'كتالوج الفنادق المعتمد' : 'Verified Luxury Catalog'}
+       </span>`;
+  }
 
   return `
     <div class="card" style="border: 2px solid #003580; background: var(--color-surface); box-shadow: 0 4px 12px rgba(0, 53, 128, 0.1);">
