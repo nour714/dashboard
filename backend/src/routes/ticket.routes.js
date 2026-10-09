@@ -41,12 +41,13 @@ router.get(
 
     const maskedKey = key.length > 8 ? `${key.slice(0, 4)}...${key.slice(-4)}` : '***';
     const modelsToTest = [
-      env.GEMINI_MODEL || 'gemini-3.7-flash',
-      'gemini-3.7-flash',
-      'gemini-3.6-flash',
-      'gemini-3.5-flash',
-      'gemini-3.5-flash-lite',
-      'gemini-2.5-flash'
+      env.GEMINI_MODEL || 'gemini-2.5-flash',
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-2.0-flash-lite',
+      'gemini-1.5-pro'
     ];
     const uniqueModels = Array.from(new Set(modelsToTest));
     const results = [];

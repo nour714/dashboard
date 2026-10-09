@@ -10,7 +10,14 @@
 
 import multer from 'multer';
 
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'application/pdf',
+  'application/x-pdf'
+];
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB hard cap
 const MAX_CONCURRENT_UPLOADS = 10;
 
@@ -110,16 +117,18 @@ class EarlyMagicByteStorage {
 
       chunks.push(chunk);
 
-      // Perform early magic byte check as soon as at least 8 bytes are received
-      if (!magicChecked && bytesRead >= 8) {
+      // Perform early magic byte check as soon as at least 12 bytes are received
+      if (!magicChecked && bytesRead >= 12) {
         magicChecked = true;
-        const head = Buffer.concat(chunks, 8);
-        const isPdf = head.subarray(0, 4).toString('binary') === '%PDF';
+        const head = Buffer.concat(chunks, 12);
+        const headStr = head.toString('binary');
+        const isPdf = headStr.includes('%PDF');
         const isJpeg = head[0] === 0xFF && head[1] === 0xD8 && head[2] === 0xFF;
         const isPng = head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4E && head[3] === 0x47 &&
                       head[4] === 0x0D && head[5] === 0x0A && head[6] === 0x1A && head[7] === 0x0A;
+        const isWebp = head.subarray(0, 4).toString('binary') === 'RIFF' && head.subarray(8, 12).toString('binary') === 'WEBP';
 
-        if (!isPdf && !isJpeg && !isPng) {
+        if (!isPdf && !isJpeg && !isPng && !isWebp) {
           stream.removeListener('data', onData);
           stream.resume();
           const err = new Error('INVALID_FILE_TYPE');
@@ -134,10 +143,12 @@ class EarlyMagicByteStorage {
     stream.on('end', () => {
       const fullBuffer = Buffer.concat(chunks);
       if (!magicChecked) {
-        const isPdf = fullBuffer.length >= 4 && fullBuffer.subarray(0, 4).toString('binary') === '%PDF';
+        const fullStr = fullBuffer.subarray(0, 32).toString('binary');
+        const isPdf = fullStr.includes('%PDF');
         const isJpeg = fullBuffer.length >= 3 && fullBuffer[0] === 0xFF && fullBuffer[1] === 0xD8 && fullBuffer[2] === 0xFF;
         const isPng = fullBuffer.length >= 8 && fullBuffer[0] === 0x89 && fullBuffer[1] === 0x50 && fullBuffer[2] === 0x4E && fullBuffer[3] === 0x47;
-        if (!isPdf && !isJpeg && !isPng) {
+        const isWebp = fullBuffer.length >= 12 && fullBuffer.subarray(0, 4).toString('binary') === 'RIFF' && fullBuffer.subarray(8, 12).toString('binary') === 'WEBP';
+        if (!isPdf && !isJpeg && !isPng && !isWebp) {
           const err = new Error('INVALID_FILE_TYPE');
           err.code = 'INVALID_FILE_TYPE';
           return finish(err);
