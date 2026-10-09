@@ -10,6 +10,7 @@
 
 import { env } from '../config/env.js';
 import { generateHotelPhone } from './rapidapi-booking.service.js';
+import { normalizeGeminiModel } from './ticket-extraction.service.js';
 
 const GEMINI_REQUEST_TIMEOUT_MS = 12000;
 
@@ -1420,7 +1421,8 @@ CRITICAL INSTRUCTIONS:
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), GEMINI_REQUEST_TIMEOUT_MS);
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const modelName = normalizeGeminiModel(env.GEMINI_MODEL, 'gemini-3.8-flash');
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: {

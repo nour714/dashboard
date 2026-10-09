@@ -18,7 +18,7 @@ import { addModificationSchema } from '../schemas/modification.schema.js';
 import { passportDocUpload, bulkTicketUpload, uploadConcurrencyBudget, aiExtractionConcurrencyBudget } from '../middleware/upload.js';
 import { uploadRateLimiter } from '../middleware/rate-limiter.js';
 import { env } from '../config/env.js';
-import { TicketExtractionService } from '../services/ticket-extraction.service.js';
+import { TicketExtractionService, normalizeGeminiModel } from '../services/ticket-extraction.service.js';
 
 const router = Router();
 
@@ -41,13 +41,14 @@ router.get(
 
     const maskedKey = key.length > 8 ? `${key.slice(0, 4)}...${key.slice(-4)}` : '***';
     const modelsToTest = [
-      env.GEMINI_MODEL || 'gemini-2.5-flash',
-      'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-2.5-flash-lite',
-      'gemini-2.0-flash-lite',
-      'gemini-1.5-pro'
+      normalizeGeminiModel(env.GEMINI_MODEL, 'gemini-3.8-flash'),
+      'gemini-3.8-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.7-flash',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-3.1-flash-lite',
+      'gemini-2.5-flash'
     ];
     const uniqueModels = Array.from(new Set(modelsToTest));
     const results = [];

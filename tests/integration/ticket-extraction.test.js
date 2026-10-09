@@ -17,7 +17,7 @@
 // Must be set BEFORE any imports so service-level guards detect test mode
 process.env.NODE_ENV = 'test';
 
-import { TicketExtractionService, toAirportCode, toSingleFlightNumber, discoverAvailableModels } from '../../backend/src/services/ticket-extraction.service.js';
+import { TicketExtractionService, toAirportCode, toSingleFlightNumber, discoverAvailableModels, normalizeGeminiModel, DEPRECATED_MODELS } from '../../backend/src/services/ticket-extraction.service.js';
 import { env } from '../../backend/src/config/env.js';
 import { TicketCreatePage } from '../../frontend/js/pages/ticket-create.js';
 import { en } from '../../frontend/js/i18n/locales/en.js';
@@ -97,7 +97,7 @@ async function runExtractionTests() {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url, options) => {
     assert(url.includes('generativelanguage.googleapis.com'), 'Calls official Google Generative Language endpoint');
-    assert(url.includes('gemini-2.5-flash') || url.includes('gemini-3.7-flash') || url.includes(env.GEMINI_MODEL), 'Uses configured Gemini model name');
+    assert(url.includes('gemini-3.8-flash') || url.includes('gemini-2.5-flash') || url.includes('gemini-3.7-flash') || url.includes(env.GEMINI_MODEL), 'Uses configured Gemini model name');
     assert(options.method === 'POST', 'HTTP method is POST');
     assert(options.headers?.['x-goog-api-key'] === env.GEMINI_API_KEY, 'Passes API key securely via x-goog-api-key header');
 
@@ -191,14 +191,14 @@ async function runExtractionTests() {
   const calledUrls = [];
   globalThis.fetch = async (url) => {
     calledUrls.push(url);
-    if (url.includes('gemini-2.5-flash') || url.includes('gemini-3.7-flash') || url.includes(env.GEMINI_MODEL)) {
+    if (url.includes('gemini-3.8-flash') || url.includes('gemini-2.5-flash') || url.includes('gemini-3.7-flash') || url.includes(env.GEMINI_MODEL)) {
       return {
         ok: false,
         status: 404,
         text: async () => 'Model not found or rate limited'
       };
     }
-    if (url.includes('gemini-2.0-flash') || url.includes('gemini-3.5-flash-lite') || url.includes(env.GEMINI_FALLBACK_MODEL)) {
+    if (url.includes('gemini-3.5-flash-lite') || url.includes('gemini-2.0-flash') || url.includes(env.GEMINI_FALLBACK_MODEL)) {
       return {
         ok: true,
         status: 200,
@@ -216,10 +216,20 @@ async function runExtractionTests() {
 
   const fallbackExtracted = await TicketExtractionService.extractFromDocument(dummyPdfBuffer, 'application/pdf');
   assert(calledUrls.length === 2, 'Service retried with candidate fallback model after primary failed');
-  assert(calledUrls[0].includes('gemini-2.5-flash') || calledUrls[0].includes('gemini-3.7-flash') || calledUrls[0].includes(env.GEMINI_MODEL), 'First attempt targeted primary model');
-  assert(calledUrls[1].includes('gemini-2.0-flash') || calledUrls[1].includes('gemini-3.5-flash-lite') || calledUrls[1].includes(env.GEMINI_FALLBACK_MODEL), 'Second attempt targeted fallback model');
+  assert(calledUrls[0].includes('gemini-3.8-flash') || calledUrls[0].includes('gemini-2.5-flash') || calledUrls[0].includes('gemini-3.7-flash') || calledUrls[0].includes(env.GEMINI_MODEL), 'First attempt targeted primary model');
+  assert(calledUrls[1].includes('gemini-3.5-flash-lite') || calledUrls[1].includes('gemini-2.0-flash') || calledUrls[1].includes(env.GEMINI_FALLBACK_MODEL), 'Second attempt targeted fallback model');
   assert(!calledUrls.some(u => u.includes('deprecated-model-xyz')), 'Did NOT attempt unknown model');
   assert(fallbackExtracted.passengerName === 'Tarek Mahmoud Hassan', 'Extraction succeeded via fallback model');
+
+  // --- 3.3 Model Normalization & Deprecation Safeguards ---
+  console.log('\n--- 3.3 Model Normalization & Deprecation Safeguards ---');
+  assert(normalizeGeminiModel('gemini-2.0-flash') === 'gemini-3.8-flash', 'Deprecated gemini-2.0-flash auto-substitutes to gemini-3.8-flash');
+  assert(normalizeGeminiModel('models/gemini-2.0-flash') === 'gemini-3.8-flash', 'Deprecated models/gemini-2.0-flash auto-substitutes to gemini-3.8-flash');
+  assert(normalizeGeminiModel('gemini-1.5-flash') === 'gemini-3.8-flash', 'Deprecated gemini-1.5-flash auto-substitutes to gemini-3.8-flash');
+  assert(normalizeGeminiModel('gemini-3.8-flash') === 'gemini-3.8-flash', 'Active gemini-3.8-flash preserved');
+  assert(normalizeGeminiModel('gemini-3.5-flash-lite', 'gemini-3.5-flash-lite') === 'gemini-3.5-flash-lite', 'Active gemini-3.5-flash-lite preserved');
+  assert(DEPRECATED_MODELS.has('gemini-2.0-flash'), 'DEPRECATED_MODELS contains gemini-2.0-flash');
+  assert(DEPRECATED_MODELS.has('gemini-1.5-pro'), 'DEPRECATED_MODELS contains gemini-1.5-pro');
 
   // --- 4. Security Isolation: costPrice Must NEVER be Returned ---
   console.log('\n--- 4. Security Isolation (costPrice Omission) ---');

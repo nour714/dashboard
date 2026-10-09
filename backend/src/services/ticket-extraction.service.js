@@ -90,6 +90,25 @@ export function cleanTicketNumber(raw) {
   return clean;
 }
 
+export const DEPRECATED_MODELS = new Set([
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-1.5-flash',
+  'gemini-1.5-flash-8b',
+  'gemini-1.5-pro',
+  'gemini-1.0-pro'
+]);
+
+export function normalizeGeminiModel(model, defaultModel = 'gemini-3.8-flash') {
+  if (!model || typeof model !== 'string') return defaultModel;
+  const clean = model.trim().replace(/^models\//, '');
+  if (DEPRECATED_MODELS.has(clean)) {
+    console.warn(`[TicketExtraction] Configured model "${clean}" is deprecated/unavailable by Google. Auto-substituting with "${defaultModel}".`);
+    return defaultModel;
+  }
+  return clean;
+}
+
 let cachedWorkingModel = null;
 let cachedApiVersion = 'v1beta';
 
@@ -151,7 +170,9 @@ export async function discoverAvailableModels(apiKey) {
           if (!Array.isArray(m.supportedGenerationMethods) || !m.supportedGenerationMethods.includes('generateContent')) {
             return false;
           }
-          const lowerName = (m.name || '').toLowerCase();
+          const cleanName = (m.name || '').replace(/^models\//, '');
+          if (DEPRECATED_MODELS.has(cleanName)) return false;
+          const lowerName = cleanName.toLowerCase();
           return !EXCLUDED_PATTERNS.some(pat => lowerName.includes(pat));
         })
         .map(m => ({
@@ -200,18 +221,20 @@ Worked example: outbound segments are TK123 CAI→IST departing 10 Jan, then TK4
 
 Return ONLY the fields you can clearly identify — omit any field you cannot confidently read. Standardize airline names and their 2-letter IATA codes (e.g., EgyptAir MS, Air Cairo SM, Emirates EK, Etihad Airways EY, Qatar Airways QR, Turkish Airlines TK, Saudia SV, Flynas XY, flydubai FZ, Air Arabia G9, British Airways BA, Air France AF, Lufthansa LH, KLM KL, Iberia IB, ITA Airways AZ, Aegean Airlines A3, American Airlines AA, Delta Air Lines DL, United Airlines UA, Air Canada AC, Air China CA, China Eastern MU, China Southern CZ, Singapore Airlines SQ, Ethiopian Airlines ET, Kenya Airways KQ, Royal Air Maroc AT, Tunisair TU, Air Algérie AH). For "origin" and "destination", return ONLY the 3-letter IATA airport code (e.g. "CAI", "DXB") — never the city name, country name, or full airport name. Dates must be in YYYY-MM-DD format. If no return flight is present, omit all return* fields and set tripType to "One Way".`;
 
-    const primaryModel = env.GEMINI_MODEL || 'gemini-2.5-flash';
-    const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-2.0-flash';
+    const primaryModel = normalizeGeminiModel(env.GEMINI_MODEL, 'gemini-3.8-flash');
+    const fallbackModel = normalizeGeminiModel(env.GEMINI_FALLBACK_MODEL, 'gemini-3.5-flash-lite');
     const candidateModels = Array.from(new Set([
       primaryModel,
       fallbackModel,
+      'gemini-3.8-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.7-flash',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-3.1-flash-lite',
       'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-2.5-flash-lite',
-      'gemini-2.0-flash-lite',
-      'gemini-1.5-pro'
-    ])).filter(Boolean);
+      'gemini-2.5-flash-lite'
+    ])).filter(m => m && !DEPRECATED_MODELS.has(m));
 
     const MAX_EXTRACTION_ATTEMPTS = 4;
     let attemptCount = 0;
@@ -299,11 +322,15 @@ Return ONLY the fields you can clearly identify — omit any field you cannot co
 
     // Phase 0: If in-memory model cache exists (production), hit verified model directly
     if (process.env.NODE_ENV !== 'test' && cachedWorkingModel) {
-      const res = await tryCallEndpoint(cachedApiVersion, cachedWorkingModel);
-      if (res.ok) {
-        result = res.json;
-      } else {
+      if (DEPRECATED_MODELS.has(cachedWorkingModel)) {
         clearModelCache();
+      } else {
+        const res = await tryCallEndpoint(cachedApiVersion, cachedWorkingModel);
+        if (res.ok) {
+          result = res.json;
+        } else {
+          clearModelCache();
+        }
       }
     }
 
@@ -443,18 +470,20 @@ For each ticket/passenger:
 - "returnDepartureDate" = departure date of first return segment.
 - Dates must be in YYYY-MM-DD format. Standardize airline names and their 2-letter IATA codes. Return ONLY identifiable fields.`;
 
-    const primaryModel = env.GEMINI_MODEL || 'gemini-2.5-flash';
-    const fallbackModel = env.GEMINI_FALLBACK_MODEL || 'gemini-2.0-flash';
+    const primaryModel = normalizeGeminiModel(env.GEMINI_MODEL, 'gemini-3.8-flash');
+    const fallbackModel = normalizeGeminiModel(env.GEMINI_FALLBACK_MODEL, 'gemini-3.5-flash-lite');
     const candidateModels = Array.from(new Set([
       primaryModel,
       fallbackModel,
+      'gemini-3.8-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.7-flash',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-3.1-flash-lite',
       'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-2.5-flash-lite',
-      'gemini-2.0-flash-lite',
-      'gemini-1.5-pro'
-    ])).filter(Boolean);
+      'gemini-2.5-flash-lite'
+    ])).filter(m => m && !DEPRECATED_MODELS.has(m));
 
     const requestPayload = JSON.stringify({
       contents: [{
