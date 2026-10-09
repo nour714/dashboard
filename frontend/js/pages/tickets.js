@@ -7,6 +7,7 @@ import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { renderStatusBadge } from '../components/status-badge.js';
 import { renderEmptyState } from '../components/empty-state.js';
+import { renderPagination } from '../components/pagination.js';
 import { openBulkImportModal } from '../components/bulk-import-modal.js';
 import { showToast } from '../components/toast.js';
 import {
@@ -22,11 +23,14 @@ import { debounce } from '../utils/dom.js';
 import { t, i18n } from '../i18n/i18n.js';
 import { AIRLINES, getAirlineLabel } from '../data/airlines.js';
 
+const PAGE_SIZE = 10;
+
 let currentFilters = {
   search: '',
   status: 'All Statuses',
   airline: 'All Airlines',
-  travelDate: ''
+  travelDate: '',
+  page: 1
 };
 
 function renderSubRows(tData) {
@@ -222,8 +226,19 @@ export const TicketsPage = {
     if (query && query.q) {
       currentFilters.search = query.q;
     }
+    if (query && query.page) {
+      const p = parseInt(query.page, 10);
+      if (!isNaN(p) && p >= 1) currentFilters.page = p;
+    }
 
-    const tickets = TicketService.getAllTickets(currentFilters);
+    const allTickets = TicketService.getAllTickets(currentFilters);
+    const totalCount = allTickets.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+    if (currentFilters.page > totalPages) currentFilters.page = totalPages;
+    if (currentFilters.page < 1) currentFilters.page = 1;
+
+    const startIdx = (currentFilters.page - 1) * PAGE_SIZE;
+    const pagedTickets = allTickets.slice(startIdx, startIdx + PAGE_SIZE);
 
     const headerHtml = renderPageHeader({
       title: t('tickets.title'),
@@ -303,13 +318,14 @@ export const TicketsPage = {
 
       <!-- Desktop Table / Mobile Card View Container -->
       <div class="card" id="tickets-card-container">
-        ${this.renderCardContent(tickets)}
+        ${this.renderCardContent(pagedTickets, totalCount, currentFilters.page, totalPages)}
       </div>
     `;
   },
 
-  renderCardContent(tickets) {
-    if (tickets.length === 0) {
+  renderCardContent(tickets, totalCount, currentPage = 1, totalPages = 1) {
+    const total = typeof totalCount === 'number' ? totalCount : (Array.isArray(tickets) ? tickets.length : 0);
+    if (total === 0) {
       return renderEmptyState({
         title: t('tickets.empty.title'),
         description: t('tickets.empty.description'),
@@ -318,6 +334,9 @@ export const TicketsPage = {
         actionId: 'reset-empty-filters-btn'
       });
     }
+
+    const pages = totalPages || Math.max(1, Math.ceil(total / PAGE_SIZE));
+    const cur = currentPage || 1;
 
     return `
       <!-- Desktop Table -->
@@ -346,14 +365,13 @@ export const TicketsPage = {
       </div>
 
       <!-- Pagination -->
-      <div class="pagination-wrap">
-        <span id="tickets-count-label">${escapeHtml(t('common.showing'))} <strong>1-${tickets.length}</strong> ${escapeHtml(t('common.of'))} <strong>${tickets.length}</strong> ${escapeHtml(t('common.results'))}</span>
-        <div class="pagination-controls">
-          <button class="pagination-btn icon-directional" disabled>‹</button>
-          <button class="pagination-btn active">1</button>
-          <button class="pagination-btn icon-directional" disabled>›</button>
-        </div>
-      </div>
+      ${renderPagination({
+        currentPage: cur,
+        totalPages: pages,
+        totalItems: total,
+        pageSize: PAGE_SIZE,
+        countLabelId: 'tickets-count-label'
+      })}
     `;
   },
 
@@ -366,10 +384,23 @@ export const TicketsPage = {
     const cardContainer = container.querySelector('#tickets-card-container');
     const exportBtn = container.querySelector('#export-tickets-btn');
 
-    const updateResults = () => {
-      const tickets = TicketService.getAllTickets(currentFilters);
+    let cachedTotalPages = 1;
+
+    const updateResults = (resetPage = false) => {
+      if (resetPage) {
+        currentFilters.page = 1;
+      }
+      const allTickets = TicketService.getAllTickets(currentFilters);
+      const totalCount = allTickets.length;
+      cachedTotalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+      if (currentFilters.page > cachedTotalPages) currentFilters.page = cachedTotalPages;
+      if (currentFilters.page < 1) currentFilters.page = 1;
+
+      const startIdx = (currentFilters.page - 1) * PAGE_SIZE;
+      const pagedTickets = allTickets.slice(startIdx, startIdx + PAGE_SIZE);
+
       if (cardContainer) {
-        cardContainer.innerHTML = TicketsPage.renderCardContent(tickets);
+        cardContainer.innerHTML = TicketsPage.renderCardContent(pagedTickets, totalCount, currentFilters.page, cachedTotalPages);
         const resetEmpty = cardContainer.querySelector('#reset-empty-filters-btn');
         if (resetEmpty) {
           resetEmpty.addEventListener('click', resetFilters);
@@ -383,18 +414,18 @@ export const TicketsPage = {
     };
 
     const resetFilters = () => {
-      currentFilters = { search: '', status: 'All Statuses', airline: 'All Airlines', travelDate: '' };
+      currentFilters = { search: '', status: 'All Statuses', airline: 'All Airlines', travelDate: '', page: 1 };
       if (searchInput) searchInput.value = '';
       if (statusFilter) statusFilter.value = 'All Statuses';
       if (airlineFilter) airlineFilter.value = 'All Airlines';
       if (dateFilter) dateFilter.value = '';
-      updateResults();
+      updateResults(false);
     };
 
     if (searchInput) {
       const handleSearch = debounce((val) => {
         currentFilters.search = val;
-        updateResults();
+        updateResults(true);
       }, 250);
       searchInput.addEventListener('input', (e) => handleSearch(e.target.value));
     }
@@ -402,21 +433,21 @@ export const TicketsPage = {
     if (statusFilter) {
       statusFilter.addEventListener('change', (e) => {
         currentFilters.status = e.target.value;
-        updateResults();
+        updateResults(true);
       });
     }
 
     if (airlineFilter) {
       airlineFilter.addEventListener('change', (e) => {
         currentFilters.airline = e.target.value;
-        updateResults();
+        updateResults(true);
       });
     }
 
     if (dateFilter) {
       dateFilter.addEventListener('change', (e) => {
         currentFilters.travelDate = e.target.value;
-        updateResults();
+        updateResults(true);
       });
     }
 
@@ -427,7 +458,7 @@ export const TicketsPage = {
       bulkImportBtn.addEventListener('click', () => {
         openBulkImportModal({
           onSuccess: () => {
-            updateResults();
+            updateResults(false);
           }
         });
       });
@@ -445,9 +476,28 @@ export const TicketsPage = {
       });
     }
 
-    // Clickable rows — delegate on the card container so it works after filter re-renders
+    // Clickable rows and pagination — delegate on cardContainer
     if (cardContainer) {
       cardContainer.addEventListener('click', (e) => {
+        const pageBtn = e.target.closest('.pagination-btn');
+        if (pageBtn && !pageBtn.disabled) {
+          const action = pageBtn.dataset.pageAction;
+          const targetPage = pageBtn.dataset.page;
+          let nextP = currentFilters.page || 1;
+          if (action === 'prev') {
+            nextP = Math.max(1, nextP - 1);
+          } else if (action === 'next') {
+            nextP = Math.min(cachedTotalPages, nextP + 1);
+          } else if (targetPage) {
+            nextP = Number(targetPage);
+          }
+          if (nextP && nextP !== currentFilters.page) {
+            currentFilters.page = nextP;
+            updateResults(false);
+          }
+          return;
+        }
+
         // Skip if the user clicked on an existing <a> link (it already navigates)
         if (e.target.closest('a[data-link]')) return;
 

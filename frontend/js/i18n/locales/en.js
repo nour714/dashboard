@@ -73,6 +73,7 @@ export const en = {
     next: 'Next',
     previous: 'Previous',
     prev: 'Prev',
+    page: 'Page',
     fromDate: 'From Date',
     toDate: 'To Date',
     pageOf: 'Page {page} of {totalPages} ({total} records)',

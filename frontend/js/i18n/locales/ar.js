@@ -73,6 +73,7 @@ export const ar = {
     next: 'التالي',
     previous: 'السابق',
     prev: 'السابق',
+    page: 'صفحة',
     fromDate: 'من تاريخ',
     toDate: 'إلى تاريخ',
     pageOf: 'صفحة {page} من {totalPages} ({total} سجل)',

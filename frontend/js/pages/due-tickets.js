@@ -10,6 +10,7 @@ import { icons } from '../components/icons.js';
 import { renderPageHeader } from '../components/page-header.js';
 import { renderStatusBadge } from '../components/status-badge.js';
 import { renderEmptyState } from '../components/empty-state.js';
+import { renderPagination } from '../components/pagination.js';
 import {
   calculateTotalPaid,
   calculateRemaining,
@@ -20,9 +21,12 @@ import { escapeHtml } from '../utils/security.js';
 import { debounce } from '../utils/dom.js';
 import { t } from '../i18n/i18n.js';
 
+const PAGE_SIZE = 10;
+
 let currentFilters = {
   search: '',
-  status: 'All'
+  status: 'All',
+  page: 1
 };
 
 function renderDueTicketRows(tickets) {
@@ -120,8 +124,19 @@ export const DueTicketsPage = {
     if (query && query.q) {
       currentFilters.search = query.q;
     }
+    if (query && query.page) {
+      const p = parseInt(query.page, 10);
+      if (!isNaN(p) && p >= 1) currentFilters.page = p;
+    }
 
-    const tickets = TicketService.getDueTickets(currentFilters);
+    const allTickets = TicketService.getDueTickets(currentFilters);
+    const totalCount = allTickets.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+    if (currentFilters.page > totalPages) currentFilters.page = totalPages;
+    if (currentFilters.page < 1) currentFilters.page = 1;
+
+    const startIdx = (currentFilters.page - 1) * PAGE_SIZE;
+    const pagedTickets = allTickets.slice(startIdx, startIdx + PAGE_SIZE);
 
     const headerHtml = renderPageHeader({
       title: t('dueTickets.title'),
@@ -171,13 +186,14 @@ export const DueTicketsPage = {
 
       <!-- Content Container -->
       <div class="card" id="due-tickets-card-container">
-        ${this.renderCardContent(tickets)}
+        ${this.renderCardContent(pagedTickets, totalCount, currentFilters.page, totalPages)}
       </div>
     `;
   },
 
-  renderCardContent(tickets) {
-    if (tickets.length === 0) {
+  renderCardContent(tickets, totalCount, currentPage = 1, totalPages = 1) {
+    const total = typeof totalCount === 'number' ? totalCount : (Array.isArray(tickets) ? tickets.length : 0);
+    if (total === 0) {
       return renderEmptyState({
         title: t('dueTickets.emptyTitle'),
         description: t('dueTickets.emptySubtitle'),
@@ -186,6 +202,9 @@ export const DueTicketsPage = {
         actionId: 'reset-empty-due-filters-btn'
       });
     }
+
+    const pages = totalPages || Math.max(1, Math.ceil(total / PAGE_SIZE));
+    const cur = currentPage || 1;
 
     return `
       <!-- Desktop Table -->
@@ -215,17 +234,14 @@ export const DueTicketsPage = {
         ${renderDueMobileCards(tickets)}
       </div>
 
-      <!-- Pagination / Result Count -->
-      <div class="pagination-wrap">
-        <span id="due-tickets-count-label">
-          ${escapeHtml(t('common.showing'))} <strong>1-${tickets.length}</strong> ${escapeHtml(t('common.of'))} <strong>${tickets.length}</strong> ${escapeHtml(t('common.results'))}
-        </span>
-        <div class="pagination-controls">
-          <button class="pagination-btn icon-directional" disabled>‹</button>
-          <button class="pagination-btn active">1</button>
-          <button class="pagination-btn icon-directional" disabled>›</button>
-        </div>
-      </div>
+      <!-- Pagination -->
+      ${renderPagination({
+        currentPage: cur,
+        totalPages: pages,
+        totalItems: total,
+        pageSize: PAGE_SIZE,
+        countLabelId: 'due-tickets-count-label'
+      })}
     `;
   },
 
@@ -235,10 +251,23 @@ export const DueTicketsPage = {
     const clearBtn = container.querySelector('#clear-due-filters-btn');
     const cardContainer = container.querySelector('#due-tickets-card-container');
 
-    const updateResults = () => {
-      const tickets = TicketService.getDueTickets(currentFilters);
+    let cachedTotalPages = 1;
+
+    const updateResults = (resetPage = false) => {
+      if (resetPage) {
+        currentFilters.page = 1;
+      }
+      const allTickets = TicketService.getDueTickets(currentFilters);
+      const totalCount = allTickets.length;
+      cachedTotalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+      if (currentFilters.page > cachedTotalPages) currentFilters.page = cachedTotalPages;
+      if (currentFilters.page < 1) currentFilters.page = 1;
+
+      const startIdx = (currentFilters.page - 1) * PAGE_SIZE;
+      const pagedTickets = allTickets.slice(startIdx, startIdx + PAGE_SIZE);
+
       if (cardContainer) {
-        cardContainer.innerHTML = DueTicketsPage.renderCardContent(tickets);
+        cardContainer.innerHTML = DueTicketsPage.renderCardContent(pagedTickets, totalCount, currentFilters.page, cachedTotalPages);
         const resetEmpty = cardContainer.querySelector('#reset-empty-due-filters-btn');
         if (resetEmpty) {
           resetEmpty.addEventListener('click', resetFilters);
@@ -252,16 +281,16 @@ export const DueTicketsPage = {
     };
 
     const resetFilters = () => {
-      currentFilters = { search: '', status: 'All' };
+      currentFilters = { search: '', status: 'All', page: 1 };
       if (searchInput) searchInput.value = '';
       if (statusFilter) statusFilter.value = 'All';
-      updateResults();
+      updateResults(false);
     };
 
     if (searchInput) {
       const handleSearch = debounce((val) => {
         currentFilters.search = val;
-        updateResults();
+        updateResults(true);
       }, 250);
       searchInput.addEventListener('input', (e) => handleSearch(e.target.value));
     }
@@ -269,7 +298,7 @@ export const DueTicketsPage = {
     if (statusFilter) {
       statusFilter.addEventListener('change', (e) => {
         currentFilters.status = e.target.value;
-        updateResults();
+        updateResults(true);
       });
     }
 
@@ -277,9 +306,28 @@ export const DueTicketsPage = {
       clearBtn.addEventListener('click', resetFilters);
     }
 
-    // Delegated click on row for SPA navigation
+    // Delegated click on pagination and row for SPA navigation
     if (cardContainer) {
       cardContainer.addEventListener('click', (e) => {
+        const pageBtn = e.target.closest('.pagination-btn');
+        if (pageBtn && !pageBtn.disabled) {
+          const action = pageBtn.dataset.pageAction;
+          const targetPage = pageBtn.dataset.page;
+          let nextP = currentFilters.page || 1;
+          if (action === 'prev') {
+            nextP = Math.max(1, nextP - 1);
+          } else if (action === 'next') {
+            nextP = Math.min(cachedTotalPages, nextP + 1);
+          } else if (targetPage) {
+            nextP = Number(targetPage);
+          }
+          if (nextP && nextP !== currentFilters.page) {
+            currentFilters.page = nextP;
+            updateResults(false);
+          }
+          return;
+        }
+
         if (e.target.closest('a[data-link]') || e.target.closest('button')) return;
 
         const row = e.target.closest('tr.clickable-row[data-href]');

@@ -40,7 +40,8 @@ const UNIT_TESTS = [
   { file: 'tests/unit/frontend/i18n.test.js', isNodeTest: true },
   { file: 'tests/unit/frontend/modal-rendering.test.js', isNodeTest: true },
   { file: 'tests/unit/frontend/security-utils.test.js', isNodeTest: true },
-  { file: 'tests/unit/frontend/due-tickets.test.js', isNodeTest: true }
+  { file: 'tests/unit/frontend/due-tickets.test.js', isNodeTest: true },
+  { file: 'tests/unit/frontend/pagination.test.js', isNodeTest: true }
 ];
 
 const INTEGRATION_TESTS = [
